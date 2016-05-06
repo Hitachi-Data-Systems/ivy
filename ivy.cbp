@@ -1,0 +1,551 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="ivy" />
+		<Option pch_mode="2" />
+		<Option default_target="ivymaster" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="ivymaster">
+				<Option output="bin/ivy" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="/scripts/ivy/scripts/demo4_edit_rollup.RAID.ivyscript" />
+				<Compiler>
+					<Add option="-pthread" />
+					<Add directory="include" />
+					<Add directory="parser/include" />
+					<Add directory="parser/lexyacc" />
+				</Compiler>
+			</Target>
+			<Target title="ivyslave">
+				<Option output="bin/ivyslave" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="-pthread" />
+					<Add directory="parser/lexyacc" />
+					<Add directory="parser/include" />
+				</Compiler>
+			</Target>
+			<Target title="clear_hung_ivy_threads">
+				<Option output="bin/clear_hung_ivy_threads" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Linker>
+					<Add library="../printableAndHex/lib/libprintableAndHex.a" />
+				</Linker>
+			</Target>
+			<Target title="testRegex">
+				<Option output="bin/testRegex" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+			</Target>
+			<Target title="test_subinterval">
+				<Option output="bin/test_subinterval" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+			</Target>
+			<Target title="testwrap">
+				<Option output="testwrap" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=c++11" />
+			<Add option="-g" />
+			<Add option="-pthread" />
+			<Add directory="src" />
+			<Add directory="include" />
+		</Compiler>
+		<Linker>
+			<Add option="-pthread -lrt -static-libstdc++ -static-libgcc" />
+			<Add library="../ivytime/lib/libivytime.a" />
+		</Linker>
+		<Unit filename="include/Accumulators_by_io_type.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/AttributeNameCombo.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/DynamicFeedbackController.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/Eyeo.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/GatherData.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/HM800_tables.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/Iogenerator.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/IogeneratorInput.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/IogeneratorInputRollup.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/IogeneratorRandom.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/IogeneratorRandomIndependent.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/IogeneratorRandomSteady.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/IogeneratorSequential.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/IvyscriptLine.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/LDEVset.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/LUN.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/LUNpointerList.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/LeastSquaresLine.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/ListOfNameEqualsValueList.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/ListOfWorkloadIDs.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/MeasureDFC.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/NameEqualsValueList.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/ParameterValueLookupTable.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/RollupInstance.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/RollupSet.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/RollupType.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/RunningStat.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/Select.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/SelectClause.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/SequenceOfSubintervalRollup.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/Subinterval.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/SubintervalOutput.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/SubintervalRollup.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/Subinterval_CPU.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/Subsystem.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/Test_config_thumbnail.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/WorkloadID.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/WorkloadThread.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/WorkloadTracker.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/WorkloadTrackerPointerList.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/WorkloadTrackers.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/aio_abi.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/csvfile.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/discover_luns.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/iogenerator_stuff.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/ivybuilddate.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/ivydefines.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/ivyhelpers.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/ivylinuxcpubusy.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/ivytime.h" />
+		<Unit filename="include/master_stuff.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/pipe_driver_subthread.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/run_subinterval_sequence.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/subsystem_summary_data.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="parser/include/Arg.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/Block.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/Builtin.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/Frame.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/Ivy_pgm.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/OverloadSet.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/Stmt.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/Stmt_nested_Block.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/SymbolTableEntry.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/Type.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/Xpr.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/host_range.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/include/pd_pgm.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/lexyacc/ivy.l">
+			<Option compile="1" />
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/lexyacc/ivy.y">
+			<Option compile="1" />
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/Arg.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/Block.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/Builtin.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/Frame.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/Ivy_pgm.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/OverloadSet.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/Stmt.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/Stmt_nested_Block.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/SymbolTableEntry.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/Type.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/Xpr.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/host_range.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="parser/src/main.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/Accumulators_by_io_type.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/AttributeNameCombo.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/DynamicFeedbackController.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/Eyeo.cpp">
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/GatherData.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/HM800_tables.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/Iogenerator.cpp">
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/IogeneratorInput.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/IogeneratorInputRollup.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/IogeneratorRandom.cpp">
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/IogeneratorRandomIndependent.cpp">
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/IogeneratorRandomSteady.cpp">
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/IogeneratorSequential.cpp">
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/IvyscriptLine.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/LDEVset.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/LUN.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/LUNpointerList.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/ListOfNameEqualsValueList.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/ListOfWorkloadIDs.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/MeasureDFC.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/NameEqualsValueList.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/ParameterValueLookupTable.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RollupInstance.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RollupSet.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RollupType.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/Select.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/SelectClause.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/SubintervalOutput.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/SubintervalRollup.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/Subsystem.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/Test_config_thumbnail.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/WorkloadID.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/WorkloadThread.cpp">
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/WorkloadTracker.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/WorkloadTrackerPointerList.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/clear_hung_ivy_threads.cpp">
+			<Option target="clear_hung_ivy_threads" />
+		</Unit>
+		<Unit filename="src/csvfile.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/discover_luns.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/go_statement.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/hosts_statement.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/ivyhelpers.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+			<Option target="clear_hung_ivy_threads" />
+			<Option target="testwrap" />
+			<Option target="testRegex" />
+		</Unit>
+		<Unit filename="src/ivylinuxcpubusy.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/ivyslave.cpp">
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/ivytime.cpp" />
+		<Unit filename="src/master_stuff.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/pipe_driver_subthread.cpp">
+			<Option target="ivymaster" />
+			<Option target="test_subinterval" />
+		</Unit>
+		<Unit filename="src/rollup_Hitachi_RAID_data.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/run_subinterval_sequence.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/subsystem_summary_data.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/testRegex.cpp">
+			<Option target="testRegex" />
+		</Unit>
+		<Unit filename="src/test_subinterval.cpp">
+			<Option target="test_subinterval" />
+		</Unit>
+		<Unit filename="src/testwrap.cpp">
+			<Option target="testwrap" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<debugger />
+			<envvars />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

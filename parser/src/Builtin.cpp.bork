@@ -1,0 +1,445 @@
+#include <iostream>
+#include <cmath>
+
+#include "Builtin.h"
+#include "OverloadSet.h"
+#include "Ivy_pgm.h"
+#include "csvfile.h"
+
+BuiltinTable builtin_table;
+
+std::unordered_map<std::string, csvfile> csvfiles;
+std::unordered_map<std::string, csvfile>::iterator current_csvfile_it {csvfiles.end()};
+
+std::ostream& operator<<(std::ostream&os, const Builtin& b)
+{
+	if (b.volatile_function) os << "volatile ";
+
+	// os << b.display_name;
+
+	os << b.return_type.print() << " (*)(";
+	if (type_void!=(enum basic_types)b.arg1_type)
+	{
+		os << b.arg1_type.print();
+		if (type_void!=(enum basic_types)b.arg2_type)
+			os << ',' << b.arg2_type.print();
+	}
+	os << ')';
+
+	return os;
+}
+
+std::ostream& operator<<(std::ostream&os, const BuiltinTable& bt)
+{
+	os << "BuiltinTable size is " << bt.size() << std::endl;
+	for (auto& pear : bt)
+	{
+        os << "\"" << pear.first << "\" -> " << pear.second << std::endl;
+	}
+	return os;
+}
+
+
+// First we use macros to generate a library of "ivy builtin" wrapper functions.
+
+    // When reading these macro definitions, a reminder that macro definitions accept two special operators (# and ##) in the replacement sequence:
+
+    // The operator #, followed by a parameter name, is replaced by a string literal that contains the
+    // argument passed (as if enclosed between double quotes):
+
+    //#define str(x) #x
+    //cout << str(test);
+
+    //This would be translated into:
+
+    //cout << "test";
+
+    // The operator ## concatenates two arguments leaving no blank spaces between them.
+
+    // Oh, and the compiler concatenates consecutive double-quoted string literals into one big literal.
+
+// Each wrapper function has an encoded name that we will refer to in the next step when
+// we populate the builtin_table.
+
+std::string string_shell_command_of_string(std::string cmd) {  // DOES NOT CHECK IF COMMAND TO BE EXECUTED IS SAFE
+	// this function was scraped and pasted from an internet forum
+
+    std::string data;
+    FILE * stream;
+    const int max_buffer = 4096;
+    char buffer[max_buffer];
+    //cmd.append(" 2>&1");
+
+    stream = popen(cmd.c_str(), "r");
+    if (stream) {
+    	while (!feof(stream))
+    	if (fgets(buffer, max_buffer, stream) != NULL)
+		data.append(buffer);
+    	pclose(stream);
+    }
+    return data;
+}
+
+int int_set_csvfile_of_string(std::string filename)
+{
+    csvfile& cf = csvfiles[filename];
+    cf.load(filename);
+
+    current_csvfile_it = csvfiles.find(filename);
+
+    return (cf.rows() >= 0 );
+}
+
+int int_drop_csvfile_of_string(std::string filename)
+{
+    auto f_it = csvfiles.find(filename);
+
+    if (f_it == csvfiles.end()) return 0;
+
+    if (f_it == current_csvfile_it) current_csvfile_it = csvfiles.end();
+
+    csvfiles.erase(f_it);
+
+    return 1;
+}
+
+int csvfile_rows()  // not called int_csvfile_rows() because we are using the "nullarybuiltin" macro to link
+{
+    if (current_csvfile_it == csvfiles.end()) return -1;
+
+    return current_csvfile_it->second.rows();
+}
+
+int int_csvfile_columns_in_row_of_int(int row)
+{
+    if (current_csvfile_it == csvfiles.end()) return -1;
+
+    return current_csvfile_it->second.columns_in_row(row);
+}
+
+int csvfile_header_columns()
+{
+    if (current_csvfile_it == csvfiles.end()) return -1;
+
+    return current_csvfile_it->second.header_columns();
+}
+
+std::string string_csvfile_column_header_of_int(int col)
+{
+    if (current_csvfile_it == csvfiles.end()) return "";
+
+    return current_csvfile_it->second.raw_cell_value(-1,col);
+}
+
+std::string string_csvfile_cell_value_of_int_int(int row /* from -1 */, int col /* from 0 */)
+{
+    if (current_csvfile_it == csvfiles.end()) return "";
+
+    return current_csvfile_it->second.cell_value(row, col);
+
+}
+
+std::string string_csvfile_raw_cell_value_of_int_int(int row /* from -1 */, int col /* from 0 */)
+{
+    if (current_csvfile_it == csvfiles.end()) return "";
+
+    return current_csvfile_it->second.raw_cell_value(row, col);
+
+}
+
+std::string string_csvfile_cell_value_of_int_string(int row /* from -1 */, std::string col_header)
+{
+    if (current_csvfile_it == csvfiles.end()) return "";
+
+    return current_csvfile_it->second.cell_value(row, col_header);
+
+}
+
+std::string string_csvfile_raw_cell_value_of_int_string(int row /* from -1 */, std::string col_header)
+{
+    if (current_csvfile_it == csvfiles.end()) return "";
+
+    return current_csvfile_it->second.raw_cell_value(row, col_header);
+
+}
+
+std::string string_csvfile_row_of_int(int row)
+{
+    if (current_csvfile_it == csvfiles.end()) return "";
+
+    return current_csvfile_it->second.row(row);
+}
+
+std::string string_csvfile_column_of_int(int col)
+{
+    if (current_csvfile_it == csvfiles.end()) return "";
+
+    return current_csvfile_it->second.column(col);
+}
+
+std::string string_csvfile_column_of_string(std::string column_header)
+{
+    if (current_csvfile_it == csvfiles.end()) return "";
+
+    return current_csvfile_it->second.column(column_header);
+}
+
+
+typedef std::string string;
+
+#define prefixop(name,op,ret_type,arg1_type) \
+ ret_type ret_type ## _prefix_ ## name ## _of_ ## arg1_type \
+ ( const arg1_type arg1 ) \
+ { return op ( arg1 )  ; }
+
+prefixop(minus,-,int,int)
+prefixop(minus,-,double,double)
+
+
+#define binopfunc(name,op,ret_type,arg1_type,arg2_type) \
+ ret_type ret_type ## _ ## name ## _of_ ## arg1_type ## _ ## arg2_type \
+ ( const arg1_type arg1 , const arg2_type arg2 ) \
+ { return ( arg1 ) op ( arg2 ) ; }
+
+#define math_op(name,op) \
+ binopfunc(name,op,int,int,int) \
+ binopfunc(name,op,double,double,double) \
+ binopfunc(name,op,double,int,double) \
+ binopfunc(name,op,double,double,int)
+
+#define comparison_op(name,op) \
+ binopfunc(name,op,int,int,int) \
+ binopfunc(name,op,int,double,int) \
+ binopfunc(name,op,int,int,double) \
+ binopfunc(name,op,int,double,double) \
+ binopfunc(name,op,int,string,string)
+
+math_op(plus,+)
+
+math_op(minus,-)
+
+math_op(multiply,*)
+
+math_op(divide,/) // ***** hey no check for divide by zero!
+
+binopfunc(remainder,%,int,int,int)
+
+comparison_op(eq,==)
+
+comparison_op(ne,!=)
+
+comparison_op(lt,<)
+
+comparison_op(le,<=)
+
+comparison_op(gt,>)
+
+comparison_op(ge,>=)
+
+binopfunc(plus,+,string,string,string)
+
+binopfunc(bitwise_or,|,int,int,int)
+
+binopfunc(bitwise_and,&,int,int,int)
+
+binopfunc(bitwise_xor,^,int,int,int)
+
+binopfunc(logical_or,||,int,int,int)
+
+binopfunc(logical_and,&&,int,int,int)
+
+double pi() { return acos(-1.0); }
+double e()  { return exp ( 1.0); }
+
+int            int_print_of_int(int i)                  { std::cout << i; return i;}
+double      double_print_of_double(double d)            { std::cout << d; return d;}
+std::string string_print_of_string(const std::string s) { std::cout << s; return s;}
+
+int snapshot()
+{
+    if (p_Ivy_pgm == nullptr) throw std::runtime_error("Builtin snapshot() function - pointer to Ivy_pgm is nullptr.");
+    p_Ivy_pgm -> snapshot(trace_ostream);
+    return 0;
+}
+
+int int_trace_evaluate_of_int(int i)
+{
+    trace_evaluate = (i ? true : false);
+    return i;
+}
+
+extern std::string outputFolderRoot();
+extern std::string masterlogfile();
+extern std::string testName();
+extern std::string testFolder();
+extern std::string stepNNNN();
+extern std::string stepName();
+extern std::string stepFolder();
+
+
+void init_builtin_table()
+{
+    // Here is where we
+
+    // 1) put pointers to the wrapper functions defined immediately above
+    //    into the builtin_table, under a key like "sin(d)".  The builtin_table
+    //    contains Builtin objects, and these actually contain the pointer to
+    //    the wrapper function.
+
+    // 2) In the builtin overloads table, we put <"sin(double)","double sin(double)"> in
+    //    the OverloadSet filed under "sin" in the OverloadTable, and likewise for all the builtin functions.
+
+    #define nullarybuiltin(name,ret_type) \
+        builtin_table[ #name "()" ] = Builtin( #name "()", (void (*)()) name, type_ ## ret_type, type_void, type_void ); \
+        builtin_overloads[ #name ][#name "()"] = #ret_type " " #name "()" ;
+
+    #define unarybuiltin(name,ret_type,arg1_type) \
+        builtin_table[ mangle_name1arg( #name, type_ ## arg1_type)] = Builtin( mangle_name1arg( #name, type_ ## arg1_type),(void (*)()) name, type_ ## ret_type, type_ ## arg1_type, type_void ); \
+        builtin_overloads[ #name ][#name "(" #arg1_type ", "  #arg1_type ")" ] = #ret_type " " #name "(" #arg1_type ", "  #arg1_type ")" ;
+
+    #define binarybuiltin(name,ret_type,arg1_type,arg2_type) \
+        builtin_table[ mangle_name2args( #name, type_ ## arg1_type, type_ ## arg2_type) ] = Builtin( mangle_name2args( #name, type_ ## arg1_type, type_ ## arg2_type), (void (*)()) name, type_ ## ret_type, type_ ## arg1_type, type_ ## arg2_type ); \
+        builtin_overloads[ #name ][#name "(" #arg1_type ", "  #arg1_type ", "  #arg2_type ")"] = #ret_type " " #name "(" #arg1_type ", "  #arg1_type ", "  #arg2_type ")" ;
+
+    nullarybuiltin(outputFolderRoot,string)
+    nullarybuiltin(masterlogfile,string)
+    nullarybuiltin(testName,string)
+    nullarybuiltin(testFolder,string)
+    nullarybuiltin(stepNNNN,string)
+    nullarybuiltin(stepName,string)
+    nullarybuiltin(stepFolder,string)
+
+    nullarybuiltin(snapshot,int)
+
+    nullarybuiltin(pi,double)
+
+    nullarybuiltin(e,double)
+
+    unarybuiltin(sin,double,double)
+
+    unarybuiltin(cos,double,double)
+
+    unarybuiltin(tan,double,double)
+
+    unarybuiltin(sinh,double,double)
+
+    unarybuiltin(cosh,double,double)
+
+    unarybuiltin(tanh,double,double)
+
+    unarybuiltin(asin,double,double)
+
+    unarybuiltin(acos,double,double)
+
+    unarybuiltin(atan,double,double)
+
+    binarybuiltin(atan2,double,double,double)
+
+    unarybuiltin(log,double,double)
+
+    unarybuiltin(exp,double,double)
+
+    unarybuiltin(log10,double,double)
+
+    unarybuiltin(abs,int,int)
+
+    unarybuiltin(exp,double,double)
+
+    binarybuiltin(pow,double,double,double)
+
+    unarybuiltin(sqrt,double,double)
+
+
+    #define prefixopfunction(name,op,ret_type,arg1_type) \
+        builtin_table[ mangle_name1arg("prefix_" #op,type_ ## arg1_type) ] = \
+            Builtin( \
+                mangle_name1arg("prefix_" #op,type_ ## arg1_type), \
+                (void (*)()) \
+                (&ret_type ## _prefix_ ## name ## _of_ ## arg1_type ), \
+                type_ ## ret_type, type_ ## arg1_type, type_void \
+            ); \
+        builtin_overloads[ #op ]["<prefix>\'" #op "\'(" #arg1_type ")" ] =  #ret_type " <prefix>\'" #op "\'(" #arg1_type ")" ;
+
+    #define unaryfunction(name,op,ret_type,arg1_type) \
+        builtin_table[mangle_name1arg(#op,type_ ## arg1_type)] = \
+            Builtin( \
+                mangle_name1arg(#op,type_ ## arg1_type), \
+                (void (*)()) \
+                (&ret_type ## _ ## name ## _of_ ## arg1_type ), \
+                type_ ## ret_type, type_ ## arg1_type, type_void \
+            ); \
+        builtin_overloads[ #op ][ #op "(" #arg1_type ")" ] =  #ret_type " " #op "(" #arg1_type ")" ;
+
+    #define binaryfunction(name,op,ret_type,arg1_type,arg2_type) \
+        builtin_table[ mangle_name2args(#op,type_ ## arg1_type,type_ ## arg2_type) ] = \
+            Builtin( \
+                mangle_name2args(#op,type_ ## arg1_type,type_ ## arg2_type), \
+                (void (*)()) \
+                (&ret_type ## _ ## name ## _of_ ## arg1_type ## _ ## arg2_type), \
+                type_ ## ret_type, type_ ## arg1_type, type_ ## arg2_type \
+            ); \
+        builtin_overloads[ #op ][ "\'" #op "\' (" #arg1_type "," #arg2_type ")" ] = #ret_type " \'" #op "\' (" #arg1_type "," #arg2_type ")" ;
+
+    #define trinaryfunction(name,op,ret_type,arg1_type,arg2_type,arg3_type) \
+        builtin_table[ mangle_name3args(#op,type_ ## arg1_type,type_ ## arg2_type,type_ ## arg3_type) ] = \
+            Builtin( \
+                mangle_name3args(#op,type_ ## arg1_type,type_ ## arg2_type,type_ ## arg3_type), \
+                (void (*)()) \
+                (&ret_type ## _ ## name ## _of_ ## arg1_type ## _ ## arg2_type ## _ ## arg3_type), \
+                type_ ## ret_type, type_ ## arg1_type, type_ ## arg2_type, type_ ## arg3_type \
+            ); \
+        builtin_overloads[ #op ][ "\'" #op "\' (" #arg1_type "," #arg2_type "," #arg2_type ")" ] = #ret_type " \'" #op "\' (" #arg1_type "," #arg2_type "," #arg2_type ")" ;
+
+    unaryfunction(trace_evaluate,trace_evaluate,int,int)
+
+    unaryfunction(shell_command,shell_command,string,string)
+
+    unaryfunction(print,print,int,int)
+    unaryfunction(print,print,double,double)
+    unaryfunction(print,print,string,string)
+
+    unaryfunction(set_csvfile,set_csvfile,int,string)
+    unaryfunction(drop_csvfile,drop_csvfile,int,string)
+
+    nullarybuiltin(csvfile_rows,int)
+    unaryfunction(csvfile_columns_in_row,csvfile_columns_in_row,int,int)
+    nullarybuiltin(csvfile_header_columns,int)
+    unaryfunction(csvfile_column_header,csvfile_column_header,string,int)
+
+    binaryfunction(csvfile_cell_value,csvfile_cell_value,string,int,int)
+    binaryfunction(csvfile_raw_cell_value, csvfile_raw_cell_value,string,int,int)
+    binaryfunction(csvfile_cell_value,     csvfile_cell_value,    string,int,string)
+    binaryfunction(csvfile_raw_cell_value, csvfile_raw_cell_value,string,int,string)
+    unaryfunction(csvfile_row,             csvfile_row,           string,int)
+    unaryfunction(csvfile_column,          csvfile_column,        string,int)
+    unaryfunction(csvfile_column,          csvfile_column,        string,string)
+
+    prefixopfunction(minus,-,int,int)
+    prefixopfunction(minus,-,double,double)
+
+    math_op(plus,+)
+    math_op(minus,-)
+    math_op(multiply,*)
+    math_op(divide,/)
+    binaryfunction(remainder,%,int,int,int)
+    comparison_op(eq,==)
+    comparison_op(ne,!=)
+    comparison_op(lt,<)
+    comparison_op(le,<=)
+    comparison_op(gt,>)
+    comparison_op(ge,>=)
+
+    binaryfunction(plus,+,string,string,string)
+
+    binaryfunction(bitwise_or,|,int,int,int)
+    binaryfunction(bitwise_and,&,int,int,int)
+    binaryfunction(bitwise_xor,^,int,int,int)
+    binaryfunction(logical_or,||,int,int,int)
+    binaryfunction(logical_and,&&,int,int,int)
+
+    #if defined(_DEBUG)
+        // trace << builtin_table; trace.flush();
+    #endif
+
+}
+

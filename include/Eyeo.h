@@ -1,0 +1,76 @@
+//
+// Author Allart Ian Vogelesang, Hitachi Data Systems
+// Copyright Hitachi Data Systems 2015
+//
+#pragma once
+
+
+// "As for allocating memory with an alignment greater than alignof(std::max_align_t), C++11 provides no direct way to do this.
+// The only reliable way is to allocate at least size + alignment bytes and use std::align to get a correctly aligned location in this buffer.
+
+// This can waste a lot of memory, so if you need a lot of these, you could create an allocator that allocates a chunk large enough
+// for all of them and usestd::align on that. Your overhead is then amortized across all of the allocations."
+
+// Ian: I was having problems with aligned memory allocation and freeing.  Crazy thing is that it worked sometimes
+// and then when it fails there was no error return - the thread just exits.  Didn't try try/catch.
+
+// Then reading up as quoted above it seems others have been down this path, and so I'm redesigning Eyeos
+// so that the input/output buffer memory for all of them is going to be allocated in one piece,
+// rounding up blocksize to a page (4096) boundary, and adding 4095 so that std::align can give us the
+// aligned start of an array of I/O buffers.
+
+#include "ivytime.h"
+#include "ivydefines.h"
+
+class WorkloadThread;
+
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//  Warning - resetForNextIO() only saves certain fields in the Eyeo object
+//            before resetting the entire Eyeo object to all binary zeros
+//            and then restores the specific saved values.
+//
+//  The original idea was to clear everything including the aio struct iocb to
+//  make sure residual things left behind by the aio mechanism couldn't affect
+//  subsequent I/Os, but then I got bit by a bug where I had forgotten to save the WorkloadThread pointer around resets ...
+//
+//  That way if you are having a weird problem, this might be why.
+//
+//
+// To do - rewrite resetForNextIO() to remove memset to zero and initialize each field appropriately
+//
+//////////////////////////////////////////////////////////////////////////////////////
+
+
+struct Eyeo {
+public:
+
+	struct iocb eyeocb;
+		// On my development machine, struct iocb is in linux/aio_abi.h, and I put a symbolic link "aio_abi.h" in the ivy src
+		// folder pointing to /usr/include/linux/aio_abi.h to make easy to reference when coding.
+		// Browsing the web indicates there's other locations and forms of aio header file on different systems.  Hope the code is portable, resigned if not.
+	ivytime scheduled_time;  // if we have iorate=max, this is indicated by setting scheduled_time=ivytime(0)
+	ivytime start_time;
+	ivytime end_time;
+	int return_value;
+	int errno_value;
+	int buf_size=0;
+	int tag;
+	WorkloadThread* pWorkloadThread;
+
+	Eyeo(int tag, WorkloadThread*);
+	~Eyeo(){} // We don't own the pointer to the memory that is kept in struct iocb.aio_buf
+
+//	bool resize_buf(int newsize);
+
+	std::string toString();
+	void resetForNextIO();
+	ivy_float service_time_seconds();
+	ivy_float response_time_seconds();
+
+	void randomize_buffer();
+
+	std::string buffer_first_last_16_hex();
+
+};
+

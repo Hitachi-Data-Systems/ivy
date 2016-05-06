@@ -1,0 +1,109 @@
+//
+// Author Allart Ian Vogelesang, Hitachi Data Systems
+// Copyright Hitachi Data Systems 2015
+//
+#pragma once
+
+//using ivy_int = long long int; using ivy_float = long double;
+  using ivy_int =      long int; using ivy_float =      double;
+
+
+#define SHOWLUNS_CMD "showluns.sh"
+#define IVYSLAVE_EXECUTABLE "ivyslave"
+#define IVY_CMDDEV_EXECUTABLE "ivy_cmddev"
+#define default_outputFolderRoot "/scripts/ivy/ivyoutput"
+#define SLAVEUSERID "root"
+#define MINBUFSIZE 4096
+#define MAX_MAXTAGS 8192
+#define BUF_ALIGNMENT_BOUNDARY_SIZE 4096
+#define MAX_IOS_LAUNCH_AT_ONCE 8
+#define MAX_IOEVENTS_REAP_AT_ONCE 16
+#define MAXWAITFORINITALPROMPT 10
+//#define IVYOUTPUTFOLDERROOT "/scripts/ivyoutput"
+#define IVYSLAVELOGFOLDER "/scripts/ivy/ivyoutput/ivyslave_logs"
+//#define IVYSLAVELOGFOLDER "/home/ivogelesang/ivy/output/ivyslave_logs"
+// This folder must already exist when ivyslave fires up.
+// Then any log files called "ivyslave.hostname.log.*" are deleted if they already exists in this folder.
+// The hostname here is what ivymaster told us our hostname was.
+// This lets us create two ivyslave instances like "192.168.1.1" and "barney" whose log files won't step on each other.
+// After the ivyslave main thread logs to ivyslave.hostname.log.txt, and the subthreads log to ivyslave.hostname.log.threadID_with_underscores.txt.
+// When the test is complete, ivymaster uses an scp command to copy the log files back to the ivymaster host along with everything else.
+
+//      IVYMAXMSGSIZE size of send/receive buffers between master and slave
+#define IVYMAXMSGSIZE (32*1024)
+
+#define MAXWAITFORIVYCMDDEV 5
+
+#define get_config_timeout_seconds (30)
+
+// The idea below where defaults for [Go] parameters are all given as character strings
+// was that this would also test parser / validation logic and would arrive at same value as if specified by the user.
+
+#define wp_empty (0.015) /* below 1.5% WP is considered empty */
+
+#define OK_LEAF_NAME_REGEX (R"([a-zA-Z0-9_@#$%()-_=+{}\[\];:<>.,~]+)")
+#define path_separator (std::string("/"))
+
+#define sector_size_bytes (512)
+
+#define catnapTimeSeconds (0.25)
+    // The amount of time after the end of the subinterval that the ivyslave main thread waits
+    // before looking to see if the workload threads posted their subintervals complete.
+
+// go statement universal parameters
+#define subinterval_seconds_default std::string("5")
+#define warmup_seconds_default     std::string("5")
+#define measure_seconds_default    std::string("60")
+#define cooldown_by_wp_default     std::string("on")
+
+// dfc = pid parameters
+#define p_default               std::string("1.0")
+#define i_default               std::string("1.0")
+#define d_default               std::string("0.0")
+#define target_value_default    std::string("50%")
+#define starting_total_IOPS_default std::string("10")
+#define min_IOPS_default            std::string("10")
+
+// measure = on parameters
+#define accuracy_plus_minus_default std::string("5%")
+#define confidence_default          std::string("95%")
+#define min_wp_default              std::string("0%")
+#define max_wp_default              std::string("100%")
+#define max_wp_change_default        std::string("5%")
+#define timeout_seconds_default     std::string("900")
+
+// dfc=pid or measure=on
+#define focus_rollup_default  std::string("all")
+#define source_default        std::string("workload")
+
+// source = workload parameters
+#define category_default          std::string("overall")
+#define accumulator_type_default  std::string("service_time")
+#define accessor_default          std::string("avg")
+
+// source = RAID_subsystem
+#define subsystem_element_default std::string("")
+#define element_metric_default    std::string("")
+
+// pid_min_iops is the min IOPS setting so that there will always be some I/Os so that you always get an overall service time.
+
+const ivy_float min_subinterval_seconds {3.0};
+const ivy_float max_subinterval_seconds {60.0};
+
+const int blocksize_bytes_default {4096};
+const int maxTags_default{1};   // make sure someone is going to notice if they haven't set this.
+const ivy_float IOPS_default {1};  // Default is 1.0 I/Os per second
+const ivy_float fractionRead_default{1.0};
+const ivy_float	volCoverageFractionStart_default {0.0};  // default is start at sector 1.  Sector 0 is considered "out of bounds".
+const ivy_float	volCoverageFractionEnd_default {1.0};    // default is 1.0 maps to the last aligned block of that blocksize that fits.
+const ivy_float	seqStartFractionOfCoverage_default{0.0}; // This defines where a sequential thread will start mapped from 0.0
+                                                         // at the volCoverageFractionStart point up to 1.0 at the volCoverageFractionEnd point.
+#define max_move_WP_error (.01)
+
+#define io_time_buckets 56
+// This is the number of buckets defined in Accumulators_by_io_type.cpp
+
+#define gather_lead_time_safety_margin (0.5)
+// A safety margin of 0.5 means add 50% onto the average time it has taken to perform a gather so far, and start each gather at that padded lead time before the end of the subinterval.
+
+extern std::string indent_increment;

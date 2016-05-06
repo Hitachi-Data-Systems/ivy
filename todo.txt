@@ -1,0 +1,178 @@
+- validate with "top" to see if linux CPU is being reported correctly
+
+- new metric that you can select, "pid_haircut_service time" 
+- new parameter pid_haircut="5%" where those entire histogram buckets that fit within the lowest 5%
+  of the service time 
+
+
+- separate out measure_focus_rollup and pid_focus_rollup and associated parameters
+
+
+- add feature to pid loop to filter out "anomalous" I/Os for the purposes of pid loop lock / control.
+       - have a separate csv line / csv file way of reporting classification as "anomalous" or "normal".
+       - workload thread itself would classify the I/O service time as normal or anomalous.
+
+- add "max_above_or_below" - during a measurement the maximum consecutive subintervals 
+  that the focus metric value can remain below or remain above the target_value. to the documentation.
+  
+- add to_string_with_decimal_places() to documentation.
+
+- in Excel ivy csv file loader spreadsheet - make column titles frozen when you scroll down in long csv files.
+
+- take a look at the csv code and see if it would now be easy to add a third parameter of the file name, and to hide "set csvfile", but keep "drop csvfile".
+
+
+- fix so it shows the script file location 
+<Error> [CreateWorkload] - [select] clause did not select any LUNs to create the workload on.
+
+- go through all inter-thread interlocks and ensure that they have a timeout and where possible a recovery mechanism from hiccups, or 
+at least make sure the ivy main executable terminates if it's hung, and taking out the subthreads as gracefully as possible. 
+
+- fix [hosts] so that a dotted quad in double quotes is OK.- might have been fixed already - check
+
+- Fix DF port numbers to be 0A, 1A, not 1A 2A.
+
+-  for pid, look at if it would help to mark any subinterval where IOPS was at min_IOPS
+   as invalid, like if WP were out of range for measure=on.
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+// Need to look at redesigning the definition of "service time".
+// Now we make the "I/O start" timestamp before starting the I/O.  The issue is that
+// if the device driver doesn't have an available tag, the call blocks.
+// So I think maybe we should instead define the I/O start time as the
+// time when the start I/O call FINISHES.
+///////////////////////////////////////////////////////////////////////////////////////
+
+
+// Actually, maybe just add the "I/O accepted" time stamp separately,
+// so we can measure how often / how long AIO interface blocks.
+
+        // A note here to take a look at adding an option of instead of using the target IOPS from
+        // last time as "IOPS last time", use instead the measured IOPS from the last subinterval.
+
+        // The question was would this help PID loop stability or are we doomed anyway
+        // because the I/O sequencer would keep getting further and further ahead.
+
+        // Maybe we could add a filter onto the PID loop mechanism where it maintains a
+        // second total_IOPS calculation which would be triggered when the I/O sequencer
+        // gets, say, one second in the future, which would drift us back into "reasonable host latency".
+
+        // We define the "host latency" of an I/O as the amount of time from the scheduled time
+        // until when the I/O has been accepted by the AIO interface.
+        
+            // On the to-do list:
+                // Change the definition of "service time" to be from when the I/O has been accepted
+                // by the AIO interface, not the time from just before you tried to launch the I/O,
+                // because right now we are recording time the AIO call to start an I/O blocks
+                // because the device driver doesn't have enough free tags, we record this time as
+                // service time even though the I/O hasn't been launched yet.)
+
+        // Maybe we could use a mechanism to over-ride the [EditRollup] mechanism
+        // and if host latency is getting too long, we adjust total_IOPS to make host latency
+        // drift towards the "OK" zone.
+
+// Another idea is to design the feature into the I/O sequencer itself, as
+// for example, if a bursty workload is being generated, you may want to
+// generate fewer bursts, rather than changing what a burst looks like.
+
+
+
+
+
+
+
+- squeeze all underscores out of parameter names in a parameter value lookup table, so maxTags and max_tags are equivalent.
+
+- have executing a statement set the current source file line number, so that error messages could print it;
+
+- look at making "collapse" which would move all files up out of subfolders and delete the subfolders.
+- or ivyscript option to not use subfolders ...
+
+- fix bug where edit rollup total_IOPS = "45.3" fails when total_IOPS=45.3 works.
+
+- check string s; for s= {"a", "b"} to see if for loop variable s doesn't get initialized properly.
+
+
+- run ivymaster as a GUI application, and show some sort of visual representation subinterval by subinteral.
+  Maybe you could offer a tree on the left that shows rollups that you pick from.
+  You could pick things you wanted to monitor, and arrange them on the display area.
+
+- automated queue depth vs. response time charts for IOPS = max
+
+- Offer data visualization - look at grafana.org.
+
+- examine whether to remove the timestamps from the metric_value object and
+  perhaps have ivy_cmddev provide data with individual I/O timestamps instead ...
+
+- put copyright statement in all source files
+
+- make ivy run other than as root.  
+	- Add "passwordless ssh authentication" or public/private key pair ssh authentication for ivogelesa as opposed to root.
+	- Make inquireabout run suid as root.
+	
+ 
+- go through and everywhere we have an interlock between threads or a pipe_driver conversation, 1) instrument timing & log, 
+2) where appropriate, allow a certain threshold, analogous to the BER on a disk drive that says you can have, for example,
+workload threads have to pause to wait for "continue", or "stop" for up to one second once in every 1000 subintervals
+when observed at ivymaster statistically aggregating across workload threads / LUNs / hosts,
+3) Force a failure for every interlock / conversation and either look at doing a retry
+(why does it sometimes hang only the first time you run it, and if you try a second time,
+Linux is somehow primed and it works perfectly the second time?), again either look at doing
+a retry, or else make sure we don't hang and that we shutdown gracefully with an error message.
+
+Maybe the workload thread could post "I had to wait" and post the wait time in seconds.
+Then when ivyslave reports the results of a subinterval, it reports the wait flag / wait time
+(or timeout and die status of gracefully terminated workload thread with harvested pid)
+
+- test [EditRollup] with IOPS increments  / multipliers
+
+- build [DeleteWorkload]
+when we implement the [DeleteWorkload] statement, turn on m_s.need_to_rebuild_rollups.
+
+- build [DeleteRollup]
+
+
+- catch a "kill" signal and shut down subtasks gently
+
+(James) - run LSPCI and store server details to track I/O generation capability of different kinds of server components.
+
+
+Think about making an Excel tool to import an ivy output folder structure.
+and make catscan graphs with cutoff lines showing measurement start / end.
+
+
+- convert all the functions returning bool but with error message and output variable reference to use try / catch instead.
+
+
+
+
+Consider how an ivy test run could be filed in a database, so that these tests could be located in a kind of coordinate space when you want to calibrate a model.
+	-ideally you would want to know about the hardware and software versions, the configuration, etc.
+
+We are going to need a command device for dynamic feedback control anyway, so let's make one configuration collection there, but also let's collect the SVP config report, as not all info appears in each view.  Think about how to provide the SVP IP/userid/password for the config report gather.  Use a script.
+
+Recommend collecting config report - set userid into the script - every time ivy runs.
+
+Think about what more we could do with the config information ...
+
+
+A Create/Delete workload or a Create/Delete rollup triggers a rebuild of the "what's behind the rollup instance" set of workloadIDs.
+
+- count workload threads at Go! and don't "Go!" unless there is at least one thread to run.
+
+
+
+
+New iogenerator / DynamicFeedbackController that runs some random offset patterns to discover the underlying characteristics of the subsystem.
+- Find cache size automatically. Contrast with physically installed storage capacity from config data.
+- Find cache segment size, slot size, and size of LRU queue in slots.
+- Find size of WP by blocksize to find segment size, slot size, size of WP slot queue
+- Measure seek time by seek LBA distance at sampled points across the LUN - plot zone table accordingly.
+- Measure sustained sequential throughput across the drive to plot zone table.
+- Measure drive cache buffer size
+- Measure port IOPS / MB/s throughput capability as a function of blocksize.
+- Show IOPS by host HBA or PCI bus.
+- For SSDs, come up with some way to characterise how their responsiveness varies according to recent history.
+
+

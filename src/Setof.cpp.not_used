@@ -1,0 +1,21 @@
+
+// DECIDED NOT TO USE std::set, as we only need to track a list.  We don't need "lookup" functionality.
+
+//setof.cpp
+
+#include<iostream>
+#include<sstream>
+#include<iomanip>
+
+#include "setof.h"
+
+std::string Setof_pLUN::toString()
+{
+	std::ostringstream;
+	o << "Setof_pLUN contains " << pointer_set.size() << " pointers." << std::endl;
+	int i=0;
+	for (auto& pLUN : pointer_set)
+	{
+		o << "Setof_pLUN #" << i++ << " -> " pLUN->toString() << std::endl;
+	}
+}
