@@ -30,6 +30,7 @@
 #include "ivyhelpers.h"
 #include "master_stuff.h"
 #include "MeasureDFC.h"
+#include "ivybuilddate.h"
 
 std::string startup_log_file {"~/ivy_startup.txt"};
 
@@ -244,9 +245,13 @@ int main(int argc, char* argv[])
 
         m_s.masterlogfile = m_s.testFolder + std::string("/logs/log.ivymaster.txt");
 
-        if (routine_logging) log(m_s.masterlogfile,std::string("ivymaster fireup.\n"));
-        else                 log(m_s.masterlogfile,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
+        {
+            std::ostringstream o;
+            o << "ivymaster build date date " << IVYBUILDDATE << " - fireup." << std::endl;
+            log(m_s.masterlogfile,o.str());
+        }
 
+        if (!routine_logging) log(m_s.masterlogfile,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
 
         std::string copyivyscriptcmd = std::string("cp -p ") + m_s.ivyscriptFilename + std::string(" ") +
                                        m_s.testFolder + std::string("/") + m_s.testName + std::string(".ivyscript");

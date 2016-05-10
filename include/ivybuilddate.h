@@ -17,4 +17,4 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Data Systems.
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
-#define IVYBUILDDATE "Mon Jul 6 09:33:33 PDT 2015"
+#define IVYBUILDDATE __DATE__ " " __TIME__
