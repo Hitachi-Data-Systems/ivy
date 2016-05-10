@@ -60,16 +60,15 @@
 			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;" />
 		</VirtualTargets>
 		<Compiler>
-			<Add option="-Wall" />
 			<Add option="-std=c++11" />
+			<Add option="-Wall" />
 			<Add option="-g" />
 			<Add option="-pthread" />
 			<Add directory="src" />
 			<Add directory="include" />
 		</Compiler>
 		<Linker>
-			<Add option="-pthread -lrt -static-libstdc++ -static-libgcc" />
-			<Add library="../ivytime/lib/libivytime.a" />
+			<Add option="-pthread -lrt -static-libstdc++" />
 		</Linker>
 		<Unit filename="include/Accumulators_by_io_type.h">
 			<Option target="ivymaster" />
