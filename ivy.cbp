@@ -19,6 +19,9 @@
 					<Add directory="parser/include" />
 					<Add directory="parser/lexyacc" />
 				</Compiler>
+				<ExtraCommands>
+					<Add before="touch include/ivybuilddate.h" />
+				</ExtraCommands>
 			</Target>
 			<Target title="ivyslave">
 				<Option output="bin/ivyslave" prefix_auto="1" extension_auto="1" />
@@ -30,6 +33,9 @@
 					<Add directory="parser/lexyacc" />
 					<Add directory="parser/include" />
 				</Compiler>
+				<ExtraCommands>
+					<Add before="touch include/ivybuilddate.h" />
+				</ExtraCommands>
 			</Target>
 			<Target title="clear_hung_ivy_threads">
 				<Option output="bin/clear_hung_ivy_threads" prefix_auto="1" extension_auto="1" />
