@@ -28,6 +28,8 @@
 #include "host_range.h"
 #include "Stmt.h"
 
+extern bool routine_logging;
+
 void invokeThread(pipe_driver_subthread* T)
 {
     T->threadRun();
@@ -223,12 +225,20 @@ bool Stmt_hosts::execute()
     ahl_csv.close();
     m_s.allThreadsSentTheLUNsTheySee=true;
     /*debug*/
-    {
+    if (routine_logging){
         ostringstream o;
         o <<"allDiscoveredLUNs contains:"<<std::endl<< m_s.allDiscoveredLUNs.toString() <<std::endl;
         //std::cout<<o.str();
         log(m_s.masterlogfile,o.str());
     }
+    else
+    {
+        ostringstream o;
+        o <<"Discovered " << m_s.allDiscoveredLUNs.LUNpointers.size() << " LUNs on the test hosts." << std::endl;
+        //std::cout<<o.str();
+        log(m_s.masterlogfile,o.str());
+    }
+
     if (0 == m_s.allDiscoveredLUNs.LUNpointers.size())
     {
         std::ostringstream o;
@@ -687,10 +697,18 @@ bool Stmt_hosts::execute()
 
     }
 
+    if (routine_logging)
     {
         ostringstream o;
         o << "After adding subsystem config attributes, availableTestLUNs contains:" << std::endl << m_s.availableTestLUNs.toString() << std::endl;
         // std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+    }
+    else
+    {
+        ostringstream o;
+        o <<"availableTestLUNs contains " << m_s.availableTestLUNs.LUNpointers.size() << " LUNs." << std::endl;
+        //std::cout<<o.str();
         log(m_s.masterlogfile,o.str());
     }
 

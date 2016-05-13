@@ -1,3 +1,5 @@
+- remove requirement to put trailing-percent numbers in quotes.
+
 - validate with "top" to see if linux CPU is being reported correctly
 
 - new metric that you can select, "pid_haircut_service time" 
