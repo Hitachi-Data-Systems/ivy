@@ -1,3 +1,10 @@
+- make "." the default output folder root
+
+- compression / dedupe
+
+- test using LVM and impact LUN discovery / SCSI Inquiry
+- test with multipath software (HDLM / MPIO)
+
 - remove requirement to put trailing-percent numbers in quotes.
 
 - validate with "top" to see if linux CPU is being reported correctly
@@ -32,7 +39,7 @@ at least make sure the ivy main executable terminates if it's hung, and taking o
 
 - fix [hosts] so that a dotted quad in double quotes is OK.- might have been fixed already - check
 
-- Fix DF port numbers to be 0A, 1A, not 1A 2A.
+- Fix DF port numbers to be 0A, 1A, not 1A 2A. - update:  This is a bug in the subsystem - the ports reported by SCSI inquiry are 1A, 2A.
 
 -  for pid, look at if it would help to mark any subinterval where IOPS was at min_IOPS
    as invalid, like if WP were out of range for measure=on.
@@ -155,14 +162,6 @@ Consider how an ivy test run could be filed in a database, so that these tests c
 We are going to need a command device for dynamic feedback control anyway, so let's make one configuration collection there, but also let's collect the SVP config report, as not all info appears in each view.  Think about how to provide the SVP IP/userid/password for the config report gather.  Use a script.
 
 Recommend collecting config report - set userid into the script - every time ivy runs.
-
-Think about what more we could do with the config information ...
-
-
-A Create/Delete workload or a Create/Delete rollup triggers a rebuild of the "what's behind the rollup instance" set of workloadIDs.
-
-- count workload threads at Go! and don't "Go!" unless there is at least one thread to run.
-
 
 
 
