@@ -6,6 +6,7 @@
 
 * **Low CPU overhead** - Written in C++ using Linux native Asynchronous I/O interface to issue multiple I/Os in parallel from one workload thread.
 * **Vendor independent design** - LUN attributes decoded by external vendor specific SCSI Inquiry-based LUN discovery tool become selectable in ivy.
+  * The Hitachi LUN_discovery toolset is at https://github.com/Hitachi-Data-Systems/LUN_discovery
 * **Dynamic feedback control** - PID loop feature enables for example "find IOPS at 1 ms response time".
 * **Test in minimum time** - Will run a test as long as necessary to measure to specified plus/minus accuracy.
 * **Easy test setup** - Select by vendor LUN attribute such as subsystem logical device, port, parity group, pool ID, etc. instead of by Linux /dev/sdxxx name.
