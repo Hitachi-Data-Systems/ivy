@@ -26,7 +26,7 @@
 #define SHOWLUNS_CMD "showluns.sh"
 #define IVYSLAVE_EXECUTABLE "ivyslave"
 #define IVY_CMDDEV_EXECUTABLE "ivy_cmddev"
-#define default_outputFolderRoot "/scripts/ivy/ivyoutput"
+#define default_outputFolderRoot "."
 #define SLAVEUSERID "root"
 #define MINBUFSIZE 4096
 #define MAX_MAXTAGS 8192
@@ -34,10 +34,19 @@
 #define MAX_IOS_LAUNCH_AT_ONCE 8
 #define MAX_IOEVENTS_REAP_AT_ONCE 16
 #define MAXWAITFORINITALPROMPT 10
-//#define IVYOUTPUTFOLDERROOT "/scripts/ivyoutput"
-#define IVYSLAVELOGFOLDER "/scripts/ivy/ivyoutput/ivyslave_logs"
-//#define IVYSLAVELOGFOLDER "/home/ivogelesang/ivy/output/ivyslave_logs"
-// This folder must already exist when ivyslave fires up.
+
+// When ivyslave runs on a test host, it temporarily writes its log files to the following
+// folder location.  Then once ivyslave has exited, the ivy master thread copies the log files
+// to the master host logs subfolder for the run, and deletes the temporary log files on the ivyslave host.
+// But if something blows up and the ivyslave log files don't get moved to the master host,
+// this is where you will find them on the ivyslave host:
+
+#define IVYSLAVELOGFOLDERROOT "/var"
+// This root folder must already exist when ivyslave fires up.
+
+#define IVYSLAVELOGFOLDER "/ivyslave_logs"
+// This subfolder of the ivyslave log root folder will be created if it doesn't already exist
+
 // Then any log files called "ivyslave.hostname.log.*" are deleted if they already exists in this folder.
 // The hostname here is what ivymaster told us our hostname was.
 // This lets us create two ivyslave instances like "192.168.1.1" and "barney" whose log files won't step on each other.

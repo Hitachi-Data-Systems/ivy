@@ -24,6 +24,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
+#include <cstring>
 #include <errno.h>
 #include <fcntl.h>
 #include <fstream>
@@ -47,6 +48,7 @@
 #include <condition_variable>
 #include <unordered_map>
 #include <linux/aio_abi.h>
+#include <semaphore.h>
 
 
 using namespace std;
@@ -164,15 +166,75 @@ int main(int argc, char* argv[]) {
 
 	struct stat struct_stat;
 
-        if( stat(IVYSLAVELOGFOLDER,&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) ) {
-                //  folder doesn't already exist or it's not a directory
-		std::cout << "<Error> " << "ivyslave log folder \"" << IVYSLAVELOGFOLDER << "\" doesn\'t exist or is not a folder." << std::endl;
-		return -1;
+    if( stat(IVYSLAVELOGFOLDERROOT,&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
+    {
+        //  folder doesn't already exist or it's not a directory
+        std::cout << "<Error> " << "ivyslave log folder root \"" << IVYSLAVELOGFOLDERROOT << "\" doesn\'t exist or is not a folder." << std::endl;
+        return -1;
+    }
+
+    // In the next bit where we create the subfolder of IVYSLAVELOGFOLDERROOT, we use a semaphore
+    // because if you are testing with two aliases for the same test host, only one ivyslave main thread
+    // should be creating the subfolder.
+
+    sem_t* p_semaphore = sem_open("/ivyslave_log_subfolder_create", O_CREAT,S_IRWXG|S_IRWXO|S_IRWXU,0);
+
+    if (SEM_FAILED == p_semaphore)
+    {
+        std::ostringstream o;
+        o << "<Error> Failed trying to open semaphore to create ivyslave log subfolder.  errno = " << errno
+            << " - " << std::strerror(errno) << " at " << __FILE__  << " line " << __LINE__ << "." << std::endl;
+        std::cout << o.str();
+        return -1;
+    }
+    else
+    {
+//        if (0 != sem_wait(p_semaphore))
+//        {
+//            std::ostringstream o;
+//            o << "<Error> Failed trying to lock semaphore to create ivyslave log subfolder.  errno = " << errno
+//                << " - " << std::strerror(errno) << " at " << __FILE__  << " line " << __LINE__ << "." << std::endl;
+//            std::cout << o.str();
+//            return -1;
+//        }
+
+        if( stat(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER ,&struct_stat) )
+        {
+            //  folder doesn't already exist
+            int rc;
+            if ((rc = mkdir(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER, S_IRWXU | S_IRWXG | S_IRWXO)))
+            {
+                std::ostringstream o;
+                o << "<Error> Failed trying to create ivyslave log folder \"" << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "\" - "
+                    << "mkdir() return code " << rc << ", errno = " << errno << " " << std::strerror(errno) << std::endl;
+                std::cout << o.str();
+                return -1;
+            }
         }
-	std::string erase_earlier_log_files( std::string("rm -f ") + std::string(IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.") + hostname + std::string("*") );
+
+//        if (0 != sem_post(p_semaphore))
+//        {
+//            std::ostringstream o;
+//            o << "<Error> Failed trying to post semaphore after creating ivyslave log subfolder.  errno = " << errno
+//                << " - " << std::strerror(errno) << " at " << __FILE__  << " line " << __LINE__ << "." << std::endl;
+//            std::cout << o.str();
+//            return -1;
+//        }
+        sem_close(p_semaphore);
+    }
+
+
+    if( stat(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER,&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
+    {
+            //  folder doesn't already exist or it's not a directory
+        std::cout << "<Error> " << "ivyslave log folder \"" << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "\" doesn\'t exist or is not a folder." << std::endl;
+        return -1;
+    }
+
+	std::string erase_earlier_log_files( std::string("rm -f ") + std::string(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.") + hostname + std::string("*") );
 	system(erase_earlier_log_files.c_str());
 
-        slavelogfile = std::string(IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.") + hostname + std::string(".txt");
+        slavelogfile = std::string(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.") + hostname + std::string(".txt");
 
         if (!routine_logging) log(slavelogfile,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
 
@@ -360,7 +422,7 @@ int main(int argc, char* argv[]) {
 
 			iogenerator_threads[workloadID]=p_WorkloadThread;
 
-	        	p_WorkloadThread->slavethreadlogfile = std::string(IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.")
+	        	p_WorkloadThread->slavethreadlogfile = std::string(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.")
 				+ convert_non_alphameric_or_hyphen_or_period_to_underscore(workloadID) + std::string(".txt");
 
 			// we still need to set the iogenerator parameters in both subintervals

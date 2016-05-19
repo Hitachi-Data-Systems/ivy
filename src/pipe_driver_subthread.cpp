@@ -725,7 +725,7 @@ void pipe_driver_subthread::threadRun()
             serial = pCmdDevLUN->attribute_value("serial_number");
             {
                 ostringstream fn;
-                fn << IVYSLAVELOGFOLDER << "/log.ivyslave." << ivyscript_hostname << ".ivy_cmddev." << p_Hitachi_RAID_subsystem->serial_number << ".txt";
+                fn << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << ivyscript_hostname << ".ivy_cmddev." << p_Hitachi_RAID_subsystem->serial_number << ".txt";
                 remote_logfilename = fn.str();
             }
             if (routine_logging)
@@ -1809,7 +1809,7 @@ void pipe_driver_subthread::threadRun()
         // Once our work is complete, we issue an scp command to copy the logs back from the remote host.
 
         std::ostringstream copycmd;
-        copycmd << "/usr/bin/scp " << IVYSLAVELOGFOLDER << "/ivyslave." << ivyscript_hostname << ".log* " << m_s.testFolder;
+        copycmd << "/usr/bin/scp " << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/ivyslave." << ivyscript_hostname << ".log* " << m_s.testFolder;
         log(logfilename, std::string("copying logs from remote host \"")+copycmd.str()+std::string("\"\n"));
         if ( 0 == system(copycmd.str().c_str()) )
         {

@@ -409,12 +409,12 @@ void	master_stuff::kill_subthreads_and_exit()
 	{
 		{
 			std::ostringstream o;
-			o << "scp " << SLAVEUSERID << '@' << host << ":" << IVYSLAVELOGFOLDER << "/log.ivyslave." << host << "* " << testFolder << "/logs";
+			o << "scp " << SLAVEUSERID << '@' << host << ":" << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << host << "* " << testFolder << "/logs";
 			if (0 == system(o.str().c_str()))
 			{
 				log(masterlogfile,std::string("success: ")+o.str()+std::string("\n"));
 				std::ostringstream rm;
-				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << IVYSLAVELOGFOLDER << "/log.ivyslave." << host << "*";
+				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << host << "*";
 				if (0 == system(rm.str().c_str()))
 					log(masterlogfile,std::string("success: ")+rm.str()+std::string("\n"));
 				else
