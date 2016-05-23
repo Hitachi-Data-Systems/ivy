@@ -1,38 +1,59 @@
-This is the suggested sequence to read / watch videos
+This is the suggested sequence to read presentations / watch videos
 
-Introduction to ivy
-  - PowerPoint, .pdf, video
+1) Introduction to ivy
+  - .pptx, .pdf, video
+
+2) Testing in minimum time with ivy
+  - .pptx, .pdf, video
   
-Installing ivy
-  - PowerPoint, .pdf, video
+3) Installing ivy
+  - .pptx, .pdf, video
 
-Introduction to ivy output csv files
-  - PowerPoint, .pdf, video
+4) Introduction to ivy output csv files
+  - .pptx, .pdf, video
   - Gives you an orientation explaining the ivy output csv file structure
   - Introduces the ivy csv file loader spreadsheet tool.
   
-demo0_DF
-  - video, sample output csv file set
+5) demo0_DF
+  - video, sample output csv file set (no .pptx, no .pdf)
   - Shows the LUN discovery for Hitachi modular subsystems
   - The same functionality for the "DF" demos would be available for a non-Hitachi subsystem.
 
-demo0_RAID
-  - video, sample output csv file set
+6) demo0_RAID
+  - video, sample output csv file set (no .pptx, no .pdf)
   - Shows the additional configuration information that is discovered with the command device connector
   
-demo1_fixed_DF
-  - video, sample output csv file set
+7) demo1_fixed_DF
+  - video, sample output csv file set (no .pptx, no .pdf)
   - Runs a test for a pre-determined duration at a pre-determined IOPS setting
 
-demo1_fixed_RAID
-  - video, sample output csv file set
+8) demo1_fixed_RAID
+  - video, sample output csv file set (no .pptx, no .pdf)
   - Shows the additional performance information you get with a command device connector
   
-demo2_create_rollup
-  - single video, sample output csv file sets for both DF and RAID
+9) demo2_create_rollup
+  - single video, sample output csv file sets for both DF and RAID (no .pptx, no .pdf)
   - Introduces the [CreateRollup] statement, and shows how to produce sliced and diced output csv files
 
-demo3_layered_workloads
-  - single video, sample output csv file sets for both DF and RAID
+10) demo3_layered_workloads
+  - single video, sample output csv file sets for both DF and RAID (no .pptx, no .pdf)
   - Introduces the [CreateRollup] statement, and shows how to produce sliced and diced output csv files
-  
+
+11) demo5_read_vs_write
+  - single video, sample output csv file sets for both DF and RAID (no .pptx, no .pdf)
+  - Introduces "measure=on" which tests as long as necessary to reach a target plus/minus accuracy
+
+12) [Go] statement
+  - .pptx, .pdf, video
+  - Basic [Go] statement to test for a fixed amount of time
+
+13) [Go] statement - the focus rollup
+  - .pptx, .pdf, video
+  - The focus rollup is used by both the "measure=on" feature and the PID loop controller feature
+
+14) [Go] statement - measure=on and the PID loop feature
+  - .pptx, .pdf, video
+  - How to code the "seen enough and stop" and the PID loop controller features
+
+15) ivy Programmer's Reference
+  - .pptx, .pdf only  
