@@ -1,0 +1,38 @@
+This is the suggested sequence to read / watch videos
+
+Introduction to ivy
+  - PowerPoint, .pdf, video
+  
+Installing ivy
+  - PowerPoint, .pdf, video
+
+Introduction to ivy output csv files
+  - PowerPoint, .pdf, video
+  - Gives you an orientation explaining the ivy output csv file structure
+  - Introduces the ivy csv file loader spreadsheet tool.
+  
+demo0_DF
+  - video, sample output csv file set
+  - Shows the LUN discovery for Hitachi modular subsystems
+  - The same functionality for the "DF" demos would be available for a non-Hitachi subsystem.
+
+demo0_RAID
+  - video, sample output csv file set
+  - Shows the additional configuration information that is discovered with the command device connector
+  
+demo1_fixed_DF
+  - video, sample output csv file set
+  - Runs a test for a pre-determined duration at a pre-determined IOPS setting
+
+demo1_fixed_RAID
+  - video, sample output csv file set
+  - Shows the additional performance information you get with a command device connector
+  
+demo2_create_rollup
+  - single video, sample output csv file sets for both DF and RAID
+  - Introduces the [CreateRollup] statement, and shows how to produce sliced and diced output csv files
+
+demo3_layered_workloads
+  - single video, sample output csv file sets for both DF and RAID
+  - Introduces the [CreateRollup] statement, and shows how to produce sliced and diced output csv files
+  
