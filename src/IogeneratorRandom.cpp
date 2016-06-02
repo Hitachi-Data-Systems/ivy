@@ -44,6 +44,7 @@ using namespace std;
 #include "WorkloadID.h"
 #include "Iogenerator.h"
 #include "IogeneratorRandom.h"
+#include "WorkloadThread.h"
 
 
 
@@ -63,15 +64,12 @@ bool IogeneratorRandom::setFrom_IogeneratorInput(IogeneratorInput* p_i_i)
 	p_uniform_int_distribution=new std::uniform_int_distribution<uint64_t> (coverageStartBlock,coverageEndBlock);
 	p_uniform_real_distribution_0_to_1 = new std::uniform_real_distribution<ivy_float>(0.0,1.0);  // for % reads and for random_independent, for inter-I/O arrival times.
 
-	generate_count = 0;
-
 	return true;
 }
 
 
 
 bool IogeneratorRandom::generate(Eyeo& slang) {
-//*debug*/ {ostringstream o; o<< "//*debug*/ IogeneratorRandom::generate(Eyeo& slang) entry.\n"; log(logfilename, o.str()); }
 	// This is the base class IogeneratorRandom::generate() function that calculates the
 	// random block number / LBA &
 
@@ -83,7 +81,6 @@ bool IogeneratorRandom::generate(Eyeo& slang) {
 	// and that eyeocb.aio_buf already points to a page-aligned I/O buffer
 
 	slang.eyeocb.aio_fildes = p_iogenerator_stuff->fd;
-//*debug*/ {ostringstream o; o<< "//*debug*/ IogeneratorRandom::generate(Eyeo& slang) before getting random location.\n"; log(logfilename, o.str()); }
 
 	if (NULL == p_uniform_int_distribution)
 	{
@@ -91,7 +88,6 @@ bool IogeneratorRandom::generate(Eyeo& slang) {
 		return false;
 	}
 	uint64_t current_block=(*p_uniform_int_distribution)(deafrangen);
-//*debug*/ {ostringstream o; o<< "//*debug*/ IogeneratorRandom::generate(Eyeo& slang) got random current_block=" << current_block << ".\n"; log(logfilename, o.str()); }
 
 	slang.eyeocb.aio_offset = (p_IogeneratorInput->blocksize_bytes) * current_block;
 	slang.eyeocb.aio_nbytes = p_IogeneratorInput->blocksize_bytes;
@@ -100,46 +96,29 @@ bool IogeneratorRandom::generate(Eyeo& slang) {
 	slang.end_time=0;
 	slang.return_value=-2;
 	slang.errno_value=-2;
-//*debug*/ {ostringstream o; o<< "//*debug*/ IogeneratorRandom::generate(Eyeo& slang) before figuring read or write.\n"; log(logfilename, o.str()); }
 
 	if (0.0 == p_IogeneratorInput->fractionRead)
 	{
-//*debug*/ {ostringstream o; o<< "//*debug*/ IogeneratorRandom::generate(Eyeo& slang) no compute write.\n"; log(logfilename, o.str()); }
 		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;
 	}
 	else if (1.0 == p_IogeneratorInput->fractionRead)
 	{
-//*debug*/ {ostringstream o; o<< "//*debug*/ IogeneratorRandom::generate(Eyeo& slang) no compute read.\n"; log(logfilename, o.str()); }
 		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PREAD;
 	}
 	else
 	{
 		ivy_float random_0_to_1 = (*p_uniform_real_distribution_0_to_1)(deafrangen);
-//*debug*/ {ostringstream o; o<< "//*debug*/ IogeneratorRandom::generate(Eyeo& slang) random_0_to_1=" << random_0_to_1 << ".\n"; log(logfilename, o.str()); }
 		if ( random_0_to_1 <= p_IogeneratorInput->fractionRead )
 			slang.eyeocb.aio_lio_opcode=IOCB_CMD_PREAD;
 		else
 			slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;
 	}
-//*debug*/ {ostringstream o; o<< "//*debug*/ IogeneratorRandom::generate(Eyeo& slang) clean exit.\n"; log(logfilename, o.str()); }
 
     if (slang.eyeocb.aio_lio_opcode == IOCB_CMD_PWRITE)
     {
+        slang.generate_pattern();
 
-        slang.randomize_buffer();
-
-//        if (generate_count < 30)
-//        {
-//            std::ostringstream o;
-//            o   << "IogeneratorRandom::generate() for write with generate_count = " << generate_count
-//                << "   " << slang.buffer_first_last_16_hex()
-//                << std::endl;
-//            log(logfilename, o.str());
-//        }
     }
-
-    generate_count++;
-
 	return true;
 }
 

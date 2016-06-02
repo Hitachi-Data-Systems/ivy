@@ -28,26 +28,20 @@
 class Iogenerator
 {
 
-protected:
-	LUN* pLUN;
-	WorkloadID workloadID;
-
-    uint64_t generate_count=0;
-
 public:
-	Iogenerator(LUN* pL, std::string lf, std::string wID, iogenerator_stuff* p_is)
-		: pLUN(pL), workloadID(wID), p_iogenerator_stuff(p_is), logfilename(lf) {}
-
-	virtual bool generate(Eyeo&)=0;
-	virtual bool isRandom()=0;  // This is used to plug the I/O statistics into "random" and "sequential" categories.
+	LUN* pLUN;
+	std::string logfilename;
+	WorkloadID workloadID;
+	iogenerator_stuff* p_iogenerator_stuff;
+	WorkloadThread* p_WorkloadThread;
 
 	bool parameters_are_valid=false;  // this will be set by setFrom_IogeneratorInput()
 
 	IogeneratorInput* p_IogeneratorInput;
 
-	iogenerator_stuff* p_iogenerator_stuff;
+	std::hash<std::string> string_hash;
 
-	std::string logfilename, threadKey;
+	std::string threadKey;
 
 	ivytime previous_scheduled_time = ivytime(0);
 
@@ -79,13 +73,20 @@ public:
 
 		// These values are set by iogenerator::setFrom_IogeneratorInput().
 
+//methods:
+
+	Iogenerator(LUN* pL, std::string lf, std::string wID, iogenerator_stuff* p_is, WorkloadThread* pWT)
+		: pLUN(pL), logfilename(lf), workloadID(wID), p_iogenerator_stuff(p_is), p_WorkloadThread(pWT) {}
+
+	virtual bool generate(Eyeo&)=0;
+	virtual bool isRandom()=0;  // This is used to plug the I/O statistics into "random" and "sequential" categories.
+
 	virtual bool setFrom_IogeneratorInput(IogeneratorInput*);  // This base class function should be called first
 		// by every eponymous derived class function.
 
 	virtual std::string instanceType()=0;
 		// Returns "random_steady" or "random independent", or "sequential",
 		// or in future things like trace playback or use of advanced statistical generators.
-	std::hash<std::string> string_hash;
 
 };
 

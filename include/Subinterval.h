@@ -19,6 +19,9 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
+#include "IogeneratorInput.h"
+#include "SubintervalOutput.h"
+
 class Subinterval {
 
 public:

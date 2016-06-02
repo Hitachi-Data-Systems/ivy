@@ -36,6 +36,7 @@
 
 #include "ivytime.h"
 #include "ivydefines.h"
+#include "pattern.h"
 
 class WorkloadThread;
 
@@ -83,9 +84,8 @@ public:
 	ivy_float service_time_seconds();
 	ivy_float response_time_seconds();
 
-	void randomize_buffer();
-
 	std::string buffer_first_last_16_hex();
 
+	void generate_pattern();
 };
 

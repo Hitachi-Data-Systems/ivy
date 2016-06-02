@@ -774,6 +774,10 @@ void go_statement(yy::location bookmark)
 
     m_s.the_dfc.reset();
 
+    void prepare_dedupe();
+
+    prepare_dedupe();
+
     run_subinterval_sequence(&m_s.the_dfc);
 
     ivytime went; went.setToNow();

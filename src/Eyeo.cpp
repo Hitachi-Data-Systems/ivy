@@ -2,7 +2,7 @@
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
-//   not use this file except in compliance with the License. You may obtain
+//   not use this file except in Ŕcompliance with the License. You may obtain
 //   a copy of the License at
 //
 //         http://www.apache.org/licenses/LICENSE-2.0
@@ -46,6 +46,9 @@ using namespace std;
 #include "Subinterval.h"
 #include "WorkloadThread.h"
 
+// display_memory_contents() is part of "printableAndHex" which is in the LUN_discovery project - https://github.com/Hitachi-Data-Systems/LUN_discovery
+#include "printableAndHex.h"
+
 Eyeo::Eyeo(int t, WorkloadThread* pwt) : tag(t), pWorkloadThread(pwt)
 {
 	// When you create an Eyeo, get gets its memory page which it keeps for life,
@@ -63,13 +66,6 @@ Eyeo::Eyeo(int t, WorkloadThread* pwt) : tag(t), pWorkloadThread(pwt)
 	buf_size=0;
 
 //	resize_buf(MINBUFSIZE);
-
-
-
-
-
-
-
 
 }
 
@@ -217,35 +213,125 @@ ivy_float Eyeo::response_time_seconds()
 	return (ivy_float) response_time;
 }
 
+extern std::string printable_ascii;
 
-
-// original from https://en.wikipedia.org/wiki/Xorshift follows:
-
-//* The state must be seeded so that it is not everywhere zero. */
-//uint64_t s[16];
-//int p;
-//
-//uint64_t xorshift1024star(void) {
-//   const uint64_t s0 = s[p];
-//   uint64_t s1 = s[p = (p + 1) & 15];
-//   s1 ^= s1 << 31; // a
-//   s[p] = s1 ^ s0 ^ (s1 >> 11) ^ (s0 >> 30); // b,c
-//   return s[p] * UINT64_C(1181783497276652981);
-//}
-
-
-void Eyeo::randomize_buffer()
+void Eyeo::generate_pattern()
 {
     uint64_t blocksize = eyeocb.aio_nbytes;
+    uint64_t uint64_t_count;
+    uint64_t* p_uint64;
+    char* p_c;
+    uint64_t d;
+    unsigned int first_bite;
+    unsigned int word_index;
+    char* past_buf;
+    char* p_word;
 
-    uint64_t uint64_t_count = blocksize / 8;
+    pWorkloadThread->write_io_count++;
 
-    uint64_t* p_uint64 = (uint64_t*) eyeocb.aio_buf;
-
-    for (uint64_t i=0; i < uint64_t_count; i++)
+    switch (pWorkloadThread->pat)
     {
-        (*(p_uint64 + i)) = pWorkloadThread->xorshift1024star();
+        case pattern::random:
+
+            p_uint64 = (uint64_t*) eyeocb.aio_buf;
+            uint64_t_count = blocksize / 8;
+
+            for (uint64_t i=0; i < uint64_t_count; i++)
+            {
+                xorshift64star(pWorkloadThread->block_seed);
+                (*(p_uint64 + i)) = pWorkloadThread->block_seed;
+            }
+
+            break;
+
+        case pattern::ascii:
+            p_c = (char*) eyeocb.aio_buf;
+            uint64_t_count = blocksize / 8;
+
+            for (uint64_t i=0; i < uint64_t_count; i++)
+            {
+                xorshift64star(pWorkloadThread->block_seed);
+
+                d = pWorkloadThread->block_seed;
+
+                *p_c++ = printable_ascii[d % printable_ascii.size()]; // 1
+                d /= printable_ascii.size();
+                *p_c++ = printable_ascii[d % printable_ascii.size()]; // 2
+                d /= printable_ascii.size();
+                *p_c++ = printable_ascii[d % printable_ascii.size()]; // 3
+                d /= printable_ascii.size();
+                *p_c++ = printable_ascii[d % printable_ascii.size()]; // 4
+                d /= printable_ascii.size();
+                *p_c++ = printable_ascii[d % printable_ascii.size()]; // 5
+                d /= printable_ascii.size();
+                *p_c++ = printable_ascii[d % printable_ascii.size()]; // 6
+                d /= printable_ascii.size();
+                *p_c++ = printable_ascii[d % printable_ascii.size()]; // 7
+                d /= printable_ascii.size();
+                *p_c++ = printable_ascii[d % printable_ascii.size()]; // 8
+                d /= printable_ascii.size();
+            }
+
+            break;
+
+        case pattern::trailing_zeros:
+
+            p_uint64 = (uint64_t*) eyeocb.aio_buf;
+            uint64_t_count = ceil(  (1.0-pWorkloadThread->compressibility)  *  ((double)(blocksize / 8))  );
+
+            for (uint64_t i=0; i < uint64_t_count; i++)
+            {
+                xorshift64star(pWorkloadThread->block_seed);
+                (*(p_uint64 + i)) = pWorkloadThread->block_seed;
+            }
+
+            first_bite = floor((1.0-pWorkloadThread->compressibility) * blocksize );
+            past_buf = ((char*) eyeocb.aio_buf)+blocksize;
+
+            for (p_c = (((char*) eyeocb.aio_buf)+first_bite); p_c < past_buf; p_c++)
+            {
+                *p_c = (char) 0;
+            }
+
+            break;
+
+        case pattern::gobbledegook:
+
+            p_c = (char*)eyeocb.aio_buf;
+            past_buf = ((char*) eyeocb.aio_buf)+blocksize;
+            while(p_c < past_buf)
+            {
+                xorshift64star(pWorkloadThread->block_seed);
+                word_index = pWorkloadThread->block_seed % unique_word_count;
+                p_word = unique_words[word_index];
+                while ( (*p_word) && (p_c < past_buf) )
+                {
+                    *p_c++ = *p_word++;
+                }
+                if (p_c < past_buf) {*p_c++ = ' ';}
+            }
+
+            break;
+
+        default:
+            {
+                std::ostringstream o;
+                o << "Internal programming error - invalid pattern type in Eyeo::generate_pattern() at line " << __LINE__ << " of " << __FILE__;
+                throw std::runtime_error(o.str());
+            }
     }
+///*debug*/ if (pWorkloadThread->write_io_count < 20)
+///*debug*/ {
+///*debug*/     std::ostringstream o;
+///*debug*/
+///*debug*/     o << "Generated pattern for write I/O number " << pWorkloadThread->write_io_count << std::endl;
+///*debug*/
+///*debug*/     // display_memory_contents is part of "printableAndHex" which is in the LUN_discovery project - https://github.com/Hitachi-Data-Systems/LUN_discovery
+///*debug*/     display_memory_contents(o, (unsigned char*)eyeocb.aio_buf, blocksize, 32 /* int perlinemax=16, std::string eachlineprefix=""*/);
+///*debug*/
+///*debug*/     log(pWorkloadThread->slavethreadlogfile,o.str());
+///*debug*/ }
+    return;
 }
 
 std::string Eyeo::buffer_first_last_16_hex()

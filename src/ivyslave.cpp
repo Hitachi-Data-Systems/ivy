@@ -92,6 +92,8 @@ std::string
 
 bool routine_logging {false};
 
+std::string printable_ascii;
+
 // methods
 
 bool waitForSubintervalEndThenHarvest();
@@ -140,7 +142,9 @@ void say(std::string s, std::string logfilename,ivytime &lasttime) {
 
 void initialize_io_time_clip_levels(); // Accumulators_by_io_type.cpp
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
+//*debug*/{std::ostringstream o; o << "fireup - argc = " << argc; for (int i=0;i<argc; i++){o << " argv[" << i << "]=\"" << argv[i] << "\"  ";} o << std::endl; fileappend("/home/ivogelesang/Desktop/eraseme.txt",o.str());}
 
 	std::mutex ivyslave_main_mutex;
 
@@ -223,7 +227,6 @@ int main(int argc, char* argv[]) {
         sem_close(p_semaphore);
     }
 
-
     if( stat(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER,&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
     {
             //  folder doesn't already exist or it's not a directory
@@ -257,15 +260,14 @@ int main(int argc, char* argv[]) {
 	std::string remainder;
 	std::string subinterval_duration_as_string;
 
-
-//	LDEVset thisSerial;
-//	bool haveSerial{false};
-//	std::string requestedLDEV{""};
-//	LDEVset requestedSet;
-//	LDEVset testedLDEV;
-
 	lasttime.setToNow();
 	say(std::string("Hello, whirrled! from ")+myhostname(),slavelogfile,lasttime);
+
+
+    for (unsigned int c = 0; c < 128; c++) if (isprint((char)c)) printable_ascii.push_back((char)c);
+
+    if (routine_logging) {std::ostringstream o; o << "printable_ascii = \"" << printable_ascii << "\"" << std::endl; log(slavelogfile,o.str());}
+
 
 	std::string input_line;
 	if(std::cin.eof()) {log("std::cin.eof()\n",slavelogfile); return 0;}
@@ -678,6 +680,54 @@ int main(int argc, char* argv[]) {
 						// from the last subinterval to run were copied to the other subinterval, or finally
 						// both were set by a "[ModifyWorkload]" command that ran while the iogenerator thread was stopped.
 //*debug*/{ostringstream o; o << "Posting IVYSLAVE_SAYS_RUN command for first subinterval for " << pear.first << std::endl; log(slavelogfile,o.str());}
+
+
+// NOTE: Originally I thought I would be switching back and forth between two IogeneratorInput objects, but now they are just clones of each other.
+//       I was being overly careful but by accident discovered I was writing updates into the "active" subinterval IogeneratorInput object instead of the inactive one.
+//       Since the running workload thread only reads from the IogeneratorInput object there were no race conditions / bad things happening.
+//       Eventually should cut back to only having  one IogeneratorInput object ... maybe, unless there are pairs of input parameters that must both take effect simultaneously ...
+
+
+
+                    if (pear.second->subinterval_array[0].input.dedupe > 1.0 && pear.second->subinterval_array[0].input.fractionRead == 1.0)
+					{
+						ostringstream o;
+						o << "<Error> Internal programming error - ivy master failed earlier to detect dedupe > 1.0 with fractionRead = 100%.  Aborting." << std::endl;
+						say(o.str(),slavelogfile,lasttime);
+						killAllSubthreads(slavelogfile);
+						return -1;
+					}
+
+                    if (pear.second->subinterval_array[0].input.fractionRead < 1.0)
+                    {
+                        pear.second->have_writes = true;
+                        pear.second->pat = pear.second->subinterval_array[0].input.pat;
+                        pear.second->compressibility = pear.second->subinterval_array[0].input.compressibility;
+                    }
+                    else
+                    {
+                        pear.second->have_writes = false;
+                    }
+
+                    if (pear.second->subinterval_array[0].input.dedupe == 1.0)
+                    {
+                        pear.second->doing_dedupe=false;
+                        pear.second->block_seed = ( (uint64_t) std::hash<std::string>{}(pear.first) ) ^ test_start_time.getAsNanoseconds();
+                    }
+                    else
+                    {
+                        pear.second->doing_dedupe=true;
+                        pear.second->threads_in_workload_name = (pattern_float_type) pear.second->subinterval_array[0].input.threads_in_workload_name;
+                        pear.second->serpentine_number = 1.0 + ( (pattern_float_type) pear.second->subinterval_array[0].input.this_thread_in_workload );
+                        pear.second->serpentine_number -= pear.second->threads_in_workload_name; // this is because we increment the serpentine number by threads_in_workload before using it.
+                        pear.second->serpentine_multiplier =
+                            ( 1.0 - ( (pattern_float_type)  pear.second->subinterval_array[0].input.fractionRead ) )
+                            /       ( (pattern_float_type)  pear.second->subinterval_array[0].input.dedupe );
+
+                        pear.second->pattern_seed = pear.second->subinterval_array[0].input.pattern_seed;
+                        pear.second->pattern_number = 0;
+                    }
+                    pear.second->write_io_count = 0;
 
 					pear.second->subinterval_array[0].start_time=test_start_time;
 					pear.second->subinterval_array[0].end_time=test_start_time + subinterval_duration;

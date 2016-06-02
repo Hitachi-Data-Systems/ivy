@@ -21,7 +21,7 @@
 
 class IogeneratorSequential : public Iogenerator {
 public:
-	IogeneratorSequential(LUN* pL, std::string lf, std::string tK, iogenerator_stuff* p_is) : Iogenerator(pL, lf, tK, p_is) {}
+	IogeneratorSequential(LUN* pL, std::string lf, std::string tK, iogenerator_stuff* p_is, WorkloadThread* pWT) : Iogenerator(pL, lf, tK, p_is, pWT) {}
 
 	bool generate(Eyeo&);
 	bool setFrom_IogeneratorInput(IogeneratorInput*);

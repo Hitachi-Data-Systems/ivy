@@ -28,7 +28,7 @@ protected:
         std::default_random_engine deafrangen;
 
 public:
-	IogeneratorRandom(LUN* pL, std::string lf, std::string tK, iogenerator_stuff* p_is) : Iogenerator(pL, lf, tK, p_is) {}
+	IogeneratorRandom(LUN* pL, std::string lf, std::string tK, iogenerator_stuff* p_is, WorkloadThread* pWT) : Iogenerator(pL, lf, tK, p_is, pWT) {}
 
 	virtual std::string instanceType()=0;
 	virtual bool isRandom()=0;  // This is used to plug the I/O statistics into "random" and "sequential" categories.

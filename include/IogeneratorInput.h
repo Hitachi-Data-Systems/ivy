@@ -20,6 +20,7 @@
 #pragma once
 
 #include "ivyhelpers.h"
+#include "pattern.h"
 
 class IogeneratorInput {
 
@@ -54,7 +55,7 @@ public:
 			// 0.0 means don't issue any new I/Os.
 	ivy_float
 
-		fractionRead{fractionRead},
+		fractionRead{fractionRead_default},
 			// For random can be any value from 0.0 to 1.0.  For sequential must be either 0.0 or 1.0.
 		        // Actually, we could use sequential values between 0 and 1 to emulate pathological vdbench random ... later maybe
 
@@ -65,6 +66,14 @@ public:
 		seqStartFractionOfCoverage{seqStartFractionOfCoverage_default};
 			// This defines where a sequential thread will start mapped from 0.0
 			// at the volCoverageFractionStart point up to 1.0 at the volCoverageFractionEnd point.
+
+    ivy_float dedupe          {dedupe_default};
+    pattern   pat             {pattern_default};
+    ivy_float compressibility {compressibility_default};  // compressibility is only referred to for pattern = trailing_zeros
+
+    unsigned int threads_in_workload_name {threads_in_workload_name_default};
+    unsigned int this_thread_in_workload {this_thread_in_workload_default};
+    uint64_t pattern_seed {pattern_seed_default};
 
 public:
 	inline IogeneratorInput(){reset();}
@@ -80,22 +89,28 @@ public:
 	void reset();
 	void copy(const IogeneratorInput& source);
 
-	bool defaultBlocksize() { return 4096 == blocksize_bytes; }
-	bool defaultMaxTags() { return 1 == maxTags; }
-	bool defaultIOPS() { return 1.0 == IOPS; }
-	bool defaultFractionRead() { return  1.0==fractionRead; }
-	bool defaultVolCoverageFractionStart() { return 0.0 == volCoverageFractionStart; }
-	bool defaultVolCoverageFractionEnd() { return 0.0 == volCoverageFractionEnd; }
+	bool defaultBlocksize() { return blocksize_bytes_default == blocksize_bytes; }
+	bool defaultMaxTags() { return maxTags_default == maxTags; }
+	bool defaultIOPS() { return IOPS_default == IOPS; }
+	bool defaultFractionRead() { return  fractionRead_default==fractionRead; }
+	bool defaultVolCoverageFractionStart() { return volCoverageFractionStart_default == volCoverageFractionStart; }
+	bool defaultVolCoverageFractionEnd() { return volCoverageFractionEnd_default == volCoverageFractionEnd; }
 	bool defaultSeqStartFractionOfCoverage()
 	{
 		if (stringCaseInsensitiveEquality(std::string("sequential"),iogenerator_type))
 		{
-			return 0.0 == seqStartFractionOfCoverage;
+			return seqStartFractionOfCoverage_default == seqStartFractionOfCoverage;
 		}
 		else
 		{
 			return true;
 		}
 	}
+	bool defaultPattern() { return pat == pattern_default; }
+	bool defaultDedupe() { return dedupe == dedupe_default; }
+	bool defaultCompressibility() { return compressibility == compressibility_default; }
+	bool defaultThreads_in_workload_name() { return threads_in_workload_name == threads_in_workload_name_default;}
+	bool defaultThis_thread_in_workload() { return this_thread_in_workload == this_thread_in_workload_default;}
+	bool defaultPattern_seed() { return pattern_seed == pattern_seed_default;}
 };
 

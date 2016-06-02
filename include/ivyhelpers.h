@@ -23,6 +23,7 @@
 #include <list>
 #include <string>
 #include <regex>
+#include <stdint.h>
 
 #include "ivydefines.h"
 
@@ -120,3 +121,5 @@ std::string quote_wrap_except_number(const std::string s);
 std::string quote_wrap_csvline_except_numbers(const std::string csvline); // This is specifically so that when you double-click on an ivy csv file to launch Excel, it won't think LDEV names are times, etc.
 
 std::string column_header_to_identifier(const std::string&s);
+
+void xorshift64star(uint64_t&);

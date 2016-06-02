@@ -31,6 +31,7 @@
 					<Add option="-pthread" />
 					<Add directory="parser/lexyacc" />
 					<Add directory="parser/include" />
+					<Add directory="../LUN_discovery/include" />
 				</Compiler>
 				<ExtraCommands>
 					<Add before="touch include/ivybuilddate.h" />
@@ -41,6 +42,12 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+			</Target>
+			<Target title="makedict">
+				<Option output="bin/makedict" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="public_domain_dictionary/pg29765.webster_1913.txt" />
 			</Target>
 		</Build>
 		<VirtualTargets>
@@ -57,6 +64,14 @@
 		<Linker>
 			<Add option="-pthread -lrt -static-libstdc++" />
 		</Linker>
+		<Unit filename="../LUN_discovery/include/printableAndHex.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="../LUN_discovery/src/printableAndHex.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
 		<Unit filename="include/Accumulators_by_io_type.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
@@ -251,8 +266,16 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="include/ivytime.h" />
+		<Unit filename="include/ivytime.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+			<Option target="clear_hung_ivy_threads" />
+		</Unit>
 		<Unit filename="include/master_stuff.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/pattern.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
@@ -488,7 +511,11 @@
 		<Unit filename="src/hosts_statement.cpp">
 			<Option target="ivymaster" />
 		</Unit>
-		<Unit filename="src/ivyhelpers.cpp" />
+		<Unit filename="src/ivyhelpers.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+			<Option target="clear_hung_ivy_threads" />
+		</Unit>
 		<Unit filename="src/ivylinuxcpubusy.cpp">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
@@ -496,11 +523,25 @@
 		<Unit filename="src/ivyslave.cpp">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="src/ivytime.cpp" />
+		<Unit filename="src/ivytime.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+			<Option target="clear_hung_ivy_threads" />
+		</Unit>
+		<Unit filename="src/makedict.cpp">
+			<Option target="makedict" />
+		</Unit>
 		<Unit filename="src/master_stuff.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="src/pattern.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
 		<Unit filename="src/pipe_driver_subthread.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/prepare_dedupe.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/rollup_Hitachi_RAID_data.cpp">
@@ -520,6 +561,9 @@
 		</Unit>
 		<Unit filename="src/testwrap.cpp">
 			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src/unique_words.cpp">
+			<Option target="ivyslave" />
 		</Unit>
 		<Extensions>
 			<code_completion />

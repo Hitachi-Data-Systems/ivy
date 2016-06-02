@@ -19,9 +19,13 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
+#include <array>
+#include <string>
+
 //using ivy_int = long long int; using ivy_float = long double;
   using ivy_int =      long int; using ivy_float =      double;
 
+#include "pattern.h"
 
 #define SHOWLUNS_CMD "showluns.sh"
 #define IVYSLAVE_EXECUTABLE "ivyslave"
@@ -122,6 +126,14 @@ const ivy_float	volCoverageFractionStart_default {0.0};  // default is start at 
 const ivy_float	volCoverageFractionEnd_default {1.0};    // default is 1.0 maps to the last aligned block of that blocksize that fits.
 const ivy_float	seqStartFractionOfCoverage_default{0.0}; // This defines where a sequential thread will start mapped from 0.0
                                                          // at the volCoverageFractionStart point up to 1.0 at the volCoverageFractionEnd point.
+const pattern pattern_default {pattern::random};
+const ivy_float dedupe_default {1.0};
+const ivy_float compressibility_default {0.0};
+
+const unsigned int threads_in_workload_name_default {1};
+const unsigned int this_thread_in_workload_default {0};
+const uint64_t pattern_seed_default {1};
+
 #define max_move_WP_error (.01)
 
 #define io_time_buckets 56
@@ -131,3 +143,7 @@ const ivy_float	seqStartFractionOfCoverage_default{0.0}; // This defines where a
 // A safety margin of 0.5 means add 50% onto the average time it has taken to perform a gather so far, and start each gather at that padded lead time before the end of the subinterval.
 
 extern std::string indent_increment;
+
+#define unique_word_count (32*1024)
+
+extern char* unique_words[];

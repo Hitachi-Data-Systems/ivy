@@ -969,6 +969,14 @@ std::string column_header_to_identifier(const std::string&s)
 }
 
 
+void xorshift64star(uint64_t& x)  //https://en.wikipedia.org/wiki/Xorshift
+{
+	x ^= x >> 12; // a
+	x ^= x << 25; // b
+	x ^= x >> 27; // c
+	x *= UINT64_C(2685821657736338717);
+	return;
+}
 
 
 

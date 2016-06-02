@@ -21,7 +21,7 @@
 
 class IogeneratorRandomIndependent : public IogeneratorRandom {
 public:
-	IogeneratorRandomIndependent(LUN* pL, std::string logfilename, std::string tK, iogenerator_stuff* p_is) : IogeneratorRandom(pL, logfilename, tK, p_is) {}
+	IogeneratorRandomIndependent(LUN* pL, std::string logfilename, std::string tK, iogenerator_stuff* p_is, WorkloadThread* pWT) : IogeneratorRandom(pL, logfilename, tK, p_is, pWT) {}
 
 	std::string instanceType() { return std::string("random_independent"); }
 	bool isRandom() { return true; }

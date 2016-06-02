@@ -44,8 +44,9 @@ using namespace std;
 #include "WorkloadID.h"
 #include "Iogenerator.h"
 #include "IogeneratorSequential.h"
+#include "WorkloadThread.h"
 
-
+extern std::string printable_ascii;
 
 bool IogeneratorSequential::setFrom_IogeneratorInput(IogeneratorInput* p_i_i)
 {
@@ -80,7 +81,7 @@ bool IogeneratorSequential::generate(Eyeo& slang) {
 	if (0.0 == p_IogeneratorInput->fractionRead)
 	{
 		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;
-		slang.randomize_buffer();
+        slang.generate_pattern();
 	}
 	else if (1.0 == p_IogeneratorInput->fractionRead)
 	{

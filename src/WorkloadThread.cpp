@@ -36,6 +36,7 @@
 #include <queue>
 #include <list>
 #include <exception>
+#include <math.h>  /* for ceil() */
 
 #include "ivytime.h"
 #include "ivydefines.h"
@@ -72,26 +73,7 @@ inline int io_getevents(aio_context_t ctx, long min_nr, long max_nr, struct io_e
 
 WorkloadThread::WorkloadThread(std::string wID, LUN* pL, long long int lastLBA, std::string parms, std::mutex* p_imm)
         : workloadID(wID), pLUN(pL), maxLBA(lastLBA), iogeneratorParameters(parms), p_ivyslave_main_mutex(p_imm)
-{
-   // next bit seeds the random number generator
-    xorshift_p = 0;
-
-    xorshift_s[0] = (uint64_t) this;
-
-    ivytime it;
-    it.setToNow();
-    xorshift_s[1] = it.getAsNanoseconds();
-
-    xorshift_s[2] = (uint64_t) std::hash<std::string>()(wID);
-
-    xorshift_s[3] = (uint64_t) pL;
-
-    xorshift_s[4] = (uint64_t) std::hash<std::string>()(parms);
-
-    xorshift_s[5] = (uint64_t) p_imm;
-
-    for (unsigned int i = 6; i<16; i++) xorshift_s[i] = xorshift_s[0];
-}
+{}
 
 std::string threadStateToString (ThreadState ts)
 {
@@ -184,9 +166,9 @@ void WorkloadThread::WorkloadThreadRun() {
 
 
 
-	available_iogenerators[std::string("random_steady")] = new IogeneratorRandomSteady(pLUN, slavethreadlogfile, workloadID.workloadID, &iogenerator_variables);
-	available_iogenerators[std::string("random_independent")] = new IogeneratorRandomIndependent(pLUN, slavethreadlogfile, workloadID.workloadID, &iogenerator_variables);
-	available_iogenerators[std::string("sequential")] = new IogeneratorSequential(pLUN, slavethreadlogfile, workloadID.workloadID, &iogenerator_variables);
+	available_iogenerators[std::string("random_steady")] = new IogeneratorRandomSteady(pLUN, slavethreadlogfile, workloadID.workloadID, &iogenerator_variables, this);
+	available_iogenerators[std::string("random_independent")] = new IogeneratorRandomIndependent(pLUN, slavethreadlogfile, workloadID.workloadID, &iogenerator_variables, this);
+	available_iogenerators[std::string("sequential")] = new IogeneratorSequential(pLUN, slavethreadlogfile, workloadID.workloadID, &iogenerator_variables, this);
 
 	state = ThreadState::waiting_for_command;
 
@@ -905,6 +887,26 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 //*debug*/{std::ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() p_my_iogenerator->instanceType()=\"" << p_my_iogenerator->instanceType() << '\"' << std::endl; log(slavethreadlogfile,o.str());}
 
+            // deterministic generation of "seed" for this I/O.
+            if (have_writes)
+            {
+                if (doing_dedupe)
+                {
+                    serpentine_number += threads_in_workload_name;
+                    uint64_t new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
+                    while (pattern_number < new_pattern_number)
+                    {
+                        xorshift64star(pattern_seed);
+                        pattern_number++;
+                    }
+                    block_seed = pattern_seed ^ pattern_number;
+                }
+                else
+                {
+                    xorshift64star(block_seed);
+                }
+            }
+
 			// now need to call the iogenerator function to populate this Eyeo.
 			if (!p_my_iogenerator->generate(*p_Eyeo)) {
 				log(slavethreadlogfile,"iogenerator::generate() failed.\n");
@@ -957,15 +959,5 @@ bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
 
 	return true;
 
-}
-
-
-uint64_t WorkloadThread::xorshift1024star()
-{
-   const uint64_t s0 = xorshift_s[xorshift_p];
-   uint64_t s1 = xorshift_s[xorshift_p = (xorshift_p + 1) & 15];
-   s1 ^= s1 << 31; // a
-   xorshift_s[xorshift_p] = s1 ^ s0 ^ (s1 >> 11) ^ (s0 >> 30); // b,c
-   return xorshift_s[xorshift_p] * UINT64_C(1181783497276652981);
 }
 

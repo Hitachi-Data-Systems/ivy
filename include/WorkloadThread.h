@@ -28,6 +28,11 @@
 #include <map>
 #include <string>
 
+#include "pattern.h"
+#include "Subinterval.h"
+
+typedef long double pattern_float_type ;
+
 enum class ThreadState
 {
 	waiting_for_command,
@@ -126,8 +131,23 @@ public:
 	std::string hostname;
 	std::string slavethreadlogfile;
 
-	uint64_t xorshift_s[16];
-    int xorshift_p;
+    bool doing_dedupe;
+    bool have_writes;
+    ivy_float compressibility;
+
+    pattern_float_type threads_in_workload_name;
+    pattern_float_type serpentine_number;
+    pattern_float_type serpentine_multiplier;
+
+    pattern pat;
+    uint64_t pattern_number;
+    uint64_t pattern_seed;
+    uint64_t block_seed;
+
+    uint64_t write_io_count;
+
+
+
 
 //methods
 	WorkloadThread(std::string /*workloadID*/, LUN*, long long int /*lastLBA*/, std::string /*parms*/, std::mutex*);
