@@ -92,7 +92,6 @@ std::string string_substring_of_string_int_int(const std::string s, int begin_in
 int            int_print_of_int(int i)                  { std::ostringstream o; o << i;               std::cout << o.str(); fileappend(masterlogfile(), o.str()); return i;}
 double      double_print_of_double(double d)            { std::ostringstream o; o << std::fixed << d; std::cout << o.str(); fileappend(masterlogfile(), o.str()); return d;}
 std::string string_print_of_string(const std::string s) {                                             std::cout << s;       fileappend(masterlogfile(), s);       return s;}
-
 void ivy_log(std::string filename, std::string msg);
 
 int int_log_of_string_string(std::string filename, std::string s)
@@ -239,6 +238,24 @@ std::string string_to_lower_of_string(std::string s)
 std::string string_to_upper_of_string(std::string s)
 {
     return toUpper(s);
+}
+
+std::string string_int_to_ldev_of_int(int i)
+{
+    std::ostringstream o;
+    if (i < 0)
+    {
+        o << "<Error> int_to_ldev(" << i << ") - may not be called with a negative value.";
+        return o.str();
+    }
+    if (i > 65535)
+    {
+        std::ostringstream o;
+        o << "<Error> int_to_ldev(" << i << ") - may not be called with a value greater than 65535 (greater than 0xFFFF).";
+        return o.str();
+    }
+    o << std::hex << std::setw(4) << std::setfill('0') << i;
+    return toUpper(o.str().substr(0,2)) + ":" + toUpper(o.str().substr(2,2));
 }
 
 int int_matches_digits_of_string(std::string s)
@@ -684,6 +701,7 @@ void init_builtin_table()
     unaryfunc(to_lower,to_lower,string,string)
     unaryfunc(to_upper,to_upper,string,string)
 
+    unaryfunc(int_to_ldev,int_to_ldev,string,int)
 
     #undef unaryfunc
 
