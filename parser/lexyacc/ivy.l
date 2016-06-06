@@ -29,6 +29,7 @@
 # include "Ivy_pgm.h"
 # include "host_range.h"
 # include "SelectClause.h"
+# include "ivydefines.h"
 # include "ivy.parser.hh"
 #include <iostream>
 
@@ -49,6 +50,7 @@ int string_start_line;
 ws         [ \t]+
 identifier [a-zA-Z]([a-zA-Z0-9]|_)*
 integer    [0-9]+
+hex_integer 0x[0-9a-fA-F]+
 float      (([0-9]+\.[0-9]*)|([0-9]*\.[0-9]+)([eE][+-]?[0-9]{1,3})?)|([0-9]+[eE][+-]?[0-9]{1,3})
 zero255    ([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])
 dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
@@ -291,6 +293,70 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 		/*debug*/if (trace_lexer) {std::cout << std::endl << "lexer returning INT_CONSTANT = " << yylval->intval << "." << std::endl;}
 			return token::INT_CONSTANT;
 		}
+
+{hex_integer}   {
+
+    /* e.g. 0x5E3 */
+
+    /* Note that a decimal digit "integer" constant does not have a sign - zero or positive. */
+
+    /* In ivyscript, a negative integer like -5 is parsed as an expression with */
+    /* a unary - operator followed by an integer constant.*/
+
+    /* We could come back later and figure out something better later, but for now */
+    /* hex_integer constants can only represent the same, non-negative values. */
+
+    /* In other words, we don't allow a hex literal to represent a negative integer. */
+
+    /* Also - note that for now the parser uses yylval->intval is a C++ "int", not an ivy_int ... */
+
+		unsigned int max_digits = 2 * sizeof(int);
+
+		unsigned int hex_digits=0;
+
+		for (const char* p=(yytext+2); (*p); p++)
+		{
+            hex_digits++;
+		}
+
+		if (hex_digits > max_digits)
+		{
+            std::ostringstream o;
+            o << "Parse error for hex integer constant " << yytext << " - too many hex digits.  Max hex digits is " << max_digits << ".";
+            context_ref.error(o.str());
+            return 0;
+		}
+
+		int result = 0;
+
+		const char* hex_digit_template="0123456789ABCDEFabcdef";
+
+		int hex_digit = 0;
+
+		for (const char* p=(yytext+2); (*p); p++)
+		{
+            hex_digit = index(hex_digit_template,*p)-hex_digit_template;
+			if (hex_digit>15) hex_digit-=6;
+
+			if ( (p == (yytext+2)) && (hex_digits==max_digits) && (hex_digit > 8) )
+            {
+                std::ostringstream o;
+                o << "Parse error for hex integer constant " << yytext << " - may not represent a negative number.";
+                context_ref.error(o.str());
+                return 0;
+            }
+
+			result<<=4;
+
+			result +=hex_digit;
+		}
+
+		yylval->intval=result;
+
+		/*debug*/if (trace_lexer) {std::cout << std::endl << "lexer returning INT_CONSTANT = " << yylval->intval << " for hex_integer literal " << yytext << "." << std::endl;}
+
+		return token::INT_CONSTANT;
+    }
 
 {float}	{
 		yylval->dblval=atof(yytext);
