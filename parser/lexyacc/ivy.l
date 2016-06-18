@@ -45,12 +45,18 @@ typedef yy::ivy::token token;
 int srclineno=0;
 int string_start_line;
 
+#define MAX_TRAILING_PERCENT_TOKEN_SIZE 80
+
+char trail_pct_buf[MAX_TRAILING_PERCENT_TOKEN_SIZE];
+
 %}
 
 ws         [ \t]+
 identifier [a-zA-Z]([a-zA-Z0-9]|_)*
+integer_trailing_percent    [0-9]+[ \t]*%
 integer    [0-9]+
 hex_integer 0x[0-9a-fA-F]+
+float_trailing_percent      ((([0-9]+\.[0-9]*)|([0-9]*\.[0-9]+)([eE][+-]?[0-9]{1,3})?)|([0-9]+[eE][+-]?[0-9]{1,3}))[ \t]*%
 float      (([0-9]+\.[0-9]*)|([0-9]*\.[0-9]+)([eE][+-]?[0-9]{1,3})?)|([0-9]+[eE][+-]?[0-9]{1,3})
 zero255    ([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])
 dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
@@ -293,6 +299,78 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 		/*debug*/if (trace_lexer) {std::cout << std::endl << "lexer returning INT_CONSTANT = " << yylval->intval << "." << std::endl;}
 			return token::INT_CONSTANT;
 		}
+
+{integer_trailing_percent}  {
+
+        char* p = yytext;
+        unsigned int count = (unsigned int) yyleng;
+
+        if (count >= MAX_TRAILING_PERCENT_TOKEN_SIZE) context_ref.error("size of numeric constant with trailing percent exceeds maximum allowed length.");
+
+        p += count;
+
+        count--; /* count without trailing percent */
+        p--;     /*point to % */
+        p--;     /*point to last char before % */
+
+        while ( ((*p) == ' ') || ((*p) == '\t') )
+        {
+            p--;
+            count--;
+        }
+
+        p = yytext;
+        char* q = trail_pct_buf;
+
+        while (count)
+        {
+            *q++ = *p++;
+            count--;
+        }
+        *q = 0;
+
+        yylval->dblval=atof(trail_pct_buf);
+        yylval->dblval /= 100.;
+		/*debug*/if (trace_lexer) {std::cout << std::endl << "lexer returning DOUBLE_CONSTANT = " << yylval->dblval << "." << std::endl;}
+		return token::DOUBLE_CONSTANT;
+    }
+
+
+{float_trailing_percent}  {
+
+        char* p = yytext;
+        unsigned int count = (unsigned int) yyleng;
+
+        if (count >= MAX_TRAILING_PERCENT_TOKEN_SIZE) context_ref.error("size of numeric constant with trailing percent exceeds maximum allowed length.");
+
+        p += count;
+
+        count--; /* count without trailing percent */
+        p--;     /*point to % */
+        p--;     /*point to last char before % */
+
+        while ( ((*p) == ' ') || ((*p) == '\t') )
+        {
+            p--;
+            count--;
+        }
+
+        p = yytext;
+        char* q = trail_pct_buf;
+
+        while (count)
+        {
+            *q++ = *p++;
+            count--;
+        }
+        *q = 0;
+
+        yylval->dblval=atof(trail_pct_buf);
+        yylval->dblval /= 100.;
+		/*debug*/if (trace_lexer) {std::cout << std::endl << "lexer returning DOUBLE_CONSTANT = " << yylval->dblval << "." << std::endl;}
+		return token::DOUBLE_CONSTANT;
+    }
+
 
 {hex_integer}   {
 

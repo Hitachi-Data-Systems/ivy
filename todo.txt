@@ -1,9 +1,7 @@
-- compression / dedupe
+- when measure=off, provide an accuracy plus/minus value for IOPS & service time.
 
 - test using LVM and impact LUN discovery / SCSI Inquiry
 - test with multipath software (HDLM / MPIO)
-
-- remove requirement to put trailing-percent numbers in quotes.
 
 - validate with "top" to see if linux CPU is being reported correctly
 
