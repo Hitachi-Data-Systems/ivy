@@ -506,6 +506,8 @@ int main(int argc, char* argv[])
                 log(slavelogfile, o.str());
             }
 
+            iogenerator_threads.erase(t_it);
+
 			say("<OK>",slavelogfile,lasttime);
 		}
 
