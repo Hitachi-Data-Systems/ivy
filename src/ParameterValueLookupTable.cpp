@@ -22,13 +22,13 @@
 #include "ivyhelpers.h"
 #include "master_stuff.h"
 
-bool ParameterValueLookupTable::fromString(std::string s)
+std::pair<bool,std::string> ParameterValueLookupTable::fromString(std::string s)
 {
 	contents.clear();
 	return addString(s);
 }
 
-bool ParameterValueLookupTable::addString(std::string s)
+std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
 {
 	unsigned int i {0};
 
@@ -41,7 +41,7 @@ bool ParameterValueLookupTable::addString(std::string s)
 			i++;
 		}
 
-		if ( i >= s.length() ) return true;
+		if ( i >= s.length() ) return std::make_pair(true,std::string(""));
 
 		if (!isalpha(s[i])) // start of identifier
 		{
@@ -52,7 +52,7 @@ bool ParameterValueLookupTable::addString(std::string s)
 			contents.clear();
 			std::cout << o.str();
 			log(m_s.masterlogfile, o.str());
-			return false;
+			return std::make_pair(false,o.str());
 		}
 
 		identifier_start=i;
@@ -79,7 +79,7 @@ bool ParameterValueLookupTable::addString(std::string s)
 			contents.clear();
 			std::cout << o.str();
 			log(m_s.masterlogfile,o.str());
-			return false;
+			return std::make_pair(false,o.str());
 		}
 		i++; // step over '='
 
@@ -98,7 +98,7 @@ bool ParameterValueLookupTable::addString(std::string s)
 			contents.clear();
 			std::cout << o.str();
 			log(m_s.masterlogfile,o.str());
-			return false;
+			return std::make_pair(false,o.str());
 		}
 
 		// start of value
@@ -118,27 +118,27 @@ bool ParameterValueLookupTable::addString(std::string s)
 				contents.clear();
 				std::cout << o.str();
 				log(m_s.masterlogfile,o.str());
-				return false;
+				return std::make_pair(false,o.str());
 			}
 			i++; // step over ending quote
 		}
 		else
-		{ // value is unquoted alphanumerics and underscores
-			if (!(isalnum(s[i]) || '_'==s[i]))
+		{ // value is unquoted alphanumerics and underscores, periods, and percent signs
+			if (!( isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i] ))
 			{
                 std::ostringstream o;
 				o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
 				for (unsigned int j=0; j<i; j++) o << ' ';
-				o << '^' << std::endl << "Unquoted value must be all alphanumerics and underscores." << std::endl;
+				o << '^' << std::endl << "Unquoted value must be all alphanumerics, underscores, periods, and percent signs." << std::endl;
 				contents.clear();
 				std::cout << o.str();
 				log(m_s.masterlogfile,o.str());
-				return false;
+				return std::make_pair(false,o.str());
 			}
 			value_start=i;
 			value_length=1;
 			i++;
-			while (i<s.length() && (isalnum(s[i]) || '_'==s[i]))
+			while (i<s.length() && (isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i]))
 			{
 				i++;
 				value_length++;
@@ -153,7 +153,7 @@ bool ParameterValueLookupTable::addString(std::string s)
 		contents[toLower(s.substr(identifier_start,identifier_length))]=s.substr(value_start,value_length);
 	}
 
-    return true;
+    return std::make_pair(true,std::string(""));
 }
 
 std::string ParameterValueLookupTable::toString()
@@ -174,7 +174,7 @@ std::string ParameterValueLookupTable::toString()
 		value=pear.second;
 		for (unsigned int i=0; i<value.length(); i++)
 		{
-			if (!(isalnum(value[i]) || '_' == value[i]))
+			if (!( isalnum(value[i]) || '_' == value[i] || '.' == value[i] || '%' == value[i] ))
 			{
 				needs_quoting=true;
 				if ('\"' == value[i]) quote_char = '\'';

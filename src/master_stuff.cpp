@@ -1539,8 +1539,8 @@ std::string master_stuff::focus_caption()
     if (have_measure)
     {
         o << "measure=on";
-        o << ", accuracy_plus_minus=\"" << std::fixed << std::setprecision(2) << (100.*accuracy_plus_minus_fraction) << "%\"";
-        o << ", confidence=\""          << std::fixed << std::setprecision(2) << (100.*confidence                  ) << "%\"";
+        o << ", accuracy_plus_minus=" << std::fixed << std::setprecision(2) << (100.*accuracy_plus_minus_fraction) << "%";
+        o << ", confidence="          << std::fixed << std::setprecision(2) << (100.*confidence                  ) << "%";
         o << ", warmup_seconds=" << std::fixed << std::setprecision(0) << warmup_seconds;
         o << ", measure_seconds=" << std::fixed << std::setprecision(0)<< measure_seconds;
         o << ", timeout_seconds=" << std::fixed << std::setprecision(0)<< timeout_seconds;

@@ -77,10 +77,17 @@ void go_statement(yy::location bookmark)
     }
     trim(m_s.goParameters);
 
-    if (!m_s.go_parameters.fromString(m_s.goParameters))
+    std::pair<bool,std::string> r = m_s.go_parameters.fromString(m_s.goParameters);
+    if (!r.first)
     {
         std::ostringstream o;
-        o << std::endl << "<Error> at " << bookmark << " - Failed parsing [Go!] parameters.  Should look like  parameter1=value1, parameter2=\"value 2\"  - unable to parse \"" << m_s.goParameters << "\"." << std::endl;
+        o << std::endl << "<Error> at " << bookmark << " - Failed parsing [Go!] parameters \"" << m_s.goParameters << "\"." << std::endl << std::endl
+            << "[Go] parameters should look like:" << std::endl << "     parameter1=value1, parameter2=\"value 2\", ..." << std:: endl
+            << "where parameter names are identifiers starting with an alphabetic and continuing with alphanumerics and underscores" << std::endl
+            << "and where parameter values need to be enclosed in quotes if they contain any characters other than"
+            << "English alphanumerics (\'a\'-\'z\', \'A\'-\'Z\', \'0\'-\'9\'), underscores (\'_\'), periods (\'.\'), or percent signs (\'%\')." << std::endl
+            << "Example of OK unquoted value:  accuracy_plus_minus = 2.5%" << std::endl << std::endl
+            << r.second << std::endl;
         std::cout << o.str();
         log(m_s.masterlogfile,o.str());
         m_s.kill_subthreads_and_exit();

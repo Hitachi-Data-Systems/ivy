@@ -29,8 +29,8 @@ class ParameterValueLookupTable {
 public:
 	std::map<std::string, std::string> contents;
 
-	bool fromString(std::string);  // true if well-formed
-	bool addString(std::string);  // true if well-formed
+	std::pair<bool,std::string> fromString(std::string);  // true if well-formed
+	std::pair<bool,std::string> addString(std::string);  // true if well-formed
 		// Well formed means empty string, or
 		//      identifier1 = value1, identifier2=value2, ...
 		// Commas between values are optional.
