@@ -320,17 +320,19 @@ void Eyeo::generate_pattern()
                 throw std::runtime_error(o.str());
             }
     }
-/*debug*/ if (pWorkloadThread->write_io_count < 10)
-/*debug*/ {
-/*debug*/     std::ostringstream o;
-/*debug*/
-/*debug*/     o << "Generated pattern for write I/O number " << pWorkloadThread->write_io_count << std::endl;
-/*debug*/
-/*debug*/     // display_memory_contents is part of "printableAndHex" which is in the LUN_discovery project - https://github.com/Hitachi-Data-Systems/LUN_discovery
-/*debug*/     display_memory_contents(o, (unsigned char*)eyeocb.aio_buf, blocksize, 32 /* int perlinemax=16, std::string eachlineprefix=""*/);
-/*debug*/
-/*debug*/     log(pWorkloadThread->slavethreadlogfile,o.str());
-/*debug*/ }
+
+///*debug*/ if (pWorkloadThread->write_io_count < 2)
+///*debug*/ {
+///*debug*/     std::ostringstream o;
+///*debug*/
+///*debug*/     o << "Generated pattern for write I/O number " << pWorkloadThread->write_io_count << " blocksize " << blocksize << std::endl;
+///*debug*/
+///*debug*/     // display_memory_contents is part of "printableAndHex" which is in the LUN_discovery project - https://github.com/Hitachi-Data-Systems/LUN_discovery
+///*debug*/     display_memory_contents(o, (unsigned char*)eyeocb.aio_buf, blocksize, 32 /* int perlinemax=16, std::string eachlineprefix=""*/);
+///*debug*/
+///*debug*/     log(pWorkloadThread->slavethreadlogfile,o.str());
+///*debug*/ }
+
     return;
 }
 

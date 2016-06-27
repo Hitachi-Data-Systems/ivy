@@ -650,19 +650,9 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
 
                 std::ostringstream o;
-                o << "Cooldown duration " << cooldown_time.format_as_duration_HMMSS() << "  not complete, will [EditRollup] all=all [parameters] IOPS = 0, and do another cooldown subinterval." << std::endl;
+                o << "Cooldown duration " << cooldown_time.format_as_duration_HMMSS() << "  not complete, will do another cooldown subinterval." << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
-
-                std::string editRollupErrorMsg;
-                if (!m_s.editRollup(editRollupErrorMsg,"all=all","IOPS=0"))
-                {
-                    std::ostringstream o;
-                    o << "<Error> [EditRollup] all=all [parameters] IOPS = 0 - failed." << std::endl << editRollupErrorMsg << std::endl;
-                    std::cout << o.str();
-                    log(m_s.masterlogfile,o.str());
-                    m_s.kill_subthreads_and_exit();
-                }
             }
             else
             {
@@ -676,13 +666,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
         }
         else
         {
-//            {
-//                std::ostringstream o;
-//                o <<"Calling " << p_DynamicFeedbackController->name() << "::" << "evaluateSubinterval()" << std::endl;
-//                log(m_s.masterlogfile,o.str());
-//                //std::cout << o.str();
-//            }
-
             m_s.lastEvaluateSubintervalReturnCode = p_DynamicFeedbackController->evaluateSubinterval();
 
             {
@@ -724,20 +707,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
                 std::ostringstream o;
                 o << "DFC posted SUCCESS or FAILURE, but cooldown_by_wp is on and we have at least one available test CLPR we can see that is not empty."
-                    << "Entering cooldown mode.  Will now [EditRollup] all=all [parameters] IOPS = 0, and do another cooldown subinterval." << std::endl;
+                    << "Entering cooldown mode." << std::endl;
 
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
-
-                std::string editRollupErrorMsg;
-                if (!m_s.editRollup(editRollupErrorMsg,"all=all","IOPS=0"))
-                {
-                    std::ostringstream o;
-                    o << "<Error> [EditRollup] all=all [parameters] IOPS = 0 - failed." << std::endl << editRollupErrorMsg << std::endl;
-                    std::cout << o.str();
-                    log(m_s.masterlogfile,o.str());
-                    m_s.kill_subthreads_and_exit();
-                }
             }
         }
 
@@ -749,7 +722,14 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
                 if (EVALUATE_SUBINTERVAL_CONTINUE == m_s.lastEvaluateSubintervalReturnCode)
                 {
-                    pear.second->commandString = "continue";
+                    if (m_s.in_cooldown_mode)
+                    {
+                        pear.second->commandString = "coollown";
+                    }
+                    else
+                    {
+                        pear.second->commandString = "continue";
+                    }
                 }
                 else
                 {
@@ -792,7 +772,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             std::ostringstream o;
             o << "Measurement success, making measurement rollups from subinterval " << p_DynamicFeedbackController->firstMeasurementSubintervalIndex()
                 << " to " << p_DynamicFeedbackController->lastMeasurementSubintervalIndex()
-                << ".  (Haven't checked rollup [quantity] and [maxDroopMaxtoMinIOPS] criteria yet.)" << std::endl;
+                << ".  (Haven't checked rollup [quantity] and [maxDroop] criteria yet.)" << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile,o.str());
         }

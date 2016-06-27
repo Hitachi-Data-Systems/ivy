@@ -74,7 +74,7 @@
 
 #define sector_size_bytes (512)
 
-#define catnapTimeSeconds (0.25)
+#define catnapTimeSeconds (0.5)
     // The amount of time after the end of the subinterval that the ivyslave main thread waits
     // before looking to see if the workload threads posted their subintervals complete.
 

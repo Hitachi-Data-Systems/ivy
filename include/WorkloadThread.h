@@ -146,6 +146,8 @@ public:
 
     uint64_t write_io_count;
 
+    bool cooldown {false};
+
 
 
 

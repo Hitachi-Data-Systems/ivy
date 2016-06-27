@@ -742,6 +742,7 @@ int main(int argc, char* argv[])
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting first subinterval MainThreadCommand::run.");
+                    pear.second->cooldown = false;
 
 				}
 				pear.second->slaveThreadConditionVariable.notify_all();
@@ -769,9 +770,12 @@ int main(int argc, char* argv[])
 
 			if (!waitForSubintervalEndThenHarvest()) return -1;  // ivymaster can't tell us anything until after digesting the results of the first subinterval
 		}
-		else if (0==input_line.compare(std::string("continue")))
+		else if ( 0 == input_line.compare(std::string("continue")) || 0 == input_line.compare(std::string("cooldown")) )
 		{
-//*debug*/{ostringstream o; o << "Got \"continue\". " << std::endl; log(slavelogfile,o.str());}
+//*debug*/{ostringstream o; o << "Got \"continue\" or  \"cooldown\". " << std::endl; log(slavelogfile,o.str());}
+            bool cooldown_flag;
+            if (0 == input_line.compare(std::string("cooldown"))) {cooldown_flag=true;}
+            else                                                  {cooldown_flag=false;}
 			for (auto& pear : iogenerator_threads)
 			{
 				{ // lock
@@ -791,6 +795,7 @@ int main(int argc, char* argv[])
 
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
+					pear.second->cooldown = cooldown_flag;
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting MainThreadCommand::run");
 //*debug*/{ostringstream o; o << "Posted MainThreadCommand::run command to " << pear.first << std::endl; log(slavelogfile,o.str());}
 				}
@@ -927,8 +932,28 @@ bool waitForSubintervalEndThenHarvest()
 
 			if ((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status != IVY_SUBINTERVAL_READY_TO_SEND)
 			{
-				ostringstream o; o << "<Error> ivyslave main thread - iogenerator thread \"" << pear.first
-					<< "\" failed to post subinterval status = IVY_SUBINTERVAL_READY_TO_SEND within " << catnapTimeSeconds << " seconds of subinterval ending time for subinterval index = " << next_to_harvest_subinterval << ".  Status actually was " << (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status << std::endl;
+				ostringstream o;
+				o << "<Error> ivyslave main thread - iogenerator thread \"" << pear.first
+					<< "\" failed to post subinterval status = IVY_SUBINTERVAL_READY_TO_SEND within " << catnapTimeSeconds << " seconds of subinterval ending time for subinterval index = " << next_to_harvest_subinterval
+					 << ".  Status actually was ";
+                switch ((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status)
+                {
+                    case IVY_SUBINTERVAL_STATUS_UNDEFINED:
+                        o << "IVY_SUBINTERVAL_STATUS_UNDEFINED (0)";
+                        break;
+                    case IVY_SUBINTERVAL_READY_TO_RUN:
+                        o << "IVY_SUBINTERVAL_READY_TO_RUN (1)";
+                        break;
+                    case IVY_SUBINTERVAL_READY_TO_SEND:
+                        o << "IVY_SUBINTERVAL_READY_TO_SEND (2)";
+                        break;
+                    case IVY_SUBINTERVAL_STOP:
+                        o << "IVY_SUBINTERVAL_STOP (3)";
+                        break;
+                    default:
+                        o << (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status;
+                }
+                o << std::endl;
 				say(o.str(),slavelogfile,lasttime);
 				killAllSubthreads(slavelogfile);
 				return false;

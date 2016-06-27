@@ -872,7 +872,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 //*debug*/{ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() precomputeQ.size()=" << precomputeQ.size() << ", precomputedepth=" << precomputedepth << ". " << std::endl; log(slavethreadlogfile,o.str());}
 
-		if (precomputeQ.size() < precomputedepth)
+		if (precomputeQ.size() < precomputedepth && !cooldown)
 		{
 			// precompute an I/O
 			if (freeStack.empty()) {

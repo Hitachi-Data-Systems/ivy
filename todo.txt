@@ -9,7 +9,6 @@
 - new parameter pid_haircut="5%" where those entire histogram buckets that fit within the lowest 5%
   of the service time 
 
-
 - separate out measure_focus_rollup and pid_focus_rollup and associated parameters
 
 
