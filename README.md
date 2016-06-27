@@ -30,15 +30,21 @@ With the Hitachi command device connector, ivy
 
 Documentation, training, videos are in the ["ivy" project on the HDS community](https://community.hds.com/groups/ivy)
 
-## Contributors
+## Source code
+See src subfolder.  ivy is built using the CodeBlocks IDE.
 
-Just me so far - ian.vogelesang@hds.com - but I'm looking forward to others diving in.
+## Binary Linux executables
+The binaries in the bin folder were built on RHEL 6 with g++ 4.9.2 and associated libstdc++.  The binaries are statically linked with libstdc++ and dynamically linked with libc.
 
-## License
+I've also built and run ivy on a CentOS 7 platform also with with g++ 4.9.2, with no issues.
 
-[Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+## The LUN_discovery tool set is required to run ivy
+[LUN_discovery on github](https://github.com/Hitachi-Data-Systems/LUN_discovery)
 
-## videos
+## Documentation
+See the [doc](doc) subfolder.
+
+## Videos
 
 * [Introduction to ivy](https://www.youtube.com/watch?v=--h_tdnRkkE&amp;list=PLHmnN_gEh0ZzK8KqOXfWqdVsEjuaqjpu8&amp;index=1)
 * [Testing in minimum time with ivy](https://www.youtube.com/watch?v=2rrwpY4ySwQ&amp;list=PLHmnN_gEh0ZzK8KqOXfWqdVsEjuaqjpu8&amp;index=2)
@@ -54,4 +60,29 @@ Just me so far - ian.vogelesang@hds.com - but I'm looking forward to others divi
 * [\[Go\] statement 1 of 3](https://www.youtube.com/watch?v=3bAn5pFKS4I&amp;list=PLHmnN_gEh0ZzK8KqOXfWqdVsEjuaqjpu8&amp;index=12)
 * [\[Go\] statement 2 of 3 - the focus rollup](https://www.youtube.com/watch?v=_nT25ieZWzI&amp;list=PLHmnN_gEh0ZzK8KqOXfWqdVsEjuaqjpu8&amp;index=13)
 * [\[Go\] statement 3 of 3 - measure=on and the PID loop feature](https://www.youtube.com/watch?v=QZ6aqLtKPEg&amp;list=PLHmnN_gEh0ZzK8KqOXfWqdVsEjuaqjpu8&amp;index=14)
+
+## Demos
+Sample output from the demos is in the sample_output folder.
+* Some of the demos also have a video - see list of videos above.
+* Some of the demos come in two flavours
+ * The "DF" version was done on an HDS AMS2100 subsystem.
+  * The "DF" demos show the ivy functionality that is available on any vendor's equipment.
+  * To adapt for another vendor's equipment, to specifically select some but not all LUNs we would need an equivalent to the the [LUN_discovery](https://github.com/Hitachi-Data-Systems/LUN_discovery) tool to decode the attributes of that vendor's LUNs, such as the equivalent of Hitachi LDEVs (logical devices).
+ * The "RAID" demos were performed on a Hitachi RAID family subsystem with a command device configured to one of the test hosts, and where the Hitachi proprietary "ivy command device connector" software was installed on the test host together with a subsystem license key.
+  * The command device connector software is proprietary and is not part of the ivy open source project.  It is available only for authorized internal Hitachi lab use.
+  * These RAID demos have more detailed subsystem configuration information retrieved from the command device, as well as subinterval-by-subinterval real-time performance data retrieved from the command device.
+  * These RAID demos are provided for two reasons
+   1. To illustrate the full functionality of ivy.
+   2. To show other vendors the functionality they can implement by developing their own connectors to their own subsystem products.
+* Where there are both DF and RAID versions of the videos / demos, it is recommended to watch the DF first and then the RAID version, as the RAID version generally builds on the DF version.
+* Some demos which depend on having a command device connector such demos for performing dynamic feedback control on subsystem internal MP % busy or subsystem Parity Group % busy come only in one flavour.  Other vendors by developing their own connectors could develop similar functionality.
+
+## Contributors
+
+Just me so far - ian.vogelesang@hds.com - but I'm looking forward to others diving in.
+
+## License
+
+[Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
 
