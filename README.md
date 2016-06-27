@@ -26,9 +26,8 @@ With the Hitachi command device connector, ivy
 * Retrieves subsystem performance information synchronized and aligned with ivy host data.
 * Filters real-time subsystem data by ivy "rollup instance" enabling fine-grained dynamic feedback control of IOPS to hit a target utilization of a component inside the subsystem.
 
-## ivy home web site
-
-Documentation, training, videos are in the ["ivy" project on the HDS community](https://community.hds.com/groups/ivy)
+## Getting started
+Look in the doc subfolder and read the "01.Introduction_to_ivy" PowerPoint or .pdf presentation material, or else watch the "Introduction to ivy" video (link below).
 
 ## Source code
 See src subfolder.  ivy is built using the CodeBlocks IDE.
@@ -42,7 +41,7 @@ I've also built and run ivy on a CentOS 7 platform also with with g++ 4.9.2, wit
 [LUN_discovery on github](https://github.com/Hitachi-Data-Systems/LUN_discovery)
 
 ## Documentation
-See the [doc](doc) subfolder.
+See the doc subfolder.
 
 ## Videos
 
@@ -64,16 +63,16 @@ See the [doc](doc) subfolder.
 ## Demos
 Sample output from the demos is in the sample_output folder.
 * Some of the demos also have a video - see list of videos above.
-* Some of the demos come in two flavours
- * The "DF" version was done on an HDS AMS2100 subsystem.
-  * The "DF" demos show the ivy functionality that is available on any vendor's equipment.
-  * To adapt for another vendor's equipment, to specifically select some but not all LUNs we would need an equivalent to the the [LUN_discovery](https://github.com/Hitachi-Data-Systems/LUN_discovery) tool to decode the attributes of that vendor's LUNs, such as the equivalent of Hitachi LDEVs (logical devices).
- * The "RAID" demos were performed on a Hitachi RAID family subsystem with a command device configured to one of the test hosts, and where the Hitachi proprietary "ivy command device connector" software was installed on the test host together with a subsystem license key.
+* Some of the demos come in two flavours, "DF", and "RAID".
+* The "DF" version was done on an HDS AMS2100 subsystem.
+ * The "DF" demos show the ivy functionality that is available on any vendor's equipment.
+ * To adapt for another vendor's equipment, to specifically select some but not all LUNs we would need an equivalent to the the [LUN_discovery](https://github.com/Hitachi-Data-Systems/LUN_discovery) tool to decode the attributes of that vendor's LUNs, such as the equivalent of Hitachi LDEVs (logical devices).
+* The "RAID" demos were performed on a Hitachi RAID family subsystem with a command device configured to one of the test hosts, and where the Hitachi proprietary "ivy command device connector" software was installed on the test host together with a subsystem license key.
   * The command device connector software is proprietary and is not part of the ivy open source project.  It is available only for authorized internal Hitachi lab use.
   * These RAID demos have more detailed subsystem configuration information retrieved from the command device, as well as subinterval-by-subinterval real-time performance data retrieved from the command device.
-  * These RAID demos are provided for two reasons
-   1. To illustrate the full functionality of ivy.
-   2. To show other vendors the functionality they can implement by developing their own connectors to their own subsystem products.
+* The RAID demos are provided for two reasons
+  1. To illustrate the full functionality of ivy.
+  2. To show other vendors the functionality they can implement by developing their own connectors to their own subsystem products.
 * Where there are both DF and RAID versions of the videos / demos, it is recommended to watch the DF first and then the RAID version, as the RAID version generally builds on the DF version.
 * Some demos which depend on having a command device connector such demos for performing dynamic feedback control on subsystem internal MP % busy or subsystem Parity Group % busy come only in one flavour.  Other vendors by developing their own connectors could develop similar functionality.
 
