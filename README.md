@@ -73,8 +73,12 @@ Sample output from the demos is in the sample_output folder.
 * The RAID demos are provided for two reasons
   1. To illustrate the full functionality of ivy.
   2. To show other vendors the functionality they can implement by developing their own connectors to their own subsystem products.
-* Where there are both DF and RAID versions of the videos / demos, it is recommended to watch the DF first and then the RAID version, as the RAID version generally builds on the DF version.
+* Where there are both DF and RAID versions of the videos / demos, it is recommended to watch the DF version first and then the RAID version, as the RAID version generally builds on the DF version.
 * Some demos which depend on having a command device connector such demos for performing dynamic feedback control on subsystem internal MP % busy or subsystem Parity Group % busy come only in one flavour.  Other vendors by developing their own connectors could develop similar functionality.
+
+## The ivy output file csv file loader Excel tool
+There is an Excel tool in the bin folder that makes it easy to load just the kind of data you are looking for amongst the myriad of output csv files that ivy can generate.
+* You may want to use this tool along with the sample output from the demos found in the sample_output folder.
 
 ## Contributors
 
