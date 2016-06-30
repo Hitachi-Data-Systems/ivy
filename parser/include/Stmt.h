@@ -387,7 +387,6 @@ public:
         {
             bookmark=l;
             if (phspl==nullptr) throw std::runtime_error("Stmt_hosts constructor called with null pointer to host_spec pointer list.");
-            if (p_Select==nullptr) throw std::runtime_error("Stmt_hosts constructor called with null pointer to Select.");
         }
 	virtual ~Stmt_hosts() override { if (phspl != nullptr) for (auto& p :(*phspl)) delete p; }
 

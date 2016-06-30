@@ -510,7 +510,7 @@ bool pipe_driver_subthread::get_line_from_pipe
                 }
                 master_slave_cv.notify_all();
 
-                exit(-1);
+                m_s.kill_subthreads_and_exit();
             }
             else
             {

@@ -134,7 +134,8 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 
 \r\n	|
 \r	|
-\n	{ srclineno++; yylloc->lines(1); }
+\n	|
+\v  { srclineno++; yylloc->lines(1); }
 
 "/*"	{
 		int c;
@@ -280,7 +281,6 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 "else"      { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_ELSE" << std::endl; return token::KW_ELSE; }
 "for"       { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_FOR" << std::endl; return token::KW_FOR; }
 "while"     { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_WHILE" << std::endl; return token::KW_WHILE; }
-"end"       { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_END" << std::endl; return token::KW_END; }
 "return"    { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_RETURN" << std::endl; return token::KW_RETURN; }
 "static"    { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_STATIC" << std::endl; return token::KW_STATIC; }
 "const"     { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_CONST" << std::endl; return token::KW_CONST; }

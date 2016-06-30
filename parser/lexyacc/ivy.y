@@ -84,7 +84,7 @@ using namespace std;
 %token <dblval> DOUBLE_CONSTANT
 %token <p_str> ID STRING_CONSTANT DOTTED_QUAD_IP_ADDR
 %token <p_chars> LOGICAL_OR LOGICAL_AND BITWISE_OR BITWISE_XOR BITWISE_AND EQ NE LT GT LE GE PLUS MINUS MULT DIV REMAINDER ASSIGN
-%token KW_INT KW_DOUBLE KW_STRING KW_IF KW_THEN KW_ELSE KW_FOR KW_WHILE KW_END KW_RETURN KW_STATIC KW_CONST KW_DO
+%token KW_INT KW_DOUBLE KW_STRING KW_IF KW_THEN KW_ELSE KW_FOR KW_WHILE KW_RETURN KW_STATIC KW_CONST KW_DO
 %token KW_IS KW_TO KW_HOSTS KW_OUTPUT_FOLDER_ROOT KW_SET_IOGENERATOR_TEMPLATE KW_CREATE_WORKLOAD KW_DELETE_WORKLOAD KW_SELECT
 %token KW_IOGENERATOR KW_PARAMETERS KW_CREATE_ROLLUP KW_NOCSV KW_QUANTITY KW_MAX_DROOP_MAX_TO_MIN_IOPS KW_DELETE_ROLLUP KW_EDIT_ROLLUP KW_GO
 
@@ -291,6 +291,16 @@ statement:
             $$ = (Stmt*) new Stmt_hosts(@$,$2,$3);
         }
 
+    | KW_HOSTS host_list ';'
+        {
+            if (trace_parser)
+            {
+                trace_ostream << "[Hosts] host_list:";
+                for (auto& s: *$2) { s->display(indent_increment,trace_ostream); }
+                trace_ostream << "[Hosts] statement - missing [Select] clause.";
+            }
+            $$ = (Stmt*) new Stmt_hosts(@$,$2,nullptr);
+        }
     | KW_SET_IOGENERATOR_TEMPLATE string_x KW_PARAMETERS string_x ';'
         {
             $$ = new Stmt_set_iogenerator_template(@$,$2,$4);

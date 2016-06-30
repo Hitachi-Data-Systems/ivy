@@ -86,6 +86,14 @@ bool Stmt_hosts::execute()
         p_Ivy_pgm->error(o.str());
     }
 
+    if (p_Select == nullptr)
+    {
+        std::ostringstream o;
+
+        o << "[Hosts] statement at " << bookmark << " - error - missing [Select] clause." << std::endl;
+        p_Ivy_pgm->error(o.str());
+    }
+
 
     if (trace_evaluate)
     {
