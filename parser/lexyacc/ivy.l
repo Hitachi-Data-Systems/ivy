@@ -203,6 +203,46 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 				yylloc->lines(1);
 				break;
 			}
+			else if ('\v' == c)
+			{
+				srclineno++;
+				yylloc->lines(1);
+				break;
+			}
+		}
+	}
+
+#	{
+		/* comments starting with # */
+		int c;
+		for (;;)
+		{
+			if (EOF == (c = yyinput()))
+			{
+				return 0;
+			}
+			if ('\r' == c)
+			{
+				srclineno++;
+				yylloc->lines(1);
+				if (EOF == (c=yyinput()))
+					return 0;
+				if ('\n' != c)
+					unput(c);
+				break;
+			}
+			else if ('\n' == c)
+			{
+				srclineno++;
+				yylloc->lines(1);
+				break;
+			}
+			else if ('\v' == c)
+			{
+				srclineno++;
+				yylloc->lines(1);
+				break;
+			}
 		}
 	}
 

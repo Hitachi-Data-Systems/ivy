@@ -503,7 +503,7 @@ bool WorkloadThread::prepare_linux_AIO_driver_to_start()
 	// Empty the freeStack, precomputeQ, and postprocessQ.  Then fill the freeStack with our list of all Eyeos that exist.
 	// Create the aio context.
 
-	precomputedepth = p_current_IogeneratorInput->maxTags;
+	precomputedepth = 2 * p_current_IogeneratorInput->maxTags;
 
 	EyeoCount = 2 * (precomputedepth + p_current_IogeneratorInput->maxTags);  // the 2x is a postprocess queue allowance
 	for (int i=allEyeosThatExist.size() ; i < EyeoCount; i++)
