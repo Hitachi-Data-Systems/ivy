@@ -1628,6 +1628,7 @@ void pipe_driver_subthread::threadRun()
                         startsWith(commandString,std::string("Go!"))
                         // In "Go!<5,0>"  the <5,0> is the subinterval length as an ivytime::toString() representation - <seconds,nanoseconds>
                         || 0==std::string("continue").compare(commandString)
+                        || 0==std::string("cooldown").compare(commandString)
                         || 0==std::string("stop").compare(commandString)
 
                         // No matter which one of these commands we got, we send it and then we gather the subinterval result lines.
@@ -1826,6 +1827,10 @@ void pipe_driver_subthread::threadRun()
     }
     else
     {
+        ostringstream logmsg;
+        logmsg << "fork() to create child subthread to issue ssh failed errno = " << errno << " - " << strerror(errno) << std::endl;
+        log(logfilename, logmsg.str());
+
         // failed to create child
         close(pipe_driver_subthread_to_slave_pipe[PIPE_READ]);
         close(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE]);

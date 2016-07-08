@@ -784,7 +784,7 @@ int main(int argc, char* argv[])
 					if (ThreadState::running != pear.second->state)
 					{
 						ostringstream o;
-						o << "<Error> received \"continue\" command, but thread \"" << pear.first << "\" was in " << threadStateToString(pear.second->state) << " state, not in \"running\" state.  Aborting." << std::endl;
+						o << "<Error> received \"continue\" or \"cooldown\" command, but thread \"" << pear.first << "\" was in " << threadStateToString(pear.second->state) << " state, not in \"running\" state.  Aborting." << std::endl;
 						say(o.str(),slavelogfile,lasttime);
 						killAllSubthreads(slavelogfile);
 						return -1;

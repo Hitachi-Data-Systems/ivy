@@ -724,7 +724,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 {
                     if (m_s.in_cooldown_mode)
                     {
-                        pear.second->commandString = "coollown";
+                        pear.second->commandString = "cooldown";
                     }
                     else
                     {

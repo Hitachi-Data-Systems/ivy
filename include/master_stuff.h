@@ -76,7 +76,7 @@ public:
 
     int running_subinterval {-1};
 
-	std::string ivyscriptFilename {"~/default.ivyscript"};
+	std::string ivyscriptFilename {};
 
 	std::mutex master_mutex;  // This is the overall one, for synchronizing access to "master_stuff".
 	std::condition_variable master_cv;

@@ -41,28 +41,49 @@ std::string inter_statement_divider {"---------------------"};
 bool routine_logging {false};
 void initialize_io_time_clip_levels();
 
+void usage_message(char* argv_0)
+{
+    std::cout << std::endl << "Usage: " << argv_0 << " [options] <ivyscript file name to open>" << std::endl << std::endl
+        << "where \"[options]\" means zero or more of:" << std::endl << std::endl
+        << "-log" << std::endl
+        << "     Turns on logging of routine events." << std::endl << std::endl
+        << "-trace_lexer" << std::endl
+        << "     Log routine events and trace the \"lexer\" which breaks down the .ivyscript program into \"tokens\"." << std::endl << std::endl
+        << "-trace_parser" << std::endl
+        << "     Log routine events and trace the \"parser\" which recognizes the syntax of the stream of tokens as a program." << std::endl << std::endl
+        << "-trace_evaluate" << std::endl
+        << "     Log routine events and trace the execution of the compiled ivyscript program." << std::endl << std::endl
+        << "-t" << std::endl
+        << "     Same as -trace_lexer -trace_parser -trace_evaluate." << std::endl << std::endl
+        << "The .ivyscript suffix on the name of the ivyscript program is optional." << std::endl << std::endl
+        << "Examples:" << std::endl
+        << "\t" << argv_0 << " xxxx.ivyscript" << std::endl
+        << "\t" << argv_0 << " xxxx" << std::endl
+        << "\t" << argv_0 << " -log xxxx" << std::endl
+        << "\t" << argv_0 << " -t xxxx" << std::endl
+        ;
+}
+
 int main(int argc, char* argv[])
 {
     m_s.test_start_time.setToNow();
 
     initialize_io_time_clip_levels();
 
+    if (argc==1) { usage_message(argv[0]); return -1; }
+
     for (int arg_index = 1 /*skipping executable name*/ ; arg_index < argc ; arg_index++ )
     {
         std::string item {argv[arg_index]};
 
         if (item == "-log")            { routine_logging = true; continue; }
-        if (item == "-t")              { trace_lexer = trace_parser = trace_evaluate = true; continue; }
-        if (item == "-trace_lexer")    { trace_lexer = true; continue; }
-        if (item == "-trace_parser")   { trace_parser = true; continue; }
-        if (item == "-trace_evaluate") { trace_evaluate = true; continue; }
-        if (arg_index != (argc-1))
-        {
-            std::cout << argv[0] << " - usage: " << argv[0] << " options <ivyscript file name to open>" << std::endl
-                << " where \"options\" means zero or more of: -trace_lexer  -trace_parser  -trace_evaluate or -t which sets all 3 trace types on." << std::endl
-                << "and where the default filename is " << m_s.ivyscriptFilename << std::endl;
-                return -1;
-        }
+        if (item == "-t")              { routine_logging = trace_lexer = trace_parser = trace_evaluate = true; continue; }
+        if (item == "-trace_lexer")    { routine_logging = trace_lexer = true; continue; }
+        if (item == "-trace_parser")   { routine_logging = trace_parser = true; continue; }
+        if (item == "-trace_evaluate") { routine_logging = trace_evaluate = true; continue; }
+
+        if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }
+
         m_s.ivyscriptFilename = item;
     }
 
