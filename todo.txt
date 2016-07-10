@@ -1,3 +1,8 @@
+
+- rename parameter service_time to service_time_seconds
+
+- offer shorthand source=service_time_seconds to set the 4 parameters 
+
 - when measure=off, provide an accuracy plus/minus value for IOPS & service time.
 
 - test using LVM and impact LUN discovery / SCSI Inquiry

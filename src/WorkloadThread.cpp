@@ -664,6 +664,7 @@ void WorkloadThread::popandpostprocessoneEyeo() {
 	// - if the postprocessQ is not empty
 	//	take an I/O out of the postcomputeQ, record statistics/trace data, and loop back for new timestamp;
 	// - if there is room in the precomputeQ and the test and cooldown are not over
+	//   and the scheduled time of the most recently added I/O in the precomputeQ is less than 1/4 second in the future
 	// 	take an Eyeo off the freestack, generate(), and put in the precomputeQ, loop back for new timestamp;
 	// - wait until either an I/O completion event is ready,
 	//        or it's time to drive the next I/O and we are not yet at max queue depth
@@ -872,7 +873,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 //*debug*/{ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() precomputeQ.size()=" << precomputeQ.size() << ", precomputedepth=" << precomputedepth << ". " << std::endl; log(slavethreadlogfile,o.str());}
 
-		if (precomputeQ.size() < precomputedepth && !cooldown)
+		if ( precomputeQ.size() < precomputedepth && !cooldown && (precomputeQ.size() == 0 || (now + precompute_horizon) > precomputeQ.back()->scheduled_time) )
 		{
 			// precompute an I/O
 			if (freeStack.empty()) {

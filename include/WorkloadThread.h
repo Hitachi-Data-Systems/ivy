@@ -74,6 +74,7 @@ public:
 	ivytime now;
 	ivytime subinterval_duration, currentSubintervalEndTime;
 	ivytime waitduration;
+	ivytime precompute_horizon {ivytime(0,125000000)};
 
 	Subinterval subinterval_array[2];
 
