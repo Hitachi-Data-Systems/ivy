@@ -22,6 +22,8 @@
 #include <regex>
 #include <sys/stat.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "Ivy_pgm.h"
 #include "host_range.h"
@@ -316,6 +318,7 @@ int main(int argc, char* argv[])
             std::cout << "Whoops!  Something happened trying to run the ivy program." << std::endl;
             throw;
         }
+        m_s.overall_success = true;
 	}
 	else
 	{

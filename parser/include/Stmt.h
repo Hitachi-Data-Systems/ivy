@@ -140,10 +140,10 @@ public:
 
 		if (p_STE->is_static() && constructed)
         {
-            if (trace_evaluate) { display(0,trace_ostream); trace_ostream  << " not executing - already constructed." << std::endl; }
+            if (trace_evaluate) { trace_ostream  << "Stmt_constructor at " << bookmark << " not executing - already constructed." << std::endl; }
             return false;
         }
-        if (trace_evaluate) { display(0,trace_ostream); trace_ostream  << " executing." << std::endl; }
+        if (trace_evaluate) { trace_ostream  << "Stmt_constructor at " << bookmark << " executing." << std::endl; }
 
 		constructed = true;
 		switch ((enum basic_types)(p_STE->genre())) {
@@ -172,7 +172,7 @@ private:
 public:
 	Stmt_destructor(SymbolTableEntry* p_S): p_STE(p_S) {};
 	virtual bool execute() override {
-        if (trace_evaluate) { display(0,trace_ostream); trace_ostream  << " executing." << std::endl; }
+        if (trace_evaluate) { trace_ostream  << "Stmt_destructor at " << bookmark << "  executing." << std::endl; }
 		switch ((enum basic_types)(p_STE->genre())) {
 		case type_string:
             typedef std::string std_string;
@@ -194,7 +194,7 @@ private:
 public:
 	virtual bool execute() override
 	{
-        if (trace_evaluate) { display(0,trace_ostream); trace_ostream  << " executing." << std::endl; }
+        if (trace_evaluate) { trace_ostream  << "Stmt_if at " << bookmark << "  executing." << std::endl; }
 
 		int test_result;
 		p_test_x->evaluate((void*)&test_result);
@@ -244,7 +244,7 @@ public:
 			char any_type[biggest_type];
 		} u;
 
-		if (trace_evaluate) { display(0,trace_ostream); trace_ostream  << " executing." << std::endl; }
+		if (trace_evaluate) { trace_ostream  << "Stmt_constructor at " << bookmark << " executing." << std::endl; }
 
 		if (p_init_x == nullptr)
 		{

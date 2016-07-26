@@ -48,6 +48,7 @@
 #include <limits.h> // LLONG_MAX, LLONG_MIN
 #include <algorithm>
 #include <stdexcept>
+#include <syscall.h>
 
 using namespace std;
 
@@ -99,118 +100,115 @@ extern bool trace_evaluate;
 extern std::regex identifier_regex;
 std::regex number_regex( R"((([0-9]+(\.[0-9]*)?)|(\.[0-9]+))%?)" );  // 5 or .5 or 5.5 - may have trailing % sign
 
-bool pipe_driver_subthread::send_and_get_OK(std::string s)
+void pipe_driver_subthread::send_and_get_OK(std::string s, const ivytime timeout)
 {
-    if (!send_string(s))
-    {
-        log(logfilename, std::string("send_string(\"") + s + std::string("\") failed."));
-        return false;
-    }
+    send_string(s);
 
-    if (!get_line_from_pipe(ivytime(2), std::string("send_and_get_OK()"), prompt))
+    std::string r = get_line_from_pipe(timeout, std::string("send_and_get_OK()"));
+    trim(r);
+    if (0 != std::string("<OK>").compare(r))
     {
-        log(logfilename, "get_line_from_pipe() failed.\n");
-        return false;
+        std::ostringstream o;
+        o << "For host " << ivyscript_hostname << ", sent command \"" << s << "\" to ivyslave, and was expecting ivyslave to respond with <OK> but instead got \"" << r << "\".";
+        throw std::runtime_error(o.str());
     }
-    trim(prompt);
-    if (endsIn(prompt,std::string("<OK>"))) return true;
-    log(logfilename, "Failed to get <OK> from slave.\n");
-    return false;
+    return;
 }
 
-bool pipe_driver_subthread::send_and_clip_response_upto(std::string s, std::string pattern, std::string& response, int timeout_seconds)
+void pipe_driver_subthread::send_and_get_OK(std::string s)
+{
+    send_and_get_OK(s, m_s.subintervalLength);
+    return;
+}
+
+std::string pipe_driver_subthread::send_and_clip_response_upto(std::string s, std::string pattern, const ivytime timeout)
 {
     // sends the string s, then gets a response string from the slave.
 
     // Then we scan through the response looking for the pattern substring. e.g. [LUNHEADER] or [LUN]
 
-    // If the pattern is found, the remaining portion of the response from the slave is placed in the "response" string reference and we return true
-    // If the pattern is not found, the entire response from the slave is placed into the "response" string reference and we return false
+    // If the pattern is found, the remaining portion of the response from the slave is returned.
 
-    if (!send_string(s))
+
+    // NOTE: probably when I wrote this I had forgotten that send_string() eats the echo of what it sends.
+    //       So probably we are matching on the pattern right at the beginning.  Not going to stop now to figure this out and simplify.
+
+
+    send_string(s);
+
+    std::string r = get_line_from_pipe(timeout, std::string("send_and_clip_response_upto(\"") + s + std::string("\", \"") + pattern + std::string("\")"));
+
+    trim(r);
+
+    if ( r.length() < pattern.length() )
     {
-        log(logfilename, std::string("send_and_clip_response_upto(\"") + s + std::string("\", \"") + pattern + std::string("\",) failed."));
-        response="";
-        return false;
+        std::ostringstream o;
+        o << "For host " << ivyscript_hostname << ", sent command \"" << s << "\" to ivyslave, and was expecting the ivyslave response to contain \"" << pattern << "\" but instead got \"" << r << "\".";
+        throw std::runtime_error(o.str());
     }
 
-    if (!get_line_from_pipe(ivytime(timeout_seconds), std::string("send_and_clip_response_upto()"), prompt))
+    for (int cursor=0; (pattern.length()+cursor) <= r.length(); cursor++)
     {
-        log(logfilename, "get_line_from_pipe() failed.\n");
-        response="";
-        return false;
-    }
-
-    trim(prompt);
-
-//*debug*/ {ostringstream o; o<<"pipe_driver_subthread::send_and_clip_response_upto(std::string s=\"" << s << "\",std::string pattern=\"" << pattern << "\", std::string& response, int timeout) got prompt=\"" << prompt << "\"\n"; log(logfilename, o.str());}
-
-    if (prompt.length()<pattern.length())
-    {
-        response=prompt;
-        return false;
-    }
-
-    for (int cursor=0; (pattern.length()+cursor)<=prompt.length(); cursor++)
-    {
-        if (pattern==prompt.substr(cursor,pattern.length()))
+        if (pattern==r.substr(cursor,pattern.length()))
         {
-            if ((pattern.length()+cursor)==prompt.length())
-                response="";
+            if ((pattern.length()+cursor)==r.length())
+                return "";
             else
-                response=prompt.substr(cursor+pattern.length(),prompt.length()-(cursor+pattern.length()));
-            return true;
+                return r.substr(cursor+pattern.length(),r.length()-(cursor+pattern.length()));
         }
     }
-    response=prompt;
-    return false;
+    {
+        std::ostringstream o;
+        o << "For host " << ivyscript_hostname << ", sent command \"" << s << "\" to ivyslave, and was expecting the ivyslave response to contain \"" << pattern << "\" but instead got \"" << r << "\".";
+        throw std::runtime_error(o.str());
+    }
+    return ""; //paranoia in case compiler complains
 }
 
-bool pipe_driver_subthread::send_string(std::string s)
+void pipe_driver_subthread::send_string(std::string s)
 {
     rtrim(s);
     s+='\n';  // put a line end on it if it didn't already have one
+
     if (s.length() > IVYMAXMSGSIZE)
     {
-        std::ostringstream errmsg;
-        errmsg << "write() for string to slave - oversized string of length " << s.length() << " when max is " << IVYMAXMSGSIZE << ". " << std::endl;
-        log(logfilename, errmsg.str());
-        return false;
+        std::ostringstream o;
+        o << "For host " << ivyscript_hostname << ", write() for string to slave - oversized string of length " << s.length() << " when max is " << IVYMAXMSGSIZE << ". " << std::endl;
+        throw std::runtime_error(o.str());
     }
     memcpy(to_slave_buf,s.c_str(),s.length());
+
     int rc = write(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE],to_slave_buf,s.length());
+
     if (-1 == rc)
     {
-        ostringstream logmsg;
-        logmsg << "write() for string to slave failed errno = " << errno << " - " << strerror(errno) << std::endl;
-        log(logfilename, logmsg.str());
-        return false;
+        ostringstream o;
+        o << "For host " << ivyscript_hostname << ", write() for string into pipe to ivyslave failed errno = " << errno << " - " << strerror(errno) << std::endl;
+        throw std::runtime_error(o.str());
     }
+
     if ( s.length() != ((unsigned int) rc) )
     {
-        ostringstream logmsg;
-        logmsg << "write() for string to slave only wrote " << rc << " bytes out of " << s.length() << "." << std::endl;
-        log(logfilename, logmsg.str());
-        return false;
+        ostringstream o;
+        o << "For host " << ivyscript_hostname << ", write() for string into pipe to ivyslave only wrote " << rc << " bytes out of " << s.length() << "." << std::endl;
+        throw std::runtime_error(o.str());
     }
-    if (trace_evaluate) log(logfilename, format_utterance("Master",s));
+
+    if (routine_logging) log(logfilename, format_utterance("Master",s));
+
     // With ssh, we hear back an echo of what we typed.  So we read from the pipe to eat the echo.
-    std::string echo;
-    if (!get_line_from_pipe(ivytime(5),std::string("reading echo of what we just said."),echo,false))
-    {
-        log(logfilename, "Failed trying to read echo line.");
-        return false;
-    }
-/*debug*/ log(logfilename, std::string("Echo line was \"")+echo+std::string("\"\n"));
+    std::string echo = get_line_from_pipe(m_s.subintervalLength,std::string("reading echo of what we just said."));
+
+// /*debug*/ log(logfilename, std::string("Echo line was \"")+echo+std::string("\"\n"));
+
     rtrim(s);
     rtrim(echo);
     if (0 != s.compare(echo))
     {
-        log(logfilename, "Echo line didn't match what we sent.\n");
-        return false;
+        throw std::runtime_error("Echo line didn't match what we sent.");
     }
 
-    return true;
+    return;
 }
 
 bool parseWorkloadIDfromIstream(std::string& callers_error_message, std::istream& i, WorkloadID& wid)
@@ -261,8 +259,6 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
 {
     // Used by get_line_from_pipe() when there are no more bytes left in "from_slave_buf" to serve up.
 
-    // Returns false on end of file or error.
-
     ivytime start, now, remaining, waitthistime;
     int rc;
     fd_set read_fd_set;
@@ -271,6 +267,7 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
 
     now.setToNow();
     if (now >= (start+timeout)) return false;
+
     remaining=(start+timeout)-now;
 
     while(true)
@@ -280,24 +277,28 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
         if (-1==fcntl(slave_to_pipe_driver_subthread_pipe[PIPE_READ],F_GETFD)) // check to make sure fd is valid
         {
             ostringstream logmsg;
-            logmsg << "pipe_driver_subthread::read_from_pipe() - fcntl() for pipe fd failed. errno = " << errno << " - " << strerror(errno) << std::endl;
-            log(logfilename, logmsg.str());
+            logmsg << "For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe() - fcntl() for pipe fd failed. errno = " << errno << " - " << strerror(errno);
+            log(logfilename,logmsg.str());
             return false;
         }
 
         int pid_status;
         pid_t result = waitpid(ssh_pid, &pid_status, WNOHANG);
 //*debug*/{std::ostringstream o; o<< std::endl << "pipe_driver_subthread::read_from_pipe() for " << ivyscript_hostname << " ssh_pid = " << ssh_pid << " result of checking pid with WNOHANG is " << result << " pid_status = " << pid_status << std::endl  << std::endl; log(logfilename,o.str());}
+
         if (-1==result)
         {
             ostringstream logmsg;
-            logmsg << "pipe_driver_subthread::read_from_pipe() - waitpid(ssh_pid,,WNOHANG) failed. errno = " << errno << " - " << strerror(errno) << std::endl;
-            log(logfilename, logmsg.str());
+            logmsg << "For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe() - waitpid(ssh_pid,,WNOHANG) failed. errno = " << errno << " - " << strerror(errno);
+            log(logfilename,logmsg.str());
             return false;
         }
+
         if (0 != pid_status && WIFEXITED(pid_status))
         {
-            log(logfilename, std::string("pipe_driver_subthread::read_from_pipe() - child has exited.\n"));
+            ostringstream logmsg;
+            logmsg << "For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe() - child has exited.";
+            log(logfilename,logmsg.str());
             return false;
         }
 
@@ -312,8 +313,8 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
         if (-1==rc)
         {
             ostringstream logmsg;
-            logmsg << "pipe_driver_subthread::read_from_pipe() - pselect() failed. errno = " << errno << " - " << strerror(errno) << std::endl;
-            log(logfilename, logmsg.str());
+            logmsg << "For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe() - pselect() failed. errno = " << errno << " - " << strerror(errno);
+            log(logfilename,logmsg.str());
             return false;
         }
         else if (0==rc)
@@ -323,8 +324,8 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
             if (now >= (start+timeout))
             {
                 ostringstream logmsg;
-                logmsg << "pipe_driver_subthread::read_from_pipe() - timeout." << std::endl;
-                log(logfilename, logmsg.str());
+                logmsg << "For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe(timeout=" << timeout.format_as_duration_HMMSSns() << ") - timeout.";
+                log(logfilename,logmsg.str());
                 return false;
             }
         }
@@ -333,19 +334,19 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
 
     // we have data ready to receive from the child
 
-    rc=read(slave_to_pipe_driver_subthread_pipe[PIPE_READ],(void*)&from_slave_buf, IVYMAXMSGSIZE);
+    rc = read( slave_to_pipe_driver_subthread_pipe[PIPE_READ], (void*) &from_slave_buf, IVYMAXMSGSIZE );
     if (-1==rc)
     {
         ostringstream logmsg;
-        logmsg << "read() from pipe failed errno = " << errno << " - " << strerror(errno) << std::endl;
-        log(logfilename, logmsg.str());
+        logmsg << "For host " << ivyscript_hostname << ", read() from pipe failed errno = " << errno << " - " << strerror(errno);
+        log(logfilename,logmsg.str());
         return false;
     }
     else if (0==rc)
     {
         ostringstream logmsg;
-        logmsg << "read() from pipe got end of file." << std::endl;
-        log(logfilename, logmsg.str());
+        logmsg << "For host " << ivyscript_hostname << ", read() from pipe got end of file.";
+        log(logfilename,logmsg.str());
         return false;
     }
 
@@ -396,32 +397,29 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
 }
 
 
-bool pipe_driver_subthread::real_get_line_from_pipe
+std::string pipe_driver_subthread::real_get_line_from_pipe
 (
     ivytime timeout,
-    std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
-    std::string& line_from_other_end_with_terminating_newline_removed,
-    bool log_it
+    std::string description // Used when there is some sort of failure to construct an error message written to the log file.
 )
 {
-    // Only returns false if there were no characters waiting from previous reads to the pipe
-    // and read_from_pipe() returned false;
+    std::string s;
 
-    line_from_other_end_with_terminating_newline_removed.clear();
-
-    if (next_char_from_slave_buf>=bytes_last_read_from_slave && !last_read_from_pipe)
+    if ( next_char_from_slave_buf >= bytes_last_read_from_slave && !last_read_from_pipe )
     {
-        log(logfilename, std::string("pipe_driver_subthread::get_line_from_pipe() - no characters available in buffer and read_from_pipe() failed - ") + description + std::string("\n"));
-        return false;
+        std::ostringstream o;
+        o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe() - no characters available in buffer and read_from_pipe() failed - " << description;
+        throw std::runtime_error(o.str());
     }
 
-    if (next_char_from_slave_buf>=bytes_last_read_from_slave)
+    if ( next_char_from_slave_buf >= bytes_last_read_from_slave )
     {
         last_read_from_pipe=read_from_pipe(timeout);
         if (!last_read_from_pipe)
         {
-            log(logfilename, std::string("pipe_driver_subthread::get_line_from_pipe() - no characters available in buffer and read_from_pipe() failed - ") + description + std::string("\n"));
-            return false;
+            std::ostringstream o;
+            o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe() - no characters available in buffer and read_from_pipe() failed - " << description;
+            throw std::runtime_error(o.str());
         }
     }
 
@@ -440,20 +438,18 @@ bool pipe_driver_subthread::real_get_line_from_pipe
         char c;
         c = from_slave_buf[next_char_from_slave_buf++];
         if ('\n' == c) break;
-        line_from_other_end_with_terminating_newline_removed.push_back(c);
+        s.push_back(c);
     }
 
-    if (log_it && trace_evaluate) log(logfilename, format_utterance(" Slave",line_from_other_end_with_terminating_newline_removed));
+    if (routine_logging) log(logfilename, format_utterance(" Slave",s));
 
-    return true;
+    return s;
 }
 
-bool pipe_driver_subthread::get_line_from_pipe
+std::string pipe_driver_subthread::get_line_from_pipe
 (
     ivytime timeout,
-    std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
-    std::string& line_from_other_end_with_terminating_newline_removed,
-    bool log_it
+    std::string description // Used when there is some sort of failure to construct an error message written to the log file.
 )
 {
     // This is a wrapper around the "real" get_line_from_pipe() that checks for when what ivyslave says starts with "<Error>".
@@ -467,84 +463,63 @@ bool pipe_driver_subthread::get_line_from_pipe
     // If what ivyslave says starts with <Warning> then we echo the line to the console and the log with the host it came from but
     // then just loop back and read another line transparently to the caller.
 
+    std::string s;
     while (true)  // we only ever loop back to the beginning after processing a <Warning> line
     {
-        if (real_get_line_from_pipe(timeout,description,line_from_other_end_with_terminating_newline_removed,log_it))
+        s = real_get_line_from_pipe(timeout,description);
+        if (startsWith(s, std::string("<Warning>")))
         {
-            if (startsWith(line_from_other_end_with_terminating_newline_removed, std::string("<Warning>")))
-            {
-                std::ostringstream o;
-                o << std::endl << "From " << ivyscript_hostname << ": " << line_from_other_end_with_terminating_newline_removed << std::endl << std::endl;
-                log (logfilename, o.str());
-                log (m_s.masterlogfile, o.str());
-                std::cout << o.str();
-                continue;
-            }
-
-            if (startsWith(line_from_other_end_with_terminating_newline_removed, std::string("<Error>")))
-            {
-                std::ostringstream o;
-                std::string additional_bit;
-                ivytime titch {(long double).1}; // how long we wait for any further lines from an error message to appear from the pipe
-
-                o << std::endl << "From " << ivyscript_hostname << ": ";
-                o << line_from_other_end_with_terminating_newline_removed << std::endl;
-
-                while (real_get_line_from_pipe(titch,std::string("getting additional <Error> lines"),additional_bit,true))
-                {
-                    o << additional_bit << std::endl;
-                }
-                o << std::endl;
-                log (logfilename, o.str());
-                log (m_s.masterlogfile, o.str());
-                commandErrorMessage = o.str();
-                std::cout << o.str();
-
-                // Notify the ivymaster main thread that we have exited upon error, and then exit.
-                {
-                    std::lock_guard<std::mutex> lk_guard(master_slave_lk);
-                    dead=true;
-                    commandComplete=true;
-                    commandSuccess=false;
-                    orderSlaveToDie(); // probably surperfluous
-                }
-                master_slave_cv.notify_all();
-
-                m_s.kill_subthreads_and_exit();
-            }
-            else
-            {
-                return true;
-            }
+            std::ostringstream o;
+            o << std::endl << "From " << ivyscript_hostname << ": " << s << std::endl << std::endl;
+            log (logfilename, o.str());
+            log (m_s.masterlogfile, o.str());
+            std::cout << o.str();
+            continue;
         }
-        else
-        {
-            return false;
-        }
+
+        if (startsWith(s, std::string("<Error>"))) throw std::runtime_error(s);
+
+        return s;
     }
 }
 
 
 
+void pipe_driver_subthread::kill_ssh_and_harvest()
+{
+    kill (ssh_pid,SIGTERM);
+    harvest_pid();
+    return;
+}
 
 void pipe_driver_subthread::orderSlaveToDie()
 {
-
     std::string response;
-    if (send_and_clip_response_upto("[Die, Earthling!]\n", "[what?]", response,10))
+    std::string result {"ivyslave exited upon command\n"};
+    try
     {
-        // give other end some time to kill its iogenerator & RMLIB subthreads
-        if (routine_logging) log(logfilename, std::string("ivyslave exited upon command\n"));
-        ivytime one_second(1,0);
-        nanosleep(&(one_second.t),NULL);
+        response = send_and_clip_response_upto("[Die, Earthling!]\n", "[what?]", ivytime(5));
     }
-    else
+    catch (std::runtime_error& reex)
     {
-        log(logfilename, std::string("ivyslave failed to exit upon command\n"));
+        std::ostringstream o;
+        o << "[Die, Earthlin!] command failed saying \"" << reex.what() << "\"." << std::endl;
+        result = o.str();
         kill (ssh_pid,SIGTERM);
     }
 
-    // finished talking to the child
+    // give other end some time to kill its iogenerator & RMLIB subthreads
+
+    ivytime one_second(1,0);
+    nanosleep(&(one_second.t),NULL);
+
+    harvest_pid();
+    if (routine_logging) log(logfilename, std::string());
+    return;
+}
+
+void pipe_driver_subthread::harvest_pid()
+{
     close(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE]);
     close(slave_to_pipe_driver_subthread_pipe[PIPE_READ]);
 
@@ -591,6 +566,9 @@ void pipe_driver_subthread::threadRun()
 {
 
     pipe_driver_pid = getpid();
+
+    linux_gettid_thread_id = syscall(SYS_gettid);
+
 
     // fork
 
@@ -739,8 +717,6 @@ void pipe_driver_subthread::threadRun()
         }
         else
         {
-
-//std::cout << "++++++++++++++++================= about to invoke ssh ivyslave" << std::endl;
             cmd = IVYSLAVE_EXECUTABLE;
             arg = ivyscript_hostname;
             {
@@ -749,7 +725,6 @@ void pipe_driver_subthread::threadRun()
                 if (routine_logging) execl_cmd << "-log ";
                 execl_cmd << arg << std::endl;
                 log(logfilename, execl_cmd.str());
-                //std::cout << std::endl << "++++++++++++++ starting ivyslave as \"" << execl_cmd.str() << "\"." << std::endl;
             }
             if (routine_logging)
             {
@@ -760,7 +735,6 @@ void pipe_driver_subthread::threadRun()
                 execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),        arg.c_str(),(char*)NULL);
             }
         }
-
 
         log(logfilename, std::string("execl() for ssh failed\n"));
         std::cerr << "child\'s execl() of ssh " << login << " failed." << std::endl;
@@ -803,18 +777,19 @@ void pipe_driver_subthread::threadRun()
             return;
         }
 
-        if (! get_line_from_pipe(ivytime(MAXWAITFORINITALPROMPT), "get \"Hello, Whirrled!\" prompt from child", prompt))
+        std::string prompt;
+
+        try
         {
-            ostringstream logmsg;
-            logmsg << "Timed out on initial read from pipe to ssh subthread." << std::endl;
-            log(logfilename, logmsg.str());
-            {
-                std::lock_guard<std::mutex> lk_guard(master_slave_lk);
-                startupComplete=true;
-                startupSuccessful=false;
-                commandErrorMessage = logmsg.str();
-                dead=true;
-            }
+            prompt = get_line_from_pipe(ivytime(MAXWAITFORINITALPROMPT), "get \"Hello, Whirrled!\" prompt from child");
+        }
+        catch (std::runtime_error& reex)
+        {
+            std::ostringstream o;
+            o << "Initial read from pipe to ssh subthread failed saying \"" << reex.what() << "\"." << std::endl;
+            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+            kill_ssh_and_harvest();
+            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
             master_slave_cv.notify_all();
             return;
         }
@@ -823,18 +798,17 @@ void pipe_driver_subthread::threadRun()
 
         if ( 0 == tcgetattr_error_msg.compare(prompt))
         {
-            if ( ! get_line_from_pipe(ivytime(MAXWAITFORINITALPROMPT), "get \"Hello, Whirrled!\" prompt from child", prompt))
+            try
             {
-                ostringstream logmsg;
-                logmsg << "Timed out on second read from pipe to ssh subthread after getting \"tcgetattr: Invalid argument\" on first read from pipe" << std::endl;
-                log(logfilename, logmsg.str());
-                {
-                    std::lock_guard<std::mutex> lk_guard(master_slave_lk);
-                    startupComplete=true;
-                    startupSuccessful=false;
-                    commandErrorMessage = logmsg.str();
-                    dead=true;
-                }
+                prompt = get_line_from_pipe(ivytime(MAXWAITFORINITALPROMPT), "get \"Hello, Whirrled!\" prompt from child");
+            }
+            catch (std::runtime_error& reex)
+            {
+                std::ostringstream o;
+                o << "Initial read from pipe to ssh subthread failed saying \"" << reex.what() << "\"." << std::endl;
+                log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                kill_ssh_and_harvest();
+                commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
                 master_slave_cv.notify_all();
                 return;
             }
@@ -851,68 +825,15 @@ void pipe_driver_subthread::threadRun()
         {
             if ( i == (prompt.size()-hellowhirrled.size()) )
             {
-                {
-                    std::lock_guard<std::mutex> lk_guard(master_slave_lk);
-                    startupComplete=true;
-                    startupSuccessful=false;
-                    dead=true;
+                std::ostringstream o;
+                o << "Remote ";
+                if (pCmdDevLUN) o << "ivy_cmddev";
+                else            o << "ivyslave";
+                o << " startup failure, saying \"" << prompt << "\"." << std::endl;
 
-                    if (pCmdDevLUN)
-                    {
-                        ostringstream logmsg;
-                        logmsg << "Remote ivy_cmddev executable startup failure - said: " << prompt << std::endl;
-                        log(logfilename, logmsg.str());
-                        commandErrorMessage = prompt;
-
-                        close(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE]);
-                        close(slave_to_pipe_driver_subthread_pipe[PIPE_READ]);
-
-                        // harvest the ssh child's pid so it won't be ... a zombie!
-                        int status;
-                        do
-                        {
-                            int rc  = waitpid(ssh_pid, &status, WUNTRACED | WCONTINUED);
-                            if (rc == -1)
-                            {
-                                std::ostringstream o;
-                                o << "\nwaitpid() to harvest ssh shell pid failed, errno = " << errno << " = " << strerror(errno) << std::endl;
-                                log(logfilename, o.str());
-                                break;
-                            }
-                            if (WIFEXITED(status))
-                            {
-                                std::ostringstream o;
-                                o << "ssh shell pid exited, status=" << WEXITSTATUS(status) << std::endl;
-                                log(logfilename, o.str());
-                            }
-                            else if (WIFSIGNALED(status))
-                            {
-                                std::ostringstream o;
-                                o << "killed by signal " << WTERMSIG(status) << std::endl;
-                                log(logfilename, o.str());
-                            }
-                            else if (WIFSTOPPED(status))
-                            {
-                                std::ostringstream o;
-                                o << "stopped by signal " << WSTOPSIG(status) << std::endl;
-                                log(logfilename, o.str());
-                            }
-                            else if (WIFCONTINUED(status))
-                            {
-                                log(logfilename, "waitpid() for ssh child pid is looping due to \"continued\" status.");
-                            }
-                        }
-                        while (!WIFEXITED(status) && !WIFSIGNALED(status));
-                    }
-                    else
-                    {
-                        ostringstream logmsg;
-                        logmsg << "Remote ivyslave executable startup failure - said: " << prompt << std::endl;
-                        log(logfilename, logmsg.str());
-                        commandErrorMessage = prompt;
-                        orderSlaveToDie();
-                    }
-                }
+                log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                kill_ssh_and_harvest();
+                commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
                 master_slave_cv.notify_all();
                 return;
             }
@@ -928,46 +849,67 @@ void pipe_driver_subthread::threadRun()
         // Retrieve list of luns visible on the slave host
         if (!pCmdDevLUN)
         {
-            std::string response;
-            if (send_and_clip_response_upto("send LUN header\n", "[LUNheader]", response,10))
+            try
             {
-                lun_csv_header << response << std::endl;
-                LUNheader=response+std::string("\n");
-                while (send_and_clip_response_upto("send LUN\n", "[LUN]", response,10))
-                {
-                    if (std::string("<eof>") == trim(response)) break;
-
-                    lun_csv_body << response << std::endl;
-
-                    LUN* p_LUN = new LUN();
-                    if (!p_LUN->loadcsvline(LUNheader, response, logfilename))
-                    {
-                        // we already just printed an error message inside loadcsvline()
-                        delete p_LUN;
-                    }
-                    else
-                    {
-                        thisHostLUNs.LUNpointers.push_back(p_LUN);
-                        HostSampleLUN.copyOntoMe(p_LUN);
-                        // If multiple LUN-lister csv file formats, this captures
-                        // one instance of each column header title value in any LUN seen.
-                    }
-                }
+                lun_csv_header = send_and_clip_response_upto("send LUN header\n", "[LUNheader]", ivytime(5));
             }
-            else
+            catch (std::runtime_error& reex)
             {
-
-                log(logfilename, std::string("failed to get [LUNheader]\n"));
-                orderSlaveToDie();
-                {
-                    dead=true;
-                    std::lock_guard<std::mutex> lk_guard(master_slave_lk);
-                    startupComplete=true;
-                    startupSuccessful=false;
-                    dead=true;
-                }
+                std::ostringstream o;
+                o << "\"send LUN header\" command sent to ivyslave failed saying \"" << reex.what() << "\"." << std::endl;
+                log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                kill_ssh_and_harvest();
+                commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
                 master_slave_cv.notify_all();
                 return;
+            }
+            lun_csv_header.push_back('\n');
+
+            while (true)
+            {
+                std::string response;
+                try
+                {
+                    response = send_and_clip_response_upto("send LUN\n", "[LUN]", ivytime(5));
+                }
+                catch (std::runtime_error& reex)
+                {
+                    std::ostringstream o;
+                    o << "\"send LUN\" command sent to ivyslave failed saying \"" << reex.what() << "\"." << std::endl;
+                    log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                    kill_ssh_and_harvest();
+                    commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                    master_slave_cv.notify_all();
+                    return;
+                }
+
+                trim(response);
+
+                if (std::string("<eof>") == response) break;
+
+                lun_csv_body << response << std::endl;
+
+                LUN* p_LUN = new LUN();
+                if (!p_LUN->loadcsvline(lun_csv_header, response, logfilename))
+                {
+                    // we already just printed an error message inside loadcsvline()
+                    delete p_LUN;
+                    std::ostringstream o;
+                    trim(lun_csv_header); trim(response);
+                    o << "Failed loading LUN:" << std::endl
+                        << "LUN header - \"" << lun_csv_header << "\"" << std::endl
+                        << "LUN        - \"" << response << "\"" << std::endl
+                    ;
+                    log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                    kill_ssh_and_harvest();
+                    commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                    master_slave_cv.notify_all();
+                    return;
+                }
+                thisHostLUNs.LUNpointers.push_back(p_LUN);
+                HostSampleLUN.copyOntoMe(p_LUN);
+                // If multiple LUN-lister csv file formats, this captures
+                // one instance of each column header title value in any LUN seen.
             }
         }
 
@@ -1020,7 +962,10 @@ void pipe_driver_subthread::threadRun()
                         ivytime gatherStart;
                         gatherStart.setToNow();
 
-                        if (send_and_get_OK("get config"))
+                        try
+                        {
+                            send_and_get_OK("get config");
+
                             try
                             {
                                 process_ivy_cmddev_response(p_Hitachi_RAID_subsystem->configGatherData, gatherStart);
@@ -1030,7 +975,7 @@ void pipe_driver_subthread::threadRun()
                                 std::ostringstream o;
                                 o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get config\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
                                 log(logfilename,o.str());
-                                orderSlaveToDie();
+                                kill_ssh_and_harvest();
                                 commandComplete=true;
                                 commandSuccess=false;
                                 commandErrorMessage = o.str();
@@ -1044,7 +989,7 @@ void pipe_driver_subthread::threadRun()
                                 std::ostringstream o;
                                 o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get config\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
                                 log(logfilename,o.str());
-                                orderSlaveToDie();
+                                kill_ssh_and_harvest();
                                 commandComplete=true;
                                 commandSuccess=false;
                                 commandErrorMessage = o.str();
@@ -1053,7 +998,17 @@ void pipe_driver_subthread::threadRun()
                                 master_slave_cv.notify_all();
                                 return;
                             }
-
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            std::ostringstream o;
+                            o << "\"get config\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            master_slave_cv.notify_all();
+                            return;
+                        }
                         commandComplete=true;
                         commandSuccess=true;
                         ivytime end;
@@ -1068,7 +1023,7 @@ void pipe_driver_subthread::threadRun()
                                 std::ostringstream o;
                                 o << "pipe_driver_subthread for remote ivy_cmddev CLI - post-processing configuration gather data, gathered configuration did not have the LDEV element type" << std::endl;
                                 log(logfilename,o.str());
-                                orderSlaveToDie();
+                                kill_ssh_and_harvest();
                                 commandComplete=true;
                                 commandSuccess=false;
                                 commandErrorMessage = o.str();
@@ -1190,107 +1145,148 @@ void pipe_driver_subthread::threadRun()
                         ivytime gatherStart;
 
                         gatherStart.setToNow();
-                        send_and_get_OK("get CLPRdetail");
+
                         try
                         {
-                            process_ivy_cmddev_response(currentGD, gatherStart);
-                        }
-                        catch (std::invalid_argument& iaex)
-                        {
-                            std::ostringstream o;
-                            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get CLPRdetail\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
-                            log(logfilename,o.str());
-                            orderSlaveToDie();
-                            commandComplete=true;
-                            commandSuccess=false;
-                            commandErrorMessage = o.str();
-                            dead=true;
-                            s_lk.unlock();
-                            master_slave_cv.notify_all();
-                            return;
+                            send_and_get_OK("get CLPRdetail");
+
+                            try
+                            {
+                                process_ivy_cmddev_response(currentGD, gatherStart);
+                            }
+                            catch (std::invalid_argument& iaex)
+                            {
+                                std::ostringstream o;
+                                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get CLPRdetail\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+                            catch (std::runtime_error& reex)
+                            {
+                                std::ostringstream o;
+                                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get CLPRdetail\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
                         }
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get CLPRdetail\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
-                            log(logfilename,o.str());
-                            orderSlaveToDie();
-                            commandComplete=true;
-                            commandSuccess=false;
-                            commandErrorMessage = o.str();
-                            dead=true;
-                            s_lk.unlock();
+                            o << "\"get CLPRdetail\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
                             master_slave_cv.notify_all();
                             return;
                         }
 
                         gatherStart.setToNow();
-                        send_and_get_OK("get MP_busy");
                         try
                         {
-                            process_ivy_cmddev_response(currentGD, gatherStart);
-                        }
-                        catch (std::invalid_argument& iaex)
-                        {
-                            std::ostringstream o;
-                            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get MP_busy\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
-                            log(logfilename,o.str());
-                            orderSlaveToDie();
-                            commandComplete=true;
-                            commandSuccess=false;
-                            commandErrorMessage = o.str();
-                            dead=true;
-                            s_lk.unlock();
-                            master_slave_cv.notify_all();
-                            return;
+                            send_and_get_OK("get MP_busy");
+                            try
+                            {
+                                process_ivy_cmddev_response(currentGD, gatherStart);
+                            }
+                            catch (std::invalid_argument& iaex)
+                            {
+                                std::ostringstream o;
+                                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get MP_busy\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+                            catch (std::runtime_error& reex)
+                            {
+                                std::ostringstream o;
+                                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get MP_busy\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
                         }
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get MP_busy\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
-                            log(logfilename,o.str());
-                            orderSlaveToDie();
-                            commandComplete=true;
-                            commandSuccess=false;
-                            commandErrorMessage = o.str();
-                            dead=true;
-                            s_lk.unlock();
+                            o << "\"get MP_busy\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
                             master_slave_cv.notify_all();
                             return;
                         }
 
 
                         gatherStart.setToNow();
-                        send_and_get_OK("get LDEVIO");
                         try
                         {
-                            process_ivy_cmddev_response(currentGD, gatherStart);
-                        }
-                        catch (std::invalid_argument& iaex)
-                        {
-                            std::ostringstream o;
-                            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
-                            log(logfilename,o.str());
-                            orderSlaveToDie();
-                            commandComplete=true;
-                            commandSuccess=false;
-                            commandErrorMessage = o.str();
-                            dead=true;
-                            s_lk.unlock();
-                            master_slave_cv.notify_all();
-                            return;
+                            send_and_get_OK("get LDEVIO");
+                            try
+                            {
+                                process_ivy_cmddev_response(currentGD, gatherStart);
+                            }
+                            catch (std::invalid_argument& iaex)
+                            {
+                                std::ostringstream o;
+                                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+                            catch (std::runtime_error& reex)
+                            {
+                                std::ostringstream o;
+                                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
                         }
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
-                            log(logfilename,o.str());
-                            orderSlaveToDie();
-                            commandComplete=true;
-                            commandSuccess=false;
-                            commandErrorMessage = o.str();
-                            dead=true;
-                            s_lk.unlock();
+                            o << "\"get LDEVIO\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
                             master_slave_cv.notify_all();
                             return;
                         }
@@ -1537,8 +1533,14 @@ void pipe_driver_subthread::threadRun()
                     else
                     {
                         // if we do not recognize the command
-                        log(logfilename,std::string("ivy_cmddev pipe_driver_subthread failed to recognize ivymaster command \"")+commandString+std::string("\".\n"));
-                        orderSlaveToDie();
+                        std::ostringstream o;
+                        o << "ivy_cmddev pipe_driver_subthread failed to recognize ivymaster command \"" << commandString << "\"." << std::endl;
+                        std::cout << o.str();
+                        log(logfilename,o.str());
+                        kill_ssh_and_harvest();
+                        commandComplete=true;
+                        commandSuccess=false;
+                        commandErrorMessage = o.str();
                         dead=true;
                         s_lk.unlock();
                         master_slave_cv.notify_all();
@@ -1548,26 +1550,30 @@ void pipe_driver_subthread::threadRun()
                     // end processing a command for a remote ivy_cmddev
                 }
                 else
-                    // process commands to interact with a remote ivyslave instance
+                // process commands to interact with a remote ivyslave instance
                 {
-
-
                     if (0==std::string("[CreateWorkload]").compare(commandString))
                     {
-
                         ostringstream utterance;
                         utterance << "[CreateWorkload]" << commandWorkloadID << "[Parameters]" << commandIogeneratorParameters << std::endl;
-                        if (!send_and_get_OK(utterance.str()))
+
+                        try
                         {
-                            log(logfilename,std::string("[CreateWorkload] at remote end failed \"")+utterance.str()+std::string("\".\n"));
-                            orderSlaveToDie();
-                            dead=true;
+                            send_and_get_OK(utterance.str());
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            std::ostringstream o;
+                            o << "[CreateWorkload] at remote end failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
                             return;
                         }
-                        else
-                        {
-                            commandSuccess=true;
-                        }
+                        commandFinish.setToNow();
+                        commandSuccess=true;
 
                     }
                     else if (0==std::string("[EditWorkload]").compare(commandString))
@@ -1575,53 +1581,70 @@ void pipe_driver_subthread::threadRun()
 
                         ostringstream utterance;
                         utterance << "[EditWorkload]" << commandListOfWorkloadIDs.toString() << "[Parameters]" << commandIogeneratorParameters << std::endl;
-                        if (!send_and_get_OK(utterance.str()))
+
+                        try
                         {
-                            log(logfilename,std::string("[EditWorkload] at remote end failed \"")+utterance.str()+std::string("\".\n"));
-                            orderSlaveToDie();
-                            dead=true;
+                            send_and_get_OK(utterance.str());
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            std::ostringstream o;
+                            o << "[EditWorkload] at remote end failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
                             return;
                         }
-                        else
-                        {
-                            commandFinish.setToNow();
-                            commandSuccess=true;
-                        }
-
+                        commandFinish.setToNow();
+                        commandSuccess=true;
                     }
                     else if (0==std::string("[DeleteWorkload]").compare(commandString))
                     {
 
                         ostringstream utterance;
                         utterance << "[DeleteWorkload]" << commandWorkloadID << std::endl;
-                        if (!send_and_get_OK(utterance.str()))
+                        try
                         {
-                            log(logfilename,std::string("[DeleteWorkload] at remote end failed \"")+utterance.str()+std::string("\"."));
-                            orderSlaveToDie();
-                            dead=true;
+                            send_and_get_OK(utterance.str());
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            std::ostringstream o;
+                            o << "[DeleteWorkload] at remote end failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
                             return;
                         }
-                        else
-                        {
-                            commandSuccess=true;
-                        }
+                        commandFinish.setToNow();
+                        commandSuccess=true;
                     }
-                    else if (0==std::string("Stop!").compare(commandString))
+                    else if (0==std::string("Catch in flight I/Os").compare(commandString))
                     {
 
                         ostringstream utterance;
-                        utterance << "Stop!" << std::endl;
-                        if (!send_and_get_OK(utterance.str()))
+                        utterance << "Catch in flight I/Os" << std::endl;
+                        try
                         {
-                            log(logfilename,std::string("send_and_get_OK failed for  \"")+utterance.str()+std::string("\"."));
-                            orderSlaveToDie();
-                            dead=true;
+                            send_and_get_OK(utterance.str());
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            std::ostringstream o;
+                            o << "\"Catch in flight I/Os\" at remote end failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
                             return;
                         }
-                        else
-                        {
-                            commandSuccess=true;
-                        }
+                        commandFinish.setToNow();
+                        commandSuccess=true;
                     }
                     else if
                     (
@@ -1635,23 +1658,122 @@ void pipe_driver_subthread::threadRun()
                     )
                     {
 
+#ifdef BORK
+ivytime got_continue_cooldown_stop;
+got_continue_cooldown_stop.setToNow();
+#endif // BORK
+
                         std::string hostCPUline;
                         //*debug*/{std::ostringstream o; o << "About to send out command to ivyslave - \"" << commandString << "\" with timeout in seconds = " << (m_s.subintervalLength.getlongdoubleseconds()+5) << std::endl; std::cout << o.str(); log (logfilename, o.str());}
-                        if (	!send_and_clip_response_upto(commandString, std::string("[CPU]"), hostCPUline,
-                                                             m_s.subintervalLength.getlongdoubleseconds()+5 /*timeout in seconds */)	)
+
+                        // Here we separate out sending the Go!/continue/cooldown/stop for which we get an OK.
+                        // Originally, after sending the Go!/continue/cooldown/stop, we simply waited for the [CPU] line to appear.
+                        // Now we get an OK after Go!/continue/cooldown/stop command has been posted to all the test
+                        // host's workload threads.  This is so that we can print a message showing how much time
+                        // we had in hand, i.e. how much margin we have in terms of the length of the subinterval in seconds.
+
+                        try
                         {
-                            log(logfilename,std::string("failed to get [CPU] line at end of subinterval.\n"));
-                            orderSlaveToDie();
-                            dead=true;
+                            send_and_get_OK(commandString);
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            std::ostringstream o;
+                            o << "Sending \"" << commandString << "\" to ivyslave failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
                             return;
                         }
-                        //*debug*/ log(logfilename,std::string("Got CPU line \"")+hostCPUline+std::string("\n"));
+
+                        ivytime allworkloadthreadsposted;
+                        allworkloadthreadsposted.setToNow();
+
+#ifdef BORK
+{
+std::ostringstream o; o <<
+"++++++++++ From just before sending \"" << commandString << "\" got OK after "  << ivytime(allworkloadthreadsposted - got_continue_cooldown_stop).format_as_duration_HMMSSns();
+log(logfilename,o.str());
+}
+#endif // BORK
+                        if (allworkloadthreadsposted > m_s.subintervalEnd)
+                        {
+                            std::ostringstream o;
+                            o << "For host " << ivyscript_hostname << ", ivyslave failed to confirm that the \"" << commandString << "\" command was posted to all workload threads before the end of the subinterval." << std::endl;
+                            log(logfilename,o.str());
+                            std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true;
+                            commandSuccess=false;
+                            commandErrorMessage = o.str();
+                            dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
+                            return;
+                        }
+
+                        time_in_hand_before_subinterval_end = m_s.subintervalEnd - allworkloadthreadsposted;
+
+                        try
+                        {
+                            hostCPUline = send_and_clip_response_upto( std::string("get subinterval result"), std::string("[CPU]"), m_s.subintervalLength );
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            std::ostringstream o;
+                            o << "Sending \"get subinterval result\" to ivyslave failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
+                            return;
+                        }
+
+                        ivytime now;
+
+                        now.setToNow();
+
+#ifdef BORK
+{
+std::ostringstream o; o <<
+"++++++++++ From just before sending \"get subinteval result\" got [CPU] line after "  << ivytime(now-allworkloadthreadsposted).format_as_duration_HMMSSns();
+log(logfilename,o.str());
+}
+#endif // BORK
+                        if (now > m_s.nextSubintervalEnd)
+                        {
+                            std::ostringstream o;
+                            o << "Subinterval length parameter subinterval_seconds is too short.  For host " << ivyscript_hostname
+                                << ", ivyslave received the [CPU] line for the previous subinterval after the current subinterval was already over." << std::endl;
+                            log(logfilename,o.str());
+                            std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true;
+                            commandSuccess=false;
+                            commandErrorMessage = o.str();
+                            dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
+                            return;
+                        }
+
 
                         if (!cpudata.fromString(hostCPUline))
                         {
-                            log(logfilename,std::string("[CPU] line failed to parse correctly.  Call to avgcpubusypercent::fromString(\"")+hostCPUline+std::string("\") failed.\n"));
-                            orderSlaveToDie();
+                            std::ostringstream o;
+                            o << "For host " << ivyscript_hostname << ", [CPU] line failed to parse correctly.  Call to avgcpubusypercent::fromString(\"" << hostCPUline << "\") failed." << std::endl;
+                            log(logfilename,o.str());
+                            std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true;
+                            commandSuccess=false;
+                            commandErrorMessage = o.str();
                             dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
                             return;
                         }
                         {
@@ -1659,15 +1781,61 @@ void pipe_driver_subthread::threadRun()
 
                             m_s.cpu_by_subinterval[m_s.rollups.current_index()].add(toLower(ivyscript_hostname),cpudata);
                         }
+#ifdef BORK
+ivytime before_detail_lines;
+before_detail_lines.setToNow();
+{
+std::ostringstream o; o <<
+"++++++++++ getting lock and posting CPU line to ivymaster took "  << ivytime(before_detail_lines-now).format_as_duration_HMMSSns();
+log(logfilename,o.str());
+}
+unsigned int detaillinecount=0;
+ivytime add_detail_line_total_time(0);
 
+RunningStat<ivy_float,ivy_int> parseWIDtime, parseinputtime,parseoutputtime,detail_line_total_time,ttt,xxx;
+#endif // BORK
                         std::string detail_line="";
                         while (true)
                         {
-                            if (!get_line_from_pipe(ivytime(2), std::string("get iogenerator detail line"), detail_line))
+
+#ifdef BORK
+ivytime t0; t0.setToNow();
+#endif // BORK
+                            try
                             {
-                                log(logfilename, "get_line_from_pipe() for subsystem detail line failed.\n");
-                                orderSlaveToDie();
+                                detail_line = get_line_from_pipe(ivytime(2), std::string("get iogenerator detail line"));
+                            }
+                            catch (std::runtime_error& reex)
+                            {
+                                std::ostringstream o;
+                                o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for subsystem detail line failed saying \"" << reex.what() << "\"." << std::endl;
+                                log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                                kill_ssh_and_harvest();
+                                commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+
+#ifdef BORK
+ivytime xx; xx.setToNow();
+xxx.push(ivytime(xx-t0).getlongdoubleseconds());
+#endif // BORK
+                            now.setToNow();
+                            if (now > m_s.nextSubintervalEnd)
+                            {
+                                std::ostringstream o;
+                                o << "Subinterval length parameter subinterval_seconds is too short.  For host " << ivyscript_hostname
+                                    << ", ivyslave received a workload thread detail line for the previous subinterval after the current subinterval was already over." << std::endl;
+                                log(logfilename,o.str());
+                                std::cout << o.str();
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
                                 dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
                                 return;
                             }
 
@@ -1680,9 +1848,17 @@ void pipe_driver_subthread::threadRun()
 
                             if ('<' != detail_line[0])
                             {
-                                log(logfilename, "bogus iogenerator detail line didn\'t even start with \'<\'.\n");
-                                orderSlaveToDie();
+                                std::ostringstream o;
+                                o << "For host " << ivyscript_hostname << ", bogus iogenerator detail line didn\'t even start with \'<\'. bogus detail line was \"" << detail_line << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                std::cout << o.str();
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
                                 dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
                                 return;
                             }
                             if (startsWith(detail_line,std::string("<end>"))) break;
@@ -1693,41 +1869,89 @@ void pipe_driver_subthread::threadRun()
 
                             std::istringstream detailstream(detail_line);
 
+#ifdef BORK
+ivytime t1; t1.setToNow();
+#endif // BORK
                             std::string err_msg;
                             if (!parseWorkloadIDfromIstream(err_msg, detailstream, detailWID))
                             {
-                                log(logfilename, std::string("internal programming error - detail line WorkloadID failed to parse correctly or doesn't exist - \"") + detail_line + std::string("\".\n")+err_msg);
-                                orderSlaveToDie();
+                                std::ostringstream o;
+                                o << "For host " << ivyscript_hostname << ", internal programming error - detail line WorkloadID failed to parse correctly or doesn't exist - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
+                                log(logfilename,o.str());
+                                std::cout << o.str();
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
                                 dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
                                 return;
                             }
 
+#ifdef BORK
+ivytime t2; t2.setToNow();
+parseWIDtime.push(ivytime(t2-t1).getlongdoubleseconds());
+#endif // BORK
                             if (!detailInput.fromIstream(detailstream,logfilename))
                             {
-                                log(logfilename, std::string("internal programming error - detail line IogeneratorInput failed to parse correctly \"") + detail_line + std::string("\".\n"));
-                                orderSlaveToDie();
+                                std::ostringstream o;
+                                o << "For host " << ivyscript_hostname << ", internal programming error - detail line IogeneratorInput failed to parse correctly - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
+                                log(logfilename,o.str());
+                                std::cout << o.str();
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
                                 dead=true;
-                                return;
-                            }
-                            if (!detailOutput.fromIstream(detailstream))
-                            {
-                                log(logfilename, std::string("internal programming error - detail line SubintervalOutput failed to parse correctly \"") + detail_line + std::string("\".\n"));
-                                orderSlaveToDie();
-                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
                                 return;
                             }
 
+#ifdef BORK
+ivytime t3; t3.setToNow();
+parseinputtime.push(ivytime(t3-t2).getlongdoubleseconds());
+#endif // BORK
+
+                            if (!detailOutput.fromIstream(detailstream))
+                            {
+                                std::ostringstream o;
+                                o << "For host " << ivyscript_hostname << ", internal programming error - detail line SubintervalOutput failed to parse correctly - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
+                                log(logfilename,o.str());
+                                std::cout << o.str();
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+#ifdef BORK
+ivytime t4; t4.setToNow();
+parseoutputtime.push(ivytime(t4-t3).getlongdoubleseconds());
+
+
+ivytime before_lock_for_rolling_up_detail_line;
+before_lock_for_rolling_up_detail_line.setToNow();
+#endif // BORK
                             {
                                 std::unique_lock<std::mutex> s_lk(m_s.master_mutex);
 
                                 std::string my_error_message;
 
+#ifdef BORK
+ivytime before_rolling_up_detail_line;
+before_rolling_up_detail_line.setToNow();
+#endif // BORK
                                 if (!m_s.rollups.add_workload_detail_line(my_error_message, detailWID, detailInput, detailOutput))
                                 {
                                     std::ostringstream o;
                                     o << "Rollup of detail line failed. \"" << detail_line << "\" - " << my_error_message << std::endl;
                                     log(logfilename, o.str());
-                                    orderSlaveToDie();
+                                    kill_ssh_and_harvest();
                                     commandComplete = true;
                                     commandSuccess = false;
                                     commandErrorMessage = o.str();
@@ -1736,21 +1960,87 @@ void pipe_driver_subthread::threadRun()
                                     m_s.master_cv.notify_all();
                                     return;
                                 }
+
+#ifdef BORK
+//{
+//ivytime after_rolling_up_detail_line; after_rolling_up_detail_line.setToNow();
+//
+//ivytime with_lock(after_rolling_up_detail_line-before_lock_for_rolling_up_detail_line);
+//
+//ivytime without_lock(after_rolling_up_detail_line-before_rolling_up_detail_line);
+//
+//detaillinecount++;
+//add_detail_line_total_time = add_detail_line_total_time + with_lock;
+//
+//std::ostringstream o;
+//o
+//<< "========= Detail line rollup time including getting lock " << with_lock.format_as_duration_HMMSSns()
+//<< ", net of getting lock " << without_lock .format_as_duration_HMMSSns();
+//log(logfilename,o.str());
+//}
+#endif // BORK
                             }
+
+#ifdef BORK
+ivytime tt; tt.setToNow();
+#endif // BORK
                             m_s.master_cv.notify_all();
+
+#ifdef BORK
+ivytime tn; tn.setToNow();
+detail_line_total_time.push(ivytime(tn-t0).getlongdoubleseconds());
+ttt.push(ivytime(tn-tt).getlongdoubleseconds());
+#endif // BORK
                         }
 
+#ifdef BORK
+ivytime after_detail_lines;
+after_detail_lines.setToNow();
+{
+std::ostringstream o; o <<
+"++++++++++ Processing detail lines took "  << ivytime(after_detail_lines-before_detail_lines).format_as_duration_HMMSSns()
+<< ", total add_workload_detail_line() time with lock "<< add_detail_line_total_time.format_as_duration_HMMSSns() << " for " << detaillinecount << " lines." << std::endl
+<< "========= complete detail count " << detail_line_total_time.count() << ", total " << std::fixed << std::setprecision(9) << detail_line_total_time.sum() << " s, avg " << std::fixed << std::setprecision(9) << detail_line_total_time.avg() << " s, min " << std::fixed << std::setprecision(9) << detail_line_total_time.min() << " s, max " << std::fixed << std::setprecision(9) << detail_line_total_time.max() << " s." << std::endl
+<< "========= get from pipe   count " << xxx.count() << ", total " << std::fixed << std::setprecision(9) << xxx.sum() << " s, avg " << std::fixed << std::setprecision(9) << xxx.avg() << " s, min " << std::fixed << std::setprecision(9) << xxx.min() << " s, max " << std::fixed << std::setprecision(9) << xxx.max() << " s." << std::endl
+<< "========= parse WID       count " << parseWIDtime.count() << ", total " << std::fixed << std::setprecision(9) << parseWIDtime.sum() << " s, avg " << std::fixed << std::setprecision(9) << parseWIDtime.avg() << " s, min " << std::fixed << std::setprecision(9) << parseWIDtime.min() << " s, max " << std::fixed << std::setprecision(9) << parseWIDtime.max() << " s." << std::endl
+<< "========= parse input     count " << parseWIDtime.count() << ", total " << std::fixed << std::setprecision(9) << parseinputtime.sum() << " s, avg " << std::fixed << std::setprecision(9) << parseinputtime.avg() << " s, min " << std::fixed << std::setprecision(9) << parseinputtime.min() << " s, max " << std::fixed << std::setprecision(9) << parseinputtime.max() << " s." << std::endl
+<< "========= parse output    count " << parseWIDtime.count() << ", total " << std::fixed << std::setprecision(9) << parseoutputtime.sum() << " s, avg " << std::fixed << std::setprecision(9) << parseoutputtime.avg() << " s, min " << std::fixed << std::setprecision(9) << parseoutputtime.min() << " s, max " << std::fixed << std::setprecision(9) << parseoutputtime.max() << " s." << std::endl
+<< "========= notify all      count " << ttt.count() << ", total " << std::fixed << std::setprecision(9) << ttt.sum() << " s, avg " << std::fixed << std::setprecision(9) << ttt.avg() << " s, min " << std::fixed << std::setprecision(9) << ttt.min() << " s, max " << std::fixed << std::setprecision(9) << ttt.max() << " s." << std::endl
+;
+log(logfilename,o.str());
+}
+#endif // BORK
+                        now.setToNow();
+                        if (now > m_s.nextSubintervalEnd)
+                        {
+                            std::ostringstream o;
+                            o << "Subinterval length parameter subinterval_seconds is too short.  For host " << ivyscript_hostname
+                                << ", ivyslave received a workload thread detail line for the previous subinterval after the current subinterval was already over." << std::endl;
+                            log(logfilename,o.str());
+                            std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true;
+                            commandSuccess=false;
+                            commandErrorMessage = o.str();
+                            dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
+                            return;
+                        }
 
                         commandComplete=true;
                         commandSuccess=true;
-
                     }
                     else
                     {
                         // if we do not recognize the command
                         log(logfilename,std::string("slave driver failed to recognize ivymaster command \"")+commandString+std::string("\".\n"));
-                        orderSlaveToDie();
+                        kill_ssh_and_harvest();
                         dead=true;
+                        commandComplete=true;
+                        commandSuccess=false;
+                        s_lk.unlock();
+                        master_slave_cv.notify_all();
                         return;
                     }
                     // end - processing ivyslave command
@@ -1762,50 +2052,29 @@ void pipe_driver_subthread::threadRun()
             master_slave_cv.notify_all();
         }
 
-        send_string("exit\n");
+        try
+        {
+            send_string("exit\n");
+        }
+        catch (std::runtime_error& reex)
+        {
+            std::ostringstream o;
+            o << "For host " << ivyscript_hostname << ", sending \"exit\" command failed saying \"" << reex.what() << "\"." << std::endl;
+            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+            kill_ssh_and_harvest();
+            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+            master_slave_cv.notify_all();
+            return;
+        }
+
+
         ivytime one_second(1,0);
         nanosleep(&(one_second.t),NULL);
 
         // finished talking to the child
-        close(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE]);
-        close(slave_to_pipe_driver_subthread_pipe[PIPE_READ]);
 
         // harvest the child's pid so it won't be ... a zombie!
-        int status;
-        do
-        {
-            int rc  = waitpid(ssh_pid, &status, WUNTRACED | WCONTINUED);
-            if (rc == -1)
-            {
-                std::ostringstream o;
-                o << "\nwaitpid() to harvest ssh shell pid failed, errno = " << errno << " = " << strerror(errno) << std::endl;
-                log(logfilename, o.str());
-                break;
-            }
-            if (WIFEXITED(status))
-            {
-                std::ostringstream o;
-                o << "ssh shell pid exited, status=" << WEXITSTATUS(status) << std::endl;
-                log(logfilename, o.str());
-            }
-            else if (WIFSIGNALED(status))
-            {
-                std::ostringstream o;
-                o << "killed by signal " << WTERMSIG(status) << std::endl;
-                log(logfilename, o.str());
-            }
-            else if (WIFSTOPPED(status))
-            {
-                std::ostringstream o;
-                o << "stopped by signal " << WSTOPSIG(status) << std::endl;
-                log(logfilename, o.str());
-            }
-            else if (WIFCONTINUED(status))
-            {
-                log(logfilename, "waitpid() for ssh child pid is looping due to \"continued\" status.");
-            }
-        }
-        while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        harvest_pid();
 
         // Once our work is complete, we issue an scp command to copy the logs back from the remote host.
 
@@ -1859,12 +2128,7 @@ void pipe_driver_subthread::get_token()
     {
         while ( parse_cursor < parse_line.length() && isspace(parse_line[parse_cursor]) ) parse_cursor++;
         if (parse_cursor < parse_line.length()) break;
-        if (! get_line_from_pipe(ivytime(MAXWAITFORIVYCMDDEV), "reading a line of a response from ivy_cmddev", parse_line))
-        {
-            std::string  msg {"get_token() - get_line_from_pipe() failed or timed out."};
-            log(logfilename, msg);
-            throw std::runtime_error(msg);
-        }
+        parse_line = get_line_from_pipe(ivytime(MAXWAITFORIVYCMDDEV), "reading a line of a response from ivy_cmddev");
         line_number++;
         parse_cursor=0;
         complete.setToNow();
@@ -2011,8 +2275,7 @@ void pipe_driver_subthread::process_ivy_cmddev_response(GatherData& gd, ivytime 
 // Sorry - realize that this is not the best parser - come back and re-do later.
 {
 
-    if (! get_line_from_pipe(ivytime(MAXWAITFORIVYCMDDEV), "reading a line of a response from ivy_cmddev", parse_line))
-        throw std::runtime_error("failed in get_line_from_pipe()");
+    parse_line = get_line_from_pipe(ivytime(MAXWAITFORIVYCMDDEV), "reading a line of a response from ivy_cmddev");
     line_number=1;
     parse_cursor=0;
     complete.setToNow();

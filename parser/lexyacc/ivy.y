@@ -346,6 +346,15 @@ statement:
             }
         }
 
+    | KW_GO ';'
+        {
+            $$ = new Stmt_go(@$,nullptr);
+            if (trace_parser)
+            {
+                $$->display("",trace_ostream);
+            }
+        }
+
     | KW_CREATE_ROLLUP  string_x  optional_nocsv  optional_quantity  optional_max_droop_max_to_min_iops ';'
         {
             $$ = new Stmt_create_rollup(@$,$2,$3,$4,$5);

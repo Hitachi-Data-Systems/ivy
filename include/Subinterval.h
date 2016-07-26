@@ -47,7 +47,7 @@ public:
 #define IVY_SUBINTERVAL_STOP (3)
 
 	int subinterval_status{IVY_SUBINTERVAL_STATUS_UNDEFINED};
-	inline Subinterval(){input.reset();output.clear();}
+	Subinterval(){input.reset();output.clear();}
 };
 
 

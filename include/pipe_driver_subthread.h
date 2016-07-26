@@ -18,6 +18,7 @@
 //Support:  "ivy" is not officially supported by Hitachi Data Systems.
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
+#include <sys/types.h>
 
 #include "ListOfWorkloadIDs.h"
 #include "Subsystem.h"
@@ -39,8 +40,10 @@ public:
 	int
 		pipe_driver_subthread_to_slave_pipe[2],
 		slave_to_pipe_driver_subthread_pipe[2],
-		ssh_pid=-1,
-		pipe_driver_pid=-1;
+		ssh_pid=-1;
+
+        pid_t pipe_driver_pid=-1;	// same as ivymaster pid
+        pid_t linux_gettid_thread_id;
 
 	char
 		to_slave_buf[sizeof(uint32_t) + IVYMAXMSGSIZE],
@@ -48,31 +51,29 @@ public:
 	int
 		next_char_from_slave_buf=0,
 		bytes_last_read_from_slave=0;
-	bool
-		last_read_from_pipe=true,
-		read_from_pipe(ivytime timeout),
-			// Used by get_line_from_pipe() when there are no more bytes left in "from_slave_buf" to serve up.
-		get_line_from_pipe // this is a wrapper around real_get_line_from_pipe to filter <Warning> and to catch <Error>
-		(
-			ivytime timeout,
-			std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
-			std::string& line_from_other_end_with_terminating_newline_removed,
-			bool log_it=true
-		);
 
-private:bool	real_get_line_from_pipe
-		(
-			ivytime timeout,
-			std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
-			std::string& line_from_other_end_with_terminating_newline_removed,
-			bool log_it=true
-		);
+	bool last_read_from_pipe=true;
+    bool read_from_pipe(ivytime timeout);
+			// Used by get_line_from_pipe() when there are no more bytes left in "from_slave_buf" to serve up.
+    std::string get_line_from_pipe // this is a wrapper around real_get_line_from_pipe to filter <Warning> and to catch <Error>
+    (
+        ivytime timeout,
+        std::string description // Used when there is some sort of failure to construct an error message written to the log file.
+    );
+
+private:
+    std::string real_get_line_from_pipe
+    (
+        ivytime timeout,
+        std::string description // Used when there is some sort of failure to construct an error message written to the log file.
+    );
+    bool pipe_driver_subthread_has_lock;
 public:
 
 	std::string extra_from_last_time{""};  // Used by get_line_from_pipe() to store
 	                                              // characters received from the ivyslave main thread that
 	                                              // were past the end of the current line as marked by '\n'.
-    std::ostringstream lun_csv_header;
+    std::string lun_csv_header;
 	std::ostringstream lun_csv_body;
 
 	struct avgcpubusypercent cpudata;
@@ -91,7 +92,6 @@ public:
 	std::mutex master_slave_lk;
 	std::condition_variable master_slave_cv;
 	std::string hostname;
-	std::string LUNheader;
     std::list<std::string> lun_csv_lines;
 
 	LUNpointerList thisHostLUNs;
@@ -109,9 +109,12 @@ public:
 
 	void threadRun();
 	void orderSlaveToDie();
-	bool send_string(std::string s);
-	bool send_and_get_OK(std::string s);
-	bool send_and_clip_response_upto(std::string s, std::string pattern, std::string& response, int timeout_seconds);
+	void kill_ssh_and_harvest();
+	void harvest_pid();
+	void send_string(std::string s); // throws std::runtime_error
+	void send_and_get_OK(std::string s, const ivytime timeout);// throws std::runtime_error
+	void send_and_get_OK(std::string s);// throws std::runtime_error
+	std::string send_and_clip_response_upto(std::string s, std::string pattern, const ivytime timeout);// throws std::runtime_error
 
 
 // ivy_cmddev variables:
@@ -131,6 +134,10 @@ public:
 	std::string element, instance, attribute;
 	ivytime complete { ivytime(0) };
 	ivytime duration;
+	ivytime time_in_hand_before_subinterval_end;
+        // This is the amount of time from when we receive the OK from ivyslave that all workload threads have
+        // been posted with the "Go!" / "continue" / "cooldown" / "stop" command
+        // until the end of the subinterval.
 
 // ivy_cmddev methods:
 	void get_token();  // throws std::invalid_argument, std::runtime_error

@@ -218,18 +218,19 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     {
         m_s.running_subinterval++;
 
-        ivytime subintervalStart, subintervalEnd;
+
 
         if ( -1 == m_s.rollups.current_index() )
         {
-            subintervalStart.setToNow();
+            m_s.subintervalStart.setToNow();
         }
         else
         {
-            subintervalStart = m_s.rollups.starting_ending_times[m_s.rollups.current_index() ].second;  // ending time from previous subinterval
+            m_s.subintervalStart = m_s.rollups.starting_ending_times[m_s.rollups.current_index() ].second;  // ending time from previous subinterval
         }
 
-        subintervalEnd = subintervalStart + m_s.subintervalLength;
+        m_s.subintervalEnd = m_s.subintervalStart + m_s.subintervalLength;
+        m_s.nextSubintervalEnd = m_s.subintervalEnd + m_s.subintervalLength;
 
 
         {
@@ -238,13 +239,13 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             o << std::endl << "==================================================================================================" << std::endl;
 
             o << std::endl << "Top of subinterval " << (m_s.rollups.current_index()+1)
-              << " from " << subintervalStart.format_as_datetime_with_ns()
-              <<  " to  " << subintervalEnd.format_as_datetime_with_ns() << std::endl;
+              << " from " << m_s.subintervalStart.format_as_datetime_with_ns()
+              <<  " to  " << m_s.subintervalEnd.format_as_datetime_with_ns() << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile,o.str());
         }
 
-        m_s.rollups.startNewSubinterval(subintervalStart,subintervalEnd);
+        m_s.rollups.startNewSubinterval(m_s.subintervalStart,m_s.subintervalEnd);
 
         m_s.cpu_by_subinterval.push_back(s);  // master_stuff: std::vector<Subinterval_CPU> cpu_by_subinterval;
 
@@ -280,7 +281,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
         if (m_s.haveCmdDev)
         {
-            gather_schedule = subintervalEnd - ivytime( (long double) ( (1.0 + gather_lead_time_safety_margin) * m_s.overallGatherTimeSeconds.avg()) );
+            gather_schedule = m_s.subintervalEnd - ivytime( (long double) ( (1.0 + gather_lead_time_safety_margin) * m_s.overallGatherTimeSeconds.avg()) );
             gather_schedule.waitUntilThisTime();
 
             std::system("clear");
@@ -386,12 +387,14 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
         //{ostringstream o; o << "done gathering real-time data from subsystems, if any.\n"; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
 
+        RunningStat<ivy_float, ivy_int> time_in_hand;
+        time_in_hand.clear();
+
         for (auto& pear : m_s.host_subthread_pointers)
         {
             {
                 std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
 
-                //{ostringstream o; o << "for host subthread \"" << pear.first << "\" - going to wait for it to post commandComplete\n"; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
                 // Wait for each subtask to post "subinterval complete".
                 while (!pear.second->commandComplete) pear.second->master_slave_cv.wait(u_lk);
 
@@ -403,11 +406,13 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 if (!pear.second->commandSuccess)
                 {
                     std::ostringstream o;
-                    o << "Subthread for " << pear.first << " posted an error, saying "  << pear.second->commandErrorMessage << std::endl;
+                    o << std::endl << std::endl << "When waiting for subinterval complete, subthread for " << pear.first << " posted an error, saying "  << pear.second->commandErrorMessage << std::endl;
                     std::cout << o.str();
                     log (m_s.masterlogfile,o.str());
                     m_s.kill_subthreads_and_exit();
                 }
+
+                time_in_hand.push(pear.second->time_in_hand_before_subinterval_end.getlongdoubleseconds());
 
                 pear.second->commandComplete=false; // reset for next pass
                 pear.second->commandSuccess=false;
@@ -415,14 +420,23 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             }
         }
 
-        log(m_s.masterlogfile,"all host subthreads posted subinterval complete.\n");
-        std::cout << "all host subthreads posted subinterval complete.\n" << std::endl;
-
         if (!m_s.haveCmdDev)
         {
             std::system("clear");
         }
 
+        {
+            std::ostringstream o;
+            o << "Received notification of delivery to all workload threads of \"" << m_s.host_subthread_pointers.begin()->second->commandString << "\" command from ivyslave instances "
+                << "earliest " << std::fixed << std::setprecision(3) << time_in_hand.max() << " seconds, "
+                << "latest " << std::fixed << std::setprecision(3) << time_in_hand.min() << " seconds "
+                << "before end of subinterval." << std::endl << std::endl;
+            std::cout << o.str();
+            log(m_s.masterlogfile, o.str());
+        }
+
+        log(m_s.masterlogfile,"All host subthreads posted subinterval complete.\n");
+        std::cout << "All host subthreads posted subinterval complete.\n" << std::endl;
 
         auto allTypeIterator = m_s.rollups.rollups.find(std::string("all"));
 
@@ -444,7 +458,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 SubintervalOutput& allAllSubintervalOutput = allAllSubintervalRollup.outputRollup;
 
                 ivytime n; n.setToNow();
-                ivytime rollup_time = n - subintervalEnd;
+                ivytime rollup_time = n - m_s.subintervalEnd;
 
 
                 ivytime test_duration = n - m_s.test_start_time;
@@ -707,7 +721,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
                 std::ostringstream o;
                 o << "DFC posted SUCCESS or FAILURE, but cooldown_by_wp is on and we have at least one available test CLPR we can see that is not empty."
-                    << "Entering cooldown mode." << std::endl;
+                    << "  Entering cooldown mode." << std::endl;
 
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
@@ -1682,11 +1696,11 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     std::cout << m45d.str();
     log(m_s.masterlogfile, m45d.str());
 
-    // post "Stop!" command to wait for in-flight I/Os at end of last subinterval to finish.
+    // post "Catch in flight I/Os" command to wait for in-flight I/Os at end of last subinterval to finish.
 
     if (trace_evaluate){
         std::ostringstream o;
-        o << "Going to post \"Stop!\" command to each host." << std::endl;
+        o << "Going to post \"Catch in flight I/Os\" command to each host." << std::endl;
         log(m_s.masterlogfile,o.str());
     }
 
@@ -1697,13 +1711,13 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     {
         {
             std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
-            pear.second->commandString = std::string("Stop!");
+            pear.second->commandString = std::string("Catch in flight I/Os");
             pear.second->command=true;
             pear.second->commandComplete=false;
             pear.second->commandSuccess=false;
             pear.second->commandErrorMessage.clear();
 
-//*debug*/{ std::ostringstream o; o << "Posted \"Stop!\" to " << pear.second->ivyscript_hostname << std::endl; log(m_s.masterlogfile,o.str()); }
+//*debug*/{ std::ostringstream o; o << "Posted \"Catch in flight I/Os\" to " << pear.second->ivyscript_hostname << std::endl; log(m_s.masterlogfile,o.str()); }
         }
         pear.second->master_slave_cv.notify_all();
     }
@@ -1713,6 +1727,14 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
         {
             std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
             while (!pear.second->commandComplete) pear.second->master_slave_cv.wait(u_lk);
+            if (!pear.second->commandSuccess)
+            {
+                    std::ostringstream o;
+                    o << "When waiting for \"Catch in flight I/Os\" to complete after the final subinterval, subthread for " << pear.first << " posted an error, saying "  << pear.second->commandErrorMessage << std::endl;
+                    std::cout << o.str();
+                    log (m_s.masterlogfile,o.str());
+                    m_s.kill_subthreads_and_exit();
+            }
         }
     }
 
@@ -1723,7 +1745,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     /*debug*/
     {
         std::ostringstream o;
-        o << "\"Stop!\" command to wait for in-flight I/Os at end of last subinterval duration =  " << stopdur.format_as_duration_HMMSSns() << std::endl
+        o << "\"Catch in flight I/Os\" command to wait for in-flight I/Os at end of last subinterval duration =  " << stopdur.format_as_duration_HMMSSns() << std::endl
             << "run_subinterval_sequence() complete.  returning." << std::endl;
         log(m_s.masterlogfile,o.str());
     }

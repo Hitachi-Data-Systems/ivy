@@ -79,6 +79,7 @@
     // before looking to see if the workload threads posted their subintervals complete.
 
 // go statement universal parameters
+#define subinterval_seconds_default_int 5
 #define subinterval_seconds_default std::string("5")
 #define warmup_seconds_default     std::string("5")
 #define measure_seconds_default    std::string("60")

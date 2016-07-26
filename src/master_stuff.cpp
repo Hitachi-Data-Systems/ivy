@@ -34,6 +34,8 @@ using namespace std;
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <signal.h>
 
 
 #include "ivytime.h"
@@ -328,24 +330,25 @@ void master_stuff::error(std::string m)
     kill_subthreads_and_exit();
 }
 
-void	master_stuff::kill_subthreads_and_exit()
+void master_stuff::kill_subthreads_and_exit()
 {
-	int notified=0, joined=0;
+	int notified=0;
+
 	for (auto&  pear : host_subthread_pointers)
 	{
 		{
-			std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
+			//std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
 			pear.second->commandString=std::string("die");
 			pear.second->command=true;
 
 			std::ostringstream o;
-			o << "posting \"die\" command to subthread for host " << pear.first << " whose pipe_driver_subthread pid = " << pear.second->pipe_driver_pid << std::endl;
+			o << "master_stuff::kill_subthreads_and_exit() - posting \"die\" command to subthread for host " << pear.first
+                << " pid = " << pear.second->pipe_driver_pid << ", gettid() thread ID = " << pear.second->linux_gettid_thread_id<< std::endl;
 			log (masterlogfile, o.str());
 		}
 		pear.second->master_slave_cv.notify_all();
 		notified++;
 	}
-
 
 	int notified_subsystems {0};
 
@@ -358,12 +361,13 @@ void	master_stuff::kill_subthreads_and_exit()
 			{
 				pipe_driver_subthread* p_pds = pRAID->pRMLIBthread;
 				{
-					std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
+					//std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
 					p_pds->commandString=std::string("die");
 					p_pds->command=true;
 
 					std::ostringstream o;
-					o << "posting \"die\" command to subthread for subsystem " << pear.first << " whose pipe_driver_subthread pid = " << p_pds->pipe_driver_pid << std::endl;
+					o << "master_stuff::kill_subthreads_and_exit() - posting \"die\" command to subthread for subsystem " << pear.first
+                        << " pid = " << p_pds->pipe_driver_pid << ", gettid() thread ID = " << p_pds->linux_gettid_thread_id<< std::endl;
 					log (masterlogfile, o.str());
 				}
 				p_pds->master_slave_cv.notify_all();
@@ -372,37 +376,85 @@ void	master_stuff::kill_subthreads_and_exit()
 		}
 	}
 
-
-	// NEED TO COME BACK AND TIMEOUT and KILL
-
-	// Not waiting for subsystem threads to finish - join will wait anyway ...
+    bool need_harakiri {false};
 
 	for (auto&  pear : host_subthread_pointers)
 	{
+        bool died_on_its_own;
+        died_on_its_own = false;
+
+        std::chrono::milliseconds nap(100);
+
+        for (unsigned int i = 0; i < 70; i++)
+        {
+//            if (pear.second->master_slave_lk.try_lock())
+//            {
+                if (pear.second->dead)
+                {
+                    died_on_its_own = true;
+                    break;
+                }
+//            }
+            std::this_thread::sleep_for(nap);
+        }
+
+        if (!died_on_its_own)
+        {
+            std::ostringstream o;
+            o << "********** Subthread for test host " << pear.first << " did not exit normally. " << std::endl;
+            log(m_s.masterlogfile,o.str());
+            std::cout << o.str();
+
+            need_harakiri = true;
+        }
+	}
+
+	for (auto& pear : subsystems)
+	{
+		if (0==pear.second->type().compare(std::string("Hitachi RAID")))
 		{
-			std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
-			while (!pear.second->dead) pear.second->master_slave_cv.wait(u_lk);
-			std::ostringstream o;
-			o << "waiting for subthread for host " << pear.first << " whose pipe_driver_subthread pid = " << pear.second->pipe_driver_pid << " to show as dead." << std::endl;
-			log (masterlogfile, o.str());
+			Hitachi_RAID_subsystem* pRAID = (Hitachi_RAID_subsystem*) pear.second;
+			if (pRAID->pRMLIBthread)
+			{
+				pipe_driver_subthread* p_pds = pRAID->pRMLIBthread;
+				{
+                    bool died_on_its_own;
+                    died_on_its_own = false;
+
+                    std::chrono::milliseconds nap(100);
+
+                    for (unsigned int i = 0; i < 30; i++)
+                    {
+  //                      if (p_pds->master_slave_lk.try_lock())
+  //                      {
+                            if (p_pds->dead)
+                            {
+                                died_on_its_own = true;
+                                break;
+                            }
+  //                      }
+                        std::this_thread::sleep_for(nap);
+                    }
+
+                    if (!died_on_its_own)
+                    {
+                        std::ostringstream o;
+                        o << "********** Subthread for command device on host " << p_pds->ivyscript_hostname
+                            << " subsystem serial number " << pRAID->serial_number
+                            << " did not exit normally." << std::endl;
+                        log(m_s.masterlogfile,o.str());
+                        std::cout << o.str();
+
+                        need_harakiri = true;
+                    }
+				}
+			}
 		}
 	}
 
-	for (auto& thread : threads)
-	{  // come back later and maybe make this time out
-        thread.join();
-		joined++;
-	}
-
-	for (auto& thread : ivymaster_RMLIB_threads)
-	{  // come back later and maybe make this time out
-        thread.join();
-		joined++;
-	}
-
-
 	std::ostringstream o;
-	o << "master_stuff::kill_subthreads_and_exit() told " << notified << " host driver and " << notified_subsystems << " command device subthreads to die, and then harvested " << joined << " moribund pids." << std::endl;
+	o << "master_stuff::kill_subthreads_and_exit() told " << notified << " host driver and "
+        << notified_subsystems << " command device subthreads to die." << std::endl;
 	log(masterlogfile,o.str());
 
 	for (auto& host : hosts)
@@ -423,6 +475,41 @@ void	master_stuff::kill_subthreads_and_exit()
 			else log(masterlogfile,std::string("failure: ")+o.str()+std::string("\n"));
 		}
 	}
+
+    if (need_harakiri)
+    {
+        std::ostringstream o;
+        o << "One or more subthreads did not exit normally, abnormal termination." << std::endl;
+        log(m_s.masterlogfile,o.str());
+        std::cout << o.str();
+        kill(getpid(),SIGKILL);
+    }
+    else
+    {
+        for (auto& thread : threads)
+        {
+            thread.join();
+        }
+
+        for (auto& thread : ivymaster_RMLIB_threads)
+        {
+            thread.join();
+        }
+        {
+            std::ostringstream o;
+            if (m_s.overall_success)
+            {
+                o << "Successful run." << std::endl;
+            }
+            else
+            {
+                o << "All threads exited on their own, but there was an error." << std::endl;
+
+            }
+            std::cout << o.str();
+            log(m_s.masterlogfile, o.str());
+        }
+    }
 
 	exit(0);
 }

@@ -181,6 +181,7 @@ void WorkloadThread::WorkloadThreadRun() {
 			if (routine_logging) log(slavethreadlogfile,std::string("Received command from host - ") + mainThreadCommandToString(ivyslave_main_says));
 
 			ivyslave_main_posted_command=false;
+			log(slavethreadlogfile,"turning off ivyslave_main_posted_command flag.");
 
 			switch (ivyslave_main_says)
 			{
@@ -197,6 +198,7 @@ void WorkloadThread::WorkloadThreadRun() {
 				default:
 				log (slavethreadlogfile,std::string("WorkloadThread - in main loop waiting for commands didn\'t get \"run\" or \"die\" when expected.\n"));
 				state=ThreadState::died;
+				break;
 			}
 		}  // lock no longer held
 
@@ -356,39 +358,14 @@ void WorkloadThread::WorkloadThreadRun() {
 //*debug*/{ std::ostringstream o; o << "Have the lock at end of subinterval " << subinterval_number << std::endl; log(slavethreadlogfile,o.str()); }
 				if (!ivyslave_main_posted_command)
 				{
-
-
-
-
 //					now we will do a wait for a command to be posted for up to one second.
 //					if not, issue error message & state=ThreadState::died & exit.
 
-
-
-
 					log(slavethreadlogfile,"iogenerator got the lock without waiting at the end of the subinterval, but no command was posted.\n");
-
-
-
-
-
-
-
 
 // here after writing the error message, wait for up to 5 seconds for a command to be posted, and print another message with the wait time if we did get a command.
 
 // and then die if we didn't get a command.  See if we can recover and continue the test.
-
-
-
-
-
-
-
-
-
-
-
 
 					state=ThreadState::died;
 					slaveThreadMutex.unlock();
@@ -398,6 +375,7 @@ void WorkloadThread::WorkloadThreadRun() {
 				}
 
 				ivyslave_main_posted_command=false;
+				log(slavethreadlogfile,"turning off ivyslave_main_posted_command flag.");
 //*debug*/debug_command_log("WorkloadThread.cpp at bottom of subinterval after turning off ivyslave_main_posted_command");
 
 				if (MainThreadCommand::die == ivyslave_main_says)
@@ -411,6 +389,7 @@ void WorkloadThread::WorkloadThreadRun() {
 				}
 
 				subinterval_array[currentSubintervalIndex].subinterval_status=IVY_SUBINTERVAL_READY_TO_SEND;
+/*debug*/{std::ostringstream o; o << "Workload thread marking subinterval_array[" << currentSubintervalIndex << "].subinterval_status = IVY_SUBINTERVAL_READY_TO_SEND"; log(slavethreadlogfile, o.str());}
 
 				if (0 == currentSubintervalIndex)
 				{
@@ -703,7 +682,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 	ivytime& subinterval_ending_time = p_current_subinterval->end_time;
 
-    if (routine_logging) {std::ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() running subinterval which will end at " << subinterval_ending_time.format_as_datetime_with_ns() << std::endl; log(slavethreadlogfile,o.str());}
+    if (routine_logging) {std::ostringstream o; o << "WorkloadThread::linux_AIO_driver_run_subinterval() running subinterval which will end at " << subinterval_ending_time.format_as_datetime_with_ns() << std::endl; log(slavethreadlogfile,o.str());}
 
 	while (true) {
 		now.setToNow();

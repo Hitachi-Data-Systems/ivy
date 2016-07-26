@@ -224,7 +224,7 @@ bool Stmt_hosts::execute()
 
         m_s.TheSampleLUN.copyOntoMe(&pear.second->HostSampleLUN);
 
-        if (first_host) {ahl_csv << pear.second->lun_csv_header.str();}
+        if (first_host) {ahl_csv << pear.second->lun_csv_header;}
         ahl_csv << pear.second->lun_csv_body.str();
 
         first_host = false;

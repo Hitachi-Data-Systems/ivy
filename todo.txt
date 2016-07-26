@@ -1,3 +1,27 @@
+- Add total test elapsed time to output somewhere.
+
+- Write .xls output instead of .csv output so that the formula ="xxx" can be removed.
+
+- take a look at where each slave driver thread posts into the rollups.
+  Right now each slave driver thread gets the master thread global lock
+  to update the rollups.  Maybe have each slave driver thread update the
+  SubintervalOutput object in the workload tracker object without a lock,
+  and then once each slave driver thread has done all its workloads, post
+  a command complete or something, and then have the ivymaster thread
+  iterate over the workload trackers and post the results into the rollups.
+  This would eliminate get/release global lock for each workload thread.
+  
+  - eliminate catnap, just have ivyslave main thread camp on if the workload
+    thread SubintervalOuput object status is still "running" and not yet "ready to send". (you know what I mean)
+
+- put in an extra step in the protocol between ivymaster/pipe driver/ivyslave to 
+  capture how much in advance of the end of the subinterval all the workload threads
+  had been posted with "continue", "cooldown", or "stop".
+  
+- put in retry mechanism if upon initial startup of the ssh command to ivyslave, the initial
+  read from the pipe stalls.  (kill ssh thread, harvest.  Then try again.)
+
+- fix so that if the ivyscript filename (test name) has periods in it, they don't get changed when creating csv filenames.
 
 - rename parameter service_time to service_time_seconds
 

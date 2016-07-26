@@ -115,6 +115,8 @@ void killAllSubthreads(std::string logfilename) {
 			std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
 			pear.second->ivyslave_main_posted_command=true;
 			pear.second->ivyslave_main_says=MainThreadCommand::die;
+			log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"die\" command.");
+
 //*debug*/pear.second->debug_command_log("ivyslave.cpp killAllSubthreads");
 		}
 		pear.second->slaveThreadConditionVariable.notify_all();
@@ -133,9 +135,9 @@ void killAllSubthreads(std::string logfilename) {
 	}
 }
 
-void say(std::string s, std::string logfilename,ivytime &lasttime) {
+void say(std::string s) {
  	if (s.length()==0 || s[s.length()-1] != '\n') s.push_back('\n');
-	if (routine_logging) log(logfilename,format_utterance("Slave", s));
+	if (routine_logging) log(slavelogfile,format_utterance("Slave", s));
 	std::cout << s << std::flush;
 	return;
 }
@@ -261,7 +263,7 @@ int main(int argc, char* argv[])
 	std::string subinterval_duration_as_string;
 
 	lasttime.setToNow();
-	say(std::string("Hello, whirrled! from ")+myhostname(),slavelogfile,lasttime);
+	say(std::string("Hello, whirrled! from ")+myhostname());
 
 
     for (unsigned int c = 0; c < 128; c++) if (isprint((char)c)) printable_ascii.push_back((char)c);
@@ -284,7 +286,7 @@ int main(int argc, char* argv[])
 		trim(input_line);
 		if (stringCaseInsensitiveEquality(input_line, std::string("[Die, Earthling!]")))
 		{
-			say(std::string("[what?]"),slavelogfile,lasttime);
+			say(std::string("[what?]"));
 			// When ivymaster subthread encounters an error and is terminating abnormally
 			killAllSubthreads(slavelogfile);
 			return -1;
@@ -292,7 +294,7 @@ int main(int argc, char* argv[])
 		if (stringCaseInsensitiveEquality(input_line, std::string("send LUN header")))
 		{
 			disco.get_header_line(header_line);
-			say("[LUNheader]ivyscript_hostname,"+header_line,slavelogfile,lasttime);
+			say("[LUNheader]ivyscript_hostname,"+header_line);
 		}
 		else if (stringCaseInsensitiveEquality(input_line,std::string("send LUN")))
 		{
@@ -305,22 +307,20 @@ int main(int argc, char* argv[])
 					o << "<Error> Ivyslave main thread failed trying to load a LUN lister csv file line into a LUN object.  csv header line = \""
 					<< header_line << "\", data line = \"" << disco_line << "\"." << std::endl ;
 					log(slavelogfile,o.str());
-					say (o.str(),slavelogfile,lasttime);
+					say (o.str());
 					killAllSubthreads(slavelogfile);
 					return -1;
 				}
 				LUNpointers[pLUN->attribute_value(std::string("LUN name"))]=pLUN;
-				say(std::string("[LUN]")+hostname+std::string(",")+disco_line,slavelogfile,lasttime);
+				say(std::string("[LUN]")+hostname+std::string(",")+disco_line);
 			}
 			else
 			{
-				say("[LUN]<eof>",slavelogfile,lasttime);
+				say("[LUN]<eof>");
 			}
 		}
-		else if (0 == std::string("Stop!").compare(input_line))
+		else if (0 == std::string("Catch in flight I/Os").compare(input_line))
 		{
-			// This "Stop!" (not "stop") means wait for all threads to transition (possibly from "stopping") to "waiting for command" state
-
 			for (auto& pear : iogenerator_threads)
 			{
 				{
@@ -329,12 +329,8 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			say("<OK>",slavelogfile,lasttime);
+			say("<OK>");
 		}
-
-
-
-
 		else if (startsWith("[CreateWorkload]",input_line,remainder))
 		{
 			// We get "[CreateWorkload] myhostname+/dev/sdxy+workload_name [Parameters] subinterval_input.toString()
@@ -349,7 +345,7 @@ int main(int argc, char* argv[])
 				i++;
 			if (0==i || (!startsWith("[Parameters]",remainder.substr(i,remainder.length()-i),createThreadParameters)))
 			{
-				say("<Error> [CreateWorkload] did not have \"[Parameters]\"",slavelogfile,lasttime);
+				say("<Error> [CreateWorkload] did not have \"[Parameters]\"");
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -365,7 +361,7 @@ int main(int argc, char* argv[])
 			if (iogenerator_threads.end()!=trd) {
 				std::ostringstream o;
 				o << "<Error> [CreateWorkload] failed - thread \"" << workloadID << "\" already exists! Not supposed to happen.  ivymaster is supposed to know." << std::endl;
-				say(o.str(),slavelogfile,lasttime);
+				say(o.str());
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -375,7 +371,7 @@ int main(int argc, char* argv[])
 			{
 				std::ostringstream o;
 				o << "<Error> [CreateWorkload] - workload ID \"" << workloadID << "\" did not look like hostname+/dev/sdxxx+workload_name." << std::endl;
-				say(o.str(),slavelogfile,lasttime);
+				say(o.str());
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -386,7 +382,7 @@ int main(int argc, char* argv[])
 			{
 				std::ostringstream o;
 				o << "<Error> [CreateWorkload] - workload ID \"" << workloadID << "\"  - no such LUN \"" << wID.getLunPart() << "\"." << std::endl;
-				say(o.str(),slavelogfile,lasttime);
+				say(o.str());
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -398,7 +394,7 @@ int main(int argc, char* argv[])
 			{
 				std::ostringstream o;
 				o << "<Error> [CreateWorkload] - workload ID \"" << workloadID <<  "\" - LUN \"" << wID.getLunPart() << "\" - does not have a \"Max LBA\" attribute." << std::endl;
-				say(o.str(),slavelogfile,lasttime);
+				say(o.str());
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -409,7 +405,7 @@ int main(int argc, char* argv[])
 				std::ostringstream o;
 				o << "<Error> [CreateWorkload] - workload ID \"" << workloadID <<  "\" - LUN \"" << wID.getLunPart()
 					<< "\" - \"Max LBA\" attribute value \"" << maxLBAtext << "\" is not all digits." << std::endl;
-				say(o.str(),slavelogfile,lasttime);
+				say(o.str());
 				killAllSubthreads(slavelogfile);
 				return -1;
 
@@ -434,7 +430,7 @@ int main(int argc, char* argv[])
 			// Invoke thread
 			p_WorkloadThread->std_thread=std::thread(invokeThread,p_WorkloadThread);
 
-			say("<OK>",slavelogfile,lasttime);
+			say("<OK>");
 
 		}
 
@@ -452,7 +448,7 @@ int main(int argc, char* argv[])
 			{
 				std::ostringstream o;
 				o << "<Error> at ivyslave [DeleteWorkload] failed - WorkloadID \"" << remainder << "\" is not well-formed like \"myhostname+/dev/sdxy+workload_name\"." << std::endl;
-				say(o.str(),slavelogfile,lasttime);
+				say(o.str());
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -464,7 +460,7 @@ int main(int argc, char* argv[])
 			{
 				std::ostringstream o;
 				o << "<Error> at ivyslave [DeleteWorkload] failed - no such WorkloadID \"" << remainder << "\"." << std::endl;
-				say(o.str(),slavelogfile,lasttime);
+				say(o.str());
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -475,7 +471,7 @@ int main(int argc, char* argv[])
 			{
 				std::ostringstream o;
 				o << "<Error> at ivyslave [DeleteWorkload] failed - internal programming error WorkloadID \"" << remainder << "\" key exists but the associated WorkloadTracker pointer was nullptr." << std::endl;
-				say(o.str(),slavelogfile,lasttime);
+				say(o.str());
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -486,6 +482,7 @@ int main(int argc, char* argv[])
 
                 p_WorkloadThread->ivyslave_main_posted_command=true;
                 p_WorkloadThread->ivyslave_main_says=MainThreadCommand::die;
+                log(p_WorkloadThread->slavethreadlogfile,"ivyslave main thread posted \"die\" command.");
             }
 
             p_WorkloadThread->slaveThreadConditionVariable.notify_all();
@@ -508,7 +505,7 @@ int main(int argc, char* argv[])
 
             iogenerator_threads.erase(t_it);
 
-			say("<OK>",slavelogfile,lasttime);
+			say("<OK>");
 		}
 
 		else if (startsWith("[EditWorkload]",input_line,remainder))
@@ -533,7 +530,7 @@ int main(int argc, char* argv[])
 				i++;
 			if (0==i || (!startsWith("[Parameters]",remainder.substr(i,remainder.length()-i),parametersText)))
 			{
-				say("<Error> [EditWorkload] did not have \"[Parameters]\"",slavelogfile,lasttime);
+				say("<Error> [EditWorkload] did not have \"[Parameters]\"");
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -550,7 +547,7 @@ int main(int argc, char* argv[])
 			if (!lowi.fromString(&listOfWorkloadIDsText))
 			{
 				say(std::string("<Error> [EditWorkload] invalid list of WorkloadIDs, should look like <myhostname+/dev/sdxy+workload_name,myhostname+/dev/sdxz+workload_name> - \"")
-					+ listOfWorkloadIDsText + std::string("\"."),slavelogfile,lasttime);
+					+ listOfWorkloadIDsText + std::string("\"."));
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -564,7 +561,7 @@ int main(int argc, char* argv[])
 				if (iogenerator_threads.end() == it)
 				{
 					say(std::string("<Error> [EditWorkload] no such WorkloadID, should look like myhostname+/dev/sdxy+workload_name - \"")
-						+ wID.workloadID + std::string("\"."),slavelogfile,lasttime);
+						+ wID.workloadID + std::string("\"."));
 					killAllSubthreads(slavelogfile);
 					return -1;
 				}
@@ -581,7 +578,7 @@ int main(int argc, char* argv[])
 					if (!p_WorkloadThread->slaveThreadMutex.try_lock())
 					{
 						say(std::string("<Error> [EditWorkload] subthread was already locked - aborting - \"")
-							+ wID.workloadID + std::string("\"."),slavelogfile,lasttime);
+							+ wID.workloadID + std::string("\"."));
 						killAllSubthreads(slavelogfile);
 						return -1;
 					}
@@ -604,7 +601,7 @@ int main(int argc, char* argv[])
 								  << parametersText << "\" into subinterval_array[0].input iogenerator_input object for WorkloadID \""
 								  << wID.workloadID << "\" - "
 								  << error_message;
-								say(o.str(),slavelogfile,lasttime);
+								say(o.str());
 								killAllSubthreads(slavelogfile);
 								return -1;
 							}
@@ -615,7 +612,7 @@ int main(int argc, char* argv[])
 								  << parametersText << "\" into subinterval_array[1].input iogenerator_input object for WorkloadID \""
 								  << wID.workloadID << "\" - "
 								  << error_message;
-								say(o.str(),slavelogfile,lasttime);
+								say(o.str());
 								killAllSubthreads(slavelogfile);
 								return -1;
 							}
@@ -624,7 +621,7 @@ int main(int argc, char* argv[])
 						{
 							std::ostringstream o;
 							o << "<Error> [EditWorkload] thread " << wID.workloadID << " was not STOPPED or RUNNING, but rather was " << threadStateToString(p_WorkloadThread->state) << " aborting." << std::endl;
-							say(o.str(),slavelogfile,lasttime);
+							say(o.str());
 							killAllSubthreads(slavelogfile);
 							return -1;
 						}
@@ -636,9 +633,12 @@ int main(int argc, char* argv[])
 					}
 				}
 			}
-			say("<OK>",slavelogfile,lasttime);
+			say("<OK>");
 		}
-
+        else if (0 == input_line.compare(std::string("get subinterval result")))
+        {
+			if (!waitForSubintervalEndThenHarvest()) return -1;
+        }
 		else  if (startsWith(std::string("Go!"),input_line,subinterval_duration_as_string))
 		{
 			test_start_time.setToNow();
@@ -650,7 +650,7 @@ int main(int argc, char* argv[])
 				o << "<Error> received command \"" << rtrim(input_line) << "\", saw \"Go!\" with a subinterval duration ivytime string representation of \""
 					<< subinterval_duration_as_string << "\", but this failed to convert to an ivytime when calling \"fromString()\".  "
 					<< "Valid ivytime string representations look like \"<seconds,nanoseconds>\"." << std::endl;
-				say(o.str(),slavelogfile,lasttime);
+				say(o.str());
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
@@ -661,8 +661,7 @@ int main(int argc, char* argv[])
 
 			if (0!=getprocstat(&interval_start_CPU,slavelogfile))
 			{
-				say("<Error> ivyslave main thread: procstatcounters::read_CPU_counters() call to get first subinterval starting CPU counters failed.",
-					slavelogfile,lasttime);
+				say("<Error> ivyslave main thread: procstatcounters::read_CPU_counters() call to get first subinterval starting CPU counters failed.");
 			}
 			for (auto& pear : iogenerator_threads)
 			{
@@ -672,7 +671,7 @@ int main(int argc, char* argv[])
 					{
 						ostringstream o;
 						o << "<Error> received \"Go!\" command, but thread \"" << pear.first << "\" was in " << threadStateToString(pear.second->state) << " state, not in \"waiting_for_command\" state.  Aborting." << std::endl;
-						say(o.str(),slavelogfile,lasttime);
+						say(o.str());
 						killAllSubthreads(slavelogfile);
 						return -1;
 					}
@@ -695,7 +694,7 @@ int main(int argc, char* argv[])
 					{
 						ostringstream o;
 						o << "<Error> Internal programming error - ivy master failed earlier to detect dedupe > 1.0 with fractionRead = 100%.  Aborting." << std::endl;
-						say(o.str(),slavelogfile,lasttime);
+						say(o.str());
 						killAllSubthreads(slavelogfile);
 						return -1;
 					}
@@ -738,9 +737,13 @@ int main(int argc, char* argv[])
 					pear.second->subinterval_array[0].output.clear();  // later if energetic figure out if these must already be cleared.
 					pear.second->subinterval_array[1].output.clear();
 					pear.second->subinterval_array[0].subinterval_status=IVY_SUBINTERVAL_READY_TO_RUN;
+/*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[0].subinterval_status = IVY_SUBINTERVAL_READY_TO_SEND"; log(pear.second->slavethreadlogfile, o.str());}
 					pear.second->subinterval_array[1].subinterval_status=IVY_SUBINTERVAL_READY_TO_RUN;
+/*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[1].subinterval_status = IVY_SUBINTERVAL_READY_TO_SEND"; log(pear.second->slavethreadlogfile, o.str());}
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
+					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command.");
+
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting first subinterval MainThreadCommand::run.");
                     pear.second->cooldown = false;
 
@@ -763,12 +766,14 @@ int main(int argc, char* argv[])
 //*debug*/{ostringstream o; o << "Posting IVYSLAVE_SAYS_RUN command for second subinterval for " << pear.first  << std::endl; log(slavelogfile,o.str());}
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
+					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command.");
+
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting second subinterval MainThreadCommand::run");
 				}
 				pear.second->slaveThreadConditionVariable.notify_all();
 			}
 
-			if (!waitForSubintervalEndThenHarvest()) return -1;  // ivymaster can't tell us anything until after digesting the results of the first subinterval
+			say("<OK>");
 		}
 		else if ( 0 == input_line.compare(std::string("continue")) || 0 == input_line.compare(std::string("cooldown")) )
 		{
@@ -785,7 +790,7 @@ int main(int argc, char* argv[])
 					{
 						ostringstream o;
 						o << "<Error> received \"continue\" or \"cooldown\" command, but thread \"" << pear.first << "\" was in " << threadStateToString(pear.second->state) << " state, not in \"running\" state.  Aborting." << std::endl;
-						say(o.str(),slavelogfile,lasttime);
+						say(o.str());
 						killAllSubthreads(slavelogfile);
 						return -1;
 					}
@@ -795,6 +800,8 @@ int main(int argc, char* argv[])
 
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
+					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command with cooldown flag.");
+
 					pear.second->cooldown = cooldown_flag;
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting MainThreadCommand::run");
 //*debug*/{ostringstream o; o << "Posted MainThreadCommand::run command to " << pear.first << std::endl; log(slavelogfile,o.str());}
@@ -802,9 +809,8 @@ int main(int argc, char* argv[])
 				pear.second->slaveThreadConditionVariable.notify_all();
 //*debug*/{ostringstream o; o << "Dropped the lock for " << pear.first << std::endl; log(slavelogfile,o.str());}
 			}
-//*debug*/{ostringstream o; o << "About to waitForSubintervalEndThenHarvest() " << std::endl; log(slavelogfile,o.str());}
+			say("<OK>");
 
-			if (!waitForSubintervalEndThenHarvest()) return -1;
 //*debug*/log(slavelogfile,"Looping back to get next command from ivymaster.");
 		}
 		else if (0==input_line.compare(std::string("stop")))
@@ -817,7 +823,7 @@ int main(int argc, char* argv[])
 					{
 						ostringstream o;
 						o << "<Error> received \"stop\" command, but thread \"" << pear.first << "\" was in " << threadStateToString(pear.second->state) << " state, not in \"running\" state.  Aborting." << std::endl;
-						say(o.str(),slavelogfile,lasttime);
+						say(o.str());
 						killAllSubthreads(slavelogfile);
 						return -1;
 					}
@@ -827,18 +833,23 @@ int main(int argc, char* argv[])
 
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::stop;
+                    log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"stop\" command.");
+
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting MainThreadCommand::stop");
 
 				}
 				pear.second->slaveThreadConditionVariable.notify_all();
 			}
-			if (!waitForSubintervalEndThenHarvest()) return -1;
-
-		} else if ((input_line.length()>=bracketedExit.length())
-			&& stringCaseInsensitiveEquality(input_line.substr(0,bracketedExit.length()),bracketedExit)) {
+			say("<OK>");
+		}
+		else if ((input_line.length()>=bracketedExit.length())
+			&& stringCaseInsensitiveEquality(input_line.substr(0,bracketedExit.length()),bracketedExit))
+        {
 			killAllSubthreads(slavelogfile);
 			return 0;
-		} else {
+		}
+		else
+		{
 			log(slavelogfile,std::string("ivyslave received command from ivymaster \"") + input_line + std::string("\" that was not recognized.  Aborting.\n"));
 			killAllSubthreads(slavelogfile);
 			return 0;
@@ -851,16 +862,18 @@ int main(int argc, char* argv[])
 
 bool waitForSubintervalEndThenHarvest()
 {
-//*debug*/log(slavelogfile,"Entered waitForSubintervalEndThenHarvest().\n");
-	// wait for subinterval ending time
+    // wait for subinterval ending time
 
-//*debug*/{std::ostringstream o; ivytime now; now.setToNow(); ivytime dur = master_thread_subinterval_end_time - now;
-//*debug*/	o << "waitForSubintervalEndThenHarvest() Going to wait from now " << now.format_as_datetime_with_ns() << " until subinterval_ending_time " << master_thread_subinterval_end_time.format_as_datetime_with_ns() 	<< " duration " << dur.format_as_duration_HMMSSns() << std::endl; log(slavelogfile, o.str());}
+    ivytime now; now.setToNow();
+    if (now > master_thread_subinterval_end_time)
+	{
+		say(std::string("<Error> Subinterval length parameter subinterval_seconds too short - ivymaster told ivyslave main thread to wait for the end of the subinterval and then harvest results, but subinterval was already over."));
+		killAllSubthreads(slavelogfile);
+		return false;
+ 	}
 
 	try {
-
 		master_thread_subinterval_end_time.waitUntilThisTime();
-
 	}
 	catch (std::exception& e)
 	{
@@ -869,16 +882,18 @@ bool waitForSubintervalEndThenHarvest()
 		log(slavelogfile, o.str());
 	}
 
+    ivytime end_of_current_subinterval;
+    end_of_current_subinterval = master_thread_subinterval_end_time + subinterval_duration;
 
-//*debug*/log(slavelogfile, std::string("Have waited until subinterval_ending_time ")+master_thread_subinterval_end_time.format_as_datetime_with_ns());
 	// harvest CPU counters and send CPU line.
-//*debug*/log(slavelogfile,std::string("slavelogfile=")+slavelogfile);
+
 	int rc;
+
 	rc=getprocstat(&interval_end_CPU, slavelogfile);
-//*debug*/{ostringstream o; o << "waitForSubintervalEndThenHarvest() - getprocstat(&interval_end_CPU, slavelogfile) returned " << rc; log(slavelogfile,o.str());}
+
 	if (0!=rc)
 	{
-		say(std::string("<Error> ivyslave main thread routine waitForSubintervalEndThenHarvest(): getprocstat(&interval_end_CPU, slavelogfile) call to get subinterval ending CPU counters failed.\n"),slavelogfile,lasttime);
+		say(std::string("<Error> ivyslave main thread routine waitForSubintervalEndThenHarvest(): getprocstat(&interval_end_CPU, slavelogfile) call to get subinterval ending CPU counters failed.\n"));
 		killAllSubthreads(slavelogfile);
 		return false;
 	}
@@ -893,13 +908,13 @@ bool waitForSubintervalEndThenHarvest()
 		slavelogfile
 	))
 	{
-		say(std::string("<Error> ivyslave main thread routine waitForSubintervalEndThenHarvest(): computecpubusy() call to get subinterval ending CPU % busies failed."),slavelogfile,lasttime);
+		say(std::string("<Error> ivyslave main thread routine waitForSubintervalEndThenHarvest(): computecpubusy() call to get subinterval ending CPU % busies failed."));
 		killAllSubthreads(slavelogfile);
 		return false;
  	}
 
 
-	say(std::string("[CPU]")+cpubusysummary.toString(),slavelogfile,lasttime);
+	say(std::string("[CPU]")+cpubusysummary.toString());
 //*debug*/log(slavelogfile,"said [CPU] line.\n");
 	interval_start_CPU.copyFrom(interval_end_CPU,std::string("turning over for next subinterval in waitForSubintervalEndThenHarvest()"),slavelogfile);
 
@@ -922,13 +937,40 @@ bool waitForSubintervalEndThenHarvest()
 	// to do the rollups in ivymaster, as the key has the workload name (from the [CreateWorkload] statement),
 	// the LDEV name, the LUN name, and the port name. (The iogenerator type name is in the subinterval input object.)
 
+    unsigned int c = 0;
+
+#ifdef BORK
+RunningStat<ivy_float,ivy_int> getlocktime,ahtime, umtime, saytime;
+ivytime xx; xx.setToNow();
+#endif // BORK
 	for (auto& pear : iogenerator_threads)
 	{
+
+#ifdef BORK
+ivytime t0; t0.setToNow();
+#endif // BORK
+        c++;
+        now.setToNow();
+        if (now > end_of_current_subinterval)
+        {
+            std::ostringstream o;
+            o << "<Error> Subinterval length parameter subinterval_seconds too short - current subinterval was already over when "
+                << "ivyslave about to send results from previous subinterval for workload thread " << c << " of " << iogenerator_threads.size() << ".";
+            say(o.str());
+            killAllSubthreads(slavelogfile);
+            return false;
+        }
+
 //*debug*/log(slavelogfile,std::string("About to get the lock to wait for the iogenerator thread to post result of a subinterval")+pear.first+std::string("\n"));
 		{
 //*debug*/log(slavelogfile,std::string("Got the lock to process result of a subinterval for \"")+pear.first+std::string("\".\n"));
 
 			std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
+
+#ifdef BORK
+ivytime t1; t1.setToNow();
+getlocktime.push(ivytime(t1-t0).getlongdoubleseconds());
+#endif // BORK
 
 			if ((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status != IVY_SUBINTERVAL_READY_TO_SEND)
 			{
@@ -954,7 +996,8 @@ bool waitForSubintervalEndThenHarvest()
                         o << (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status;
                 }
                 o << std::endl;
-				say(o.str(),slavelogfile,lasttime);
+                log(pear.second->slavethreadlogfile, o.str());
+				say(o.str());
 				killAllSubthreads(slavelogfile);
 				return false;
 			}
@@ -966,11 +1009,25 @@ bool waitForSubintervalEndThenHarvest()
 			//	- Subinterval input object toString()
 			//	- Subinterval output object toString()
 			lasttime.setToNow();
+
+#ifdef BORK
+ahtime.push(ivytime(lasttime-t1).getlongdoubleseconds());
+#endif // BORK
 			ostringstream o;
 			o << '<' << pear.second->workloadID.workloadID << '>'
 				<< (pear.second->subinterval_array)[next_to_harvest_subinterval].input.toString()
 				<< (pear.second->subinterval_array)[next_to_harvest_subinterval].output.toString() << std::endl;
-			say(o.str(),slavelogfile,lasttime);
+
+#ifdef BORK
+ivytime t1c; t1c.setToNow();
+umtime.push(ivytime(t1c-lasttime).getlongdoubleseconds());
+#endif // BORK
+			say(o.str());
+
+#ifdef BORK
+ivytime t2; t2.setToNow();
+saytime.push(ivytime(t2-t1c).getlongdoubleseconds());
+#endif // BORK
 
 			// Copy subinterval object from running subinterval to inactive subinterval.
 			(pear.second->subinterval_array)[next_to_harvest_subinterval].input.copy(  (pear.second->subinterval_array)[otherSubinterval].input);
@@ -986,13 +1043,32 @@ bool waitForSubintervalEndThenHarvest()
 				= pear.second->subinterval_array[next_to_harvest_subinterval].start_time + subinterval_duration;
 //*debug*/{ostringstream o; o << pear.first << " have now set up [next_to_harvest_subinterval = " << next_to_harvest_subinterval << "] " << pear.second->subinterval_array[next_to_harvest_subinterval].start_time.format_as_datetime_with_ns() << " to " << pear.second->subinterval_array[next_to_harvest_subinterval].end_time.format_as_datetime_with_ns() << std::endl; log(slavelogfile,o.str()); }
 			(pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status = IVY_SUBINTERVAL_READY_TO_RUN;
+/*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[" << next_to_harvest_subinterval << "].subinterval_status = IVY_SUBINTERVAL_READY_TO_RUN"; log(pear.second->slavethreadlogfile, o.str());}
+
 		}
 		pear.second->slaveThreadConditionVariable.notify_all();
 //*debug*/log(slavelogfile,std::string("dropped the lock to process result of a subinterval for \"")+pear.first+std::string("\".\n"));
 	}
 
+#ifdef BORK
+{
+std::ostringstream o; o << std::endl
+<< "========= get lock time count " << getlocktime.count() << ", total " << std::fixed << std::setprecision(9) << getlocktime.sum() << " s, avg " << std::fixed << std::setprecision(9) << getlocktime.avg() << " s, min " << std::fixed << std::setprecision(9) << getlocktime.min() << " s, max " << std::fixed << std::setprecision(9) << getlocktime.max() << " s." << std::endl
+<< "========= ah time       count " << ahtime.count() << ", total " << std::fixed << std::setprecision(9) << ahtime.sum() << " s, avg " << std::fixed << std::setprecision(9) << ahtime.avg() << " s, min " << std::fixed << std::setprecision(9) << ahtime.min() << " s, max " << std::fixed << std::setprecision(9) << ahtime.max() << " s." << std::endl
+<< "========= um time       count " << umtime.count() << ", total " << std::fixed << std::setprecision(9) << umtime.sum() << " s, avg " << std::fixed << std::setprecision(9) << umtime.avg() << " s, min " << std::fixed << std::setprecision(9) << umtime.min() << " s, max " << std::fixed << std::setprecision(9) << umtime.max() << " s." << std::endl
+<< "========= say time      count " << saytime.count() << ", total " << std::fixed << std::setprecision(9) << saytime.sum() << " s, avg " << std::fixed << std::setprecision(9) << saytime.avg() << " s, min " << std::fixed << std::setprecision(9) << saytime.min() << " s, max " << std::fixed << std::setprecision(9) << saytime.max() << " s." << std::endl
+;
+log(slavelogfile,o.str());
+}
+#endif // BORK
 	lasttime.setToNow();
-	say(std::string("<end>"),slavelogfile,lasttime);
+    if (lasttime > end_of_current_subinterval)
+    {
+        say(std::string("<Error> Subinterval length parameter subinterval_seconds too short - current subinterval was already over when ivyslave about to conclude sending results from previous subinterval"));
+        killAllSubthreads(slavelogfile);
+        return false;
+    }
+	say(std::string("<end>"));
 
 	if (0 == next_to_harvest_subinterval)
 	{

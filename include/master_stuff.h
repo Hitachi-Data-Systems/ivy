@@ -70,6 +70,7 @@ public:
 	// Each host thread also has its own individual mutex for interlocking when it's just between the
 	// ivymaster main thread and that particular host driver thread.
 
+    bool overall_success {false};
 
     ivytime test_start_time;
     ivytime get_go;
@@ -163,6 +164,8 @@ public:
 	int lastEvaluateSubintervalReturnCode = -1; // EVALUATE_SUBINTERVAL_FAILURE
 	int eventualEvaluateSubintervalReturnCode = -1; // delayed presenting until after cooldown, that is.
 
+    ivytime subintervalStart, subintervalEnd, nextSubintervalEnd;
+
 // [Go!]
 //    stepname = stepNNNN,
 //    subinterval_seconds = 5,
@@ -209,7 +212,7 @@ public:
 
     // universal
 	std::string stepName;
-	ivy_float subinterval_seconds {-1}; /* ==> */ ivytime subintervalLength;
+	ivy_float subinterval_seconds {-1}; /* ==> */ ivytime subintervalLength {ivytime(subinterval_seconds_default_int)};
 	ivy_float warmup_seconds {-1};      /* ==> */ int min_warmup_count /* i.e. subinterval count */;
 	ivy_float measure_seconds {-1};     /* ==> */ int min_measure_count;
 	bool cooldown_by_wp {true};  // whether the feature has been selected in the ivyscript program
