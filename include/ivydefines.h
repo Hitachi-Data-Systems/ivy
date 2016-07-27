@@ -74,9 +74,10 @@
 
 #define sector_size_bytes (512)
 
-#define catnapTimeSeconds (0.5)
+#define catnap_time_seconds_default (1.2)
     // The amount of time after the end of the subinterval that the ivyslave main thread waits
     // before looking to see if the workload threads posted their subintervals complete.
+#define post_time_limit_seconds_default (2.5)
 
 // go statement universal parameters
 #define subinterval_seconds_default_int 5

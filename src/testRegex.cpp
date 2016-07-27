@@ -30,6 +30,10 @@ int main(int argc, char* argv[])
 	std::regex identifier_regex( R"([a-zA-Z]\w*)" );
 	std::regex number_regex( R"((([0-9]+(\.[0-9]*)?)|(\.[0-9]+))%?)" );
 
+    std::string subinterval_duration_as_string {"<5,0>;1.2;2.5"};
+
+    std::regex regex_split_to_3_at_semicolons ("([^;]+);([^;]+);([^;]+)");
+
 
 	for (std::string s : { "subsystem", "124", "-1", "1e6", "-1e6", "1e+34", "-1e-34", "-.1", "-1.1", ".56%", "555%", "5.5%", "%" } )
 	// "a_56", "5.6", ".56", "56.", "subsystem", "5.6.", "henry", "h_56", "ha_56", "ha", "ha_", "subsystem1", "subsystem_1",

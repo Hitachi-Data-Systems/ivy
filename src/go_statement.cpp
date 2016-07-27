@@ -93,10 +93,11 @@ void go_statement(yy::location bookmark)
         m_s.kill_subthreads_and_exit();
     }
 
-    std::string valid_parameter_names = "stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp";
+    std::string valid_parameter_names = "stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, catnap_time_seconds, post_time_limit_seconds";
 
     std::string valid_parameters_message =
-        "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp.\n\n"
+        "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
+        "                                                   catnap_time_seconds, post_time_limit_seconds.\n\n"
         "For dfc = pid, additional valid parameters are:    p, i, d, target_value, starting_total_IOPS, min_IOPS.\n\n"
         "For measure = on, additional valid parameters are: accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
         "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n\n"
@@ -110,6 +111,20 @@ void go_statement(yy::location bookmark)
     if (!m_s.go_parameters.contains(std::string("warmup_seconds")))      m_s.go_parameters.contents[toLower(std::string("warmup_seconds"))]      = warmup_seconds_default;
     if (!m_s.go_parameters.contains(std::string("measure_seconds")))     m_s.go_parameters.contents[toLower(std::string("measure_seconds"))]     = measure_seconds_default;
     if (!m_s.go_parameters.contains(std::string("cooldown_by_wp")))      m_s.go_parameters.contents[toLower(std::string("cooldown_by_wp"))]      = cooldown_by_wp_default;
+
+    if (!m_s.go_parameters.contains(std::string("catnap_time_seconds")))
+    {
+        std::ostringstream o;
+        o << std::fixed << catnap_time_seconds_default;
+        m_s.go_parameters.contents[toLower(std::string("catnap_time_seconds"))] = o.str();
+    }
+
+    if (!m_s.go_parameters.contains(std::string("post_time_limit_seconds")))
+    {
+        std::ostringstream o;
+        o << std::fixed << post_time_limit_seconds_default;
+        m_s.go_parameters.contents[toLower(std::string("post_time_limit_seconds"))] = o.str();
+    }
 
     if (m_s.go_parameters.contains(std::string("dfc")))
     {
@@ -298,6 +313,34 @@ void go_statement(yy::location bookmark)
         log(m_s.masterlogfile, o.str());
     }
 
+
+//----------------------------------- catnap_time_seconds
+    try
+    {
+        m_s.catnap_time_seconds = number_optional_trailing_percent(m_s.go_parameters.retrieve("catnap_time_seconds"));
+    }
+    catch(std::invalid_argument& iaex)
+    {
+        std::ostringstream o;
+        o << "<Error>  at " << bookmark << " - Invalid catnap_time_seconds parameter value \"" << m_s.go_parameters.retrieve("catnap_time_seconds") << "\"." << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+        m_s.kill_subthreads_and_exit();
+    }
+
+//----------------------------------- post_time_limit_seconds
+    try
+    {
+        m_s.post_time_limit_seconds = number_optional_trailing_percent(m_s.go_parameters.retrieve("post_time_limit_seconds"));
+    }
+    catch(std::invalid_argument& iaex)
+    {
+        std::ostringstream o;
+        o << "<Error>  at " << bookmark << " - Invalid post_time_limit_seconds parameter value \"" << m_s.go_parameters.retrieve("post_time_limit_seconds") << "\"." << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+        m_s.kill_subthreads_and_exit();
+    }
 
 //----------------------------------- subinterval_seconds
     try

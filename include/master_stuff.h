@@ -166,6 +166,13 @@ public:
 
     ivytime subintervalStart, subintervalEnd, nextSubintervalEnd;
 
+    ivy_float catnap_time_seconds {catnap_time_seconds_default};
+    // The amount of time after the end of the subinterval that the ivyslave main thread waits
+    // before starting to look to see if the workload threads posted their subintervals complete.
+
+    ivy_float post_time_limit_seconds {post_time_limit_seconds_default};
+
+
 // [Go!]
 //    stepname = stepNNNN,
 //    subinterval_seconds = 5,

@@ -41,7 +41,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <thread>
-#include <chrono>
 #include <unistd.h>
 #include <vector>
 #include <mutex>
@@ -74,6 +73,10 @@ using namespace std;
 #include "WorkloadThread.h"
 
 // variables
+
+ivy_float catnap_time_seconds, post_time_limit_seconds;
+
+std::string hostname;
 
 std::unordered_map<std::string, WorkloadThread*>
 	iogenerator_threads;  // Key looks like "workloadName:host:00FF:/dev/sdxx:2A"
@@ -151,8 +154,6 @@ int main(int argc, char* argv[])
 	std::mutex ivyslave_main_mutex;
 
 	initialize_io_time_clip_levels();
-
-	std::string hostname;
 
     for (int arg_index = 1 /*skipping executable name*/ ; arg_index < argc ; arg_index++ )
     {
@@ -643,7 +644,50 @@ int main(int argc, char* argv[])
 		{
 			test_start_time.setToNow();
 			next_to_harvest_subinterval=0; otherSubinterval=1;
-			rtrim(subinterval_duration_as_string);  // can't remember if it's necessary, but won't hurt
+
+            std::regex regex_split_to_3_at_semicolons ("([^;]+);([^;]+);([^;]+)");
+            std::smatch smash;
+
+            if (std::regex_match(subinterval_duration_as_string,smash,regex_split_to_3_at_semicolons))
+            {
+                std::ostringstream o;
+
+                if (smash.size() != 4)
+                {
+                    o << "<Error> internal programming error " << __FILE__ << " line " << __LINE__
+                        << " - failed to split a string into three non-zero size pieces separated by semicolons. "
+                        << "regex matched, but was expecting smash.size() to be 4.  Instead we got "
+                        << "smash.size() = " << smash.size();
+
+                    for (unsigned int i = 0; i < smash.size(); i++)
+                    {
+                        o << ", smash[" << i << "] = \"" << smash[i] << "\""
+                        // << " (" << smash[i].size() << ")"
+                         ;
+                    }
+                    say(o.str());
+                    killAllSubthreads(slavelogfile);
+                    return -1;
+                }
+
+            }
+            else
+            {
+                std::ostringstream o;
+                o << "<Error> " << __FILE__ << " line " << __LINE__
+                    << " - invalid Go! command \"" << input_line << "\" - the part after the Go!, being \""
+                    << subinterval_duration_as_string << "\" failed to split into three non-zero length sections separated by \';\' (semicolons).";
+
+                say(o.str());
+				killAllSubthreads(slavelogfile);
+				return -1;
+            }
+
+
+            subinterval_duration_as_string = smash[1];
+            std::string catnap_seconds_string = smash[2];
+            std::string post_time_limit_seconds_string = smash[3];
+
 			if (!subinterval_duration.fromString(subinterval_duration_as_string))
 			{
 				ostringstream o;
@@ -656,6 +700,35 @@ int main(int argc, char* argv[])
 			}
 			master_thread_subinterval_end_time = test_start_time + subinterval_duration;
 
+            try
+            {
+                catnap_time_seconds = number_optional_trailing_percent(catnap_seconds_string,"catnap_seconds");
+            }
+            catch (const std::invalid_argument& ia) {
+                std::ostringstream o;
+                o << "<Error> " << __FILE__ << " line " << __LINE__
+                    << " - invalid Go! command \"" << input_line << "\" - a valid Go! command looks like \"Go!<5,0>;1.5;2.5\" where the ivytime <5,0> is subinterval_length_seconds, "\
+                    << "the 1.5 specifies the catnap_time_seconds, and the 2.5 specifieds the post_time_limit_seconds."
+                    << "  Failed parsing catnap_seconds field - \"" << catnap_seconds_string << "\" - " << ia.what();
+                say(o.str());
+				killAllSubthreads(slavelogfile);
+				return -1;
+            }
+
+            try
+            {
+                post_time_limit_seconds = number_optional_trailing_percent(post_time_limit_seconds_string,"post_time_limit_seconds");
+            }
+            catch (const std::invalid_argument& ia) {
+                std::ostringstream o;
+                o << "<Error> " << __FILE__ << " line " << __LINE__
+                    << " - invalid Go! command \"" << input_line << "\" - a valid Go! command looks like \"Go!<5,0>;1.5;2.5\" where the ivytime <5,0> is subinterval_length_seconds, "\
+                    << "the 1.5 specifies the catnap_time_seconds, and the 2.5 specifieds the post_time_limit_seconds."
+                    << "  Failed parsing post_time_limit_seconds - \"" << post_time_limit_seconds_string << "\" - " << ia.what();
+                say(o.str());
+				killAllSubthreads(slavelogfile);
+				return -1;
+            }
 
 			// harvest CPU counters starting time first subinterval
 
@@ -736,10 +809,10 @@ int main(int argc, char* argv[])
 					pear.second->subinterval_array[1].end_time=pear.second->subinterval_array[1].start_time + subinterval_duration;
 					pear.second->subinterval_array[0].output.clear();  // later if energetic figure out if these must already be cleared.
 					pear.second->subinterval_array[1].output.clear();
-					pear.second->subinterval_array[0].subinterval_status=IVY_SUBINTERVAL_READY_TO_RUN;
-/*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[0].subinterval_status = IVY_SUBINTERVAL_READY_TO_SEND"; log(pear.second->slavethreadlogfile, o.str());}
-					pear.second->subinterval_array[1].subinterval_status=IVY_SUBINTERVAL_READY_TO_RUN;
-/*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[1].subinterval_status = IVY_SUBINTERVAL_READY_TO_SEND"; log(pear.second->slavethreadlogfile, o.str());}
+					pear.second->subinterval_array[0].subinterval_status=subinterval_state::ready_to_run;
+/*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[0].subinterval_status = subinterval_state::ready_to_send"; log(pear.second->slavethreadlogfile, o.str());}
+					pear.second->subinterval_array[1].subinterval_status=subinterval_state::ready_to_run;
+/*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[1].subinterval_status = subinterval_state::ready_to_send"; log(pear.second->slavethreadlogfile, o.str());}
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
 					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command.");
@@ -867,7 +940,9 @@ bool waitForSubintervalEndThenHarvest()
     ivytime now; now.setToNow();
     if (now > master_thread_subinterval_end_time)
 	{
-		say(std::string("<Error> Subinterval length parameter subinterval_seconds too short - ivymaster told ivyslave main thread to wait for the end of the subinterval and then harvest results, but subinterval was already over."));
+        std::ostringstream o;
+        o << "<Error> " << __FILE__ << " line " << __LINE__   << " - subinterval_seconds too short - ivymaster told ivyslave main thread to wait for the end of the subinterval and then harvest results, but subinterval was already over.";	say(o.str());
+        say(o.str());
 		killAllSubthreads(slavelogfile);
 		return false;
  	}
@@ -878,12 +953,15 @@ bool waitForSubintervalEndThenHarvest()
 	catch (std::exception& e)
 	{
 		std::ostringstream o;
-		o << "waitForSubintervalEndThenHarvest() - exception during waitUntilThisTime() - " << e.what() << std::endl;
+		o << "<Error> " << __FILE__ << " line " << __LINE__ << " - waitForSubintervalEndThenHarvest() - exception during waitUntilThisTime() - " << e.what() << std::endl;
+		say(o.str());
 		log(slavelogfile, o.str());
+
+		throw;
 	}
 
-    ivytime end_of_current_subinterval;
-    end_of_current_subinterval = master_thread_subinterval_end_time + subinterval_duration;
+    ivytime end_of_running_subinterval;
+    end_of_running_subinterval = master_thread_subinterval_end_time + subinterval_duration;
 
 	// harvest CPU counters and send CPU line.
 
@@ -893,7 +971,9 @@ bool waitForSubintervalEndThenHarvest()
 
 	if (0!=rc)
 	{
-		say(std::string("<Error> ivyslave main thread routine waitForSubintervalEndThenHarvest(): getprocstat(&interval_end_CPU, slavelogfile) call to get subinterval ending CPU counters failed.\n"));
+		std::ostringstream o;
+		o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): getprocstat(&interval_end_CPU, slavelogfile) call to get subinterval ending CPU counters failed.\n";
+		say(o.str());
 		killAllSubthreads(slavelogfile);
 		return false;
 	}
@@ -908,27 +988,35 @@ bool waitForSubintervalEndThenHarvest()
 		slavelogfile
 	))
 	{
-		say(std::string("<Error> ivyslave main thread routine waitForSubintervalEndThenHarvest(): computecpubusy() call to get subinterval ending CPU % busies failed."));
+        std::ostringstream o;
+        o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): computecpubusy() call to get subinterval ending CPU % busies failed.";
+        say(o.str());
 		killAllSubthreads(slavelogfile);
 		return false;
  	}
 
 
 	say(std::string("[CPU]")+cpubusysummary.toString());
-//*debug*/log(slavelogfile,"said [CPU] line.\n");
+
 	interval_start_CPU.copyFrom(interval_end_CPU,std::string("turning over for next subinterval in waitForSubintervalEndThenHarvest()"),slavelogfile);
 
-	// At the end of the subinterval, if the iogenerator thread has to wait to get the lock, it aborts,
+	// At the end of the subinterval, if the iogenerator thread has to wait for than a few ms get the lock, it aborts,
 	// as it operates in real time driving and harvesting I/Os and cannot afford to wait.
 
 	// So before we get the lock to see if the iogenerator thread has posted the subinterval as complete,
-	// we are going to do is wait for a second just to make sure we dont try to get the lock
+	// we are going to do is wait for a catnap just to make sure we dont try to get the lock
 	// while the iogenerator threads might still be switching over to the next subinterval.
 
 	// If the iogenerator thread hasn't posted the last subinterval as complete by then, we abort.
 
-	ivytime afterCatnap = master_thread_subinterval_end_time + ivytime(catnapTimeSeconds);
+	ivytime afterCatnap = master_thread_subinterval_end_time + ivytime(catnap_time_seconds);
 	afterCatnap.waitUntilThisTime();
+        // The idea here is that under normal/ideal circumstances we don't ever want a WorkloadThread that's
+        // running I/Os in real time to have to wait to get the lock when talking to the ivyslave main thread.
+
+        // Therefore we catnap for a short period after the end of the subinterval to ensure the WorkloadThread
+        // when it reaches the end of a subinterval, can usually get the lock without waiting, without clashing
+        // with ivyslave when it is sending up the results from the subinterval from each WorkloadThread.
 
 //*debug*/log(slavelogfile,"after catnap.\n");
 
@@ -937,134 +1025,121 @@ bool waitForSubintervalEndThenHarvest()
 	// to do the rollups in ivymaster, as the key has the workload name (from the [CreateWorkload] statement),
 	// the LDEV name, the LUN name, and the port name. (The iogenerator type name is in the subinterval input object.)
 
-    unsigned int c = 0;
+    ivytime post_time_limit = master_thread_subinterval_end_time + ivytime(post_time_limit_seconds);
+        // Workload threads must post a subinterval object as "ready to send" within this number of seconds from that subinterval's scheduled end time.
+        // After the catnap, ivyslave iterates over the WorkloadThreads, and getting the lock for WorkloadThread to transition to its next state.
 
-#ifdef BORK
-RunningStat<ivy_float,ivy_int> getlocktime,ahtime, umtime, saytime;
-ivytime xx; xx.setToNow();
-#endif // BORK
+    ivytime max_seen_post_delay = ivytime(0.0);
+
+
+    unsigned int thread_number = 0;
+
 	for (auto& pear : iogenerator_threads)
 	{
+        thread_number++;
 
-#ifdef BORK
-ivytime t0; t0.setToNow();
-#endif // BORK
-        c++;
-        now.setToNow();
-        if (now > end_of_current_subinterval)
+        while (true)
         {
-            std::ostringstream o;
-            o << "<Error> Subinterval length parameter subinterval_seconds too short - current subinterval was already over when "
-                << "ivyslave about to send results from previous subinterval for workload thread " << c << " of " << iogenerator_threads.size() << ".";
-            say(o.str());
-            killAllSubthreads(slavelogfile);
-            return false;
+            now.setToNow();
+            if (now > end_of_running_subinterval)
+            {
+                std::ostringstream o;
+                o << "<Error> "<< __FILE__ << " line " << __LINE__ << " - Subinterval length parameter subinterval_seconds too short - current subinterval was already over when "
+                    << "ivyslave about to send results from previous subinterval for workload thread " << thread_number << " of " << iogenerator_threads.size() << ".";
+                say(o.str());
+                killAllSubthreads(slavelogfile);
+                return false;
+            }
+
+            if (pear.second->slaveThreadMutex.try_lock())
+            {
+                if((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status == subinterval_state::ready_to_send)
+                {
+                    (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status = subinterval_state::sending;
+                    break;  // note we still have the lock
+                }
+                if (now > post_time_limit)
+                {
+                    std::ostringstream o;
+                    o << "<Error> "<< __FILE__ << " line " << __LINE__ << " - Workload thread " << pear.first << " did not post \"ready to send\" for previous subinterval within "
+                        << ivytime(post_time_limit_seconds).format_as_duration_HMMSSns()
+                        << " from end of subinterval.  At " << ivytime(now-master_thread_subinterval_end_time).format_as_duration_HMMSSns() << " past subinterval end, "
+                        << "not-running subinterval status was " << (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status
+                        ;
+                    say(o.str());
+                    pear.second->slaveThreadMutex.unlock();
+                    killAllSubthreads(slavelogfile);
+                    return false;
+                }
+                if (!((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status == subinterval_state::running))
+                {
+                    std::ostringstream o;
+                    o << "<Error> "<< __FILE__ << " line " << __LINE__ << " - Workload thread " << pear.first << " previous subinterval status was not (still) \"running\" or \"ready to send\" "
+                        << "at " << ivytime(now-master_thread_subinterval_end_time).format_as_duration_HMMSSns() << "past subinterval end.  "
+                        << "Previous subinterval status was " << (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status
+                        ;
+                    say(o.str());
+                    pear.second->slaveThreadMutex.unlock();
+                    killAllSubthreads(slavelogfile);
+                    return false;
+                }
+                pear.second->slaveThreadMutex.unlock();
+                pear.second->slaveThreadConditionVariable.notify_all();
+            }
+            ivytime wait_until_time;
+            wait_until_time = now + ivytime(0.25*catnap_time_seconds);
+            wait_until_time.waitUntilThisTime();
+            ivytime delay_this_time = wait_until_time - master_thread_subinterval_end_time;
+            if (delay_this_time > max_seen_post_delay) max_seen_post_delay = delay_this_time;
         }
 
-//*debug*/log(slavelogfile,std::string("About to get the lock to wait for the iogenerator thread to post result of a subinterval")+pear.first+std::string("\n"));
-		{
-//*debug*/log(slavelogfile,std::string("Got the lock to process result of a subinterval for \"")+pear.first+std::string("\".\n"));
+        if (max_seen_post_delay > ivytime(catnap_time_seconds))
+        {
+            std::ostringstream o;
 
-			std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
+            ivy_float times_catnap = max_seen_post_delay.getlongdoubleseconds() / catnap_time_seconds;
 
-#ifdef BORK
-ivytime t1; t1.setToNow();
-getlocktime.push(ivytime(t1-t0).getlongdoubleseconds());
-#endif // BORK
+            o << "<Warning> "<< __FILE__ << " line " << __LINE__ << " - host " << hostname
+                << " - max WorkloadThread delay to post \"ready to send\" after scheduled subinterval end time was " << max_seen_post_delay.format_as_duration_HMMSSns()
+                << " which is " << std::fixed << std::setprecision(2) << times_catnap
+                << " times the catnap time of " << std::fixed << std::setprecision(2) << catnap_time_seconds << ".";
 
-			if ((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status != IVY_SUBINTERVAL_READY_TO_SEND)
-			{
-				ostringstream o;
-				o << "<Error> ivyslave main thread - iogenerator thread \"" << pear.first
-					<< "\" failed to post subinterval status = IVY_SUBINTERVAL_READY_TO_SEND within " << catnapTimeSeconds << " seconds of subinterval ending time for subinterval index = " << next_to_harvest_subinterval
-					 << ".  Status actually was ";
-                switch ((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status)
-                {
-                    case IVY_SUBINTERVAL_STATUS_UNDEFINED:
-                        o << "IVY_SUBINTERVAL_STATUS_UNDEFINED (0)";
-                        break;
-                    case IVY_SUBINTERVAL_READY_TO_RUN:
-                        o << "IVY_SUBINTERVAL_READY_TO_RUN (1)";
-                        break;
-                    case IVY_SUBINTERVAL_READY_TO_SEND:
-                        o << "IVY_SUBINTERVAL_READY_TO_SEND (2)";
-                        break;
-                    case IVY_SUBINTERVAL_STOP:
-                        o << "IVY_SUBINTERVAL_STOP (3)";
-                        break;
-                    default:
-                        o << (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status;
-                }
-                o << std::endl;
-                log(pear.second->slavethreadlogfile, o.str());
-				say(o.str());
-				killAllSubthreads(slavelogfile);
-				return false;
-			}
+            log(slavelogfile, o.str());
+            if (times_catnap >= 2.0) say (o.str());
+        }
 
+        ostringstream o;
+        o << '<' << pear.second->workloadID.workloadID << '>'
+            << (pear.second->subinterval_array)[next_to_harvest_subinterval].input.toString()
+            << (pear.second->subinterval_array)[next_to_harvest_subinterval].output.toString() << std::endl;
 
-//*debug*/log(slavelogfile,std::string("It\'s posted ready to send.")+pear.first+std::string("\n"));
-			// Send iogenerator subinterval detail line to ivymaster
-			//	- WorkloadID
-			//	- Subinterval input object toString()
-			//	- Subinterval output object toString()
-			lasttime.setToNow();
+		say(o.str());
 
-#ifdef BORK
-ahtime.push(ivytime(lasttime-t1).getlongdoubleseconds());
-#endif // BORK
-			ostringstream o;
-			o << '<' << pear.second->workloadID.workloadID << '>'
-				<< (pear.second->subinterval_array)[next_to_harvest_subinterval].input.toString()
-				<< (pear.second->subinterval_array)[next_to_harvest_subinterval].output.toString() << std::endl;
+        // Copy subinterval object from running subinterval to inactive subinterval.
+        (pear.second->subinterval_array)[next_to_harvest_subinterval].input.copy(  (pear.second->subinterval_array)[otherSubinterval].input);
 
-#ifdef BORK
-ivytime t1c; t1c.setToNow();
-umtime.push(ivytime(t1c-lasttime).getlongdoubleseconds());
-#endif // BORK
-			say(o.str());
+        // Zero out inactive subinterval output object.
+        (pear.second->subinterval_array)[next_to_harvest_subinterval].output.clear();
 
-#ifdef BORK
-ivytime t2; t2.setToNow();
-saytime.push(ivytime(t2-t1c).getlongdoubleseconds());
-#endif // BORK
+        pear.second->subinterval_array[next_to_harvest_subinterval].start_time
+            = pear.second->subinterval_array[otherSubinterval].end_time;
 
-			// Copy subinterval object from running subinterval to inactive subinterval.
-			(pear.second->subinterval_array)[next_to_harvest_subinterval].input.copy(  (pear.second->subinterval_array)[otherSubinterval].input);
-//*debug*/{ostringstream o; o << pear.first << " just harvested [next_to_harvest_subinterval = " << next_to_harvest_subinterval << "] " << pear.second->subinterval_array[next_to_harvest_subinterval].start_time.format_as_datetime_with_ns() << " to " << pear.second->subinterval_array[next_to_harvest_subinterval].end_time.format_as_datetime_with_ns() << std::endl; log(slavelogfile,o.str()); }
-//*debug*/{ostringstream o; o << pear.first << " basing times on [otherSubinterval = " << otherSubinterval << "] " << pear.second->subinterval_array[otherSubinterval].start_time.format_as_datetime_with_ns() << " to " << pear.second->subinterval_array[otherSubinterval].end_time.format_as_datetime_with_ns() << std::endl; log(slavelogfile,o.str()); }
-			// Zero out inactive subinterval output object.
-			(pear.second->subinterval_array)[next_to_harvest_subinterval].output.clear();
+        pear.second->subinterval_array[next_to_harvest_subinterval].end_time
+            = pear.second->subinterval_array[next_to_harvest_subinterval].start_time + subinterval_duration;
 
-			pear.second->subinterval_array[next_to_harvest_subinterval].start_time
-				= pear.second->subinterval_array[otherSubinterval].end_time;
+        (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status = subinterval_state::ready_to_run;
 
-			pear.second->subinterval_array[next_to_harvest_subinterval].end_time
-				= pear.second->subinterval_array[next_to_harvest_subinterval].start_time + subinterval_duration;
-//*debug*/{ostringstream o; o << pear.first << " have now set up [next_to_harvest_subinterval = " << next_to_harvest_subinterval << "] " << pear.second->subinterval_array[next_to_harvest_subinterval].start_time.format_as_datetime_with_ns() << " to " << pear.second->subinterval_array[next_to_harvest_subinterval].end_time.format_as_datetime_with_ns() << std::endl; log(slavelogfile,o.str()); }
-			(pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status = IVY_SUBINTERVAL_READY_TO_RUN;
-/*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[" << next_to_harvest_subinterval << "].subinterval_status = IVY_SUBINTERVAL_READY_TO_RUN"; log(pear.second->slavethreadlogfile, o.str());}
-
-		}
+        pear.second->slaveThreadMutex.unlock();
 		pear.second->slaveThreadConditionVariable.notify_all();
-//*debug*/log(slavelogfile,std::string("dropped the lock to process result of a subinterval for \"")+pear.first+std::string("\".\n"));
 	}
 
-#ifdef BORK
-{
-std::ostringstream o; o << std::endl
-<< "========= get lock time count " << getlocktime.count() << ", total " << std::fixed << std::setprecision(9) << getlocktime.sum() << " s, avg " << std::fixed << std::setprecision(9) << getlocktime.avg() << " s, min " << std::fixed << std::setprecision(9) << getlocktime.min() << " s, max " << std::fixed << std::setprecision(9) << getlocktime.max() << " s." << std::endl
-<< "========= ah time       count " << ahtime.count() << ", total " << std::fixed << std::setprecision(9) << ahtime.sum() << " s, avg " << std::fixed << std::setprecision(9) << ahtime.avg() << " s, min " << std::fixed << std::setprecision(9) << ahtime.min() << " s, max " << std::fixed << std::setprecision(9) << ahtime.max() << " s." << std::endl
-<< "========= um time       count " << umtime.count() << ", total " << std::fixed << std::setprecision(9) << umtime.sum() << " s, avg " << std::fixed << std::setprecision(9) << umtime.avg() << " s, min " << std::fixed << std::setprecision(9) << umtime.min() << " s, max " << std::fixed << std::setprecision(9) << umtime.max() << " s." << std::endl
-<< "========= say time      count " << saytime.count() << ", total " << std::fixed << std::setprecision(9) << saytime.sum() << " s, avg " << std::fixed << std::setprecision(9) << saytime.avg() << " s, min " << std::fixed << std::setprecision(9) << saytime.min() << " s, max " << std::fixed << std::setprecision(9) << saytime.max() << " s." << std::endl
-;
-log(slavelogfile,o.str());
-}
-#endif // BORK
 	lasttime.setToNow();
-    if (lasttime > end_of_current_subinterval)
+    if (lasttime > end_of_running_subinterval)
     {
-        say(std::string("<Error> Subinterval length parameter subinterval_seconds too short - current subinterval was already over when ivyslave about to conclude sending results from previous subinterval"));
+        std::ostringstream o;
+        o << "<Error> "<< __FILE__ << " line " << __LINE__
+            << " - Subinterval length parameter subinterval_seconds too short - current subinterval was already over when ivyslave about to conclude sending results from previous subinterval.";
+        say(o.str());
         killAllSubthreads(slavelogfile);
         return false;
     }

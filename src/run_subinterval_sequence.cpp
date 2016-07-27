@@ -191,7 +191,9 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     {
         {
             std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
-            pear.second->commandString = std::string("Go!")+m_s.subintervalLength.toString();
+            std::ostringstream o;
+            o << "Go!" << m_s.subintervalLength.toString() << ';' << std::fixed << m_s.catnap_time_seconds << ';' << std::fixed << m_s.post_time_limit_seconds;
+            pear.second->commandString = o.str();
             pear.second->command=true;
             pear.second->commandComplete=false;
             pear.second->commandSuccess=false;
@@ -199,7 +201,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
             {
                 std::ostringstream o;
-                o << "Posted \"Go!\" for subintervalLength = " << m_s.subintervalLength.toString() << "seconds to " << pear.second->ivyscript_hostname << std::endl;
+                o << "Posted \"Go!\" for subintervalLength = " << m_s.subintervalLength.toString() << "seconds, "
+                    << "catnap_time_seconds = " << std::fixed << m_s.catnap_time_seconds << "seconds, and "
+                    << "post_time_limit_seconds = " << std::fixed << m_s.post_time_limit_seconds << "seconds "
+                    << "to " << pear.second->ivyscript_hostname << std::endl;
                 log(m_s.masterlogfile,o.str());
             }
         }
@@ -435,8 +440,17 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             log(m_s.masterlogfile, o.str());
         }
 
-        log(m_s.masterlogfile,"All host subthreads posted subinterval complete.\n");
-        std::cout << "All host subthreads posted subinterval complete.\n" << std::endl;
+        {
+            std::ostringstream o;
+            o << "All host subthreads posted subinterval complete."
+            << " - " << "ivyslave catnap_time_seconds = " << std::fixed << m_s.catnap_time_seconds
+            << " seconds after subinterval end."
+            << " - " << "post_time_limit_seconds = " << std::fixed << m_s.post_time_limit_seconds
+            << " seconds after subinterval end before <Error> shutdown."
+            << std::endl;
+            log(m_s.masterlogfile,o.str());
+            std::cout << o.str() << std::endl;
+        }
 
         auto allTypeIterator = m_s.rollups.rollups.find(std::string("all"));
 

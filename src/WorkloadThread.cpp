@@ -325,9 +325,10 @@ void WorkloadThread::WorkloadThreadRun() {
                     log(slavethreadlogfile,o.str());
                 }
 
-				// if we can't get the lock without waiting, we abort
-
 				bool have_lock_at_subinterval_end {false};
+
+				ivytime before_getting_lock;
+				before_getting_lock.setToNow();
 
 				for (int i=0; i<10; i++)
 				{
@@ -340,17 +341,21 @@ void WorkloadThread::WorkloadThreadRun() {
 							o << "The std::mutex::try_lock() call is documented to fail spuriously, so at this point we just want to see how often this is happening." << std::endl;
 							log(slavethreadlogfile, o.str());
 						}
+                        have_lock_at_subinterval_end = true;
+                        break;
 					}
-					have_lock_at_subinterval_end = true;
-					break;
+                    if (i>1) {std::this_thread::sleep_for(std::chrono::milliseconds(1));}
 				}
 
 				if (!have_lock_at_subinterval_end)
 				{
 					// we do not have the lock
-
-					log (slavethreadlogfile,"\n\n [Exception]*********** iogenerator failed to get the lock without waiting at the end of the subinterval.   ********** \n\n");
+					ivytime t; t.setToNow();
+					std::ostringstream o;
+					o << "<Error> Workload thread failed to get the lock within " << ivytime(t-before_getting_lock).format_as_duration_HMMSSns() << " at the end of the subinterval." << std::endl;
+					log (slavethreadlogfile,o.str());
 					state=ThreadState::died;
+					slaveThreadConditionVariable.notify_all();
 					return;
 				}
 
@@ -358,19 +363,10 @@ void WorkloadThread::WorkloadThreadRun() {
 //*debug*/{ std::ostringstream o; o << "Have the lock at end of subinterval " << subinterval_number << std::endl; log(slavethreadlogfile,o.str()); }
 				if (!ivyslave_main_posted_command)
 				{
-//					now we will do a wait for a command to be posted for up to one second.
-//					if not, issue error message & state=ThreadState::died & exit.
-
-					log(slavethreadlogfile,"iogenerator got the lock without waiting at the end of the subinterval, but no command was posted.\n");
-
-// here after writing the error message, wait for up to 5 seconds for a command to be posted, and print another message with the wait time if we did get a command.
-
-// and then die if we didn't get a command.  See if we can recover and continue the test.
-
+					log(slavethreadlogfile,"<Error> Workload thread got the lock at the end of the subinterval, but no command was posted.\n");
 					state=ThreadState::died;
 					slaveThreadMutex.unlock();
 					slaveThreadConditionVariable.notify_all();
-//*debug*/ log(slavethreadlogfile,"Dropped the lock\n");
 					return;
 				}
 
@@ -388,8 +384,8 @@ void WorkloadThread::WorkloadThreadRun() {
 					return;
 				}
 
-				subinterval_array[currentSubintervalIndex].subinterval_status=IVY_SUBINTERVAL_READY_TO_SEND;
-/*debug*/{std::ostringstream o; o << "Workload thread marking subinterval_array[" << currentSubintervalIndex << "].subinterval_status = IVY_SUBINTERVAL_READY_TO_SEND"; log(slavethreadlogfile, o.str());}
+				subinterval_array[currentSubintervalIndex].subinterval_status=subinterval_state::ready_to_send;
+/*debug*/{std::ostringstream o; o << "Workload thread marking subinterval_array[" << currentSubintervalIndex << "].subinterval_status = subinterval_state::ready_to_send"; log(slavethreadlogfile, o.str());}
 
 				if (0 == currentSubintervalIndex)
 				{
@@ -438,7 +434,8 @@ void WorkloadThread::WorkloadThreadRun() {
 //*debug*/ log(slavethreadlogfile,"Dropped the lock\n");
 					return;
 				}
-				if(IVY_SUBINTERVAL_READY_TO_RUN!=subinterval_array[currentSubintervalIndex].subinterval_status)
+
+				if(subinterval_state::ready_to_run!=subinterval_array[currentSubintervalIndex].subinterval_status)
 				{
 					log(slavethreadlogfile,std::string("WorkloadThread told to continue, but next subinterval not marked READY_TO_RUN.\n"));
 					state=ThreadState::died;
@@ -447,6 +444,8 @@ void WorkloadThread::WorkloadThreadRun() {
 //*debug*/ log(slavethreadlogfile,"Dropped the lock\n");
 					return;
 				}
+
+                subinterval_array[currentSubintervalIndex].subinterval_status = subinterval_state::running;
 
 				slaveThreadMutex.unlock();
 				slaveThreadConditionVariable.notify_all();
