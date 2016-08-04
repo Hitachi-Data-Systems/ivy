@@ -170,6 +170,83 @@ void go_statement(yy::location bookmark)
     if (m_s.go_parameters.contains(std::string("measure")))
     {
         std::string measure_parameter_value = m_s.go_parameters.retrieve("measure");
+
+        // measure = MB_per_second           is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=bytes_transferred, accessor=sum
+        // measure = IOPS                    is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=bytes_transferred, accessor=count
+        // measure = service_time_seconds    is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=service_time,      accessor=avg
+        // measure = response_time_seconds   is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=response_time,     accessor=avg
+        // measure = MP_core_busy_percent    is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=MP_core, element_metric=busy_percent
+        // measure = PG_busy_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=PG,      element_metric=busy_percent
+        // measure = CLPR_WP_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=CLPR,    element_metric=WP_percent
+
+
+        if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("MB_per_second")))
+        {
+            m_s.go_parameters.contents[toLower("measure")] = "on";
+            m_s.go_parameters.contents[toLower("focus_rollup")] = "all";
+            m_s.go_parameters.contents[toLower("source")] = "workload";
+            m_s.go_parameters.contents[toLower("category")] = "overall";
+            m_s.go_parameters.contents[toLower("accumulator_type")] = "bytes_transferred";
+            m_s.go_parameters.contents[toLower("accessor")] = "sum";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("IOPS")))
+        {
+            m_s.go_parameters.contents[toLower("measure")] = "on";
+            m_s.go_parameters.contents[toLower("focus_rollup")] = "all";
+            m_s.go_parameters.contents[toLower("source")] = "workload";
+            m_s.go_parameters.contents[toLower("category")] = "overall";
+            m_s.go_parameters.contents[toLower("accumulator_type")] = "bytes_transferred";
+            m_s.go_parameters.contents[toLower("accessor")] = "count";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("service_time_seconds")))
+        {
+            m_s.go_parameters.contents[toLower("measure")] = "on";
+            m_s.go_parameters.contents[toLower("focus_rollup")] = "all";
+            m_s.go_parameters.contents[toLower("source")] = "workload";
+            m_s.go_parameters.contents[toLower("category")] = "overall";
+            m_s.go_parameters.contents[toLower("accumulator_type")] = "service_time";
+            m_s.go_parameters.contents[toLower("accessor")] = "avg";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("response_time_seconds")))
+        {
+            m_s.go_parameters.contents[toLower("measure")] = "on";
+            m_s.go_parameters.contents[toLower("focus_rollup")] = "all";
+            m_s.go_parameters.contents[toLower("source")] = "workload";
+            m_s.go_parameters.contents[toLower("category")] = "overall";
+            m_s.go_parameters.contents[toLower("accumulator_type")] = "response_time";
+            m_s.go_parameters.contents[toLower("accessor")] = "avg";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("MP_core_busy_percent")))
+        {
+            m_s.go_parameters.contents[toLower("measure")] = "on";
+            m_s.go_parameters.contents[toLower("focus_rollup")] = "all";
+            m_s.go_parameters.contents[toLower("source")] = "RAID_subsystem";
+            m_s.go_parameters.contents[toLower("subsystem_element")] = "MP_core";
+            m_s.go_parameters.contents[toLower("element_metric")] = "busy_percent";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("PG_busy_percent")))
+        {
+            m_s.go_parameters.contents[toLower("measure")] = "on";
+            m_s.go_parameters.contents[toLower("focus_rollup")] = "all";
+            m_s.go_parameters.contents[toLower("source")] = "RAID_subsystem";
+            m_s.go_parameters.contents[toLower("subsystem_element")] = "PG";
+            m_s.go_parameters.contents[toLower("element_metric")] = "busy_percent";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("CLPR_WP_percent")))
+        {
+            m_s.go_parameters.contents[toLower("measure")] = "on";
+            m_s.go_parameters.contents[toLower("focus_rollup")] = "all";
+            m_s.go_parameters.contents[toLower("source")] = "RAID_subsystem";
+            m_s.go_parameters.contents[toLower("subsystem_element")] = "CLPR";
+            m_s.go_parameters.contents[toLower("element_metric")] = "WP_percent";
+        }
+
+        // maybe we have a measure_focus_rollup and a pid_focus_rollup and they default to focus_rollup which defaults to "all"?
+
+        // How hard would it be to have measure and pid each on their own focus_rollup?
+
+        measure_parameter_value = m_s.go_parameters.retrieve("measure");
+
         if (stringCaseInsensitiveEquality(std::string("on"),measure_parameter_value))
         {
             m_s.have_measure = true;
@@ -308,7 +385,7 @@ void go_statement(yy::location bookmark)
 
     {
         std::ostringstream o;
-        o << std::endl << "Effective [Go!] statement parameters including defaulted parameters:" << m_s.go_parameters.toString() << std::endl;
+        o << "Effective [Go!] statement parameters including defaulted parameters:" << m_s.go_parameters.toString() << std::endl;
         std::cout << o.str();
         log(m_s.masterlogfile, o.str());
     }

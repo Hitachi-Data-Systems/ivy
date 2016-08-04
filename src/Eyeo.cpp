@@ -69,6 +69,14 @@ Eyeo::Eyeo(int t, WorkloadThread* pwt) : tag(t), pWorkloadThread(pwt)
 
 }
 
+ivytime Eyeo::since_start_time() // returns ivytime(0) if start_time is not in the past
+{
+    ivytime now;
+    now.setToNow();
+    if (start_time >= now) return ivytime(0);
+    else                   return now - start_time;
+}
+
 void Eyeo::resetForNextIO() {
 	// this might be excessively cautious - look here if we need to optimize performance in future.
 	int save_tag = tag;

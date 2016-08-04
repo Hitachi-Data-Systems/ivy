@@ -64,32 +64,71 @@ extern bool routine_logging;
 
 
 // for some strange reason, there's no header file for these system call wrapper functions
-inline int io_setup(unsigned nr, aio_context_t *ctxp) { return syscall(__NR_io_setup, nr, ctxp); }
-inline int io_destroy(aio_context_t ctx) { return syscall(__NR_io_destroy, ctx); }
+inline int io_setup(unsigned nr, aio_context_t *ctxp)                   { return syscall(__NR_io_setup, nr, ctxp); }
+inline int io_destroy(aio_context_t ctx)                                { return syscall(__NR_io_destroy, ctx); }
 inline int io_submit(aio_context_t ctx, long nr,  struct iocb **iocbpp) { return syscall(__NR_io_submit, ctx, nr, iocbpp); }
 inline int io_getevents(aio_context_t ctx, long min_nr, long max_nr, struct io_event *events, struct timespec *timeout)
-	{ return syscall(__NR_io_getevents, ctx, min_nr, max_nr, events, timeout); }
+	                                                                    { return syscall(__NR_io_getevents, ctx, min_nr, max_nr, events, timeout); }
+inline int io_cancel(aio_context_t ctx, struct iocb * p_iocb, struct io_event *p_io_event){ return syscall(__NR_io_cancel, ctx, p_iocb, p_io_event); };
+//#
+//# for some strange reason, in retrospect, the reason why there's no header file
+//# for these system call wapper functions, is probably becuse you would normally
+//# want to use the platform-independent calls for portability, and you could very
+//# well not lose any access to functionality.  That might be one reason why the
+//# calls directly to the underlying Linux AIO mechanism don't have header files, duh.
+//#
+//# A to-do would be to see how big of a project it would be, and if we would lose
+//# any flexibility if we cut over to using the platform-independent API.
+//#
+//# This would be a pre-requisit to build ivy on other non-Linux platforms.
+
+//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+
+#include <iostream>
+
+#include "Subinterval.h"
+
+
+std::ostream& operator<< (std::ostream& o, const ThreadState s)
+{
+    switch (s)
+    {
+        case ThreadState::undefined:
+            o << "ThreadState::undefined";
+            break;
+        case ThreadState::waiting_for_command:
+            o << "ThreadState::waiting_for_command";
+            break;
+        case ThreadState::running:
+            o << "ThreadState::running";
+            break;
+        case ThreadState::stopping:
+            o << "ThreadState::stopping";
+            break;
+        case ThreadState::died:
+            o << "ThreadState::died";
+            break;
+        case ThreadState::exited_normally:
+            o << "ThreadState::exited_normally";
+            break;
+        default:
+            o << "<internal programming error - unknown ThreadState value cast to int as " << ((int) s) << ">";
+    }
+    return o;
+}
+
+
 
 
 WorkloadThread::WorkloadThread(std::string wID, LUN* pL, long long int lastLBA, std::string parms, std::mutex* p_imm)
         : workloadID(wID), pLUN(pL), maxLBA(lastLBA), iogeneratorParameters(parms), p_ivyslave_main_mutex(p_imm)
 {}
 
-std::string threadStateToString (ThreadState ts)
+std::string threadStateToString (const ThreadState ts)
 {
-	switch (ts)
-	{
-		case ThreadState::waiting_for_command: return "ThreadState::waiting_for_command";
-		case ThreadState::running: return "ThreadState::running";
-		case ThreadState::stopping: return "ThreadState::stopping";
-		case ThreadState::died: return "ThreadState::died";
-		case ThreadState::exited_normally: return "ThreadState::exited_normally";
-	}
-	{
-		std::ostringstream o;
-		o << "threadStateToString (ThreadState = " << ((int) ts) << ") - internal programming error - invalid ThreadState value." ;
-		return o.str();
-	}
+	std::ostringstream o;
+    o << ts;
+	return o.str();
 }
 
 std::string mainThreadCommandToString(MainThreadCommand mtc)
@@ -399,6 +438,7 @@ void WorkloadThread::WorkloadThreadRun() {
 				p_other_subinterval = &subinterval_array[otherSubintervalIndex];
 				p_other_IogeneratorInput = & (p_other_subinterval-> input);
 				p_other_SubintervalOutput = & (p_other_subinterval->output);
+				cancel_stalled_IOs();
 
 				subinterval_number++;
 
@@ -508,6 +548,9 @@ bool WorkloadThread::prepare_linux_AIO_driver_to_start()
 	}
 
 ///*debug*/log(slavethreadlogfile,"Finished resizing Eyeos.\n");
+
+    running_IOs.clear();
+    cancelled_IOs=0;
 
 	iogenerator_variables.act=0;  // must be set to zero otherwise io_setup() will fail with return code 22 - invalid parameter.
 
@@ -702,7 +745,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 	 	if (0 < postprocessQ.size())
 			waitduration = ivytime(0);
-		else if ( 0.0 == p_current_IogeneratorInput->IOPS )
+		else if ( (0.0 == p_current_IogeneratorInput->IOPS) || cooldown )
 		{
 			waitduration=subinterval_ending_time - now;
 			while (precomputeQ.size())  // may be paranoiaadd
@@ -768,12 +811,32 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 					struct io_event* p_event;
 					Eyeo* p_Eyeo;
+					struct iocb* p_iocb;
+
 
 					p_event=&(ReapHeap[i]);
 					p_Eyeo = (Eyeo*) p_event->data;
+					p_iocb = (iocb*) p_event->obj;
 					p_Eyeo->end_time = now;
 					p_Eyeo->return_value = p_event->res;
 					p_Eyeo->errno_value = p_event->res2;
+
+
+                    auto running_IOs_iter = running_IOs.find(p_iocb);
+                    if (running_IOs_iter == running_IOs.end())
+                    {
+                        std::ostringstream o;
+                        o << "<Error> internal processing error - an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
+                        << "that was not found in the ivy workload thread\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
+                        << "  The ivy Eyeo object associated with the completion event describes itself as "
+                        << p_Eyeo->toString()
+                        <<  "  " << __FILE__ << " line " << __LINE__
+                        ;
+                        log(slavethreadlogfile,o.str());
+                        io_destroy(iogenerator_variables.act);
+                        return false;
+                    }
+                    running_IOs.erase(running_IOs_iter);
 
 					queue_depth--;
 					postprocessQ.push(p_Eyeo);
@@ -800,6 +863,20 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 				LaunchPad[launch_count]=precomputeQ.front();
 				precomputeQ.pop_front();
 				LaunchPad[launch_count]->start_time=now;
+                auto running_IOs_iterator = running_IOs.insert(&(LaunchPad[launch_count]->eyeocb));
+                if (running_IOs_iterator.first == running_IOs.end())
+                {
+                    std::ostringstream o;
+                    o << "<Error> internal processing error - failed trying to insert a Linux aio I/O tracker "
+                    << "into the ivy workload thread\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
+                    << "  The ivy Eyeo object associated with the completion event describes itself as "
+                    << LaunchPad[launch_count]->toString()
+                    <<  "  " << __FILE__ << " line " << __LINE__
+                    ;
+                    log(slavethreadlogfile,o.str());
+                    io_destroy(iogenerator_variables.act);
+                    return false;
+                }
 				launch_count++;
 			}
 			rc = io_submit(iogenerator_variables.act, launch_count, (struct iocb **) LaunchPad /* iocb comes first in an Eyeo */);
@@ -835,7 +912,29 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 				while (number_to_put_back>0) {
 					// we put them back in reverse order of how they came out
-					precomputeQ.push_front((Eyeo*)(LaunchPad[launch_count-1]->eyeocb.aio_data));
+
+					Eyeo* p_Eyeo = (Eyeo*)(LaunchPad[launch_count-1]->eyeocb.aio_data);
+
+					struct iocb* p_iocb = &(p_Eyeo->eyeocb);
+
+	                auto running_IOs_iter = running_IOs.find(p_iocb);
+                    if (running_IOs_iter == running_IOs.end())
+                    {
+                        std::ostringstream o;
+                        o << "<Error> internal processing error - after a submit was not successful for all I/Os, when trying to "
+                        << "remove from \"running_IOs\" one of the I/Os that wasn\'t successfully launched, that "
+                        << "unsuccessful I/O was not found in \"running_IOs\"."
+                        << "  The ivy Eyeo object associated with the completion event describes itself as "
+                        << p_Eyeo->toString()
+                        <<  "  " << __FILE__ << " line " << __LINE__
+                        ;
+                        log(slavethreadlogfile,o.str());
+                        io_destroy(iogenerator_variables.act);
+                        return false;
+                    }
+                    running_IOs.erase(running_IOs_iter);
+
+					precomputeQ.push_front(p_Eyeo);
 					launch_count--;
 					number_to_put_back--;
 				}
@@ -851,7 +950,13 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 //*debug*/{ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() precomputeQ.size()=" << precomputeQ.size() << ", precomputedepth=" << precomputedepth << ". " << std::endl; log(slavethreadlogfile,o.str());}
 
-		if ( precomputeQ.size() < precomputedepth && !cooldown && (precomputeQ.size() == 0 || (now + precompute_horizon) > precomputeQ.back()->scheduled_time) )
+		if
+		(
+               ( precomputeQ.size() < precomputedepth )
+            && ( !cooldown )
+            && ( 0.0 != p_current_IogeneratorInput->IOPS )
+            && ( ( precomputeQ.size() == 0 ) || ( (now + precompute_horizon) > precomputeQ.back()->scheduled_time ) )
+        )
 		{
 			// precompute an I/O
 			if (freeStack.empty()) {
@@ -909,10 +1014,21 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
 {
 //*debug*/{ std::ostringstream o; o << "bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval() - entry with queue_depth = " << queue_depth << std::endl; log(slavethreadlogfile,o.str());}
-	ivytime catch_wait_duration(120); // seconds.  Allows for a super long time for error recovery.
+	ivytime catch_wait_duration(10); // seconds. Some disk drive error recovery can take 30 seconds or on un-mirrored SATA boot drives as long as two minutes.
+
+    ivytime entry; entry.setToNow();
+    ivytime timeout = entry + catch_wait_duration;
+
+    ivytime now;
 
 	while (0 < queue_depth)
 	{
+        ivytime now;
+
+        now.setToNow();
+
+        if ( now >= timeout ) break;
+
 		int events_needed=1;
 
 		// when we do the io_getevents() call, if we set the minimum number of events needed to 0 (zero), I expect the call to be non-blocking;
@@ -921,11 +1037,37 @@ bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
 		{
 			queue_depth-=reaped;
 //*debug*/{ std::ostringstream o; o << "bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval() - reaped " << reaped << " I/Os resulting in new queue_depth = " << queue_depth << std::endl; log(slavethreadlogfile,o.str());}
+
+            for (int i=0; i< reaped; i++)
+            {
+                struct io_event* p_event;
+                Eyeo* p_Eyeo;
+                struct iocb* p_iocb;
+
+                p_event=&(ReapHeap[i]);
+                p_Eyeo = (Eyeo*) p_event->data;
+                p_iocb = (iocb*) p_event->obj;
+
+                auto running_IOs_iter = running_IOs.find(p_iocb);
+                if (running_IOs_iter == running_IOs.end())
+                {
+                    std::ostringstream o;
+                    o << "<Error> internal processing error - during catch in flight IOs after last subinterval, an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
+                    << "that was not found in the ivy workload thread\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
+                    << "  The ivy Eyeo object associated with the completion event describes itself as "
+                    << p_Eyeo->toString()
+                    <<  "  " << __FILE__ << " line " << __LINE__
+                    ;
+                    log(slavethreadlogfile,o.str());
+                    io_destroy(iogenerator_variables.act);
+                    return false;
+                }
+                running_IOs.erase(running_IOs_iter);
+            }
 		}
 		else if (0== reaped)
 		{
-			log(slavethreadlogfile,std::string("WorkloadThread::catch_in_flight_IOs_after_last_subinterval() - io_getevents() timed out.  There was an I/O that took over two minutes and still hadn\'t completed.\n"));
-			return false;
+			break; // timed out
 		}
 		else
 		{
@@ -934,9 +1076,109 @@ bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
 		}
 	}
 
+    if (queue_depth != running_IOs.size())
+    {
+        std::ostringstream o;
+        o << "<Error> internal processing error - before cancelling any remaining I/Os still running more than " << catch_wait_duration.format_as_duration_HMMSS()
+        << " after subinterval end.  Found to our consternation that queue_depth was "<< queue_depth << " but running_IOs.size() was " << running_IOs.size()
+        <<  "  " << __FILE__ << " line " << __LINE__
+        ;
+        log(slavethreadlogfile,o.str());
+        io_destroy(iogenerator_variables.act);
+        return false;
+    }
+
+    for (auto& p_iocb : running_IOs)
+    {
+        ivy_cancel_IO(p_iocb);
+    }
+
+    running_IOs.clear();
+
 	io_destroy(iogenerator_variables.act);
 
 	return true;
 
 }
 
+void WorkloadThread::ivy_cancel_IO(struct iocb* p_iocb)
+{
+    Eyeo* p_Eyeo = (Eyeo*) p_iocb->aio_data;
+
+
+    auto it = running_IOs.find(p_iocb);
+    if (it == running_IOs.end())
+    {
+        std::ostringstream o;
+        o << "<Error> ivy_cancel_IO was called to cancel an I/O that ivy wasn\'t tracking as running.  The I/O describes itself as " << p_Eyeo->toString();
+        log(slavethreadlogfile,o.str());
+        return;
+    }
+
+    {
+        std::ostringstream o;
+        o << "<Warning> about to cancel an I/O operation that has been running for " << (p_Eyeo->since_start_time()).format_as_duration_HMMSSns()
+            << " described as " << p_Eyeo->toString();
+        log(slavethreadlogfile,o.str());
+    }
+
+    struct io_event ioev;
+
+    long rc = EAGAIN;
+
+    ivy_int retry_count = 0;
+
+    while (rc == EAGAIN)
+    {
+        retry_count++;
+        if (retry_count > 100)
+        {
+            std::ostringstream o;
+            o << "<Error> after over 100 retries of the system call to cancel an I/O, ivy_cancel_IO() is abandoning the attempt.";
+            log(slavethreadlogfile,o.str());
+            return;
+        }
+        rc = io_cancel(iogenerator_variables.act,p_iocb, &ioev);
+    }
+
+    if (rc == 0)
+    {
+        running_IOs.erase(it);
+        cancelled_IOs++;
+        return;
+    }
+
+    {
+        std::ostringstream o;
+        o << "<Error> in " << __FILE__ << " line " << __LINE__ << " in ivy_cancel_IO(), system call to cancel the I/O failed saying - ";
+        switch (rc)
+        {
+            case EINVAL:
+                o << "EINVAL - invalid AIO context";
+                break;
+            case EFAULT:
+                o << "EFAULT - one of the data structures points to invalid data";
+                break;
+            case ENOSYS:
+                o << "ENOSYS - io_cancel() not supported on this system.";
+                break;
+            default:
+                o << "unknown error return code " << rc;
+        }
+        log(slavethreadlogfile,o.str());
+    }
+    return;
+}
+
+void WorkloadThread::cancel_stalled_IOs()
+{
+    std::list<struct iocb*> l;
+
+    for (auto& p_iocb : running_IOs)
+    {
+        Eyeo* p_Eyeo = (Eyeo*) p_iocb->aio_data;
+        if (p_Eyeo->since_start_time() > max_io_run_time_seconds) l.push_back(p_iocb);
+    }
+    // I didn't want to be iterating over running_IOs when cancelling I/Os, as the cancel deletes the I/O from running_IOs.
+    for (auto p_iocb : l) ivy_cancel_IO(p_iocb);
+}

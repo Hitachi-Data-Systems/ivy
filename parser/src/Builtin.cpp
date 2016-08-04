@@ -25,7 +25,7 @@
 #include "OverloadSet.h"
 #include "Ivy_pgm.h"
 
-// Note "shell_command" is a built-in function.
+// Note "shell_command" alias "system" is a built-in function.
 
 // ivy runs as root, which means that the shell commands that you run are executed as root.
 
@@ -302,6 +302,7 @@ int int_fileappend_of_string_string(std::string filename, std::string s)
     return 0;
 }
 
+
 std::string string_shell_command_of_string(std::string cmd) {  // DOES NOT CHECK IF COMMAND TO BE EXECUTED IS SAFE
 	// this function was scraped and pasted from an internet forum
 
@@ -320,6 +321,7 @@ std::string string_shell_command_of_string(std::string cmd) {  // DOES NOT CHECK
     }
     return data;
 }
+std::string string_system_of_string(std::string s) {return string_shell_command_of_string(s);}
 
 int int_set_csvfile_of_string(std::string filename)
 {
@@ -678,6 +680,7 @@ void init_builtin_table()
     unaryfunc(trace_evaluate,trace_evaluate,int,int)
 
     unaryfunc(shell_command,shell_command,string,string)
+    unaryfunc(system,system,string,string)
 
     unaryfunc(matches_IPv4_dotted_quad,matches_IPv4_dotted_quad,int,string)
     unaryfunc(matches_identifier,matches_identifier,int,string)

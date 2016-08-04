@@ -197,7 +197,7 @@ void pipe_driver_subthread::send_string(std::string s)
     if (routine_logging) log(logfilename, format_utterance("Master",s));
 
     // With ssh, we hear back an echo of what we typed.  So we read from the pipe to eat the echo.
-    std::string echo = get_line_from_pipe(m_s.subintervalLength,std::string("reading echo of what we just said."));
+    std::string echo = get_line_from_pipe(m_s.subintervalLength, std::string("reading echo of what we just said."), /*reading_echo_line*/ true);
 
 // /*debug*/ log(logfilename, std::string("Echo line was \"")+echo+std::string("\"\n"));
 
@@ -324,7 +324,10 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
             if (now >= (start+timeout))
             {
                 ostringstream logmsg;
-                logmsg << "For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe(timeout=" << timeout.format_as_duration_HMMSSns() << ") - timeout.";
+                logmsg << "For host " << ivyscript_hostname << ", timeout (" << timeout.format_as_duration_HMMSSns()
+                << ") reading from pipe to remotely executing ivyslave instance.  "
+                << "start=" << start.format_as_datetime_with_ns() << ", now=" << now.format_as_datetime_with_ns()
+                    << "  " << __FILE__ << " line " << __LINE__;
                 log(logfilename,logmsg.str());
                 return false;
             }
@@ -400,7 +403,8 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
 std::string pipe_driver_subthread::real_get_line_from_pipe
 (
     ivytime timeout,
-    std::string description // Used when there is some sort of failure to construct an error message written to the log file.
+    std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
+    bool reading_echo_line
 )
 {
     std::string s;
@@ -408,7 +412,7 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
     if ( next_char_from_slave_buf >= bytes_last_read_from_slave && !last_read_from_pipe )
     {
         std::ostringstream o;
-        o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe() - no characters available in buffer and read_from_pipe() failed - " << description;
+        o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe(timeout=" << timeout.format_as_duration_HMMSSns() << ") - no characters available in buffer and read_from_pipe() failed - " << description;
         throw std::runtime_error(o.str());
     }
 
@@ -418,7 +422,7 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
         if (!last_read_from_pipe)
         {
             std::ostringstream o;
-            o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe() - no characters available in buffer and read_from_pipe() failed - " << description;
+            o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe(timeout=" << timeout.format_as_duration_HMMSSns() << ") - no characters available in buffer and read_from_pipe() failed - " << description;
             throw std::runtime_error(o.str());
         }
     }
@@ -441,7 +445,21 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
         s.push_back(c);
     }
 
-    if (routine_logging) log(logfilename, format_utterance(" Slave",s));
+//{std::ostringstream o; o << "==debug== pipe_driver_subthread::real_get_line_from_pipe("
+//<< "timeout="<<timeout.format_as_duration_HMMSSns()
+//<< ",description=\"" << description << "\""
+//<< ",reading_echo_line=" << ( (reading_echo_line) ? "true" : "false" )
+//<< ") - about to decide to log or not."; log(logfilename,o.str()); }
+//
+
+    if ( trace_evaluate || (routine_logging && !reading_echo_line)) log(logfilename, format_utterance(" Slave",s));
+
+//{std::ostringstream o; o << "==debug== pipe_driver_subthread::real_get_line_from_pipe("
+//<< "timeout="<<timeout.format_as_duration_HMMSSns()
+//<< ",description=\"" << description << "\""
+//<< ",reading_echo_line=" << ( (reading_echo_line) ? "true" : "false" )
+//<< ") - after logging or not."; log(logfilename,o.str()); }
+//
 
     return s;
 }
@@ -449,7 +467,8 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
 std::string pipe_driver_subthread::get_line_from_pipe
 (
     ivytime timeout,
-    std::string description // Used when there is some sort of failure to construct an error message written to the log file.
+    std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
+    bool reading_echo_line
 )
 {
     // This is a wrapper around the "real" get_line_from_pipe() that checks for when what ivyslave says starts with "<Error>".
@@ -466,7 +485,7 @@ std::string pipe_driver_subthread::get_line_from_pipe
     std::string s;
     while (true)  // we only ever loop back to the beginning after processing a <Warning> line
     {
-        s = real_get_line_from_pipe(timeout,description);
+        s = real_get_line_from_pipe(timeout,description,reading_echo_line);
         if (startsWith(s, std::string("<Warning>")))
         {
             std::ostringstream o;
@@ -1630,7 +1649,7 @@ void pipe_driver_subthread::threadRun()
                         utterance << "Catch in flight I/Os" << std::endl;
                         try
                         {
-                            send_and_get_OK(utterance.str());
+                            send_and_get_OK(utterance.str(),ivytime(5*m_s.subinterval_seconds));
                         }
                         catch (std::runtime_error& reex)
                         {
@@ -1657,12 +1676,6 @@ void pipe_driver_subthread::threadRun()
                         // No matter which one of these commands we got, we send it and then we gather the subinterval result lines.
                     )
                     {
-
-#ifdef BORK
-ivytime got_continue_cooldown_stop;
-got_continue_cooldown_stop.setToNow();
-#endif // BORK
-
                         std::string hostCPUline;
                         //*debug*/{std::ostringstream o; o << "About to send out command to ivyslave - \"" << commandString << "\" with timeout in seconds = " << (m_s.subintervalLength.getlongdoubleseconds()+5) << std::endl; std::cout << o.str(); log (logfilename, o.str());}
 
@@ -1691,13 +1704,6 @@ got_continue_cooldown_stop.setToNow();
                         ivytime allworkloadthreadsposted;
                         allworkloadthreadsposted.setToNow();
 
-#ifdef BORK
-{
-std::ostringstream o; o <<
-"++++++++++ From just before sending \"" << commandString << "\" got OK after "  << ivytime(allworkloadthreadsposted - got_continue_cooldown_stop).format_as_duration_HMMSSns();
-log(logfilename,o.str());
-}
-#endif // BORK
                         if (allworkloadthreadsposted > m_s.subintervalEnd)
                         {
                             std::ostringstream o;
@@ -1718,7 +1724,7 @@ log(logfilename,o.str());
 
                         try
                         {
-                            hostCPUline = send_and_clip_response_upto( std::string("get subinterval result"), std::string("[CPU]"), m_s.subintervalLength );
+                            hostCPUline = send_and_clip_response_upto( std::string("get subinterval result"), std::string("[CPU]"), ivytime(m_s.subinterval_seconds + m_s.catnap_time_seconds) );
                         }
                         catch (std::runtime_error& reex)
                         {
@@ -1736,13 +1742,6 @@ log(logfilename,o.str());
 
                         now.setToNow();
 
-#ifdef BORK
-{
-std::ostringstream o; o <<
-"++++++++++ From just before sending \"get subinteval result\" got [CPU] line after "  << ivytime(now-allworkloadthreadsposted).format_as_duration_HMMSSns();
-log(logfilename,o.str());
-}
-#endif // BORK
                         if (now > m_s.nextSubintervalEnd)
                         {
                             std::ostringstream o;
@@ -1781,26 +1780,9 @@ log(logfilename,o.str());
 
                             m_s.cpu_by_subinterval[m_s.rollups.current_index()].add(toLower(ivyscript_hostname),cpudata);
                         }
-#ifdef BORK
-ivytime before_detail_lines;
-before_detail_lines.setToNow();
-{
-std::ostringstream o; o <<
-"++++++++++ getting lock and posting CPU line to ivymaster took "  << ivytime(before_detail_lines-now).format_as_duration_HMMSSns();
-log(logfilename,o.str());
-}
-unsigned int detaillinecount=0;
-ivytime add_detail_line_total_time(0);
-
-RunningStat<ivy_float,ivy_int> parseWIDtime, parseinputtime,parseoutputtime,detail_line_total_time,ttt,xxx;
-#endif // BORK
                         std::string detail_line="";
                         while (true)
                         {
-
-#ifdef BORK
-ivytime t0; t0.setToNow();
-#endif // BORK
                             try
                             {
                                 detail_line = get_line_from_pipe(ivytime(2), std::string("get iogenerator detail line"));
@@ -1817,10 +1799,6 @@ ivytime t0; t0.setToNow();
                                 return;
                             }
 
-#ifdef BORK
-ivytime xx; xx.setToNow();
-xxx.push(ivytime(xx-t0).getlongdoubleseconds());
-#endif // BORK
                             now.setToNow();
                             if (now > m_s.nextSubintervalEnd)
                             {
@@ -1869,9 +1847,6 @@ xxx.push(ivytime(xx-t0).getlongdoubleseconds());
 
                             std::istringstream detailstream(detail_line);
 
-#ifdef BORK
-ivytime t1; t1.setToNow();
-#endif // BORK
                             std::string err_msg;
                             if (!parseWorkloadIDfromIstream(err_msg, detailstream, detailWID))
                             {
@@ -1889,10 +1864,6 @@ ivytime t1; t1.setToNow();
                                 return;
                             }
 
-#ifdef BORK
-ivytime t2; t2.setToNow();
-parseWIDtime.push(ivytime(t2-t1).getlongdoubleseconds());
-#endif // BORK
                             if (!detailInput.fromIstream(detailstream,logfilename))
                             {
                                 std::ostringstream o;
@@ -1909,11 +1880,6 @@ parseWIDtime.push(ivytime(t2-t1).getlongdoubleseconds());
                                 return;
                             }
 
-#ifdef BORK
-ivytime t3; t3.setToNow();
-parseinputtime.push(ivytime(t3-t2).getlongdoubleseconds());
-#endif // BORK
-
                             if (!detailOutput.fromIstream(detailstream))
                             {
                                 std::ostringstream o;
@@ -1929,23 +1895,12 @@ parseinputtime.push(ivytime(t3-t2).getlongdoubleseconds());
                                 master_slave_cv.notify_all();
                                 return;
                             }
-#ifdef BORK
-ivytime t4; t4.setToNow();
-parseoutputtime.push(ivytime(t4-t3).getlongdoubleseconds());
 
-
-ivytime before_lock_for_rolling_up_detail_line;
-before_lock_for_rolling_up_detail_line.setToNow();
-#endif // BORK
                             {
                                 std::unique_lock<std::mutex> s_lk(m_s.master_mutex);
 
                                 std::string my_error_message;
 
-#ifdef BORK
-ivytime before_rolling_up_detail_line;
-before_rolling_up_detail_line.setToNow();
-#endif // BORK
                                 if (!m_s.rollups.add_workload_detail_line(my_error_message, detailWID, detailInput, detailOutput))
                                 {
                                     std::ostringstream o;
@@ -1960,56 +1915,11 @@ before_rolling_up_detail_line.setToNow();
                                     m_s.master_cv.notify_all();
                                     return;
                                 }
-
-#ifdef BORK
-//{
-//ivytime after_rolling_up_detail_line; after_rolling_up_detail_line.setToNow();
-//
-//ivytime with_lock(after_rolling_up_detail_line-before_lock_for_rolling_up_detail_line);
-//
-//ivytime without_lock(after_rolling_up_detail_line-before_rolling_up_detail_line);
-//
-//detaillinecount++;
-//add_detail_line_total_time = add_detail_line_total_time + with_lock;
-//
-//std::ostringstream o;
-//o
-//<< "========= Detail line rollup time including getting lock " << with_lock.format_as_duration_HMMSSns()
-//<< ", net of getting lock " << without_lock .format_as_duration_HMMSSns();
-//log(logfilename,o.str());
-//}
-#endif // BORK
                             }
 
-#ifdef BORK
-ivytime tt; tt.setToNow();
-#endif // BORK
                             m_s.master_cv.notify_all();
-
-#ifdef BORK
-ivytime tn; tn.setToNow();
-detail_line_total_time.push(ivytime(tn-t0).getlongdoubleseconds());
-ttt.push(ivytime(tn-tt).getlongdoubleseconds());
-#endif // BORK
                         }
 
-#ifdef BORK
-ivytime after_detail_lines;
-after_detail_lines.setToNow();
-{
-std::ostringstream o; o <<
-"++++++++++ Processing detail lines took "  << ivytime(after_detail_lines-before_detail_lines).format_as_duration_HMMSSns()
-<< ", total add_workload_detail_line() time with lock "<< add_detail_line_total_time.format_as_duration_HMMSSns() << " for " << detaillinecount << " lines." << std::endl
-<< "========= complete detail count " << detail_line_total_time.count() << ", total " << std::fixed << std::setprecision(9) << detail_line_total_time.sum() << " s, avg " << std::fixed << std::setprecision(9) << detail_line_total_time.avg() << " s, min " << std::fixed << std::setprecision(9) << detail_line_total_time.min() << " s, max " << std::fixed << std::setprecision(9) << detail_line_total_time.max() << " s." << std::endl
-<< "========= get from pipe   count " << xxx.count() << ", total " << std::fixed << std::setprecision(9) << xxx.sum() << " s, avg " << std::fixed << std::setprecision(9) << xxx.avg() << " s, min " << std::fixed << std::setprecision(9) << xxx.min() << " s, max " << std::fixed << std::setprecision(9) << xxx.max() << " s." << std::endl
-<< "========= parse WID       count " << parseWIDtime.count() << ", total " << std::fixed << std::setprecision(9) << parseWIDtime.sum() << " s, avg " << std::fixed << std::setprecision(9) << parseWIDtime.avg() << " s, min " << std::fixed << std::setprecision(9) << parseWIDtime.min() << " s, max " << std::fixed << std::setprecision(9) << parseWIDtime.max() << " s." << std::endl
-<< "========= parse input     count " << parseWIDtime.count() << ", total " << std::fixed << std::setprecision(9) << parseinputtime.sum() << " s, avg " << std::fixed << std::setprecision(9) << parseinputtime.avg() << " s, min " << std::fixed << std::setprecision(9) << parseinputtime.min() << " s, max " << std::fixed << std::setprecision(9) << parseinputtime.max() << " s." << std::endl
-<< "========= parse output    count " << parseWIDtime.count() << ", total " << std::fixed << std::setprecision(9) << parseoutputtime.sum() << " s, avg " << std::fixed << std::setprecision(9) << parseoutputtime.avg() << " s, min " << std::fixed << std::setprecision(9) << parseoutputtime.min() << " s, max " << std::fixed << std::setprecision(9) << parseoutputtime.max() << " s." << std::endl
-<< "========= notify all      count " << ttt.count() << ", total " << std::fixed << std::setprecision(9) << ttt.sum() << " s, avg " << std::fixed << std::setprecision(9) << ttt.avg() << " s, min " << std::fixed << std::setprecision(9) << ttt.min() << " s, max " << std::fixed << std::setprecision(9) << ttt.max() << " s." << std::endl
-;
-log(logfilename,o.str());
-}
-#endif // BORK
                         now.setToNow();
                         if (now > m_s.nextSubintervalEnd)
                         {

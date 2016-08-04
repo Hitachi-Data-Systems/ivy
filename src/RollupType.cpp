@@ -63,7 +63,7 @@
 #include "master_stuff.h"
 #include "HM800_tables.h"
 
-extern bool routine_logging;
+extern bool routine_logging, trace_evaluate;
 
 void RollupType::printMe(std::ostream& o)
 {
@@ -294,7 +294,7 @@ void RollupType::rebuild()
                 {
                     std::string piece = s.substr(0,pluspos);
                     s.erase(0,1+pluspos);
-                    if (routine_logging)
+                    if (trace_evaluate)
                     {
                         std::ostringstream o;
                         o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
@@ -307,7 +307,7 @@ void RollupType::rebuild()
                 }
 
                 pRollupInstance->config_filter[serial][toLower("PG")].insert(s);
-                if (routine_logging)
+                if (trace_evaluate)
                 {
                     std::ostringstream o;
                     o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting internal LDEV PG " << s << " into config_filter[serial=" << serial << "][pg].";

@@ -58,14 +58,16 @@ public:
     std::string get_line_from_pipe // this is a wrapper around real_get_line_from_pipe to filter <Warning> and to catch <Error>
     (
         ivytime timeout,
-        std::string description // Used when there is some sort of failure to construct an error message written to the log file.
+        std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
+        bool reading_echo_line = false
     );
 
 private:
     std::string real_get_line_from_pipe
     (
         ivytime timeout,
-        std::string description // Used when there is some sort of failure to construct an error message written to the log file.
+        std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
+        bool reading_echo_line
     );
     bool pipe_driver_subthread_has_lock;
 public:

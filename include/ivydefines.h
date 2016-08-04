@@ -62,6 +62,8 @@
 
 #define MAXWAITFORIVYCMDDEV 5
 
+#define IO_TIME_LIMIT_SECONDS (30.0)
+
 #define get_config_timeout_seconds (30)
 
 // The idea below where defaults for [Go] parameters are all given as character strings

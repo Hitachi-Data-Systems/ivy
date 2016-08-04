@@ -54,7 +54,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     /*debug*/
     {
         std::ostringstream o;
-        o << std::endl << "Made test step folder \"" << m_s.stepFolder << "\"." << std::endl;
+        o << "Made test step folder \"" << m_s.stepFolder << "\"." << std::endl;
         std::cout << o.str();
         log(m_s.masterlogfile,o.str());
     }
@@ -444,9 +444,9 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             std::ostringstream o;
             o << "All host subthreads posted subinterval complete."
             << " - " << "ivyslave catnap_time_seconds = " << std::fixed << m_s.catnap_time_seconds
-            << " seconds after subinterval end."
+            << " seconds after subinterval end"
             << " - " << "post_time_limit_seconds = " << std::fixed << m_s.post_time_limit_seconds
-            << " seconds after subinterval end before <Error> shutdown."
+            << " seconds after subinterval end."
             << std::endl;
             log(m_s.masterlogfile,o.str());
             std::cout << o.str() << std::endl;
@@ -1744,7 +1744,8 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             if (!pear.second->commandSuccess)
             {
                     std::ostringstream o;
-                    o << "When waiting for \"Catch in flight I/Os\" to complete after the final subinterval, subthread for " << pear.first << " posted an error, saying "  << pear.second->commandErrorMessage << std::endl;
+                    o << "When waiting for \"Catch in flight I/Os\" to complete after the final subinterval, subthread for "
+                        << pear.first << " posted an error, saying "  << pear.second->commandErrorMessage << std::endl;
                     std::cout << o.str();
                     log (m_s.masterlogfile,o.str());
                     m_s.kill_subthreads_and_exit();
@@ -1759,8 +1760,8 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     /*debug*/
     {
         std::ostringstream o;
-        o << "\"Catch in flight I/Os\" command to wait for in-flight I/Os at end of last subinterval duration =  " << stopdur.format_as_duration_HMMSSns() << std::endl
-            << "run_subinterval_sequence() complete.  returning." << std::endl;
+        o << "\"Catch in flight I/Os\" command to wait for in-flight I/Os at end of last subinterval complete, duration =  " << stopdur.format_as_duration_HMMSSns()
+            << ".  run_subinterval_sequence() complete." << std::endl;
         log(m_s.masterlogfile,o.str());
     }
 

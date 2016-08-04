@@ -698,49 +698,49 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
 
 
         o << " " << LDEV_count << " LDEVs, totals over LDEVs:" << std::endl;
-        o << "Overall:          ";
+        o << "subsystem overall:          ";
         if (IOPS>0.0) o << std::fixed << std::setw(10) << std::setprecision(3) << service_time_ms;
         else          o << "     -.---";
         o << " ms service time,";
         o << std::fixed << std::setw(12) << std::setprecision(2) << IOPS << " IOPS,";
         o << std::fixed << std::setw(10) << std::setprecision(2) << decimal_MB_per_second << " decimal MB/s.";
         o << std::endl << std::endl; // -----------------------------------------
-        o << "read:             ";
+        o << "subsystem read:             ";
         if (read_IOPS>0.0) o << std::fixed << std::setw(10) << std::setprecision(3) << read_service_time_ms;
         else               o <<"     -.---";
         o << " ms service time,";
         o << std::fixed << std::setw(12) << std::setprecision(2) << read_IOPS << " IOPS,";
         o << std::fixed << std::setw(10) << std::setprecision(2) << read_decimal_MB_per_second << " decimal MB/s.";
         o << std::endl; // -----------------------------------------
-        o << "write:            ";
+        o << "subsystem write:            ";
         if (write_IOPS>0.0) o << std::fixed << std::setw(10) << std::setprecision(3) << write_service_time_ms;
         else                o << "     -.---";
         o << " ms service time,";
         o << std::fixed << std::setw(12) << std::setprecision(2) << write_IOPS << " IOPS,";
         o << std::fixed << std::setw(10) << std::setprecision(2) << write_decimal_MB_per_second << " decimal MB/s.";
         o << std::endl << std::endl; // -----------------------------------------
-        o << "random:           ";
+        o << "subsystem random:           ";
         if (random_IOPS > 0.0 ) o << std::fixed << std::setw(10) << std::setprecision(3) << random_blocksize_KiB;
         else                    o << "     -.---";
         o << " KiB blocksize,  ";
         o << std::fixed << std::setw(12) << std::setprecision(2) << random_IOPS << " IOPS,";
         o << std::fixed << std::setw(10) << std::setprecision(2) << random_decimal_MB_per_second << " decimal MB/s.";
         o << std::endl;
-        o << "sequential:       ";
+        o << "subsystem sequential:       ";
         if (sequential_IOPS > 0.0) o << std::fixed << std::setw(10) << std::setprecision(3) << sequential_blocksize_KiB;
         else                       o << "     -.---";
         o << " KiB blocksize,  ";
         o << std::fixed << std::setw(12) << std::setprecision(2) << sequential_IOPS << " IOPS,";
         o << std::fixed << std::setw(10) << std::setprecision(2) << sequential_decimal_MB_per_second << " decimal MB/s.";
         o << std::endl << std::endl; // -----------------------------------------
-        o << "random read:      ";
+        o << "subsystem random read:      ";
         if (random_read_IOPS >0.0) o << std::fixed << std::setw(10) << std::setprecision(3) << random_read_blocksize_KiB;
         else                       o << "     -.---";
         o << " KiB blocksize,  ";
         o << std::fixed << std::setw(12) << std::setprecision(2) << random_read_IOPS << " IOPS,";
         o << std::fixed << std::setw(10) << std::setprecision(2) << random_read_decimal_MB_per_second << " decimal MB/s.";
         o << std::endl; // -----------------------------------------
-        o << "random write:     ";
+        o << "subsystem random write:     ";
         if (random_write_IOPS > 0.0) o << std::fixed << std::setw(10) << std::setprecision(3) << random_write_blocksize_KiB;
         else                         o << "     -.---";
         o << " KiB blocksize,  ";
@@ -748,14 +748,14 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         o << std::fixed << std::setw(10) << std::setprecision(2) << random_write_decimal_MB_per_second << " decimal MB/s.";
         o << std::endl;
         o << std::endl; // -----------------------------------------
-        o << "sequential read:  ";
+        o << "subsystem sequential read:  ";
         if (sequential_read_IOPS > 0.0) o << std::fixed << std::setw(10) << std::setprecision(3) << sequential_read_blocksize_KiB;
         else                            o << "     -.---";
          o << " KiB blocksize,  ";
         o << std::fixed << std::setw(12) << std::setprecision(2) << sequential_read_IOPS << " IOPS,";
         o << std::fixed << std::setw(10) << std::setprecision(2) << sequential_read_decimal_MB_per_second << " decimal MB/s.";
         o << std::endl; // -----------------------------------------
-        o << "sequential write: ";
+        o << "subsystem sequential write: ";
         if (sequential_write_IOPS > 0.0) o << std::fixed << std::setw(10) << std::setprecision(3) << sequential_write_blocksize_KiB;
         else                             o << "     -.---";
         o << " KiB blocksize,  ";

@@ -73,9 +73,6 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="Subinterval.cpp">
-			<Option target="ivyslave" />
-		</Unit>
 		<Unit filename="include/Accumulators_by_io_type.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
@@ -469,6 +466,9 @@
 		</Unit>
 		<Unit filename="src/SelectClause.cpp">
 			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/Subinterval.cpp">
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/SubintervalOutput.cpp">

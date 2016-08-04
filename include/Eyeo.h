@@ -87,5 +87,6 @@ public:
 	std::string buffer_first_last_16_hex();
 
 	void generate_pattern();
+	ivytime since_start_time(); // returns ivytime(0) if start_time is not in the past
 };
 

@@ -27,6 +27,7 @@
 #include <condition_variable>
 #include <map>
 #include <string>
+#include <set>
 
 #include "pattern.h"
 #include "Subinterval.h"
@@ -35,6 +36,7 @@ typedef long double pattern_float_type ;
 
 enum class ThreadState
 {
+    undefined,
 	waiting_for_command,
 	running,
 	stopping, // for example catching ing-flight I/Os after final subinterval
@@ -42,7 +44,9 @@ enum class ThreadState
 	exited_normally
 };
 
-std::string threadStateToString (ThreadState);
+std::ostream& operator<< (std::ostream& o, const ThreadState s);
+
+std::string threadStateToString (const ThreadState);
 
 enum class MainThreadCommand
 {
@@ -109,6 +113,12 @@ public:
 
 	struct io_event ReapHeap[MAX_IOEVENTS_REAP_AT_ONCE];
 
+	std::set<struct iocb*> running_IOs;  // The iocb points to the ivy Eyeo object
+
+	ivy_int cancelled_IOs {0};
+
+	ivytime max_io_run_time_seconds = ivytime(IO_TIME_LIMIT_SECONDS);
+
 	std::map<std::string, Iogenerator*> available_iogenerators;
 
 	bool dieImmediately{false};
@@ -165,11 +175,8 @@ public:
 	bool prepare_linux_AIO_driver_to_start();  // true means success. false means an error message has been logged and to abort.
 	bool linux_AIO_driver_run_subinterval();
 	bool catch_in_flight_IOs_after_last_subinterval();
-		// Includes doing any necessary "turn around" things
-		// to make sure we are ready to run with parameters
-		// the same as the last one from the last run.
 
-		// !!!!!!!!!!!!!!!!!!!  In future, consider waiting for Write Pending to empty in the "catch ..." routine.
-
+    void ivy_cancel_IO(struct iocb*); // writes to log file indicating success or failure.
+    void cancel_stalled_IOs();
 };
 

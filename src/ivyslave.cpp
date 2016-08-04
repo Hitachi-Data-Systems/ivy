@@ -271,7 +271,6 @@ int main(int argc, char* argv[])
 
     if (routine_logging) {std::ostringstream o; o << "printable_ascii = \"" << printable_ascii << "\"" << std::endl; log(slavelogfile,o.str());}
 
-
 	std::string input_line;
 	if(std::cin.eof()) {log("std::cin.eof()\n",slavelogfile); return 0;}
 	while(!std::cin.eof()) {
@@ -322,16 +321,68 @@ int main(int argc, char* argv[])
 		}
 		else if (0 == std::string("Catch in flight I/Os").compare(input_line))
 		{
-			for (auto& pear : iogenerator_threads)
+ 			for (auto& pear : iogenerator_threads)
 			{
+                if ( (pear.second->state == ThreadState::died) || (pear.second->state == ThreadState::exited_normally) )
+                {
+                    std::ostringstream o;
+                    o << "<Warning> when executing \"Catch in flight I/Os\" command for WorkloadThread "
+                        << pear.first << " was indisposed already, showing as " << pear.second->state
+                        << "  " << __FILE__ << " line " << __LINE__;
+                    say (o.str());
+                    continue;
+                }
+
+                // try to get the lock in increments of 100 ms and then if timeout order the thread to die, mark it dead,
 				{
-					std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
-					while (ThreadState::stopping == pear.second->state) pear.second->slaveThreadConditionVariable.wait(u_lk);
+                    ivytime starting_time; starting_time.setToNow();
+
+                    ivytime now = starting_time;
+
+                    ivytime limit_time = starting_time + ivytime(subinterval_duration.getlongdoubleseconds() + catnap_time_seconds);
+
+                    while (now < limit_time)
+                    {
+                        if (pear.second->slaveThreadMutex.try_lock())
+                        {
+                            if (pear.second->state == ThreadState::waiting_for_command)
+                            {
+                                pear.second->slaveThreadMutex.unlock();
+                                pear.second->slaveThreadConditionVariable.notify_all();
+                                break;
+                            }
+                            if (!(ThreadState::stopping == pear.second->state))
+                            {
+                                pear.second->slaveThreadMutex.unlock();
+                                pear.second->slaveThreadConditionVariable.notify_all();
+                                std::ostringstream o;
+                                o << "<Warning> for host " << hostname << " WorkloadThread " << pear.first
+                                << " \"Catch in flight I/Os\" command should see state stopping or state read_for_command but instead saw "
+                                << pear.second->state;
+                                say(o.str());
+                                break;
+                            }
+                            pear.second->slaveThreadMutex.unlock();
+                            pear.second->slaveThreadConditionVariable.notify_all();
+                        }
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                        now.setToNow();
+                        continue;
+                    }
+
+                    if (now > limit_time) // if we timed out
+                    {
+                        std::ostringstream o;
+                        o << "<Warning> for host " << hostname << " WorkloadThread " << pear.first
+                        << " \"Catch in flight I/Os\" timed out waiting to get the lock and see state stopping or state read_for_command.";
+                        say(o.str());
+                        break;
+                    }
 				}
 			}
 
-			say("<OK>");
-		}
+            say("<OK>");
+        }
 		else if (startsWith("[CreateWorkload]",input_line,remainder))
 		{
 			// We get "[CreateWorkload] myhostname+/dev/sdxy+workload_name [Parameters] subinterval_input.toString()
@@ -852,8 +903,17 @@ int main(int argc, char* argv[])
 		{
 //*debug*/{ostringstream o; o << "Got \"continue\" or  \"cooldown\". " << std::endl; log(slavelogfile,o.str());}
             bool cooldown_flag;
-            if (0 == input_line.compare(std::string("cooldown"))) {cooldown_flag=true;}
-            else                                                  {cooldown_flag=false;}
+            if (0 == input_line.compare(std::string("cooldown")))
+            {
+                cooldown_flag=true;
+            }
+            else
+            {
+                cooldown_flag=false;
+            }
+
+            input_line = "continue"; //  remove later - grasping at straws
+
 			for (auto& pear : iogenerator_threads)
 			{
 				{ // lock
@@ -873,9 +933,10 @@ int main(int argc, char* argv[])
 
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
+					pear.second->cooldown = cooldown_flag;
+
 					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command with cooldown flag.");
 
-					pear.second->cooldown = cooldown_flag;
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting MainThreadCommand::run");
 //*debug*/{ostringstream o; o << "Posted MainThreadCommand::run command to " << pear.first << std::endl; log(slavelogfile,o.str());}
 				}
@@ -962,6 +1023,7 @@ bool waitForSubintervalEndThenHarvest()
 
     ivytime end_of_running_subinterval;
     end_of_running_subinterval = master_thread_subinterval_end_time + subinterval_duration;
+
 
 	// harvest CPU counters and send CPU line.
 
