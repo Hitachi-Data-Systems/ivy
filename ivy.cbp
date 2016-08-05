@@ -58,7 +58,6 @@
 			<Add option="-Wall" />
 			<Add option="-g" />
 			<Add option="-pthread" />
-			<Add option="-DBORK" />
 			<Add directory="src" />
 			<Add directory="include" />
 		</Compiler>

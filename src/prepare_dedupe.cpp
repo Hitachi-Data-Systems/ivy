@@ -60,7 +60,6 @@ public:
     pattern   pattern_setting;
     ivy_float compressibility_setting;
     ivy_float fractionRead_setting;
-
 };
 
 void prepare_dedupe()
@@ -81,15 +80,15 @@ void prepare_dedupe()
 
         std::string workload_name = wID.getWorkloadPart();
 
-        if (p_WorkloadTracker->wT_IogeneratorInput.dedupe > 1.0 && p_WorkloadTracker->wT_IogeneratorInput.fractionRead == 1.0)
-        {
-            std::ostringstream o;
-            o << "Workload \"" << workload_name << "\" thread with WorkloadID = \"" << pear.first
-                << "\" forbidden to have dedupe = " << p_WorkloadTracker->wT_IogeneratorInput.dedupe
-                << " with fractionRead = "          << p_WorkloadTracker->wT_IogeneratorInput.fractionRead
-                << ".  dedupe > 1.0 not permitted for read-only workloads - in prepare_dedupe() at line " << __LINE__ << " of " << __FILE__;
-            m_s.error(o.str());
-        }
+//        if (p_WorkloadTracker->wT_IogeneratorInput.dedupe > 1.0 && p_WorkloadTracker->wT_IogeneratorInput.fractionRead == 1.0)
+//        {
+//            std::ostringstream o;
+//            o << "Workload \"" << workload_name << "\" thread with WorkloadID = \"" << pear.first
+//                << "\" forbidden to have dedupe = " << p_WorkloadTracker->wT_IogeneratorInput.dedupe
+//                << " with fractionRead = "          << p_WorkloadTracker->wT_IogeneratorInput.fractionRead
+//                << ".  dedupe > 1.0 not permitted for read-only workloads - in prepare_dedupe() at line " << __LINE__ << " of " << __FILE__;
+//            m_s.error(o.str());
+//        }
 
         auto peach = workloads.find(workload_name);
         if (workloads.end() == peach)
@@ -137,7 +136,7 @@ void prepare_dedupe()
 
     for (auto& pear : workloads)
     {
-        if (pear.second.dedupe_setting > 1.0)
+        if ( pear.second.dedupe_setting > 1.0 && ((pear.second.fractionRead_setting) < 1.0) )
         {
             unsigned int total_threads = pear.second.workload_threads.size();
             unsigned int this_thread = 0;

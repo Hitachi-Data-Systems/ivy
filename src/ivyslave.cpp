@@ -834,7 +834,7 @@ int main(int argc, char* argv[])
                         pear.second->have_writes = false;
                     }
 
-                    if (pear.second->subinterval_array[0].input.dedupe == 1.0)
+                    if ( (pear.second->subinterval_array[0].input.dedupe == 1.0) || (pear.second->subinterval_array[0].input.fractionRead >= 1.0) )
                     {
                         pear.second->doing_dedupe=false;
                         pear.second->block_seed = ( (uint64_t) std::hash<std::string>{}(pear.first) ) ^ test_start_time.getAsNanoseconds();

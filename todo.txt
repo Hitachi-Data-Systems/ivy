@@ -17,11 +17,7 @@
 - put in retry mechanism if upon initial startup of the ssh command to ivyslave, the initial
   read from the pipe stalls.  (kill ssh thread, harvest.  Then try again.)
 
-- fix so that if the ivyscript filename (test name) has periods in it, they don't get changed when creating csv filenames.
-
 - rename parameter service_time to service_time_seconds
-
-- offer shorthand source=service_time_seconds to set the 4 parameters 
 
 - when measure=off, provide an accuracy plus/minus value for IOPS & service time.
 
@@ -33,9 +29,6 @@
 - new metric that you can select, "pid_haircut_service time" 
 - new parameter pid_haircut="5%" where those entire histogram buckets that fit within the lowest 5%
   of the service time 
-
-- separate out measure_focus_rollup and pid_focus_rollup and associated parameters
-
 
 - add feature to pid loop to filter out "anomalous" I/Os for the purposes of pid loop lock / control.
        - have a separate csv line / csv file way of reporting classification as "anomalous" or "normal".
@@ -65,7 +58,7 @@ at least make sure the ivy main executable terminates if it's hung, and taking o
    as invalid, like if WP were out of range for measure=on.
 
 
-///////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////// == or add an "inside_service_time".
 // Need to look at redesigning the definition of "service time".
 // Now we make the "I/O start" timestamp before starting the I/O.  The issue is that
 // if the device driver doesn't have an available tag, the call blocks.
@@ -120,9 +113,6 @@ at least make sure the ivy main executable terminates if it's hung, and taking o
 
 - fix bug where edit rollup total_IOPS = "45.3" fails when total_IOPS=45.3 works.
 
-- check string s; for s= {"a", "b"} to see if for loop variable s doesn't get initialized properly.
-
-
 - run ivymaster as a GUI application, and show some sort of visual representation subinterval by subinteral.
   Maybe you could offer a tree on the left that shows rollups that you pick from.
   You could pick things you wanted to monitor, and arrange them on the display area.
@@ -134,12 +124,7 @@ at least make sure the ivy main executable terminates if it's hung, and taking o
 - examine whether to remove the timestamps from the metric_value object and
   perhaps have ivy_cmddev provide data with individual I/O timestamps instead ...
 
-- put copyright statement in all source files
-
-- make ivy run other than as root.  
-	- Add "passwordless ssh authentication" or public/private key pair ssh authentication for ivogelesa as opposed to root.
-	- Make inquireabout run suid as root.
-	
+- make ivy run other than as root.  	
  
 - go through and everywhere we have an interlock between threads or a pipe_driver conversation, 1) instrument timing & log, 
 2) where appropriate, allow a certain threshold, analogous to the BER on a disk drive that says you can have, for example,
@@ -156,22 +141,12 @@ Then when ivyslave reports the results of a subinterval, it reports the wait fla
 
 - test [EditRollup] with IOPS increments  / multipliers
 
-- build [DeleteWorkload]
-when we implement the [DeleteWorkload] statement, turn on m_s.need_to_rebuild_rollups.
-
-- build [DeleteRollup]
-
-
 - catch a "kill" signal and shut down subtasks gently
 
 (James) - run LSPCI and store server details to track I/O generation capability of different kinds of server components.
 
-
-Think about making an Excel tool to import an ivy output folder structure.
-and make catscan graphs with cutoff lines showing measurement start / end.
-
-
-- convert all the functions returning bool but with error message and output variable reference to use try / catch instead.
+- convert all the functions returning bool but with error message and output variable reference to use try / catch instead,
+or return a std:pair<bool,std::string>.
 
 
 
@@ -179,9 +154,8 @@ and make catscan graphs with cutoff lines showing measurement start / end.
 Consider how an ivy test run could be filed in a database, so that these tests could be located in a kind of coordinate space when you want to calibrate a model.
 	-ideally you would want to know about the hardware and software versions, the configuration, etc.
 
-We are going to need a command device for dynamic feedback control anyway, so let's make one configuration collection there, but also let's collect the SVP config report, as not all info appears in each view.  Think about how to provide the SVP IP/userid/password for the config report gather.  Use a script.
+Gather config report from SVP and import into ivy subsystem object. (adapt PERL collector).
 
-Recommend collecting config report - set userid into the script - every time ivy runs.
 
 
 
