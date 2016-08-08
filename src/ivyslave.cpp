@@ -813,45 +813,37 @@ int main(int argc, char* argv[])
 //       Eventually should cut back to only having  one IogeneratorInput object ... maybe, unless there are pairs of input parameters that must both take effect simultaneously ...
 
 
-
-                    if (pear.second->subinterval_array[0].input.dedupe > 1.0 && pear.second->subinterval_array[0].input.fractionRead == 1.0)
-					{
-						ostringstream o;
-						o << "<Error> Internal programming error - ivy master failed earlier to detect dedupe > 1.0 with fractionRead = 100%.  Aborting." << std::endl;
-						say(o.str());
-						killAllSubthreads(slavelogfile);
-						return -1;
-					}
-
-                    if (pear.second->subinterval_array[0].input.fractionRead < 1.0)
+                    if (pear.second->subinterval_array[0].input.fractionRead == 1.0)
+                    {
+                        pear.second->have_writes = false;
+                        pear.second->doing_dedupe = false;
+                    }
+                    else
                     {
                         pear.second->have_writes = true;
                         pear.second->pat = pear.second->subinterval_array[0].input.pat;
                         pear.second->compressibility = pear.second->subinterval_array[0].input.compressibility;
-                    }
-                    else
-                    {
-                        pear.second->have_writes = false;
+
+                        if ( pear.second->subinterval_array[0].input.dedupe == 1.0 )
+                        {
+                            pear.second->doing_dedupe=false;
+                            pear.second->block_seed = ( (uint64_t) std::hash<std::string>{}(pear.first) ) ^ test_start_time.getAsNanoseconds();
+                        }
+                        else
+                        {
+                            pear.second->doing_dedupe=true;
+                            pear.second->threads_in_workload_name = (pattern_float_type) pear.second->subinterval_array[0].input.threads_in_workload_name;
+                            pear.second->serpentine_number = 1.0 + ( (pattern_float_type) pear.second->subinterval_array[0].input.this_thread_in_workload );
+                            pear.second->serpentine_number -= pear.second->threads_in_workload_name; // this is because we increment the serpentine number by threads_in_workload before using it.
+                            pear.second->serpentine_multiplier =
+                                ( 1.0 - ( (pattern_float_type)  pear.second->subinterval_array[0].input.fractionRead ) )
+                                /       ( (pattern_float_type)  pear.second->subinterval_array[0].input.dedupe );
+
+                            pear.second->pattern_seed = pear.second->subinterval_array[0].input.pattern_seed;
+                            pear.second->pattern_number = 0;
+                        }
                     }
 
-                    if ( (pear.second->subinterval_array[0].input.dedupe == 1.0) || (pear.second->subinterval_array[0].input.fractionRead >= 1.0) )
-                    {
-                        pear.second->doing_dedupe=false;
-                        pear.second->block_seed = ( (uint64_t) std::hash<std::string>{}(pear.first) ) ^ test_start_time.getAsNanoseconds();
-                    }
-                    else
-                    {
-                        pear.second->doing_dedupe=true;
-                        pear.second->threads_in_workload_name = (pattern_float_type) pear.second->subinterval_array[0].input.threads_in_workload_name;
-                        pear.second->serpentine_number = 1.0 + ( (pattern_float_type) pear.second->subinterval_array[0].input.this_thread_in_workload );
-                        pear.second->serpentine_number -= pear.second->threads_in_workload_name; // this is because we increment the serpentine number by threads_in_workload before using it.
-                        pear.second->serpentine_multiplier =
-                            ( 1.0 - ( (pattern_float_type)  pear.second->subinterval_array[0].input.fractionRead ) )
-                            /       ( (pattern_float_type)  pear.second->subinterval_array[0].input.dedupe );
-
-                        pear.second->pattern_seed = pear.second->subinterval_array[0].input.pattern_seed;
-                        pear.second->pattern_number = 0;
-                    }
                     pear.second->write_io_count = 0;
 
 					pear.second->subinterval_array[0].start_time=test_start_time;
