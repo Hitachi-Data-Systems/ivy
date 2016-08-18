@@ -46,7 +46,7 @@ See the doc subfolder.
 ## Videos
 
 Executive summary
-* standalone 6-minute executive summary clips from "introduction to ivy"
+* [Standalone 6-minute executive summary clips from "introduction to ivy"](https://youtu.be/l5-lSqleP4s)
 
 Video series
 * [Introduction to ivy](https://www.youtube.com/watch?v=VsBsz83Pl28&list=PLHmnN_gEh0ZzK8KqOXfWqdVsEjuaqjpu8&index=1)
