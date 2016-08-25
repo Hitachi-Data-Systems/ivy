@@ -734,7 +734,7 @@ variable:
 			auto ST_iter=context_ref.SymbolTable_search(*($1));
 			if (!ST_iter) {
                 std::ostringstream o;
-                o << "Unknown identifier \"" << (*($1)) << "\" at " << @$ << std::endl;
+                o << "Unknown identifier (unknown variable) \"" << (*($1)) << "\" at " << @$ << "  Did you intend to specify the quoted string \"" << (*($1)) << "\" instead?" << std::endl;
 				context_ref.error(o.str());
 				YYERROR;
 			}

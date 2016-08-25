@@ -1284,6 +1284,7 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 					o << "master_stuff::editRollup() - dreaded internal programming error - at the last moment the WorkloadTracker pointer lookup failed for workloadID = \"" << wID.workloadID << "\"";
 					callers_error_message += o.str();
 					std::cout << o.str() << std::endl;
+					return false;
 				}
 
 				WorkloadTracker* pWT = (*wit).second;
@@ -1291,8 +1292,10 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 				if (!pWT->wT_IogeneratorInput.setMultipleParameters(error_message, parametersText))
 				{
 					std::ostringstream o;
-					o << "Failed setting parameters \"" << parametersText << "\" into local WorkloadTracker object for WorkloadID = \"" << wID.workloadID << std::endl << error_message;
+					o << "<Error> Failed setting parameters \"" << parametersText
+                        << "\" into local WorkloadTracker object for WorkloadID = \"" << wID.workloadID << "\"" << std::endl << error_message;
 					callers_error_message = o.str();
+					return false;
 				}
 			}
 		}

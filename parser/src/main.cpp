@@ -133,13 +133,13 @@ int main(int argc, char* argv[])
     struct stat struct_stat;
     if(stat(m_s.ivyscriptFilename.c_str(),&struct_stat))
     {
-        std::cout << "ivyscript filename \"" + m_s.ivyscriptFilename + "\" does not exist." << std::endl;
+        std::cout << "<Error> ivyscript filename \"" + m_s.ivyscriptFilename + "\" does not exist." << std::endl;
         return -1;
     }
 
     if(!S_ISREG(struct_stat.st_mode))
     {
-        std::cout << "ivyscript filename \"" + m_s.ivyscriptFilename  + "\" is not a regular file." << std::endl;
+        std::cout << "<Error> ivyscript filename \"" + m_s.ivyscriptFilename  + "\" is not a regular file." << std::endl;
         return -1;
     }
 
@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
 
     if( !(yyin = fopen(m_s.ivyscriptFilename.c_str(), "r")) )
     {
-        std::cout << "Could not open \"" << m_s.ivyscriptFilename << "\" for in." << std::endl;
+        std::cout << "<Error> Could not open \"" << m_s.ivyscriptFilename << "\" for in." << std::endl;
         return -1;
     }
 
@@ -206,7 +206,7 @@ int main(int argc, char* argv[])
         if( stat(m_s.outputFolderRoot.c_str(),&struct_stat))
         {
             std::ostringstream o;
-            o << "      <Error> directory \"" << m_s.outputFolderRoot << "\" does not exist." << std::endl;
+            o << "<Error> directory \"" << m_s.outputFolderRoot << "\" does not exist." << std::endl;
             std::cout << o.str();
             return -1;
         }
@@ -214,7 +214,7 @@ int main(int argc, char* argv[])
         if(!S_ISDIR(struct_stat.st_mode))
         {
             std::ostringstream o;
-            o << "      <Error> \"" << m_s.outputFolderRoot << "\" is not a directory." << std::endl;
+            o << "<Error> \"" << m_s.outputFolderRoot << "\" is not a directory." << std::endl;
             std::cout << o.str();
             return -1;
         }
@@ -226,7 +226,7 @@ int main(int argc, char* argv[])
             if(!S_ISDIR(struct_stat.st_mode))
             {
                 std::ostringstream o;
-                o << "     <Error> Output folder for this test run \"" << m_s.testFolder << "\" already exists but is not a directory." << std::endl;
+                o << "<Error> Output folder for this test run \"" << m_s.testFolder << "\" already exists but is not a directory." << std::endl;
                 std::cout << o.str();
                 return -1;
             }
@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
             else
             {
                 std::ostringstream o;
-                o << "      <Error> Failed trying to delete previously existing version of test run output folder \"" << m_s.testFolder << "\"." << std::endl;
+                o << "<Error> Failed trying to delete previously existing version of test run output folder \"" << m_s.testFolder << "\"." << std::endl;
                 std::cout << o.str();
                 return -1;
             }
@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
         if (mkdir(m_s.testFolder.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
         {
             std::ostringstream o;
-            o << "      <Error> Failed trying to create output folder \"" << m_s.testFolder << "\" << errno = " << errno << " " << strerror(errno) << std::endl;
+            o << "<Error> Failed trying to create output folder \"" << m_s.testFolder << "\" << errno = " << errno << " " << strerror(errno) << std::endl;
             std::cout << o.str();
             return -1;
         }
@@ -261,7 +261,7 @@ int main(int argc, char* argv[])
         if (mkdir((m_s.testFolder+std::string("/logs")).c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
         {
             std::ostringstream o;
-            o << "      <Error> - Failed trying to create logs subfolder in output folder \"" << m_s.testFolder << "\" << errno = " << errno << " " << strerror(errno) << std::endl;
+            o << "<Error> - Failed trying to create logs subfolder in output folder \"" << m_s.testFolder << "\" << errno = " << errno << " " << strerror(errno) << std::endl;
             std::cout << o.str();
             return -1;
         }
@@ -281,7 +281,7 @@ int main(int argc, char* argv[])
         if (0!=system(copyivyscriptcmd.c_str()))   // now getting lazy, but purist maintainers could write C++ code to do this.
         {
             std::ostringstream o;
-            o << "Failed trying to copy input ivyscript to output folder: \"" << copyivyscriptcmd << "\"." << std::endl;
+            o << "<Error> Failed trying to copy input ivyscript to output folder: \"" << copyivyscriptcmd << "\"." << std::endl;
             log(m_s.masterlogfile,o.str());
             std::cout << o.str();
             return -1;
@@ -291,7 +291,7 @@ int main(int argc, char* argv[])
         if (!m_s.rollups.initialize(rollupsInitializeMessage))
         {
             std::ostringstream o;
-            o << "Internal programming error - failed initializing rollups in ivymaster.cpp saying: " << rollupsInitializeMessage << std::endl;
+            o << "<Error> Internal programming error - failed initializing rollups in ivymaster.cpp saying: " << rollupsInitializeMessage << std::endl;
             log(m_s.masterlogfile,o.str());
             std::cout << o.str();
             return -1;
@@ -315,14 +315,14 @@ int main(int argc, char* argv[])
         }
         catch (...)
         {
-            std::cout << "Whoops!  Something happened trying to run the ivy program." << std::endl;
+            std::cout << "<Error> Whoops!  Something happened trying to run the ivy program." << std::endl;
             throw;
         }
         m_s.overall_success = true;
 	}
 	else
 	{
-        std::cout << "unsuccessful compile." << std::endl;
+        std::cout << "<Error> unsuccessful compile." << std::endl;
     }
 
     ivytime finish_time; finish_time.setToNow();

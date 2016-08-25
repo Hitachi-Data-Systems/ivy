@@ -453,7 +453,7 @@ bool IogeneratorInput::setParameter(std::string& callers_error_message, std::str
 		return true;
 	}
 
-	callers_error_message = std::string("name = value (\"")+parameterNameEqualsValue + std::string("\".  Invalid parameter name \"") + parameterName + std::string("\".\n");
+	callers_error_message = std::string("Invalid parameter name \"") + parameterName + std::string("\".\n");
 
 	return false;
 }
