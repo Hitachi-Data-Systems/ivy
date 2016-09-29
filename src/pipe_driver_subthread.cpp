@@ -297,9 +297,10 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
         if (0 != pid_status && WIFEXITED(pid_status))
         {
             ostringstream logmsg;
-            logmsg << "For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe() - child has exited.";
+            logmsg << "<Warning> For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe() - child has exited."
+            << "  pid = " << ssh_pid << ", after waitpid(ssh_pid, &pid_status, WNOHANG), pid_status = 0x" << std::hex << std::uppercase << pid_status;
             log(logfilename,logmsg.str());
-            return false;
+            // return false;  - Commented out to see if this can occur spuriously 2016-09-25
         }
 
         if (remaining>ivytime(1))
@@ -386,8 +387,8 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
     //# define POLLMSG        0x400
     //# define POLLREMOVE     0x1000
     //# define POLLRDHUP      0x2000
-    /* POLLRDHUP - (since Linux 2.6.17) Stream socket peer closed connection, or shut down writing half of connection.
-    The _GNU_SOURCE feature test macro must be defined (before including any header files) in order to obtain this definition. */
+    ///* POLLRDHUP - (since Linux 2.6.17) Stream socket peer closed connection, or shut down writing half of connection.
+    //The _GNU_SOURCE feature test macro must be defined (before including any header files) in order to obtain this definition. */
     //#endif
     //
     ///* Event types always implicitly polled for.  These bits need not be set in
@@ -403,7 +404,7 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
 std::string pipe_driver_subthread::real_get_line_from_pipe
 (
     ivytime timeout,
-    std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
+    std::string description, // passed by reference to called routines to receive an error message when called function returns "false"
     bool reading_echo_line
 )
 {
