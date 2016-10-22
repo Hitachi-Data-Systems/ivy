@@ -877,6 +877,11 @@ select:
             $$ = new Select(@$,$2,m_s.masterlogfile);
             if (trace_parser) {$$->display("",trace_ostream);}
         }
+    | KW_SELECT '{' select_clause_list '}'
+        {   /* cobbled together way to allow new JSON format without changing grammar too much */
+            $$ = new Select(@$,$3,m_s.masterlogfile);
+            if (trace_parser) {$$->display("",trace_ostream);}
+        }
 ;
 
 select_clause_list:
@@ -902,7 +907,7 @@ select_clause_list:
 
 select_clause:
     string_x KW_IS select_clause_value
-        {
+        { /* original Flex/Bison syntax retained for compatibility with early .ivyscript programs */
             $$ = new SelectClause(@$,$1,new std::list<SelectClauseValue*>(),m_s.masterlogfile);
             $$->p_SelectClauseValue_pointer_list->push_back($3);
             if (trace_parser)
@@ -912,6 +917,21 @@ select_clause:
             }
         }
     | string_x KW_IS '{' select_clause_value_list '}'
+        { /* original Flex/Bison syntax retained for compatibility with early .ivyscript programs */
+            $$ = new SelectClause(@$,$1,$4,m_s.masterlogfile);
+            if (trace_parser) { trace_ostream << "select_clause with a list of values at " << @$ << std::endl; }
+        }
+    | string_x ':' select_clause_value
+        {
+            $$ = new SelectClause(@$,$1,new std::list<SelectClauseValue*>(),m_s.masterlogfile);
+            $$->p_SelectClauseValue_pointer_list->push_back($3);
+            if (trace_parser)
+            {
+                trace_ostream << "select_clause with a single value at " << @$ << " on:" << std::endl;
+                $3->display("",trace_ostream);
+            }
+        }
+    | string_x ':' '[' select_clause_value_list ']'
         {
             $$ = new SelectClause(@$,$1,$4,m_s.masterlogfile);
             if (trace_parser) { trace_ostream << "select_clause with a list of values at " << @$ << std::endl; }

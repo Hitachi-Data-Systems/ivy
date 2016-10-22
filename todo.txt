@@ -1,3 +1,5 @@
+- add JSON representation to edit rollup.
+
 - update documentation to lead with measure=on shorthand, and leave details to programmer's reference
 
 // maybe we have a measure_focus_rollup and a pid_focus_rollup and they default to focus_rollup?
