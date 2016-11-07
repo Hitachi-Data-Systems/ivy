@@ -37,9 +37,9 @@ using namespace std;
 #include "RunningStat.h"
 #include "LUN.h"
 #include "WorkloadID.h"
-#include "iogenerator_stuff.h"
-#include "IogeneratorInput.h"
-#include "Iogenerator.h"
+#include "iosequencer_stuff.h"
+#include "IosequencerInput.h"
+#include "Iosequencer.h"
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
 #include "SubintervalOutput.h"
@@ -47,7 +47,7 @@ using namespace std;
 #include "WorkloadThread.h"
 
 // display_memory_contents() is part of "printableAndHex" which is in the LUN_discovery project - https://github.com/Hitachi-Data-Systems/LUN_discovery
-#include "printableAndHex.h"
+#include "../../LUN_discovery/include/printableAndHex.h"
 
 Eyeo::Eyeo(int t, WorkloadThread* pwt) : tag(t), pWorkloadThread(pwt)
 {

@@ -37,65 +37,65 @@ using namespace std;
 #include "ivyhelpers.h"
 #include "ivytime.h"
 #include "ivydefines.h"
-#include "iogenerator_stuff.h"
-#include "IogeneratorInput.h"
+#include "iosequencer_stuff.h"
+#include "IosequencerInput.h"
 #include "LUN.h"
 #include "Eyeo.h"
 #include "WorkloadID.h"
-#include "Iogenerator.h"
-#include "IogeneratorSequential.h"
+#include "Iosequencer.h"
+#include "IosequencerSequential.h"
 #include "WorkloadThread.h"
 
 extern std::string printable_ascii;
 
-bool IogeneratorSequential::setFrom_IogeneratorInput(IogeneratorInput* p_i_i)
+bool IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
-//*debug*/ log(logfilename,std::string("IogeneratorSequential::setFrom_IogeneratorInput() - entry.\n"));
-	if (!Iogenerator::setFrom_IogeneratorInput(p_i_i)) return false;
+//*debug*/ log(logfilename,std::string("IosequencerSequential::setFrom_IosequencerInput() - entry.\n"));
+	if (!Iosequencer::setFrom_IosequencerInput(p_i_i)) return false;
 
-	lastIOblockNumber = coverageStartBlock + (long long int) (p_IogeneratorInput->seqStartFractionOfCoverage * (ivy_float) numberOfCoverageBlocks);
-//*debug*/{ostringstream o; o << "IogeneratorSequential::setFrom_IogeneratorInput() - lastIOblocknumber has been set to " << lastIOblockNumber; log(logfilename,o.str());}
+	lastIOblockNumber = coverageStartBlock + (long long int) (p_IosequencerInput->seqStartFractionOfCoverage * (ivy_float) numberOfCoverageBlocks);
+//*debug*/{ostringstream o; o << "IosequencerSequential::setFrom_IosequencerInput() - lastIOblocknumber has been set to " << lastIOblockNumber; log(logfilename,o.str());}
 	return true;
 }
 
 
-bool IogeneratorSequential::generate(Eyeo& slang) {
+bool IosequencerSequential::generate(Eyeo& slang) {
 
 	slang.resetForNextIO();
 
 	// we assume that eyeocb.data already points to the Eyeo object
 	// and that eyeocb.aio_buf already points to a page-aligned I/O buffer
 
-	slang.eyeocb.aio_fildes = p_iogenerator_stuff->fd;
+	slang.eyeocb.aio_fildes = p_iosequencer_stuff->fd;
 
 	lastIOblockNumber++;
 	if (lastIOblockNumber >= coverageEndBlock) lastIOblockNumber = coverageStartBlock;
-	slang.eyeocb.aio_offset = p_IogeneratorInput->blocksize_bytes * lastIOblockNumber;
+	slang.eyeocb.aio_offset = p_IosequencerInput->blocksize_bytes * lastIOblockNumber;
 
-	slang.eyeocb.aio_nbytes = p_IogeneratorInput->blocksize_bytes;
+	slang.eyeocb.aio_nbytes = p_IosequencerInput->blocksize_bytes;
 	slang.start_time=0;
 	slang.end_time=0;
 	slang.return_value=-2;
 	slang.errno_value=-2;
 
-	if (0.0 == p_IogeneratorInput->fractionRead)
+	if (0.0 == p_IosequencerInput->fractionRead)
 	{
 		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;
         slang.generate_pattern();
 	}
-	else if (1.0 == p_IogeneratorInput->fractionRead)
+	else if (1.0 == p_IosequencerInput->fractionRead)
 	{
 		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PREAD;
 	}
 	else
 	{
 		ostringstream o;
-		o << "IogeneratorSequential::generate() - p_IogeneratorInput->fractionRead = " << p_IogeneratorInput->fractionRead <<", but it is only supposed to be either 0.0 or 1.0.";
+		o << "IosequencerSequential::generate() - p_IosequencerInput->fractionRead = " << p_IosequencerInput->fractionRead <<", but it is only supposed to be either 0.0 or 1.0.";
 		log(logfilename,o.str());
 		return false;
 	}
 
-	if (-1 == p_IogeneratorInput->IOPS)
+	if (-1 == p_IosequencerInput->IOPS)
 	{	// iorate=max
 		slang.scheduled_time = ivytime(0);
 	}
@@ -107,7 +107,7 @@ bool IogeneratorSequential::generate(Eyeo& slang) {
 		}
 		else
 		{
-			slang.scheduled_time = previous_scheduled_time + ivytime(1/(p_IogeneratorInput->IOPS));
+			slang.scheduled_time = previous_scheduled_time + ivytime(1/(p_IosequencerInput->IOPS));
 		}
 		previous_scheduled_time = slang.scheduled_time;
 	}

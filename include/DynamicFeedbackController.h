@@ -37,7 +37,7 @@
 //
 //	- It specifies parameter settings just like you set in [CreateWorkload] like "IOPS=356, fractionRead=.25"
 //
-//		- Note that not all iogenerator settings are referred to after the first sibinterval.
+//		- Note that not all iosequencer settings are referred to after the first sibinterval.
 //		  Go ahead and say "maxTags = 32, or "blocksize = 8 KiB" or "VolumeCoverageFractionEnd = .8";
 //		  there will be no error message and the updates will be delivered into the next subinterval's input section
 //		  before the subinterval starts, but if the I/O sequencer being used doesn't refer to the
@@ -48,7 +48,7 @@
 //		  So we could easily enough change the maxTags value smaller than that once it's running by only using part of the AIO context,
 //		  but we can't make it bigger without quiescing all I/O, and destroying the AIO context and building a bigger one.
 //
-//		TO DO:  For each iogenerator type, make a list of those parameters that are only referred to at initial startup and that are not referred to after that.
+//		TO DO:  For each iosequencer type, make a list of those parameters that are only referred to at initial startup and that are not referred to after that.
 //
 
 enum class DFCcategory { measure };  // There used to be fixed, warble_Sun159, PID, IOPS_at_WP DFCs, but now there is only measure.

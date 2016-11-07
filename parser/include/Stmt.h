@@ -24,10 +24,8 @@
 
 #include "Ivy_pgm.h"
 #include "Xpr.h"
-#include "location.hh"
-#include "host_range.h"
-#include "SelectClause.h"
-#include "Select.h"
+#include "../parser/lexyacc/location.hh"
+#include "JSON_select.h"
 
 class Stmt {
 public:
@@ -354,52 +352,66 @@ public:
     }
 };
 
-class Stmt_set_iogenerator_template : public Stmt {
+class Stmt_set_iosequencer_template : public Stmt {
 public:
-    Xpr* p_iogenerator_Xpr {nullptr};
+    Xpr* p_iosequencer_Xpr {nullptr};
     Xpr* p_parameters_Xpr {nullptr};
 
 // methods
-	Stmt_set_iogenerator_template(const yy::location& l, Xpr* pix, Xpr* ppx) :  p_iogenerator_Xpr(pix), p_parameters_Xpr(ppx) { bookmark=l;}
-	virtual ~Stmt_set_iogenerator_template() override
+	Stmt_set_iosequencer_template(const yy::location& l, Xpr* pix, Xpr* ppx) :  p_iosequencer_Xpr(pix), p_parameters_Xpr(ppx) { bookmark=l;}
+	virtual ~Stmt_set_iosequencer_template() override
 	{
-        if (p_iogenerator_Xpr != nullptr) delete p_iogenerator_Xpr;
+        if (p_iosequencer_Xpr != nullptr) delete p_iosequencer_Xpr;
         if (p_parameters_Xpr != nullptr) delete p_parameters_Xpr;
     }
 
 	virtual bool execute() override;
 	virtual void display(const std::string& indent, std::ostream& os) override
 	{
-        os << indent << "Stmt_set_iogenerator_template at " << bookmark <<" on iogenerator name expression :" << std::endl;
-        p_iogenerator_Xpr->display(indent+indent_increment,os);
-        os << indent << "Stmt_set_iogenerator_template at " << bookmark <<" (continued) on parameters expression :" << std::endl;
+        os << indent << "Stmt_set_iosequencer_template at " << bookmark <<" on iosequencer name expression :" << std::endl;
+        p_iosequencer_Xpr->display(indent+indent_increment,os);
+        os << indent << "Stmt_set_iosequencer_template at " << bookmark <<" (continued) on parameters expression :" << std::endl;
         p_parameters_Xpr->display(indent+indent_increment,os);
     }
 };
 
 class Stmt_hosts : public Stmt {
 public:
-    std::list<host_spec*>* phspl {nullptr};
-    Select* p_Select;
+    Xpr* p_hosts_Xpr;
+    Xpr* p_select_Xpr;
 
 // methods
-	Stmt_hosts(const yy::location& l, std::list<host_spec*>* p, Select* ps) : phspl(p), p_Select(ps)
+	Stmt_hosts(const yy::location& l, Xpr* ph, Xpr* ps) : p_hosts_Xpr(ph), p_select_Xpr(ps)
         {
             bookmark=l;
-            if (phspl==nullptr) throw std::runtime_error("Stmt_hosts constructor called with null pointer to host_spec pointer list.");
+
+            if (p_hosts_Xpr == nullptr || p_select_Xpr == nullptr)
+            {
+                std::ostringstream o;
+                o << "Stmt_hosts constructor exploded when called with:" << std::endl;
+
+                if (p_hosts_Xpr  == nullptr) o << " - a null pointer to the string Xpr that when evaluated would yield the list of test hosts." << std::endl;
+                if (p_select_Xpr == nullptr) o << " - a null pointer to the string Xpr that when evaluated would yield the JSON format LUN attribute select expression." << std::endl;
+
+                o << "in function " <<__FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
+
+                throw std::runtime_error(o.str());
+            }
         }
-	virtual ~Stmt_hosts() override { if (phspl != nullptr) for (auto& p :(*phspl)) delete p; }
+	virtual ~Stmt_hosts() override { delete p_hosts_Xpr; delete p_select_Xpr;}
 
 	virtual bool execute() override;
 	virtual void display(const std::string& indent, std::ostream& os) override
 	{
-        if (phspl == nullptr) { os << indent << "Stmt_hosts at " << bookmark <<" has null pointer to host_spec pointer list :" << std::endl; }
-        else                  { os << indent << "Stmt_hosts at " << bookmark <<" on host spec pointer list :" << std::endl;
-                                for (auto& p:(*phspl)) {p->display(indent+indent_increment,os);} }
+        if (p_hosts_Xpr == nullptr) { os << indent << "Stmt_hosts at " << bookmark
+        << " has null pointer to the string Xpr that when evaluated would yield the list of test hosts.:" << std::endl; }
+        else                  { os << indent << "Stmt_hosts at " << bookmark <<" pointer to string expression for list of test hosts:" << std::endl;
+                                    p_hosts_Xpr->display(indent+indent_increment,os); }
 
-        if (p_Select == nullptr) { os << indent << "Stmt_hosts at " << bookmark <<" (continued) has null pointer to Select." << std::endl;}
-        else                     { os << indent << "Stmt_hosts at " << bookmark <<" (continued) Select clause :" << std::endl;
-                                   p_Select->display(indent+indent_increment,os); }
+        if (p_select_Xpr == nullptr) { os << indent << "Stmt_hosts at " << bookmark
+        <<"  has null pointer to the string Xpr that when evaluated would yield the JSON format LUN attribute select expression." << std::endl;}
+        else                     { os << indent << "Stmt_hosts at " << bookmark <<" (continued) pointer to string expression for JSON format LUN attribute select:" << std::endl;
+                                   p_select_Xpr->display(indent+indent_increment,os); }
     }
 };
 
@@ -424,27 +436,27 @@ class Stmt_create_workload : public Stmt
 {
 public:
     Xpr* p_workload_name_Xpr {nullptr};
-    Select* p_Select {nullptr};
-    Xpr* p_iogenerator_Xpr {nullptr};
+    Xpr* p_select_Xpr {nullptr};
+    Xpr* p_iosequencer_Xpr {nullptr};
     Xpr* p_parameters_Xpr {nullptr};
 
     bool haveParameters {false};
 
 // methods
-	Stmt_create_workload(const yy::location& l, Xpr* pwn, Select* ps, Xpr* pix, Xpr* ppx)
-        :  p_workload_name_Xpr(pwn), p_Select(ps), p_iogenerator_Xpr(pix), p_parameters_Xpr(ppx)
+	Stmt_create_workload(const yy::location& l, Xpr* pwn, Xpr* ps, Xpr* pix, Xpr* ppx)
+        :  p_workload_name_Xpr(pwn), p_select_Xpr(ps), p_iosequencer_Xpr(pix), p_parameters_Xpr(ppx)
         {
             bookmark=l;
             if (p_parameters_Xpr != nullptr) haveParameters = true;
             if (p_workload_name_Xpr==nullptr) throw std::runtime_error("Stmt_create_workload constructor called with p_workload_name_Xpr==nullptr.");
-            if (p_iogenerator_Xpr==nullptr) throw std::runtime_error("Stmt_create_workload constructor called with p_iogenerator_Xpr==nullptr.");
+            if (p_iosequencer_Xpr==nullptr) throw std::runtime_error("Stmt_create_workload constructor called with p_iosequencer_Xpr==nullptr.");
         }
 
 	virtual ~Stmt_create_workload() override
 	{
         if (p_workload_name_Xpr != nullptr) delete p_workload_name_Xpr;
-        if (p_Select            != nullptr) delete p_Select;
-        if (p_iogenerator_Xpr   != nullptr) delete p_iogenerator_Xpr;
+        if (p_select_Xpr        != nullptr) delete p_select_Xpr;
+        if (p_iosequencer_Xpr   != nullptr) delete p_iosequencer_Xpr;
         if (p_parameters_Xpr    != nullptr) delete p_parameters_Xpr;
     }
 
@@ -463,20 +475,20 @@ public:
             p_workload_name_Xpr->display(indent+indent_increment,os);
         }
 
-        os << indent << "Stmt_create_workload at " << bookmark << " continuing with iogenerator name expression." << std::endl;
-        if (p_iogenerator_Xpr == nullptr)
+        os << indent << "Stmt_create_workload at " << bookmark << " continuing with iosequencer name expression." << std::endl;
+        if (p_iosequencer_Xpr == nullptr)
         {
-            os << indent+indent_increment << "Stmt_create_workload - nullptr to iogenerator name expression." << std::endl;
+            os << indent+indent_increment << "Stmt_create_workload - nullptr to iosequencer name expression." << std::endl;
         }
         else
         {
-            p_iogenerator_Xpr->display(indent+indent_increment,os);
+            p_iosequencer_Xpr->display(indent+indent_increment,os);
         }
-        if (p_Select == nullptr) { os << indent << "Stmt_create_workload at " << bookmark <<" (continued) - null pointer to Select." << std::endl; }
+        if (p_select_Xpr == nullptr) { os << indent << "Stmt_create_workload at " << bookmark <<" (continued) - null pointer to select expression." << std::endl; }
         else
         {
             os << indent << "Stmt_create_workload at " << bookmark <<" (continued) - Select:" << std::endl;
-            p_Select->display(indent+indent_increment,os);
+            p_select_Xpr->display(indent+indent_increment,os);
         }
         if (p_parameters_Xpr == nullptr) { os << indent << "Stmt_create_workload at " << bookmark <<" (continued) - null pointer to parameters expression." << std::endl;  }
         else
@@ -491,11 +503,11 @@ class Stmt_delete_workload : public Stmt
 {
 public:
     Xpr* p_workload_name_Xpr {nullptr};
-    Select* p_Select {nullptr};
+    Xpr* p_select_Xpr {nullptr};
 
 // methods
-	Stmt_delete_workload(const yy::location& l, Xpr* pwn, Select* ps)
-        :  p_workload_name_Xpr(pwn), p_Select(ps)
+	Stmt_delete_workload(const yy::location& l, Xpr* pwn, Xpr* ps)
+        :  p_workload_name_Xpr(pwn), p_select_Xpr(ps)
         {
             bookmark=l;
         }
@@ -503,7 +515,7 @@ public:
 	virtual ~Stmt_delete_workload() override
 	{
         if (p_workload_name_Xpr != nullptr) delete p_workload_name_Xpr;
-        if (p_Select            != nullptr) delete p_Select;
+        if (p_select_Xpr            != nullptr) delete p_select_Xpr;
     }
 
 	virtual bool execute() override;
@@ -520,11 +532,11 @@ public:
         {
             p_workload_name_Xpr->display(indent+indent_increment,os);
         }
-        if (p_Select == nullptr) { os << indent << "Stmt_delete_workload at " << bookmark <<" (continued) - null pointer to Select." << std::endl; }
+        if (p_select_Xpr == nullptr) { os << indent << "Stmt_delete_workload at " << bookmark <<" (continued) - null pointer to Select expression." << std::endl; }
         else
         {
-            os << indent << "Stmt_delete_workload at " << bookmark <<" (continued) - Select:" << std::endl;
-            p_Select->display(indent+indent_increment,os);
+            os << indent << "Stmt_delete_workload at " << bookmark <<" (continued) - Select expression:" << std::endl;
+            p_select_Xpr->display(indent+indent_increment,os);
         }
 	}
 };

@@ -61,7 +61,7 @@ public:
 
 	bool initialize(std::string& callers_error_message); // false & set error_message if passed a null pointer or if there was some problem building the default "overall" rollup.
 	std::string getErrorMessage(){ return my_error_message; }
-	bool add_workload_detail_line(std::string& my_error_msg, WorkloadID&, IogeneratorInput&, SubintervalOutput&);
+	bool add_workload_detail_line(std::string& my_error_msg, WorkloadID&, IosequencerInput&, SubintervalOutput&);
 	bool addRollupType
 	(
 		std::string& error_message

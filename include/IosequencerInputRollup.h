@@ -22,7 +22,7 @@
 #include <map>
 #include <string>
 
-class IogeneratorInputRollup {
+class IosequencerInputRollup {
 
 // The idea here is that when we show what inputs were used in a rollup summary csv file line
 // we can just show a single value if the subinterval values for each subinterval and each LUN on each host were the same.
@@ -40,9 +40,9 @@ public:
 	bool add (std::string& callers_error_message, std::string parameterNameEqualsTextValueCommaSeparatedList); // returns false on malformed input
 	std::string getParameterTextValueByName(std::string, bool detail=true);
 	void print_values_seen(std::ostream&);
-	static std::string CSVcolumnTitles(); // This function needs to be updated when you add a new iogenerator parameter
-	std::string CSVcolumnValues(bool detail=true); // This function needs to be updated when you add a new iogenerator parameter
-	void merge(const IogeneratorInputRollup&);  // used when merging one Rollup object into another
+	static std::string CSVcolumnTitles(); // This function needs to be updated when you add a new iosequencer parameter
+	std::string CSVcolumnValues(bool detail=true); // This function needs to be updated when you add a new iosequencer parameter
+	void merge(const IosequencerInputRollup&);  // used when merging one Rollup object into another
 	bool addNameEqualsTextValue(std::string);
 	void clear() { values_seen.clear(); count=0;}
 };

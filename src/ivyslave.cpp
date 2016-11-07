@@ -53,7 +53,7 @@
 using namespace std;
 
 #include "ivytime.h"
-#include "iogenerator_stuff.h"
+#include "iosequencer_stuff.h"
 #include "WorkloadID.h"
 #include "ListOfWorkloadIDs.h"
 #include "LUN.h"
@@ -63,9 +63,9 @@ using namespace std;
 #include "ivyhelpers.h"
 #include "ivybuilddate.h"
 #include "ivylinuxcpubusy.h"
-#include "IogeneratorInput.h"
+#include "IosequencerInput.h"
 #include "Eyeo.h"
-#include "Iogenerator.h"
+#include "Iosequencer.h"
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
 #include "SubintervalOutput.h"
@@ -79,7 +79,7 @@ ivy_float catnap_time_seconds, post_time_limit_seconds;
 std::string hostname;
 
 std::unordered_map<std::string, WorkloadThread*>
-	iogenerator_threads;  // Key looks like "workloadName:host:00FF:/dev/sdxx:2A"
+	iosequencer_threads;  // Key looks like "workloadName:host:00FF:/dev/sdxx:2A"
 
 ivytime
 	test_start_time, subinterval_duration, master_thread_subinterval_end_time, lasttime;
@@ -112,7 +112,7 @@ void invokeThread(WorkloadThread* T) {
 
 
 void killAllSubthreads(std::string logfilename) {
-	for (auto& pear : iogenerator_threads) {
+	for (auto& pear : iosequencer_threads) {
 		if (ThreadState::died != pear.second->state && ThreadState::exited_normally != pear.second->state)
 		{
 			std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
@@ -125,7 +125,7 @@ void killAllSubthreads(std::string logfilename) {
 		pear.second->slaveThreadConditionVariable.notify_all();
 	}
 	int threads=0;
-	for (auto& pear : iogenerator_threads) {
+	for (auto& pear : iosequencer_threads) {
 		pear.second->std_thread.join();
 		threads++;
 	}
@@ -133,7 +133,7 @@ void killAllSubthreads(std::string logfilename) {
 	if (routine_logging)
 	{
         std::ostringstream o;
-        o << "killAllSubthreads() - commanded " << threads <<" iogenerator threads to die and harvested the remains.\n";
+        o << "killAllSubthreads() - commanded " << threads <<" iosequencer threads to die and harvested the remains.\n";
         log(logfilename, o.str());
 	}
 }
@@ -321,7 +321,7 @@ int main(int argc, char* argv[])
 		}
 		else if (0 == std::string("Catch in flight I/Os").compare(input_line))
 		{
- 			for (auto& pear : iogenerator_threads)
+ 			for (auto& pear : iosequencer_threads)
 			{
                 if ( (pear.second->state == ThreadState::died) || (pear.second->state == ThreadState::exited_normally) )
                 {
@@ -409,8 +409,8 @@ int main(int argc, char* argv[])
 
 /*debug*/if (routine_logging) log(slavelogfile,std::string("[CreateWorkload] WorkloadID is ")+workloadID+std::string("\n"));
 
-			std::unordered_map<std::string, WorkloadThread*>::iterator trd=iogenerator_threads.find(workloadID);
-			if (iogenerator_threads.end()!=trd) {
+			std::unordered_map<std::string, WorkloadThread*>::iterator trd=iosequencer_threads.find(workloadID);
+			if (iosequencer_threads.end()!=trd) {
 				std::ostringstream o;
 				o << "<Error> [CreateWorkload] failed - thread \"" << workloadID << "\" already exists! Not supposed to happen.  ivymaster is supposed to know." << std::endl;
 				say(o.str());
@@ -470,12 +470,12 @@ int main(int argc, char* argv[])
 
 			WorkloadThread* p_WorkloadThread = new WorkloadThread(workloadID,(*nabIt).second, maxLBA, createThreadParameters,&ivyslave_main_mutex);
 
-			iogenerator_threads[workloadID]=p_WorkloadThread;
+			iosequencer_threads[workloadID]=p_WorkloadThread;
 
 	        	p_WorkloadThread->slavethreadlogfile = std::string(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.")
 				+ convert_non_alphameric_or_hyphen_or_period_to_underscore(workloadID) + std::string(".txt");
 
-			// we still need to set the iogenerator parameters in both subintervals
+			// we still need to set the iosequencer parameters in both subintervals
 			p_WorkloadThread->subinterval_array[0].input.fromString(createThreadParameters,slavelogfile);
 			p_WorkloadThread->subinterval_array[1].input.fromString(createThreadParameters,slavelogfile);
 
@@ -506,9 +506,9 @@ int main(int argc, char* argv[])
 			}
 
             std::unordered_map<std::string, WorkloadThread*>::iterator
-                t_it = iogenerator_threads.find(wid.workloadID);
+                t_it = iosequencer_threads.find(wid.workloadID);
 
-			if (iogenerator_threads.end() == t_it)
+			if (iosequencer_threads.end() == t_it)
 			{
 				std::ostringstream o;
 				o << "<Error> at ivyslave [DeleteWorkload] failed - no such WorkloadID \"" << remainder << "\"." << std::endl;
@@ -555,7 +555,7 @@ int main(int argc, char* argv[])
                 log(slavelogfile, o.str());
             }
 
-            iogenerator_threads.erase(t_it);
+            iosequencer_threads.erase(t_it);
 
 			say("<OK>");
 		}
@@ -567,10 +567,10 @@ int main(int argc, char* argv[])
 			// The <myhostname+/dev/sdxy+workload_name, myhostname+/dev/sdxz+workload_name> part is the toString()/fromString() format for ListOfWorkloadIDs.
 
 			// The [parameters] field has already been validated by having successfully been applied to the up to date synchronized copy
-			// of our "next subinterval" iogenerator_input object.  ivymaster keeps this copy in the WorkloadTracker object.
+			// of our "next subinterval" iosequencer_input object.  ivymaster keeps this copy in the WorkloadTracker object.
 
 			// So as long as the ivy engine itself isn't broken, the workload IDs are for valid existing workload threads, and we already
-			// have shown that the parameters apply cleanly to the current iogenerator_input object.
+			// have shown that the parameters apply cleanly to the current iosequencer_input object.
 
 /*debug*/if (routine_logging) log( slavelogfile,std::string("[EditWorkload]") + remainder + std::string("\n") );
 
@@ -606,11 +606,11 @@ int main(int argc, char* argv[])
 
 			for (auto& wID : lowi.workloadIDs)
 			{
-				//std::unordered_map<std::string, WorkloadThread*>  iogenerator_threads;  // Key looks like "workloadName:host:00FF:/dev/sdxx:2A"
+				//std::unordered_map<std::string, WorkloadThread*>  iosequencer_threads;  // Key looks like "workloadName:host:00FF:/dev/sdxx:2A"
 
-				auto it = iogenerator_threads.find(wID.workloadID);
+				auto it = iosequencer_threads.find(wID.workloadID);
 
-				if (iogenerator_threads.end() == it)
+				if (iosequencer_threads.end() == it)
 				{
 					say(std::string("<Error> [EditWorkload] no such WorkloadID, should look like myhostname+/dev/sdxy+workload_name - \"")
 						+ wID.workloadID + std::string("\"."));
@@ -639,7 +639,7 @@ int main(int argc, char* argv[])
 						// we have the lock
 
 						// Note that there is no interlock between threads nor any posting of events
-						// since this just updates the iogenerator_input parameters for a subinterval that is waiting to be run.
+						// since this just updates the iosequencer_input parameters for a subinterval that is waiting to be run.
 
 						if ( ThreadState::running  == p_WorkloadThread->state || ThreadState::waiting_for_command == p_WorkloadThread->state )
 						{
@@ -650,7 +650,7 @@ int main(int argc, char* argv[])
 							{
 								std::ostringstream o;
 								o << "<Error> Internal programming error since we already successfully set these parameters into the corresponding WorkloadTracker objects in ivymaster - failed setting parameters \""
-								  << parametersText << "\" into subinterval_array[0].input iogenerator_input object for WorkloadID \""
+								  << parametersText << "\" into subinterval_array[0].input iosequencer_input object for WorkloadID \""
 								  << wID.workloadID << "\" - "
 								  << error_message;
 								say(o.str());
@@ -661,7 +661,7 @@ int main(int argc, char* argv[])
 							{
 								std::ostringstream o;
 								o << "<Error> Internal programming error since we already successfully set these parameters into the corresponding WorkloadTracker objects in ivymaster - failed setting parameters \""
-								  << parametersText << "\" into subinterval_array[1].input iogenerator_input object for WorkloadID \""
+								  << parametersText << "\" into subinterval_array[1].input iosequencer_input object for WorkloadID \""
 								  << wID.workloadID << "\" - "
 								  << error_message;
 								say(o.str());
@@ -787,7 +787,7 @@ int main(int argc, char* argv[])
 			{
 				say("<Error> ivyslave main thread: procstatcounters::read_CPU_counters() call to get first subinterval starting CPU counters failed.");
 			}
-			for (auto& pear : iogenerator_threads)
+			for (auto& pear : iosequencer_threads)
 			{
 				{
 					std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
@@ -800,17 +800,17 @@ int main(int argc, char* argv[])
 						return -1;
 					}
 
-					// At this point, both subinterval input objects already have their iogenerator_input objects set.
+					// At this point, both subinterval input objects already have their iosequencer_input objects set.
 						// Either this happened from a [CreateWorkload] or when a previous run stopped, the settings
 						// from the last subinterval to run were copied to the other subinterval, or finally
-						// both were set by a "[ModifyWorkload]" command that ran while the iogenerator thread was stopped.
+						// both were set by a "[ModifyWorkload]" command that ran while the iosequencer thread was stopped.
 //*debug*/{ostringstream o; o << "Posting IVYSLAVE_SAYS_RUN command for first subinterval for " << pear.first << std::endl; log(slavelogfile,o.str());}
 
 
-// NOTE: Originally I thought I would be switching back and forth between two IogeneratorInput objects, but now they are just clones of each other.
-//       I was being overly careful but by accident discovered I was writing updates into the "active" subinterval IogeneratorInput object instead of the inactive one.
-//       Since the running workload thread only reads from the IogeneratorInput object there were no race conditions / bad things happening.
-//       Eventually should cut back to only having  one IogeneratorInput object ... maybe, unless there are pairs of input parameters that must both take effect simultaneously ...
+// NOTE: Originally I thought I would be switching back and forth between two IosequencerInput objects, but now they are just clones of each other.
+//       I was being overly careful but by accident discovered I was writing updates into the "active" subinterval IosequencerInput object instead of the inactive one.
+//       Since the running workload thread only reads from the IosequencerInput object there were no race conditions / bad things happening.
+//       Eventually should cut back to only having  one IosequencerInput object ... maybe, unless there are pairs of input parameters that must both take effect simultaneously ...
 
 
                     if (pear.second->subinterval_array[0].input.fractionRead == 1.0)
@@ -867,14 +867,14 @@ int main(int argc, char* argv[])
 				pear.second->slaveThreadConditionVariable.notify_all();
 			}
 
-			// Although we have prepared two subintervals for the iogenerator thread to use,
-			// when the iogenerator threads get to the end of the first subinterval, they are going to
+			// Although we have prepared two subintervals for the iosequencer thread to use,
+			// when the iosequencer threads get to the end of the first subinterval, they are going to
 			// expect us to have posted another MainThreadCommand::run command.
 
-			for (auto& pear : iogenerator_threads)
+			for (auto& pear : iosequencer_threads)
 			{
 				{
-					// Wait for the iogenerator thread to have consumed the first "IVYSLAVEMAIN_SAYS_RUN" command
+					// Wait for the iosequencer thread to have consumed the first "IVYSLAVEMAIN_SAYS_RUN" command
 					// then post another one.
 					std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
 					while (true == pear.second->ivyslave_main_posted_command)
@@ -906,7 +906,7 @@ int main(int argc, char* argv[])
 
             input_line = "continue"; //  remove later - grasping at straws
 
-			for (auto& pear : iogenerator_threads)
+			for (auto& pear : iosequencer_threads)
 			{
 				{ // lock
 					std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
@@ -941,7 +941,7 @@ int main(int argc, char* argv[])
 		}
 		else if (0==input_line.compare(std::string("stop")))
 		{
-			for (auto& pear : iogenerator_threads)
+			for (auto& pear : iosequencer_threads)
 			{
 				{ // lock
 					std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
@@ -1054,14 +1054,14 @@ bool waitForSubintervalEndThenHarvest()
 
 	interval_start_CPU.copyFrom(interval_end_CPU,std::string("turning over for next subinterval in waitForSubintervalEndThenHarvest()"),slavelogfile);
 
-	// At the end of the subinterval, if the iogenerator thread has to wait for than a few ms get the lock, it aborts,
+	// At the end of the subinterval, if the iosequencer thread has to wait for than a few ms get the lock, it aborts,
 	// as it operates in real time driving and harvesting I/Os and cannot afford to wait.
 
-	// So before we get the lock to see if the iogenerator thread has posted the subinterval as complete,
+	// So before we get the lock to see if the iosequencer thread has posted the subinterval as complete,
 	// we are going to do is wait for a catnap just to make sure we dont try to get the lock
-	// while the iogenerator threads might still be switching over to the next subinterval.
+	// while the iosequencer threads might still be switching over to the next subinterval.
 
-	// If the iogenerator thread hasn't posted the last subinterval as complete by then, we abort.
+	// If the iosequencer thread hasn't posted the last subinterval as complete by then, we abort.
 
 	ivytime afterCatnap = master_thread_subinterval_end_time + ivytime(catnap_time_seconds);
 	afterCatnap.waitUntilThisTime();
@@ -1074,10 +1074,10 @@ bool waitForSubintervalEndThenHarvest()
 
 //*debug*/log(slavelogfile,"after catnap.\n");
 
-	// Now we go through the iogenerator threads, harvesting the input & output objects and sending them
-	// to ivymaster's host driver thread.  We send the key for each iogenerator thread to make it easy
+	// Now we go through the iosequencer threads, harvesting the input & output objects and sending them
+	// to ivymaster's host driver thread.  We send the key for each iosequencer thread to make it easy
 	// to do the rollups in ivymaster, as the key has the workload name (from the [CreateWorkload] statement),
-	// the LDEV name, the LUN name, and the port name. (The iogenerator type name is in the subinterval input object.)
+	// the LDEV name, the LUN name, and the port name. (The iosequencer type name is in the subinterval input object.)
 
     ivytime post_time_limit = master_thread_subinterval_end_time + ivytime(post_time_limit_seconds);
         // Workload threads must post a subinterval object as "ready to send" within this number of seconds from that subinterval's scheduled end time.
@@ -1088,7 +1088,7 @@ bool waitForSubintervalEndThenHarvest()
 
     unsigned int thread_number = 0;
 
-	for (auto& pear : iogenerator_threads)
+	for (auto& pear : iosequencer_threads)
 	{
         thread_number++;
 
@@ -1099,7 +1099,7 @@ bool waitForSubintervalEndThenHarvest()
             {
                 std::ostringstream o;
                 o << "<Error> "<< __FILE__ << " line " << __LINE__ << " - Subinterval length parameter subinterval_seconds too short - current subinterval was already over when "
-                    << "ivyslave about to send results from previous subinterval for workload thread " << thread_number << " of " << iogenerator_threads.size() << ".";
+                    << "ivyslave about to send results from previous subinterval for workload thread " << thread_number << " of " << iosequencer_threads.size() << ".";
                 say(o.str());
                 killAllSubthreads(slavelogfile);
                 return false;

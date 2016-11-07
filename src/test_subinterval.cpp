@@ -21,8 +21,8 @@
 
 #include "ivydefines.h"
 #include "ivyhelpers.h"
-#include "IogeneratorInput.h"
-#include "IogeneratorInputRollup.h"
+#include "IosequencerInput.h"
+#include "IosequencerInputRollup.h"
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
 #include "SubintervalOutput.h"
@@ -32,7 +32,7 @@ int main (int argc, char* argv[])
 	std::string my_error_message;
 	std::string logfile("/home/ivogelesang/ivy/test_subinterval.log.txt");
 
-	IogeneratorInput a,b,c,d,e;
+	IosequencerInput a,b,c,d,e;
 
 	if (!a.setMultipleParameters(my_error_message,std::string("ioGenerator=random_constant_QUEUE, blocksize=7 kib")))
 	{
@@ -70,34 +70,34 @@ int main (int argc, char* argv[])
 */
 
 
-	if (c.setParameter(my_error_message, "iogenerator = random_inDEPENDENT"))
+	if (c.setParameter(my_error_message, "iosequencer = random_inDEPENDENT"))
 	{
-		std::cout << R"raw(c.setParameter(my_error_message, "iogenerator = random_inDEPENDENT"))raw" << " successful." << std::endl;
+		std::cout << R"raw(c.setParameter(my_error_message, "iosequencer = random_inDEPENDENT"))raw" << " successful." << std::endl;
 	}
 	else
 	{
-		std::cout << R"raw(c.setParameter(my_error_message, "iogenerator = random_inDEPENDENT"))raw" << " failed - " << my_error_message << std::endl;
+		std::cout << R"raw(c.setParameter(my_error_message, "iosequencer = random_inDEPENDENT"))raw" << " failed - " << my_error_message << std::endl;
 
 	}
 
-	if (d.setParameter(my_error_message, "iogenerator = seQUENTIAL"))
+	if (d.setParameter(my_error_message, "iosequencer = seQUENTIAL"))
 	{
-		std::cout << R"raw(d.setParameter("iogenerator = seQUENTIAL", "test_subinterval.logfile.txt"))raw" << " successful." << std::endl;
-	}
-	else
-	{
-		std::cout << R"raw(d.setParameter("iogenerator = seQUENTIAL", "test_subinterval.logfile.txt"))raw" << " failed - " << my_error_message << std::endl;
-
-	}
-
-
-	if (e.setParameter(my_error_message,"iogenerator = random_inDENT"))
-	{
-		std::cout << R"raw(e.setParameter(my_error_message,"iogenerator = random_inDENT"))raw" << " successful." << std::endl;
+		std::cout << R"raw(d.setParameter("iosequencer = seQUENTIAL", "test_subinterval.logfile.txt"))raw" << " successful." << std::endl;
 	}
 	else
 	{
-		std::cout << R"raw(e.setParameter(my_error_message,"iogenerator = random_inDENT"))raw" << " failed - " << my_error_message << std::endl;
+		std::cout << R"raw(d.setParameter("iosequencer = seQUENTIAL", "test_subinterval.logfile.txt"))raw" << " failed - " << my_error_message << std::endl;
+
+	}
+
+
+	if (e.setParameter(my_error_message,"iosequencer = random_inDENT"))
+	{
+		std::cout << R"raw(e.setParameter(my_error_message,"iosequencer = random_inDENT"))raw" << " successful." << std::endl;
+	}
+	else
+	{
+		std::cout << R"raw(e.setParameter(my_error_message,"iosequencer = random_inDENT"))raw" << " failed - " << my_error_message << std::endl;
 
 	}
 
@@ -107,7 +107,7 @@ int main (int argc, char* argv[])
 	std::cout << "d.toString=\"" << d.toString() << "\"." << std::endl<< std::endl;
 	std::cout << "e.toString=\"" << e.toString() << "\"." << std::endl<< std::endl;
 
-	IogeneratorInputRollup iir1, iir2;
+	IosequencerInputRollup iir1, iir2;
 	std::cout << R"literalstring(iir1.print_values_seen(std::cout);=")literalstring" << std::endl <<std::endl;
 	iir1.print_values_seen(std::cout);
 	std::cout << "\"." << std::endl;

@@ -80,12 +80,12 @@ void prepare_dedupe()
 
         std::string workload_name = wID.getWorkloadPart();
 
-//        if (p_WorkloadTracker->wT_IogeneratorInput.dedupe > 1.0 && p_WorkloadTracker->wT_IogeneratorInput.fractionRead == 1.0)
+//        if (p_WorkloadTracker->wT_IosequencerInput.dedupe > 1.0 && p_WorkloadTracker->wT_IosequencerInput.fractionRead == 1.0)
 //        {
 //            std::ostringstream o;
 //            o << "Workload \"" << workload_name << "\" thread with WorkloadID = \"" << pear.first
-//                << "\" forbidden to have dedupe = " << p_WorkloadTracker->wT_IogeneratorInput.dedupe
-//                << " with fractionRead = "          << p_WorkloadTracker->wT_IogeneratorInput.fractionRead
+//                << "\" forbidden to have dedupe = " << p_WorkloadTracker->wT_IosequencerInput.dedupe
+//                << " with fractionRead = "          << p_WorkloadTracker->wT_IosequencerInput.fractionRead
 //                << ".  dedupe > 1.0 not permitted for read-only workloads - in prepare_dedupe() at line " << __LINE__ << " of " << __FILE__;
 //            m_s.error(o.str());
 //        }
@@ -95,16 +95,16 @@ void prepare_dedupe()
         {
             dedupe_workload& new_workload = workloads[workload_name];
             new_workload.workload_threads.push_back(p_WorkloadTracker);
-            new_workload.dedupe_setting = p_WorkloadTracker->wT_IogeneratorInput.dedupe;
-            new_workload.pattern_setting = p_WorkloadTracker->wT_IogeneratorInput.pat;
-            new_workload.compressibility_setting = p_WorkloadTracker->wT_IogeneratorInput.compressibility;
-            new_workload.fractionRead_setting = p_WorkloadTracker->wT_IogeneratorInput.fractionRead;
+            new_workload.dedupe_setting = p_WorkloadTracker->wT_IosequencerInput.dedupe;
+            new_workload.pattern_setting = p_WorkloadTracker->wT_IosequencerInput.pat;
+            new_workload.compressibility_setting = p_WorkloadTracker->wT_IosequencerInput.compressibility;
+            new_workload.fractionRead_setting = p_WorkloadTracker->wT_IosequencerInput.fractionRead;
         }
         else
         {
             dedupe_workload& existing_workload = (*peach).second;
             existing_workload.workload_threads.push_back(p_WorkloadTracker);
-            if (existing_workload.dedupe_setting != p_WorkloadTracker->wT_IogeneratorInput.dedupe)
+            if (existing_workload.dedupe_setting != p_WorkloadTracker->wT_IosequencerInput.dedupe)
             {
                 std::ostringstream o;
                 o << "Not all workload threads with the name \"" << workload_name << "\" have the same \"dedupe\" setting - in prepare_dedupe() at line " << __LINE__ << " of " << __FILE__;
@@ -112,19 +112,19 @@ void prepare_dedupe()
             }
             if (existing_workload.dedupe_setting > 1.0)
             {
-                if (existing_workload.pattern_setting != p_WorkloadTracker->wT_IogeneratorInput.pat)
+                if (existing_workload.pattern_setting != p_WorkloadTracker->wT_IosequencerInput.pat)
                 {
                     std::ostringstream o;
                     o << "Not all workload threads with the name \"" << workload_name << "\" with dedupe=" << existing_workload.dedupe_setting << " have the same \"pattern\" setting - in prepare_dedupe() at line " << __LINE__ << " of " << __FILE__;
                     m_s.error(o.str());
                 }
-                if (existing_workload.compressibility_setting != p_WorkloadTracker->wT_IogeneratorInput.compressibility)
+                if (existing_workload.compressibility_setting != p_WorkloadTracker->wT_IosequencerInput.compressibility)
                 {
                     std::ostringstream o;
                     o << "Not all workload threads with the name \"" << workload_name << "\" with dedupe=" << existing_workload.dedupe_setting << " have the same \"compressibility\" setting - in prepare_dedupe() at line " << __LINE__ << " of " << __FILE__;
                     m_s.error(o.str());
                 }
-                if (existing_workload.fractionRead_setting != p_WorkloadTracker->wT_IogeneratorInput.fractionRead)
+                if (existing_workload.fractionRead_setting != p_WorkloadTracker->wT_IosequencerInput.fractionRead)
                 {
                     std::ostringstream o;
                     o << "Not all workload threads with the name \"" << workload_name << "\" with dedupe=" << existing_workload.dedupe_setting << " have the same \"fractionRead\" setting - in prepare_dedupe() at line " << __LINE__ << " of " << __FILE__;
@@ -152,10 +152,10 @@ void prepare_dedupe()
                 o << "pattern_seed=" << s << ",threads_in_workload_name=" << total_threads << ",this_thread_in_workload=" << this_thread++;
                 std::string parms = o.str();
 
-                // now first set in local iogenerator_input, then set in remote
+                // now first set in local iosequencer_input, then set in remote
 
                 std::string emsg;
-                if (!p_WorkloadTracker->wT_IogeneratorInput.setMultipleParameters(emsg, parms))
+                if (!p_WorkloadTracker->wT_IosequencerInput.setMultipleParameters(emsg, parms))
 				{
 					std::ostringstream o;
 					o << "Internal programming error - failed setting parameters \"" << parms << "\" into local WorkloadTracker object for WorkloadID = \"" << p_WorkloadTracker->workloadID.workloadID
@@ -184,7 +184,7 @@ void prepare_dedupe()
                     p_host->commandListOfWorkloadIDs.workloadIDs.push_back(p_WorkloadTracker->workloadID);
 
                     p_host->commandString=std::string("[EditWorkload]");
-                    p_host->commandIogeneratorParameters = parms;
+                    p_host->commandIosequencerParameters = parms;
                     p_host->commandErrorMessage.clear();
 
                     p_host->command=true;

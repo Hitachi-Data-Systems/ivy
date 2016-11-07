@@ -19,7 +19,7 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
-#include "Select.h"
+#include "JSON_select.h"
 
 class LUNpointerList
 {
@@ -37,6 +37,6 @@ public:
 	void clone(LUNpointerList&);
 	void clear() { LUNpointers.clear(); }
 	void print_csv_file(std::ostream& o);
-    bool clear_and_set_filtered_version_of(LUNpointerList&,Select*);
+    bool clear_and_set_filtered_version_of(LUNpointerList&,JSON_select&);
 };
 

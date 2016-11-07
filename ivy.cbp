@@ -11,7 +11,7 @@
 				<Option output="bin/ivy" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-trace_evaluate /home/ivogelesang/Desktop/x.ivyscript" />
+				<Option parameters="-log /home/ivogelesang/Desktop/json.ivyscript" />
 				<Compiler>
 					<Add option="-pthread" />
 					<Add directory="include" />
@@ -85,7 +85,6 @@
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/Eyeo.h">
-			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/GatherData.h">
@@ -96,37 +95,31 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="include/Iogenerator.h">
-			<Option target="ivymaster" />
+		<Unit filename="include/Iosequencer.h">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="include/IogeneratorInput.h">
+		<Unit filename="include/IosequencerInput.h">
+			<Option target="ivyslave" />
 			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/IosequencerInputRollup.h">
+			<Option target="ivyslave" />
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/IosequencerRandom.h">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="include/IogeneratorInputRollup.h">
-			<Option target="ivymaster" />
+		<Unit filename="include/IosequencerRandomIndependent.h">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="include/IogeneratorRandom.h">
-			<Option target="ivymaster" />
+		<Unit filename="include/IosequencerRandomSteady.h">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="include/IogeneratorRandomIndependent.h">
-			<Option target="ivymaster" />
+		<Unit filename="include/IosequencerSequential.h">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="include/IogeneratorRandomSteady.h">
+		<Unit filename="include/JSON_select.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
-		</Unit>
-		<Unit filename="include/IogeneratorSequential.h">
-			<Option target="ivymaster" />
-			<Option target="ivyslave" />
-		</Unit>
-		<Unit filename="include/IvyscriptLine.h">
-			<Option target="ivymaster" />
-			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/LDEVset.h">
 			<Option target="ivymaster" />
@@ -177,14 +170,6 @@
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/RunningStat.h">
-			<Option target="ivymaster" />
-			<Option target="ivyslave" />
-		</Unit>
-		<Unit filename="include/Select.h">
-			<Option target="ivymaster" />
-			<Option target="ivyslave" />
-		</Unit>
-		<Unit filename="include/SelectClause.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
@@ -246,7 +231,10 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="include/iogenerator_stuff.h">
+		<Unit filename="include/hosts_list.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/iosequencer_stuff.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
@@ -306,6 +294,9 @@
 		<Unit filename="parser/include/Ivy_pgm.h">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="parser/include/IvyscriptLine.h">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="parser/include/OverloadSet.h">
 			<Option target="ivymaster" />
 		</Unit>
@@ -322,9 +313,6 @@
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="parser/include/Xpr.h">
-			<Option target="ivymaster" />
-		</Unit>
-		<Unit filename="parser/include/host_range.h">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="parser/include/pd_pgm.h">
@@ -353,6 +341,9 @@
 		<Unit filename="parser/src/Ivy_pgm.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="parser/src/IvyscriptLine.cpp">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="parser/src/OverloadSet.cpp">
 			<Option target="ivymaster" />
 		</Unit>
@@ -369,9 +360,6 @@
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="parser/src/Xpr.cpp">
-			<Option target="ivymaster" />
-		</Unit>
-		<Unit filename="parser/src/host_range.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="parser/src/main.cpp">
@@ -397,29 +385,30 @@
 		<Unit filename="src/HM800_tables.cpp">
 			<Option target="ivymaster" />
 		</Unit>
-		<Unit filename="src/Iogenerator.cpp">
+		<Unit filename="src/Iosequencer.cpp">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="src/IogeneratorInput.cpp">
-			<Option target="ivymaster" />
+		<Unit filename="src/IosequencerInput.cpp">
 			<Option target="ivyslave" />
-		</Unit>
-		<Unit filename="src/IogeneratorInputRollup.cpp">
 			<Option target="ivymaster" />
 		</Unit>
-		<Unit filename="src/IogeneratorRandom.cpp">
+		<Unit filename="src/IosequencerInputRollup.cpp">
+			<Option target="ivyslave" />
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/IosequencerRandom.cpp">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="src/IogeneratorRandomIndependent.cpp">
+		<Unit filename="src/IosequencerRandomIndependent.cpp">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="src/IogeneratorRandomSteady.cpp">
+		<Unit filename="src/IosequencerRandomSteady.cpp">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="src/IogeneratorSequential.cpp">
+		<Unit filename="src/IosequencerSequential.cpp">
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="src/IvyscriptLine.cpp">
+		<Unit filename="src/JSON_select.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/LDEVset.cpp">
@@ -432,7 +421,6 @@
 		</Unit>
 		<Unit filename="src/LUNpointerList.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/ListOfNameEqualsValueList.cpp">
 			<Option target="ivymaster" />
@@ -458,14 +446,6 @@
 		</Unit>
 		<Unit filename="src/RollupType.cpp">
 			<Option target="ivymaster" />
-		</Unit>
-		<Unit filename="src/Select.cpp">
-			<Option target="ivymaster" />
-			<Option target="ivyslave" />
-		</Unit>
-		<Unit filename="src/SelectClause.cpp">
-			<Option target="ivymaster" />
-			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/Subinterval.cpp">
 			<Option target="ivyslave" />
@@ -508,10 +488,18 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="src/go_statement.cpp">
+		<Unit filename="src/hosts/hosts.l">
+			<Option compile="1" />
 			<Option target="ivymaster" />
 		</Unit>
-		<Unit filename="src/hosts_statement.cpp">
+		<Unit filename="src/hosts/hosts.y">
+			<Option compile="1" />
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/hosts_list.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/ivy_engine_startup.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/ivyhelpers.cpp">
@@ -551,6 +539,14 @@
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/run_subinterval_sequence.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/select/select.l">
+			<Option compile="1" />
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/select/select.y">
+			<Option compile="1" />
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/subsystem_summary_data.cpp">

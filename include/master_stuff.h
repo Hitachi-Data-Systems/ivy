@@ -77,8 +77,6 @@ public:
 
     int running_subinterval {-1};
 
-	std::string ivyscriptFilename {};
-
 	std::mutex master_mutex;  // This is the overall one, for synchronizing access to "master_stuff".
 	std::condition_variable master_cv;
 
@@ -129,12 +127,12 @@ public:
 	RunningStat<ivy_float, ivy_int> deleteWorkloadExecutionTimeSeconds;
 	RunningStat<ivy_float, ivy_int> editWorkloadExecutionTimeSeconds;
 
-    IogeneratorInput
+    IosequencerInput
         random_steady_template,
         random_independent_template,
         sequential_template;
 
-	std::unordered_map<std::string, IogeneratorInput*> iogenerator_templates
+	std::unordered_map<std::string, IosequencerInput*> iosequencer_templates
         {
             {"random_steady", &random_steady_template},
             {"random_independent", &random_independent_template},
@@ -143,6 +141,7 @@ public:
 
 	std::string outputFolderRoot {default_outputFolderRoot};
 	std::string masterlogfile {"./ivy_default_log_file.txt"};
+	std::string ivy_engine_logfile {"./ivy_engine_API_calls.txt"};
 
 	// Values of the following are updated where appropriate to communicate to csv file producing code on loop iterations
 	std::string testName;
@@ -366,13 +365,6 @@ public:
 	void kill_subthreads_and_exit();
 	void error(std::string);
 	bool make_measurement_rollup_CPU(std::string callers_error_message, unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);
-	bool createWorkload(std::string& callers_error_message, std::string workloadName, Select*, std::string iogeneratorName, std::string parameters);
-		// returns true on success, fills in callers_error_message if returns false
-	bool deleteWorkload(std::string& callers_error_message, std::string workloadName, Select*);
-		// returns true on success, fills in callers_error_message if returns false
-
-	bool editRollup(std::string& callers_error_message, std::string rollupText, std::string parametersText);
-
 	std::string getWPthumbnail(int subinterval_index); // throws std::invalid_argument.    Shows WP for each CLPR on the watch list as briefly as possible.
 
     ivy_float get_rollup_metric
@@ -388,6 +380,60 @@ public:
     bool some_cooldown_WP_not_empty();
 
     std::string focus_metric_ID();
+
+// ivy engine API methods
+
+	std::pair<bool /*success*/, std::string /* message */>
+        startup(
+            const std::string& output_folder_root,
+            const std::string& test_name,
+            const std::string& ivyscript_filename,
+            const std::string& test_hosts,
+            const std::string& select);
+
+	std::pair<bool /*success*/, std::string /* message */>
+        set_iosequencer_template(
+            const std::string& template_name,
+            const std::string& parameters);
+
+
+	std::pair<bool /*success*/, std::string /* message */>
+        createWorkload(
+            const std::string& workload_name,
+            const std::string& select,
+            const std::string& iosequencer,
+            const std::string& parameters);
+
+	std::pair<bool /*success*/, std::string /* message */>
+        deleteWorkload(
+            const std::string& workload_name,
+            const std::string& select_string);
+
+	std::pair<bool /*success*/, std::string /* message */>
+        create_rollup(
+          std::string rollup_name
+		, bool nocsvSection
+		, bool have_quantity_validation
+		, bool have_max_IOPS_droop_validation
+		, std::string nocsv_text
+		, ivy_int quantity
+		, ivy_float max_droop
+	);
+
+	bool
+        editRollup(std::string& callers_error_message,
+            std::string rollupText,
+            std::string parametersText);
+
+	std::pair<bool /*success*/, std::string /* message */>
+        delete_rollup(const std::string& rollup_name);
+
+
+	std::pair<bool /*success*/, std::string /* message */>
+        go(const std::string& parameters);
+
+    std::pair<bool,std::string>
+        shutdown_subthreads();
 };
 
 extern master_stuff m_s;

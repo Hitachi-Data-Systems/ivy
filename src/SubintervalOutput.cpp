@@ -28,7 +28,7 @@
 #include "ivyhelpers.h"
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
-#include "IogeneratorInput.h"
+#include "IosequencerInput.h"
 #include "SubintervalOutput.h"
 
 

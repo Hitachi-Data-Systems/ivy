@@ -26,6 +26,68 @@
 
 extern std::string inter_statement_divider;
 
+
+bool Stmt_hosts::execute()
+{
+    if (trace_evaluate) { trace_ostream << "[hosts] statement at " << bookmark << ":" << std::endl; }
+
+    if (p_Ivy_pgm->have_hosts)
+    {
+        std::ostringstream o;
+
+        o << "<Error> [Hosts] statement at " << bookmark << " - There may be only one [Hosts] statement." << std::endl;
+
+        p_Ivy_pgm->error(o.str());
+    }
+
+    p_Ivy_pgm->have_hosts = true;
+
+    std::string hosts_string;
+
+    if (p_hosts_Xpr) p_hosts_Xpr->evaluate((void*)&hosts_string);
+
+    if (hosts_string.size() == 0)
+    {
+        std::ostringstream o;
+
+        o << "<Error> [Hosts] statement at " << bookmark << " - missing or null list of test hosts." << std::endl;
+        p_Ivy_pgm->error(o.str());
+    }
+
+
+    std::string select_string;
+
+    if (p_select_Xpr) p_select_Xpr->evaluate((void*)&select_string);
+
+    if (select_string.size() == 0)
+    {
+        std::ostringstream o;
+
+        o << "[Hosts] statement at " << bookmark << " - error - missing or null [Select] clause." << std::endl;
+        p_Ivy_pgm->error(o.str());
+    }
+
+    std::ostringstream console_msg;
+
+    extern std::string inter_statement_divider;
+
+    console_msg
+        << inter_statement_divider << std::endl
+        << "[Hosts] \"" << hosts_string << "\" [Select] " << put_in_quotes(select_string) <<std::endl;
+
+    std::cout << console_msg.str();
+
+    std::pair<bool,std::string>
+        rc = m_s.startup(p_Ivy_pgm->output_folder_root,p_Ivy_pgm->test_name, p_Ivy_pgm->ivyscript_filename, hosts_string, select_string);
+
+    if (!rc.first)
+    {
+        p_Ivy_pgm->error(rc.second);
+    }
+
+    return false; // false means "no return statement was executed"
+}
+
 Stmt* make_Stmt_Xpr(Xpr *p_xpr, int perform_once)
 {
 	switch ((enum basic_types)p_xpr->genre()) {
@@ -116,10 +178,10 @@ bool Stmt_do::execute()
     return false;
 }
 
-bool Stmt_set_iogenerator_template::execute()
+bool Stmt_set_iosequencer_template::execute()
 {
 
-    if (trace_evaluate) { trace_ostream << "Stmt_set_iogenerator_template: starting." << std::endl; }
+    if (trace_evaluate) { trace_ostream << "Stmt_set_iosequencer_template: starting." << std::endl; }
 
     if ( !m_s.haveHosts )
     {
@@ -131,47 +193,19 @@ bool Stmt_set_iogenerator_template::execute()
 
     std::string iogen, parameters;
 
-    if (p_iogenerator_Xpr==nullptr) throw std::runtime_error("Aaah! Stmt.cpp: Stmt_set_iogenerator_template::execute() p_iogenerator_Xpr==nullptr!");
-    if (p_parameters_Xpr==nullptr) throw std::runtime_error("Aaah! Stmt.cpp: Stmt_set_iogenerator_template::execute() p_parameters_Xpr==nullptr!");
+    if (p_iosequencer_Xpr==nullptr) throw std::runtime_error("Aaah! Stmt.cpp: Stmt_set_iosequencer_template::execute() p_iosequencer_Xpr==nullptr!");
+    if (p_parameters_Xpr==nullptr) throw std::runtime_error("Aaah! Stmt.cpp: Stmt_set_iosequencer_template::execute() p_parameters_Xpr==nullptr!");
 
-    p_iogenerator_Xpr->evaluate((void*)&iogen);
+    p_iosequencer_Xpr->evaluate((void*)&iogen);
     p_parameters_Xpr->evaluate((void*)&parameters);
 
     std::ostringstream console_msg;
-    console_msg << inter_statement_divider << std::endl << "[SetIogeneratorDefault] \"" << iogen << "\" [Parameters] \"" << parameters << "\";" << std::endl;
+    console_msg << inter_statement_divider << std::endl << "[SetIosequencerDefault] \"" << iogen << "\" [Parameters] \"" << parameters << "\";" << std::endl;
     std::cout << console_msg.str();
     log(m_s.masterlogfile,console_msg.str());
 
-    std::unordered_map<std::string,IogeneratorInput*>::iterator iogen_it;
-    iogen_it=m_s.iogenerator_templates.find(toLower(iogen));
-    if (m_s.iogenerator_templates.end()==iogen_it)
-    {
-        std::ostringstream o;
-        o << "<Error> [SetIogeneratorDefault] - invalid iogenerator name \"" << iogen << "\". "  << std::endl;
-        o << "Valid iogenerator names are:";
-        for (auto& pear : m_s.iogenerator_templates) o << " \"" << pear.first << "\" ";
-        log(m_s.masterlogfile,o.str());
-        std::cout << o.str();
-        m_s.kill_subthreads_and_exit();
-    }
-    IogeneratorInput* p=(*iogen_it).second;
-
-    std::string error_message;
-    if (!p->setMultipleParameters(error_message, parameters))
-    {
-        std::ostringstream o;
-        o << "[SetIogeneratorDefault] at " << bookmark << " - For iogenerator named \"" << iogen << "\" - error setting parameter values \"" << parameters << "\" - error message was - " << error_message << std::endl;
-        log(m_s.masterlogfile,o.str());
-        std::cout << o.str();
-        m_s.kill_subthreads_and_exit();
-    }
-
-//    {
-//        std::ostringstream o;
-//        o << "[SetIogeneratorDefault] at " << bookmark << " - iogenerator template for \"" << iogen << "\" has been set to " << p->toString() << std::endl;
-//        std::cout << o.str();
-//        log(m_s.masterlogfile,o.str());
-//    }
+    std::pair<bool,std::string> rc = m_s.set_iosequencer_template(iogen,parameters);
+    if (!rc.first) p_Ivy_pgm->error(rc.second);
 
     return false;
 }
@@ -194,13 +228,6 @@ Stmt_create_rollup::Stmt_create_rollup(const yy::location& l, Xpr* prn, bool ncs
 bool Stmt_create_rollup::execute()
 {
     if (trace_evaluate) { trace_ostream << "Stmt_create_rollup: starting." << std::endl; }
-
-    if ( !m_s.haveHosts )
-    {
-        std::ostringstream o;
-        o << "At " << bookmark << " - error - no preceeding [hosts] statement to start up the ivy engine and discover the test configuration." << std::endl;
-        p_Ivy_pgm->error(o.str());
-    }
 
     // [CreateRollup] Serial_Number+LDEV
     // [CreateRollup] host               [nocsv] [quantity] 16 [maxDroopMaxtoMinIOPS] 25 %
@@ -261,43 +288,28 @@ bool Stmt_create_rollup::execute()
         if (haveMaxDroopMaxtoMinIOPS) {trace_ostream << "[MaxDroop] " << max_IOPS_droop;}
         trace_ostream << std::endl;
 
-        trace_ostream << "About to call m_s::addRollupType()." << std::endl;
+        trace_ostream << "About to call ivy engine create rollup." << std::endl;
     }
 
-    std::string my_error_message;
-    if
-    ( ! m_s.rollups.addRollupType
-        (
-            my_error_message
-            , attributeNameComboText
-            , haveNocsv
-            , haveQuantity
-            , haveMaxDroopMaxtoMinIOPS
-            , "" /*nocsvText*/
-            , int_quantity
-            , max_IOPS_droop
-        )
-    )
+    std::pair<bool,std::string> rc = m_s.create_rollup
+    (
+          attributeNameComboText
+        , haveNocsv
+        , haveQuantity
+        , haveMaxDroopMaxtoMinIOPS
+        , "" /*nocsvText*/
+        , int_quantity
+        , max_IOPS_droop
+    );
+
+    if ( !rc.first )
     {
         std::ostringstream o;
-        o << "[CreateRollup] at " << bookmark << " failed - " << my_error_message << std::endl;
+        o << "<Error> ivy engine - create rollup failed - " << rc.second << std::endl;
         log(m_s.masterlogfile,o.str());
         std::cout << o.str();
-        m_s.kill_subthreads_and_exit();
+        p_Ivy_pgm->error(o.str());
     }
-
-    auto it = m_s.rollups.rollups.find(toLower(attributeNameComboText));
-    if (m_s.rollups.rollups.end() == it)
-    {
-        std::ostringstream o;
-        o << "[CreateRollup] at " << bookmark << " failed - internal programming error.  Unable to find the new RollupType we supposedly just made."<< std::endl;
-        log(m_s.masterlogfile,o.str());
-        std::cout << o.str();
-        m_s.kill_subthreads_and_exit();
-    }
-
-    //m_s.need_to_rebuild_rollups=true; - removed so scripting language builtins see up to date data structures
-    m_s.rollups.rebuild();
 
     return false;
 }
@@ -320,82 +332,25 @@ bool Stmt_delete_rollup::execute()
 
     if (trace_evaluate) { trace_ostream << "Stmt_delete_rollup: starting." << std::endl; }
 
-    if ( !m_s.haveHosts )
-    {
-        std::ostringstream o;
-        o << "At " << bookmark << " - error - no preceeding [hosts] statement to start up the ivy engine and discover the test configuration." << std::endl;
-        p_Ivy_pgm->error(o.str());
-    }
-
     // [DeleteRollup] "Serial_Number+LDEV";
 
     std::string attributeNameComboText;
 
-    bool delete_all_not_all {false};
+    if (p_rollup_spec_Xpr) p_rollup_spec_Xpr->evaluate((void*)&attributeNameComboText);
 
-    if (p_rollup_spec_Xpr == nullptr)
     {
-        delete_all_not_all = true;
-        if (trace_evaluate) { trace_ostream << "Stmt_delete_rollup::execute() - null pointer to rollup spec, deleting all rollups except \"all\"." << std::endl; }
-
-        std::cout << "[DeleteRollup] without rollup name - deleting all rollups except \"all\"." << std::endl;
-    }
-    else
-    {
-        p_rollup_spec_Xpr->evaluate((void*)&attributeNameComboText);
-        if (trace_evaluate) { trace_ostream << "Stmt_delete_rollup::execute() - rollup spec expression yielded \"" << attributeNameComboText << "\"." << std::endl; }
-        std::cout << inter_statement_divider << std::endl << "[DeleteRollup] \"" << attributeNameComboText << "\";" << std::endl;
-        if (attributeNameComboText.size()==0 || attributeNameComboText == "*") { delete_all_not_all = true;}
+        std::ostringstream o;
+        o << inter_statement_divider << std::endl << "[DeleteRollup] " << put_in_quotes(attributeNameComboText) << ";" << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
     }
 
-    if (delete_all_not_all)
-    {
-        // delete all rollups except "all"
-        for (auto& pear : m_s.rollups.rollups)
-        {
-            if (stringCaseInsensitiveEquality("all", pear.first)) continue;
+    std::pair<bool,std::string> rc = m_s.delete_rollup(attributeNameComboText);
 
-            std::string my_error_message;
-            if ( ! m_s.rollups.deleteRollup(my_error_message, pear.first))
-            {
-                std::ostringstream o;
-                o << "[DeleteRollup] at " << bookmark << " failed - " << my_error_message << std::endl;
-                log(m_s.masterlogfile,o.str());
-                std::cout << o.str();
-                m_s.kill_subthreads_and_exit();
-            }
-        }
-    }
-    else
-    {
-        if (stringCaseInsensitiveEquality(std::string("all"),attributeNameComboText))
-        {
-            std::string msg = "\nI\'m so sorry, Dave, I cannot delete the \"all\" rollup.\n\n";
-            log(m_s.masterlogfile,msg);
-            std::cout << msg;
-            m_s.kill_subthreads_and_exit();
-        }
+    if (!rc.first) p_Ivy_pgm->error(rc.second);
 
-        if (trace_evaluate)
-        {
-            trace_ostream << "Stmt_delete_rollup::execute() - [DeleteRollup] \"" << attributeNameComboText << "\" ";
-            trace_ostream << std::endl;
-            trace_ostream << "About to call m_s.rollups.deleteRollup(\"" << attributeNameComboText << "\")." << std::endl;
-        }
+///--------------------
 
-        std::string my_error_message;
-        if ( ! m_s.rollups.deleteRollup(my_error_message, attributeNameComboText))
-        {
-            std::ostringstream o;
-            o << "[DeleteRollup] at " << bookmark << " failed - " << my_error_message << std::endl;
-            log(m_s.masterlogfile,o.str());
-            std::cout << o.str();
-            m_s.kill_subthreads_and_exit();
-        }
-    }
-
-    //m_s.need_to_rebuild_rollups=true; - removed so scripting language builtins see up to date data structures
-    m_s.rollups.rebuild();
 
     return false;
 }
@@ -403,8 +358,6 @@ bool Stmt_delete_rollup::execute()
 
 bool Stmt_create_workload::execute()
 {
-
-
     if (trace_evaluate) { trace_ostream << "Stmt_create_workload: starting." << std::endl; }
 
     if ( !m_s.haveHosts )
@@ -414,11 +367,13 @@ bool Stmt_create_workload::execute()
         p_Ivy_pgm->error(o.str());
     }
 
+    std::string select_string;
+    if (p_select_Xpr) p_select_Xpr->evaluate((void*)&select_string);
 
-    std::string workloadName, iogeneratorName, parameters;
+    std::string workloadName, iosequencerName, parameters;
 
     if (p_workload_name_Xpr == nullptr) throw std::runtime_error("Ouch! Stmt_create_workload::execute() - p_workload_name_Xpr is nullptr.");
-    if (p_iogenerator_Xpr == nullptr) throw std::runtime_error("Ouch! Stmt_create_workload::execute() - p_iogenerator_Xpr is nullptr.");
+    if (p_iosequencer_Xpr == nullptr) throw std::runtime_error("Ouch! Stmt_create_workload::execute() - p_iosequencer_Xpr is nullptr.");
 
     p_workload_name_Xpr->evaluate((void*)&workloadName);
 
@@ -426,7 +381,7 @@ bool Stmt_create_workload::execute()
     console_msg << inter_statement_divider << std::endl << "[CreateWorkload] \"" << workloadName << "\"";
 
 
-    p_iogenerator_Xpr->evaluate((void*)&iogeneratorName);
+    p_iosequencer_Xpr->evaluate((void*)&iosequencerName);
     if (haveParameters)
     {
         p_parameters_Xpr->evaluate((void*)&parameters);
@@ -441,23 +396,17 @@ bool Stmt_create_workload::execute()
     if (trace_evaluate)
     {
         trace_ostream << "Stmt_create_workload::execute() - [CreateWorkload] \"" << workloadName << "\" ";
-
-        if (p_Select == nullptr) { trace_ostream << "<p_Select is nullptr> "; }
-        else                     { trace_ostream << "<Select clause describes itself starting on the next line.> "; }
-
-        trace_ostream << "[Iogenerator] " << iogeneratorName << " ";
+        trace_ostream << "[Select] " << select_string << " ";
+        trace_ostream << "[Iosequencer] " << iosequencerName << " ";
         trace_ostream << "[Parameters] " << parameters << " ;" << std::endl;
-
-        if (p_Select!=nullptr) {p_Select->display("",trace_ostream); }
-
         trace_ostream << "About to call m_s::createWorkload()." << std::endl;
     }
 
-    std::string my_error_message;
-    if (!m_s.createWorkload(my_error_message, workloadName, p_Select, iogeneratorName, parameters))
+    std::pair<bool,std::string> rc = m_s.createWorkload(workloadName, select_string, iosequencerName, parameters);
+    if (!rc.first)
     {
         std::ostringstream o;
-        o << "[CreateWorkload] at " << bookmark << " failed - " << my_error_message << std::endl;
+        o << "[CreateWorkload] at " << bookmark << " failed - " << rc.second << std::endl;
         log(m_s.masterlogfile,o.str());
         std::cout << o.str();
         m_s.kill_subthreads_and_exit();
@@ -493,28 +442,22 @@ bool Stmt_delete_workload::execute()
     std::cout << console_msg.str();
     log(m_s.masterlogfile,console_msg.str());
 
+
+    std::string select_string;
+    if (p_select_Xpr) p_select_Xpr->evaluate((void*)&select_string);
+
     if (trace_evaluate)
     {
-        trace_ostream << "Stmt_delete_workload::execute() - [DeleteWorkload] \"" << workloadName << "\" ";
-
-        if (p_Select == nullptr)
-            {
-                trace_ostream << "<p_Select is nullptr> ";
-            }
-        else
-        {
-            trace_ostream << "<Select clause describes itself starting on the next line.> ";
-            p_Select->display("",trace_ostream);
-        }
+        trace_ostream << "Stmt_delete_workload::execute() - [DeleteWorkload] \"" << workloadName << "\" [select] \"" << select_string <<"\"." << std::endl;
 
         trace_ostream << "About to call m_s::deleteWorkload()." << std::endl;
     }
 
-    std::string my_error_message;
-    if (!m_s.deleteWorkload(my_error_message, workloadName, p_Select))
+    std::pair<bool,std::string> rc = m_s.deleteWorkload(workloadName, select_string);
+    if (!rc.first)
     {
         std::ostringstream o;
-        o << "[DeleteWorkload] at " << bookmark << " failed - " << my_error_message << std::endl;
+        o << "[DeleteWorkload] at " << bookmark << " failed - " << rc.second << std::endl;
         log(m_s.masterlogfile,o.str());
         std::cout << o.str();
         m_s.kill_subthreads_and_exit();
@@ -545,11 +488,11 @@ bool Stmt_edit_rollup::execute()
     p_parameters_Xpr->evaluate((void*)&parameters);
 
     std::ostringstream console_msg;
-    console_msg << inter_statement_divider << std::endl;  // m_s.editRollup() prints a console line message
+    console_msg << inter_statement_divider << std::endl
+        << "[EditRollup] " << put_in_quotes(rollupSpecText) << " [Parameters] " << put_in_quotes(parameters) << ";" << std::endl;
+
     std::cout << console_msg.str();
     log(m_s.masterlogfile, console_msg.str());
-
-    if (trace_evaluate) { trace_ostream << "Stmt_edit_rollup: about to m_s.editRollup(, rollupSpecText = \"" << rollupSpecText << "\", parameters = \"" << parameters <<"\"):" << std::endl; }
 
     if (!( m_s.editRollup(my_error_message, rollupSpecText, parameters) ))
     {
@@ -558,7 +501,7 @@ bool Stmt_edit_rollup::execute()
           << "- [EditRollup] failed - " << my_error_message << std::endl;
         log(m_s.masterlogfile,o.str());
         std::cout << o.str();
-        m_s.kill_subthreads_and_exit();
+        p_Ivy_pgm->error(o.str());
     }
 
     return false;
@@ -569,25 +512,21 @@ bool Stmt_go::execute()
 {
     if (trace_evaluate) { trace_ostream << "Stmt_go: starting." << std::endl; }
 
-    if ( !m_s.haveHosts )
-    {
-        std::ostringstream o;
-        o << "At " << bookmark << " - error - no preceeding [hosts] statement to start up the ivy engine and discover the test configuration." << std::endl;
-        p_Ivy_pgm->error(o.str());
-    }
+    std::string parameters {};
 
-    if (p_go_parameters == nullptr) { m_s.goParameters.clear(); }
-    else                            { p_go_parameters->evaluate((void*)&m_s.goParameters); }
+    if (p_go_parameters) { p_go_parameters->evaluate((void*)&parameters); }
 
     {
         std::ostringstream o;
-        o << inter_statement_divider << std::endl << "[Go!] \"" << m_s.goParameters << "\" ;" << std::endl;
-        log (m_s.masterlogfile,o.str());
+        o << inter_statement_divider << std::endl
+            << "[Go!] " << put_in_quotes(parameters) << ";" << std::endl;
         std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
     }
 
-    void go_statement(yy::location);
-    go_statement(bookmark);
+    std::pair<bool,std::string> rc = m_s.go(parameters);
+
+    if (!rc.first) p_Ivy_pgm->error(rc.second);
 
     return false;
 }

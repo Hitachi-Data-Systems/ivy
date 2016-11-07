@@ -22,16 +22,16 @@
 #include "ivyhelpers.h"
 #include "pattern.h"
 
-class IogeneratorInput {
+class IosequencerInput {
 
 	// this is the object that gets sent from ivymaster
 
-	// NOTE: Because this the object that the iogenerator refers while generating I/O,
+	// NOTE: Because this the object that the iosequencer refers while generating I/O,
 	//       all values are in binary form for quickest access minimizing conversions or lookups.
 
 public:
-	std::string iogenerator_type; // random_steady, random_independent, sequential, ...
-	bool iogeneratorIsSet{false};
+	std::string iosequencer_type; // random_steady, random_independent, sequential, ...
+	bool iosequencerIsSet{false};
 
 // Look in ivydefines.h for the default values, gathered together in one spot
 
@@ -76,7 +76,7 @@ public:
     uint64_t pattern_seed {pattern_seed_default};
 
 public:
-	inline IogeneratorInput(){reset();}
+	inline IosequencerInput(){reset();}
 
 	bool setParameter(std::string& callers_error_message, std::string parameterNameEqualsValue);
 	bool setMultipleParameters(std::string& callers_error_message, std::string commaSeparatedList);
@@ -87,7 +87,7 @@ public:
 	std::string getParameterNameEqualsTextValueCommaSeparatedList();
 	std::string getNonDefaultParameterNameEqualsTextValueCommaSeparatedList();
 	void reset();
-	void copy(const IogeneratorInput& source);
+	void copy(const IosequencerInput& source);
 
 	bool defaultBlocksize() { return blocksize_bytes_default == blocksize_bytes; }
 	bool defaultMaxTags() { return maxTags_default == maxTags; }
@@ -97,7 +97,7 @@ public:
 	bool defaultVolCoverageFractionEnd() { return volCoverageFractionEnd_default == volCoverageFractionEnd; }
 	bool defaultSeqStartFractionOfCoverage()
 	{
-		if (stringCaseInsensitiveEquality(std::string("sequential"),iogenerator_type))
+		if (stringCaseInsensitiveEquality(std::string("sequential"),iosequencer_type))
 		{
 			return seqStartFractionOfCoverage_default == seqStartFractionOfCoverage;
 		}

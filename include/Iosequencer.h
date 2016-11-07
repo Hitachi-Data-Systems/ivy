@@ -19,25 +19,25 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
-#include "iogenerator_stuff.h"
+#include "iosequencer_stuff.h"
 #include "Eyeo.h"
-#include "IogeneratorInput.h"
+#include "IosequencerInput.h"
 #include "ivytime.h"
 #include "LUN.h"
 
-class Iogenerator
+class Iosequencer
 {
 
 public:
 	LUN* pLUN;
 	std::string logfilename;
 	WorkloadID workloadID;
-	iogenerator_stuff* p_iogenerator_stuff;
+	iosequencer_stuff* p_iosequencer_stuff;
 	WorkloadThread* p_WorkloadThread;
 
-	bool parameters_are_valid=false;  // this will be set by setFrom_IogeneratorInput()
+	bool parameters_are_valid=false;  // this will be set by setFrom_IosequencerInput()
 
-	IogeneratorInput* p_IogeneratorInput;
+	IosequencerInput* p_IosequencerInput;
 
 	std::hash<std::string> string_hash;
 
@@ -47,41 +47,41 @@ public:
 
 	long long int coverageStartLBA, coverageEndLBA, numberOfCoverageLBAs;
 		// These are calculated from the LUN's maxLBA attribute,
-		// and then modified according to the by setFromIogeneratorInput() parameters
+		// and then modified according to the by setFromIosequencerInput() parameters
 		// VolumeCoverageStartFraction=0.0 (range from 0.0 to 1.0), VolumeCoverageEndFraction,
 		// and lastIO_LBA is set according to SeqStartingPointFractionOfCoveredArea.
 		// (The lastIO_LBA matters nothing to random_steady and random_independent, because
 		// the lba for the next I/O is calculated without reference to the LBA for the previous I/O.)
 
-		// Derived iogenerator instances need to call the base class setFrom_IogeneratorInput() function
-		// before performing any other setting from IogeneratorInput parameter values.
+		// Derived iosequencer instances need to call the base class setFrom_IosequencerInput() function
+		// before performing any other setting from IosequencerInput parameter values.
 
 		// LBA 0 (zero) is not eligible to perform I/O to.
 		// The default is the maximum permitted coverage of from LBA 1 to the maxLBA of the LUN.
 
-		// These values are set by iogenerator::setFrom_IogeneratorInput().
+		// These values are set by iosequencer::setFrom_IosequencerInput().
 
 	long long int coverageStartBlock, coverageEndBlock, numberOfCoverageBlocks;
-		// iogenerators are permitted to perform I/O anywhere from coverageStartLBA to coverageEndLBA and perform I/O on any alignment boundary.
+		// iosequencers are permitted to perform I/O anywhere from coverageStartLBA to coverageEndLBA and perform I/O on any alignment boundary.
 
-		// However, for the convenience of those iogenerators that want to perform I/O
-		// with a fixed blocksize (the IogeneratorInput parameter "blocksize_bytes" value),
-		// the setFrom_IogeneratorInput() function sets these coverageStartBlock and coverageEndBlock values
+		// However, for the convenience of those iosequencers that want to perform I/O
+		// with a fixed blocksize (the IosequencerInput parameter "blocksize_bytes" value),
+		// the setFrom_IosequencerInput() function sets these coverageStartBlock and coverageEndBlock values
 		// which are in multiples of a "blocksize_bytes"-sized blocks aligned on blocksize_bytes boundaries.
 
 		// Of course, the blocksize_bytes value itself must be a multiple of the LUN sector size. (512 bytes, 4096 bytes)
 
-		// These values are set by iogenerator::setFrom_IogeneratorInput().
+		// These values are set by iosequencer::setFrom_IosequencerInput().
 
 //methods:
 
-	Iogenerator(LUN* pL, std::string lf, std::string wID, iogenerator_stuff* p_is, WorkloadThread* pWT)
-		: pLUN(pL), logfilename(lf), workloadID(wID), p_iogenerator_stuff(p_is), p_WorkloadThread(pWT) {}
+	Iosequencer(LUN* pL, std::string lf, std::string wID, iosequencer_stuff* p_is, WorkloadThread* pWT)
+		: pLUN(pL), logfilename(lf), workloadID(wID), p_iosequencer_stuff(p_is), p_WorkloadThread(pWT) {}
 
 	virtual bool generate(Eyeo&)=0;
 	virtual bool isRandom()=0;  // This is used to plug the I/O statistics into "random" and "sequential" categories.
 
-	virtual bool setFrom_IogeneratorInput(IogeneratorInput*);  // This base class function should be called first
+	virtual bool setFrom_IosequencerInput(IosequencerInput*);  // This base class function should be called first
 		// by every eponymous derived class function.
 
 	virtual std::string instanceType()=0;

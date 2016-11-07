@@ -37,14 +37,14 @@ using namespace std;
 #include "ivyhelpers.h"
 #include "ivytime.h"
 #include "ivydefines.h"
-#include "iogenerator_stuff.h"
-#include "IogeneratorInput.h"
+#include "iosequencer_stuff.h"
+#include "IosequencerInput.h"
 #include "LUN.h"
 #include "Eyeo.h"
 #include "WorkloadID.h"
-#include "Iogenerator.h"
-#include "IogeneratorRandom.h"
-#include "IogeneratorRandomIndependent.h"
+#include "Iosequencer.h"
+#include "IosequencerRandom.h"
+#include "IosequencerRandomIndependent.h"
 
 
 //
@@ -76,21 +76,21 @@ using namespace std;
 //	     This last formula is what we use to convert the random number R into an inter-arrival time interval.
 //
 
-bool IogeneratorRandomIndependent::generate(Eyeo& slang)
+bool IosequencerRandomIndependent::generate(Eyeo& slang)
 {
-//*debug*/ log(logfilename,"IogeneratorRandomIndependent::generate() - entry.\n");
+//*debug*/ log(logfilename,"IosequencerRandomIndependent::generate() - entry.\n");
 
 	if (NULL == p_uniform_real_distribution_0_to_1)
 	{
-		log(logfilename,std::string("IogeneratorRandomIndependent::generate() - p_uniform_real_distribution_0_to_1 was not initialized.\n"));
+		log(logfilename,std::string("IosequencerRandomIndependent::generate() - p_uniform_real_distribution_0_to_1 was not initialized.\n"));
 		return false;
 	}
 
-	if (!IogeneratorRandom::generate(slang))
+	if (!IosequencerRandom::generate(slang))
 		return false;
-//*debug*/ log(logfilename,"IogeneratorRandomIndependent::generate() - IogeneratorRandom::generate() went OK.\n");
+//*debug*/ log(logfilename,"IosequencerRandomIndependent::generate() - IosequencerRandom::generate() went OK.\n");
 
-	if (-1 == p_IogeneratorInput->IOPS)
+	if (-1 == p_IosequencerInput->IOPS)
 	{	// iorate=max
 		slang.scheduled_time = ivytime(0);
 	}
@@ -105,16 +105,16 @@ bool IogeneratorRandomIndependent::generate(Eyeo& slang)
 			ivy_float R=0.0, inter_IO_arrival_time;
 			while (R == 0.0 || R == 1.0) R = (*p_uniform_real_distribution_0_to_1)(deafrangen);  // The "while" was just in case we actually got 0.0 or 1.0
 
-//*debug*/{ostringstream o; o << "IogeneratorRandomIndependent::generate() random number from zero to one R=" << R <<  "\n"; log(logfilename, o.str());}
-			inter_IO_arrival_time = - log(1.0-R) / (p_IogeneratorInput->IOPS);
+//*debug*/{ostringstream o; o << "IosequencerRandomIndependent::generate() random number from zero to one R=" << R <<  "\n"; log(logfilename, o.str());}
+			inter_IO_arrival_time = - log(1.0-R) / (p_IosequencerInput->IOPS);
 
-//*debug*/{ostringstream o; o << "IogeneratorRandomIndependent::generate() inter_IO_arrival_time=" << ivytime(inter_IO_arrival_time).format_as_duration_HMMSSns() <<  "\n"; log(logfilename, o.str());}
+//*debug*/{ostringstream o; o << "IosequencerRandomIndependent::generate() inter_IO_arrival_time=" << ivytime(inter_IO_arrival_time).format_as_duration_HMMSSns() <<  "\n"; log(logfilename, o.str());}
 			slang.scheduled_time = previous_scheduled_time + ivytime(inter_IO_arrival_time);
 		}
 		previous_scheduled_time = slang.scheduled_time;
 
 	}
-//*debug*/ { ostringstream o; o << "IogeneratorRandomIndependent::generate() - scheduled_time=" << slang.scheduled_time.format_as_datetime_with_ns() << std::endl; log(logfilename,o.str());}
+//*debug*/ { ostringstream o; o << "IosequencerRandomIndependent::generate() - scheduled_time=" << slang.scheduled_time.format_as_datetime_with_ns() << std::endl; log(logfilename,o.str());}
 
 	return true;
 }

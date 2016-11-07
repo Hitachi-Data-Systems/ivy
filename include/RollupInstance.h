@@ -140,8 +140,8 @@ public:
 		: attributeNameComboID(nameCombo), rollupInstanceID(valueCombo), pRollupType(pRT), pRollupSet(pRS)
 		{}
 
-//	void postWorkloadSubintervalResult (int subinterval_number, std::string workloadID, IogeneratorInput& detailInput, SubintervalOutput& detailOutput);
-	bool add_workload_detail_line(std::string& callers_error_msg, WorkloadID& wID, IogeneratorInput& iI, SubintervalOutput& sO);
+//	void postWorkloadSubintervalResult (int subinterval_number, std::string workloadID, IosequencerInput& detailInput, SubintervalOutput& detailOutput);
+	bool add_workload_detail_line(std::string& callers_error_msg, WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO);
 
 	bool sendDynamicFeedbackControlParameterUpdate(std::string updates);
 

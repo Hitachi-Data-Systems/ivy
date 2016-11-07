@@ -17,23 +17,33 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Data Systems.
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
-#pragma once
+#include <string>
+#include <list>
+#include<iostream>
 
-#include "IosequencerInputRollup.h"
-
-class SubintervalRollup
+class hosts_list
 {
 public:
 // variables
-	IosequencerInputRollup inputRollup;
-	SubintervalOutput outputRollup;
-	ivytime startIvytime, endIvytime;
-//methods
-	SubintervalRollup(ivytime subinterval_start, ivytime subinterval_end) : startIvytime(subinterval_start), endIvytime(subinterval_end) {}
-	SubintervalRollup() {startIvytime = ivytime(0); endIvytime = ivytime(0);}
-	void clear() {inputRollup.clear(); outputRollup.clear(); startIvytime=ivytime(0); endIvytime=ivytime(0);}
-	void addIn(const SubintervalRollup& other);
-	ivy_float durationSeconds() { ivytime dur = endIvytime - startIvytime; return dur.getlongdoubleseconds();}
+	std::string source_string     {};
+	std::list<std::string> hosts  {};
+	bool successful_compile       {false};
+	bool unsuccessful_compile     {false};
+	std::string message           {};
+	bool has_hostname_range       {false};
+
+// methods
+	void error(const std::string& s) {unsuccessful_compile=true;message+=s;}
+	bool compile(const std::string&);
+	void clear()
+	{
+        source_string.clear();
+        hosts.clear();
+        successful_compile=false;
+        unsuccessful_compile=false;
+        message.clear();
+        has_hostname_range=false;
+    }
 };
 
-
+std::ostream& operator<< (std::ostream&, const hosts_list&);

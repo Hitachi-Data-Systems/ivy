@@ -29,13 +29,13 @@
 #include "ivyhelpers.h"
 #include "ivydefines.h"
 
-#include "IogeneratorInputRollup.h"
+#include "IosequencerInputRollup.h"
 
 
-/*static*/ std::string IogeneratorInputRollup::CSVcolumnTitles()
+/*static*/ std::string IosequencerInputRollup::CSVcolumnTitles()
 {
 	return
-		",iogenerator type"
+		",iosequencer type"
 		",blocksize"
 		",maxTags"
 		",IOPS input parameter setting"
@@ -46,7 +46,7 @@
 		;
 }
 
-//std::string IogeneratorInputRollup::hostnameList()
+//std::string IosequencerInputRollup::hostnameList()
 //{
 //	// this prints out the set of hostnames seen in the same format you can write it in an ivyscript file
 //	// 	sun159 172.17.19.159 cb26-31 172.17.19.100-104
@@ -165,13 +165,13 @@
 //}
 
 
-std::string IogeneratorInputRollup::CSVcolumnValues(bool detail)
+std::string IosequencerInputRollup::CSVcolumnValues(bool detail)
 {
 	std::ostringstream o;
 	std::map<std::string,std::map<std::string, long int>>::iterator it;
 
 	o
-	<< ',' << '\"' << getParameterTextValueByName("iogenerator",detail) << '\"'
+	<< ',' << '\"' << getParameterTextValueByName("iosequencer",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("blocksize",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("maxTags",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("IOPS",detail) << '\"'
@@ -186,7 +186,7 @@ std::string IogeneratorInputRollup::CSVcolumnValues(bool detail)
 }
 
 
-bool	IogeneratorInputRollup::add(std::string& callers_error_message, std::string parameterNameEqualsTextValueCommaSeparatedList)
+bool	IosequencerInputRollup::add(std::string& callers_error_message, std::string parameterNameEqualsTextValueCommaSeparatedList)
 {
 
 	bool wellFormedInput{true};
@@ -218,7 +218,7 @@ bool	IogeneratorInputRollup::add(std::string& callers_error_message, std::string
 
 }
 
-void	IogeneratorInputRollup::print_values_seen (std::ostream& o) {
+void	IosequencerInputRollup::print_values_seen (std::ostream& o) {
 
 	o << "values_seen:" << std::endl;
 	for (std::map<std::string,std::map<std::string, long int>>::iterator name_it=values_seen.begin(); name_it != values_seen.end(); name_it++ ){
@@ -229,7 +229,7 @@ void	IogeneratorInputRollup::print_values_seen (std::ostream& o) {
 	}
 }
 
-bool	IogeneratorInputRollup::addNameEqualsTextValue(std::string nev) {
+bool	IosequencerInputRollup::addNameEqualsTextValue(std::string nev) {
 
 	// input is well-formed if there is an equals sign with something non-blank on either sides
 
@@ -280,7 +280,7 @@ bool	IogeneratorInputRollup::addNameEqualsTextValue(std::string nev) {
 	return true;
 }
 
-void IogeneratorInputRollup::merge(const IogeneratorInputRollup& other)
+void IosequencerInputRollup::merge(const IosequencerInputRollup& other)
 {
 	for (auto& pear : other.values_seen)
 	{
@@ -298,7 +298,7 @@ void IogeneratorInputRollup::merge(const IogeneratorInputRollup& other)
 	return;
 }
 
-std::string IogeneratorInputRollup::getParameterTextValueByName(std::string parameterName, bool detail) {
+std::string IosequencerInputRollup::getParameterTextValueByName(std::string parameterName, bool detail) {
 
 	std::map<std::string,std::map<std::string,long int>>::iterator name_it = values_seen.find(toUpper(parameterName));
 
@@ -318,7 +318,7 @@ std::string IogeneratorInputRollup::getParameterTextValueByName(std::string para
 			i++;
 			o << (*value_it).first;
 			if ((*value_it).second != count) {
-				// if not every IogeneratorInput had the same parameter value, show the count in parentheses.
+				// if not every IosequencerInput had the same parameter value, show the count in parentheses.
 				o << '(' << (*value_it).second << '/' << count << ')';
 			}
 		}

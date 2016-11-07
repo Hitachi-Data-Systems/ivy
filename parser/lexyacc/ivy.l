@@ -27,8 +27,6 @@
 # include <cstdlib>
 # include <strings.h> // for index()
 # include "Ivy_pgm.h"
-# include "host_range.h"
-# include "SelectClause.h"
 # include "ivydefines.h"
 # include "ivy.parser.hh"
 #include <iostream>
@@ -42,8 +40,8 @@
 typedef yy::ivy::token token;
 
 
-int srclineno=0;
-int string_start_line;
+int ivyscript_srclineno=0;
+int ivyscript_string_start_line;
 
 #define MAX_TRAILING_PERCENT_TOKEN_SIZE 80
 
@@ -78,7 +76,7 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 	}
 
 <STRING>"\r\n"|"\r"|"\n"	{
-			srclineno++;
+			ivyscript_srclineno++;
 			yylloc->lines(1);
 			(*yylval->p_str)+=yytext;
 		}
@@ -135,7 +133,7 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 \r\n	|
 \r	|
 \n	|
-\v  { srclineno++; yylloc->lines(1); }
+\v  { ivyscript_srclineno++; yylloc->lines(1); }
 
 "/*"	{
 		int c;
@@ -156,13 +154,13 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 				}
 				if ('\n' != c)
 					unput(c);
-				srclineno++;
+				ivyscript_srclineno++;
 				yylloc->lines(1);
 			}
 			else if ('\n' == c)
 			{
                 yylloc->lines(1);
-				srclineno++;
+				ivyscript_srclineno++;
             }
 			else if ('*' == c)
 			{
@@ -189,7 +187,7 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 			}
 			if ('\r' == c)
 			{
-				srclineno++;
+				ivyscript_srclineno++;
 				yylloc->lines(1);
 				if (EOF == (c=yyinput()))
 					return 0;
@@ -199,13 +197,13 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 			}
 			else if ('\n' == c)
 			{
-				srclineno++;
+				ivyscript_srclineno++;
 				yylloc->lines(1);
 				break;
 			}
 			else if ('\v' == c)
 			{
-				srclineno++;
+				ivyscript_srclineno++;
 				yylloc->lines(1);
 				break;
 			}
@@ -223,7 +221,7 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 			}
 			if ('\r' == c)
 			{
-				srclineno++;
+				ivyscript_srclineno++;
 				yylloc->lines(1);
 				if (EOF == (c=yyinput()))
 					return 0;
@@ -233,13 +231,13 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 			}
 			else if ('\n' == c)
 			{
-				srclineno++;
+				ivyscript_srclineno++;
 				yylloc->lines(1);
 				break;
 			}
 			else if ('\v' == c)
 			{
-				srclineno++;
+				ivyscript_srclineno++;
 				yylloc->lines(1);
 				break;
 			}
@@ -264,11 +262,14 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 \[\ *[oO][uU][tT][pP][uU][tT]\ *[fF][oO][lL][dD][eE][rR]\ *[rR][oO][oO][tT]\ *\] 	{
     /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_OUTPUT_FOLDER_ROOT" << std::endl; return token::KW_OUTPUT_FOLDER_ROOT; }
 
+\[\ *[sS][eE][tT]\ *[gG][eE][nN][eE][rR][aA][tT][oO][rR]\ *[tT][eE][mM][pP][lL][aA][tT][eE]\ *\] 	{
+    /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_SET_IOSEQUENCER_TEMPLATE" << std::endl; return token::KW_SET_IOSEQUENCER_TEMPLATE; }
+
 \[\ *[sS][eE][tT]\ *[iI][oO][gG][eE][nN][eE][rR][aA][tT][oO][rR]\ *[tT][eE][mM][pP][lL][aA][tT][eE]\ *\] 	{
-    /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_SET_IOGENERATOR_TEMPLATE" << std::endl; return token::KW_SET_IOGENERATOR_TEMPLATE; }
+    /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_SET_IOSEQUENCER_TEMPLATE" << std::endl; return token::KW_SET_IOSEQUENCER_TEMPLATE; }
 
 \[\ *[sS][eE][tT]\ *[iI][oO][gG][eE][nN][eE][rR][aA][tT][oO][rR]\ *[dD][eE][fF][aA][uU][lL][tT]\ *\] 	{
-    /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_SET_IOGENERATOR_TEMPLATE" << std::endl; return token::KW_SET_IOGENERATOR_TEMPLATE; }
+    /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_SET_IOSEQUENCER_TEMPLATE" << std::endl; return token::KW_SET_IOSEQUENCER_TEMPLATE; }
 
 \[\ *[cC][rR][eE][aA][tT][eE]\ *[wW][oO][rR][kK][lL][oO][aA][dD]\ *\] 	{
     /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_CREATE_WORKLOAD" << std::endl; return token::KW_CREATE_WORKLOAD; }
@@ -279,8 +280,11 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 \[\ *[sS][eE][lL][eE][cC][tT]\ *\] 	{
     /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_SELECT" << std::endl; return token::KW_SELECT; }
 
+\[\ *[iI][oO][sS][eE][qQ][uU][eE][nN][cC][eE][rR]\ *\] 	{
+    /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_IOSEQUENCER" << std::endl; return token::KW_IOSEQUENCER; }
+
 \[\ *[iI][oO][gG][eE][nN][eE][rR][aA][tT][oO][rR]\ *\] 	{
-    /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_IOGENERATOR" << std::endl; return token::KW_IOGENERATOR; }
+    /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_IOSEQUENCER" << std::endl; return token::KW_IOSEQUENCER; }
 
 \[\ *[pP][aA][rR][aA][mM][eE][tT][eE][rR][sS]\ *\] 	{
     /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_PARAMETERS" << std::endl; return token::KW_PARAMETERS; }
@@ -326,7 +330,6 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 "const"     { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_CONST" << std::endl; return token::KW_CONST; }
 "do"        { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_DO" << std::endl; return token::KW_DO; }
 "to"        { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_TO" << std::endl; return token::KW_TO; }
-"is"        { /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_IS" << std::endl; return token::KW_IS; }
 
 {identifier}	{
 		yylval->p_str = new std::string(yytext);

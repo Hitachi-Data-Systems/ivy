@@ -37,16 +37,19 @@ using namespace std;
 #include <sys/types.h>
 #include <signal.h>
 
+#include "ParameterValueLookupTable.h"
+#include "MeasureDFC.h"
+#include "run_subinterval_sequence.h"
 
 #include "ivytime.h"
 #include "ivydefines.h"
 #include "ivyhelpers.h"
 #include "LUN.h"
 #include "AttributeNameCombo.h"
-#include "IogeneratorInputRollup.h"
+#include "IosequencerInputRollup.h"
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
-#include "IogeneratorInput.h"
+#include "IosequencerInput.h"
 #include "SubintervalOutput.h"
 #include "SubintervalRollup.h"
 #include "SequenceOfSubintervalRollup.h"
@@ -58,7 +61,6 @@ using namespace std;
 #include "ivylinuxcpubusy.h"
 #include "Subinterval_CPU.h"
 #include "LUN.h"
-#include "Select.h"
 #include "LUNpointerList.h"
 #include "ivylinuxcpubusy.h"
 #include "GatherData.h"
@@ -332,185 +334,7 @@ void master_stuff::error(std::string m)
 
 void master_stuff::kill_subthreads_and_exit()
 {
-	int notified=0;
-
-	for (auto&  pear : host_subthread_pointers)
-	{
-		{
-			//std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
-			pear.second->commandString=std::string("die");
-			pear.second->command=true;
-
-			std::ostringstream o;
-			o << "master_stuff::kill_subthreads_and_exit() - posting \"die\" command to subthread for host " << pear.first
-                << " pid = " << pear.second->pipe_driver_pid << ", gettid() thread ID = " << pear.second->linux_gettid_thread_id<< std::endl;
-			log (masterlogfile, o.str());
-		}
-		pear.second->master_slave_cv.notify_all();
-		notified++;
-	}
-
-	int notified_subsystems {0};
-
-	for (auto& pear : subsystems)
-	{
-		if (0==pear.second->type().compare(std::string("Hitachi RAID")))
-		{
-			Hitachi_RAID_subsystem* pRAID = (Hitachi_RAID_subsystem*) pear.second;
-			if (pRAID->pRMLIBthread)
-			{
-				pipe_driver_subthread* p_pds = pRAID->pRMLIBthread;
-				{
-					//std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
-					p_pds->commandString=std::string("die");
-					p_pds->command=true;
-
-					std::ostringstream o;
-					o << "master_stuff::kill_subthreads_and_exit() - posting \"die\" command to subthread for subsystem " << pear.first
-                        << " pid = " << p_pds->pipe_driver_pid << ", gettid() thread ID = " << p_pds->linux_gettid_thread_id<< std::endl;
-					log (masterlogfile, o.str());
-				}
-				p_pds->master_slave_cv.notify_all();
-				notified_subsystems++;
-			}
-		}
-	}
-
-    bool need_harakiri {false};
-
-	for (auto&  pear : host_subthread_pointers)
-	{
-        bool died_on_its_own;
-        died_on_its_own = false;
-
-        std::chrono::milliseconds nap(100);
-
-        for (unsigned int i = 0; i < 70; i++)
-        {
-//            if (pear.second->master_slave_lk.try_lock())
-//            {
-                if (pear.second->dead)
-                {
-                    died_on_its_own = true;
-                    break;
-                }
-//            }
-            std::this_thread::sleep_for(nap);
-        }
-
-        if (!died_on_its_own)
-        {
-            std::ostringstream o;
-            o << "********** Subthread for test host " << pear.first << " did not exit normally. " << std::endl;
-            log(m_s.masterlogfile,o.str());
-            std::cout << o.str();
-
-            need_harakiri = true;
-        }
-	}
-
-	for (auto& pear : subsystems)
-	{
-		if (0==pear.second->type().compare(std::string("Hitachi RAID")))
-		{
-			Hitachi_RAID_subsystem* pRAID = (Hitachi_RAID_subsystem*) pear.second;
-			if (pRAID->pRMLIBthread)
-			{
-				pipe_driver_subthread* p_pds = pRAID->pRMLIBthread;
-				{
-                    bool died_on_its_own;
-                    died_on_its_own = false;
-
-                    std::chrono::milliseconds nap(100);
-
-                    for (unsigned int i = 0; i < 30; i++)
-                    {
-  //                      if (p_pds->master_slave_lk.try_lock())
-  //                      {
-                            if (p_pds->dead)
-                            {
-                                died_on_its_own = true;
-                                break;
-                            }
-  //                      }
-                        std::this_thread::sleep_for(nap);
-                    }
-
-                    if (!died_on_its_own)
-                    {
-                        std::ostringstream o;
-                        o << "********** Subthread for command device on host " << p_pds->ivyscript_hostname
-                            << " subsystem serial number " << pRAID->serial_number
-                            << " did not exit normally." << std::endl;
-                        log(m_s.masterlogfile,o.str());
-                        std::cout << o.str();
-
-                        need_harakiri = true;
-                    }
-				}
-			}
-		}
-	}
-
-	std::ostringstream o;
-	o << "master_stuff::kill_subthreads_and_exit() told " << notified << " host driver and "
-        << notified_subsystems << " command device subthreads to die." << std::endl;
-	log(masterlogfile,o.str());
-
-	for (auto& host : hosts)
-	{
-		{
-			std::ostringstream o;
-			o << "scp " << SLAVEUSERID << '@' << host << ":" << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << host << "* " << testFolder << "/logs";
-			if (0 == system(o.str().c_str()))
-			{
-				log(masterlogfile,std::string("success: ")+o.str()+std::string("\n"));
-				std::ostringstream rm;
-				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << host << "*";
-				if (0 == system(rm.str().c_str()))
-					log(masterlogfile,std::string("success: ")+rm.str()+std::string("\n"));
-				else
-					log(masterlogfile,std::string("failure: ")+rm.str()+std::string("\n"));
-			}
-			else log(masterlogfile,std::string("failure: ")+o.str()+std::string("\n"));
-		}
-	}
-
-    if (need_harakiri)
-    {
-        std::ostringstream o;
-        o << "One or more subthreads did not exit normally, abnormal termination." << std::endl;
-        log(m_s.masterlogfile,o.str());
-        std::cout << o.str();
-        kill(getpid(),SIGKILL);
-    }
-    else
-    {
-        for (auto& thread : threads)
-        {
-            thread.join();
-        }
-
-        for (auto& thread : ivymaster_RMLIB_threads)
-        {
-            thread.join();
-        }
-        {
-            std::ostringstream o;
-            if (m_s.overall_success)
-            {
-                o << "Successful run." << std::endl;
-            }
-            else
-            {
-                o << "All threads exited on their own, but there was an error." << std::endl;
-
-            }
-            std::cout << o.str();
-            log(m_s.masterlogfile, o.str());
-        }
-    }
-
+    std::pair<bool,std::string> rc = shutdown_subthreads();
 	exit(0);
 }
 
@@ -685,689 +509,6 @@ bool master_stuff::make_measurement_rollup_CPU(std::string callers_error_message
 		}
 
 		return true;
-}
-
-
-bool master_stuff::createWorkload(std::string& callers_error_message, std::string workloadName, Select* pSelect, std::string iogeneratorName, std::string parameters)
-{
-	// Look at proposed workload name
-
-	if (!looksLikeHostname(workloadName))
-	{
-                ostringstream o;
-		o << "Invalid workload name \"" << workloadName << "\".  Workload names start with an alphabetic [a-zA-Z] character and the rest is all alphanumerics and underscores [a-zA-Z0-9_].";
-		callers_error_message = o.str();
-		return false;
-	}
-
-
-	// Look at [select] clause and filter against all discovered test LUNs to define "createWorkloadLUNs".
-
-	LUNpointerList createWorkloadLUNs;
-
-	if (pSelect == nullptr)
-	{
-        createWorkloadLUNs.clone(m_s.availableTestLUNs);
-	}
-	else
-	{
-        createWorkloadLUNs.clear_and_set_filtered_version_of(m_s.availableTestLUNs,pSelect);
-	}
-
-    if (createWorkloadLUNs.LUNpointers.size() == 0)
-    {
-        std::string msg = "<Error> [CreateWorkload] - [select] clause did not select any LUNs to create the workload on.\n";
-        std::cout << msg;
-        log(m_s.masterlogfile, msg);
-        m_s.kill_subthreads_and_exit();
-    }
-
-	if (trace_evaluate) { trace_ostream << "createWorkloadLUNs contains:" << std::endl << createWorkloadLUNs.toString() << std::endl; }
-
-	//LUN* p_sample_LUN = allDiscoveredLUNs.LUNpointers.front();
-
-	// Look at iogenerator name
-
-	std::unordered_map<std::string,IogeneratorInput*>::iterator template_it;
-	template_it=iogenerator_templates.find(iogeneratorName);
-	if (iogenerator_templates.end()==template_it)
-	{
-                ostringstream o;
-                o << "Create workload - invalid [iogenerator] specification - no such I/O generator name found - \"" << iogeneratorName << "\".";
-		callers_error_message = o.str();
-		return false;
-	}
-
-	// Make a copy of the selected iogenerator's default template as a starting point before
-	// we apply the user's parameters to the default template to create a "stamp", an IogeneratorInput object
-	// that we will then clone for each WorkloadTracker that we create to track a particular test host workload thread.
-
-	// Later on, the DynamicFeedbackController can decide to update these parameters.
-
-	// Because we keep a local copy in ivymaster in the WorkloadTracker object of the most recent update to a workload's
-	// IogeneratorInput object, we can also do things like "increase IOPS by 10%".
-
-	IogeneratorInput i_i;  // the "stamp"
-	i_i.fromString((*template_it).second->toString(),masterlogfile);
-
-	// now apply the user-provided parameter settings on top of the template
-
-
-	if (0<parameters.length())
-	{
-		std::string my_error_message;
-		if (!i_i.setMultipleParameters(my_error_message, parameters))
-		{
-		        ostringstream o;
-		        o << "Create workload - failure setting initial parameters - \"" << parameters << "\"." <<std::endl
-			  << my_error_message << std::endl;
-		callers_error_message = o.str();
-		return false;
-		}
-	}
-
-
-	// The same WorkloadID in text form is used as the lookup key
-	//	- in ivymaster to lookup a WorkloadTracker object
-	//	- in ivyslave to lookup an I/O driver subthread
-
-	// sun159+/dev/sdc+poink
-
-	// A valid WorkloadID in text form
-	//	- is a single token [i.e. no spaces inside it] composed of three parts separated by two plus sign '+' characters
-	//	- the first part is a valid test host name according to how you named the host in your ivyscript file.
-	//		- canonical hostname, or alias or the IP address form
-	//	- the second part is a valid OS name for an available test LUN on that host
-	//		- could be /dev/sdxyz on Linux, or if this ever gets ported to using Windows asynchronous I/O, a physical drive name (or is it disk name - I can never remember.)
-	//	- the third part is the workload name from the [CreateWorkload] statement
-	//		- Valid workload names start with alphabetic [a-zA-Z] continue with alphanumerics & underscores [_a-zA-Z0-9]
-
-	WorkloadID workloadID;
-
-	// Check first that for all the test LUNs, the WorkloadIDs build as well-formed, and that none by those names already exist
-	for (auto& p_LUN : createWorkloadLUNs.LUNpointers)
-	{
-		if
-		(
-			!workloadID.set
-			(
-				  p_LUN->attribute_value(std::string("ivyscript_hostname"))
-				+ std::string("+")
-				+ p_LUN->attribute_value(std::string("LUN_name"))
-				+ std::string("+")
-				+ workloadName
-			)
-		)
-		{
-		        ostringstream o;
-			o << "Create workload - internal programming error - invalid WorkloadID = \"" << workloadID.workloadID <<   "\" generated that is not well formed as \"ivyscript_hostname+LUN_name+workload_name\".";
-			callers_error_message = o.str();
-			return false;
-		}
-		std::map<std::string, WorkloadTracker*>::iterator it = workloadTrackers.workloadTrackerPointers.find(workloadID.workloadID);
-		if (it != workloadTrackers.workloadTrackerPointers.end())
-		{
-		        ostringstream o;
-		        o << "Create workload - failed - workload ID = \"" << workloadID.workloadID <<   "\" already exists.";
-			callers_error_message = o.str();
-			return false;
-		}
-	}
-
-	createWorkloadExecutionTimeSeconds.clear();
-
-	for (auto& p_LUN : createWorkloadLUNs.LUNpointers)  // maybe come back later and do this for a set of LUNs in parallel, like we do for editWorkload().
-	{
-		std::string ivyscript_hostname = p_LUN->attribute_value(std::string("ivyscript_hostname"));
-
-		workloadID.set
-		(
-			  ivyscript_hostname
-			+ std::string("+")
-			+ p_LUN->attribute_value(std::string("LUN_name"))
-			+ std::string("+")
-			+ workloadName
-		);
-
-		// First we need to lookup the pointer to the subthread for the host, so we can talk to it.
-
-		std::unordered_map<std::string,pipe_driver_subthread*>::iterator it = host_subthread_pointers.find(ivyscript_hostname);
-
-		if (it == host_subthread_pointers.end())
-		{
-		        ostringstream o;
-		        o << "Create workload - internal programming error.  Failed looking up pipe_driver_subthread* for host=\"" << ivyscript_hostname <<   "\".";
-			callers_error_message = o.str();
-			return false;
-		}
-
-		pipe_driver_subthread* p_host = (*it).second;
-
-		// Next we make a new WorkloadTracker object for the remote thread we are going to create on a test host.
-
-		WorkloadTracker* pWorkloadTracker = new WorkloadTracker(workloadID.workloadID, iogeneratorName, p_LUN);
-
-		pWorkloadTracker->wT_IogeneratorInput.copy(i_i);
-
-		workloadTrackers.workloadTrackerPointers[workloadID.workloadID] = pWorkloadTracker;
-
-		// We time how long it takes to make the thread
-		{
-			ostringstream o;
-			o << "Creating LUN workload thread on host \"" << p_host->ivyscript_hostname << "\", LUN \"" << p_LUN->attribute_value(std::string("LUN_name")) << "\", workload name \""
-			  << workloadName << "\", iogenerator \"" << iogeneratorName << "\", parameters \"" << i_i.toString() << "\".";
-			log(masterlogfile,o.str());
-		}
-
-		ivytime beforeMakingThread;
-		beforeMakingThread.setToNow();
-
-		// get lock on talking to pipe_driver_subthread for this remote host
-		{
-			std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
-			// tell slave driver thread to talk to the other end and make the thread
-
-			p_host->commandString=std::string("[CreateWorkload]");
-
-			p_host->commandHost = p_LUN->attribute_value(std::string("ivyscript_hostname"));
-			p_host->commandLUN = p_LUN->attribute_value(std::string("LUN_name"));
-			p_host->commandWorkloadID = workloadID.workloadID;
-			p_host->commandIogeneratorName = iogeneratorName;
-			p_host->commandIogeneratorParameters = i_i.toString();
-
-			p_host->command=true;
-			p_host->commandSuccess=false;
-			p_host->commandComplete=false;
-			p_host->commandErrorMessage.clear();
-		}
-		p_host->master_slave_cv.notify_all();
-
-		// wait for the outcome of making the remote thread
-		{
-			std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
-			while (!p_host->commandComplete) p_host->master_slave_cv.wait(u_lk);
-
-			if (!p_host->commandSuccess)
-			{
-				ostringstream o;
-				o << "Failed creating thread on host \"" << p_host->ivyscript_hostname << "\", LUN \"" << p_LUN->attribute_value(std::string("LUN_name")) << "\", workload name \""
-				  << workloadName << "\", iogenerator \"" << iogeneratorName << "\", parameters \"" << i_i.toString() << "\".";
-				callers_error_message = o.str();
-				return false;
-			}
-		}
-		ivytime afterMakingThread;
-		afterMakingThread.setToNow();
-		ivytime createThreadExecutionTime = afterMakingThread - beforeMakingThread;
-		createWorkloadExecutionTimeSeconds.push(createThreadExecutionTime.getlongdoubleseconds());
-	}
-
-
-	{
-		std::ostringstream o;
-		o << "      remote create thread execution time summary: total time " << createWorkloadExecutionTimeSeconds.sum()
-			<<" seconds - count " <<   createWorkloadExecutionTimeSeconds.count()
-			<< " - average " << createWorkloadExecutionTimeSeconds.avg()
-			<< " seconds - minimum " << createWorkloadExecutionTimeSeconds.min()
-			<< " seconds - maximum " << createWorkloadExecutionTimeSeconds.max()
-			<< " seconds." << std::endl;
-
-/*debug*/ std::cout<< o.str();
-
-		log(masterlogfile,o.str());
-	}
-
-
-	return true;
-}
-
-bool master_stuff::deleteWorkload(std::string& callers_error_message, std::string workloadName, Select* pSelect)
-{
-    std::list <WorkloadID> delete_list {};
-
-    std::string s = workloadName;
-    trim(s); // removes leading/trailing whitespace
-
-    bool delete_all {false};
-
-    if (  (s.size() == 0)  ||  (s == "*")  )   // blank workload name or asterisk * means delete all
-    {
-        delete_all = true;
-    }
-    else
-    {
-        // Look at proposed workload name
-
-        if (!looksLikeHostname(s))
-        {
-            ostringstream o;
-            o << "Invalid workload name \"" << workloadName << "\".  Workload names start with an alphabetic [a-zA-Z] character and the rest is all alphanumerics and underscores [a-zA-Z0-9_].";
-            callers_error_message = o.str();
-            return false;
-        }
-    }
-
-    for (auto& pear : workloadTrackers.workloadTrackerPointers)
-    {
-        const std::string& key = pear.first;
-        WorkloadTracker* p_WorkloadTracker = pear.second;
-
-        WorkloadID w;
-
-        if (!w.set(key))
-        {
-		    ostringstream o;
-		    o << "<Error> delete workload - internal programming error.  The key of an entry in workloadTrackers.workloadTrackerPointers did not parse as a valid WorkloadID.";
-			callers_error_message = o.str();
-			std::cout << "Sorry if you are going to see this twice, but just in case: " << o.str() << std::endl;
-			return false;
-        }
-
-        if (delete_all)
-        {
-            delete_list.push_back(w);
-        }
-        else
-        {
-            if (stringCaseInsensitiveEquality(w.getWorkloadPart(),s))
-            {
-                // if the LUN behind this workload matches the Select clause, it's one we need to delete
-                if (pSelect == nullptr)
-                {
-                    delete_list.push_back(w);
-                }
-                else
-                {
-                    if (pSelect->matches(&(p_WorkloadTracker->workloadLUN)))
-                    {
-                        delete_list.push_back(w);
-                    }
-                }
-            }
-        }
-    }
-
-    if (delete_list.size() == 0)
-    {
-        std::ostringstream o;
-        o << "<Error> [DeleteWorkload] - no matching instances of \"" << workloadName << "\" were available to delete.";
-        callers_error_message = o.str();
-        std::cout << "Sorry if you are going to see this twice, but just in case: " << o.str() << std::endl;
-        return false;
-    }
-
-	deleteWorkloadExecutionTimeSeconds.clear();
-
-	for (auto& wid : delete_list)  // judged not worth the effor to for a set of LUNs in parallel, like we do for editWorkload(), since this is when workloads are stopped.
-	{
-		std::string ivyscript_hostname = wid.getHostPart();
-
-		// First we need to lookup the pointer to the subthread for the host, so we can talk to it.
-
-		std::unordered_map<std::string,pipe_driver_subthread*>::iterator
-            it = host_subthread_pointers.find(ivyscript_hostname);
-
-		if (it == host_subthread_pointers.end())
-		{
-		    ostringstream o;
-		    o << "<Error> [DeleteWorkload] - internal programming error.  Failed looking up pipe_driver_subthread* for host = \"" << ivyscript_hostname <<   "\".";
-			callers_error_message = o.str();
-			return false;
-		}
-
-		pipe_driver_subthread* p_host = it->second;
-
-        auto wit = workloadTrackers.workloadTrackerPointers.find(wid.workloadID);
-
-        if (wit == workloadTrackers.workloadTrackerPointers.end())
-        {
-		    ostringstream o;
-		    o << "<Error> [DeleteWorkload] - internal programming error.  workloadTrackers.workloadTrackerPointers.find(\"" << wid.workloadID << "\") failed when about to delete it.";
-			callers_error_message = o.str();
-			return false;
-        }
-
-		// We time how long it takes to delete the thread
-		{
-			ostringstream o;
-			o << "Deleting workload thread on host \"" << ivyscript_hostname
-			  << "\", LUN \"" << wid.getLunPart()
-			  << "\", workload \"" << wid.getWorkloadPart() << "\".";
-			log(masterlogfile,o.str());
-		}
-
-		ivytime beforeDeletingThread; beforeDeletingThread.setToNow();
-
-		// get lock on talking to pipe_driver_subthread for this remote host
-		{
-			std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
-			// tell slave driver thread to talk to the other end and make the thread
-
-			p_host->commandString=std::string("[DeleteWorkload]");
-			p_host->commandWorkloadID = wid.workloadID;
-
-			p_host->command=true;
-			p_host->commandSuccess=false;
-			p_host->commandComplete=false;
-			p_host->commandErrorMessage.clear();
-		}
-		p_host->master_slave_cv.notify_all();
-
-		// wait for the outcome of deleting the remote thread
-		{
-			std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
-			while (!p_host->commandComplete) p_host->master_slave_cv.wait(u_lk);
-
-			if (!p_host->commandSuccess)
-			{
-				ostringstream o;
-				o << "Failed deleting workload ID " << wid.workloadID;
-				callers_error_message = o.str();
-				return false;
-			}
-		}
-		ivytime afterDeletingThread; afterDeletingThread.setToNow();
-
-		ivytime deleteThreadExecutionTime = afterDeletingThread - beforeDeletingThread;
-
-		deleteWorkloadExecutionTimeSeconds.push(deleteThreadExecutionTime.getlongdoubleseconds());
-
-		delete wit->second; // A struct really
-		workloadTrackers.workloadTrackerPointers.erase(wit);
-	}
-
-
-	{
-		std::ostringstream o;
-		o << "      remote delete workload thread execution time summary: total time " << deleteWorkloadExecutionTimeSeconds.sum()
-			<<" seconds - count " <<   deleteWorkloadExecutionTimeSeconds.count()
-			<< " - average " << deleteWorkloadExecutionTimeSeconds.avg()
-			<< "seconds - minimum " << deleteWorkloadExecutionTimeSeconds.min()
-			<< "seconds - maximum " << deleteWorkloadExecutionTimeSeconds.max() << "seconds." << std::endl;
-
-/*debug*/ std::cout<< o.str();
-
-		log(masterlogfile,o.str());
-	}
-
-
-	return true;
-}
-
-bool master_stuff::editRollup(std::string& callers_error_message, std::string rollupText, std::string original_parametersText)
-// returns true on success
-{
-//variables
-	ListOfNameEqualsValueList listOfNameEqualsValueList(rollupText);
-	WorkloadTrackers editRollupWorkloadTrackers;
-	int fieldsInAttributeNameCombo,fieldsInAttributeValueCombo;
-	ivytime beforeEditWorkload;  // it's called editRollup at the ivymaster level, but once we build the list of edits by host, at the host level it's editWorkload
-
-    std::string parametersText = original_parametersText;
-//code
-
-//*debug*/{std::ostringstream o; o << "master_stuff::editRollup(, rollupText=\"" << rollupText << "\", parametersText=\"" << parametersText << "\")" << std::endl; std::cout << o.str(); log(masterlogfile,o.str());}
-
-	beforeEditWorkload.setToNow();
-	editWorkloadExecutionTimeSeconds.clear();
-
-
-
-	callers_error_message.clear();
-
-	if (!listOfNameEqualsValueList.parsedOK())
-	{
-		std::ostringstream o;
-
-		o << "Parse error.  Rollup specification \"" << rollupText << "\" should look like \"host=sun159\" or \"serial_number+port = { 410321+1A, 410321+2A }\" - "
-		  << listOfNameEqualsValueList.getParseErrorMessage();
-
-		callers_error_message = o.str();
-		return false;
-	}
-
-	if (1 < listOfNameEqualsValueList.clauses.size())
-	{
-		callers_error_message = "Rollup specifications with more than one attribute = value list clause are not implemented at this time.\n"
-			"Should multiple clauses do a union or an intersection of the WorkloadIDs selected in each clause?\n";
-		return false;
-	}
-
-	if (0 == listOfNameEqualsValueList.clauses.size())
-	{
-		editRollupWorkloadTrackers.clone(workloadTrackers);
-	}
-	else
-	{
-		// validate the "serial_number+Port" part of "serial_number+Port = { 410321+1A, 410321+2A }"
-
-		std::string rollupsKey;
-		std::string my_error_message;
-
-		rollupsKey = toLower(listOfNameEqualsValueList.clauses.front()->name_token);
-
-		if (!isPlusSignCombo(my_error_message, fieldsInAttributeNameCombo, rollupsKey ))
-		{
-			std::ostringstream o;
-			o << "rollup type \"" << listOfNameEqualsValueList.clauses.front()->name_token << "\" is malformed - " << my_error_message
-			  << " - The rollup type is the \"serial_number+Port\" part of \"serial_number+Port = { 410321+1A, 410321+2A }\".";
-			callers_error_message = o.str();
-			return false;
-		}
-
-		auto it = rollups.rollups.find(rollupsKey);  // thank you, C++11.
-
-		if (rollups.rollups.end() == it)
-		{
-			std::ostringstream o;
-//*debug*/		o << " rollupsKey=\"" << rollupsKey << "\" ";
-			o << "No such rollup \"" << listOfNameEqualsValueList.clauses.front()->name_token << "\".  Valid choices are:";
-			for (auto& pear : rollups.rollups)
-			{
-//*debug*/			o << " key=\"" << pear.first << "\"";
-				o << " " << pear.second->attributeNameCombo.attributeNameComboID;
-			}
-			callers_error_message = o.str();
-			return false;
-		}
-
-		RollupType* pRollupType = (*it).second;
-
-		// Before we start doing any matching, return an error message if the user's value combo tokens don't have the same number of fields as the rollup name key
-
-		for (auto& matchToken : listOfNameEqualsValueList.clauses.front()->value_tokens)
-		{
-			if (!isPlusSignCombo(my_error_message, fieldsInAttributeValueCombo, matchToken))
-			{
-				std::ostringstream o;
-				o << "rollup instance \"" << matchToken << "\" is malformed - " << my_error_message
-				  << " - A rollup instance in \"serial_number+Port = { 410321+1A, 410321+2A }\" is \"410321+1A\".";
-				callers_error_message = o.str();
-				return false;
-			}
-			if (fieldsInAttributeNameCombo != fieldsInAttributeValueCombo)
-			{
-				std::ostringstream o;
-				o << "rollup instance \"" << matchToken << "\" does not have the same number of \'+\'-delimited fields as the rollup type \"" << listOfNameEqualsValueList.clauses.front()->name_token << "\".";
-				callers_error_message = o.str();
-				return false;
-			}
-		}
-
-		// We make a ListOfWorkloadIDs for each test host, as this has the toString() and fromString() methods to send over the pipe to ivyslave at the other end;
-		// Then on the other end these are also the keys for looking up the iogenerator threads to post the parameter updates to.
-
-//   XXXXXXX  And we are going to need to add "shorthand" for ranges of LDEVs, or hostnames, or PGs, ...
-
-		// Then once we have the map ListOfWorkloadIDs[ivyscript_hostname] all built successfully
-		// before we start sending any updates to ivyslave hosts we first apply the parameter updates
-		// on the local copy we keep of the "next" subinterval IogeneratorInput objects.
-
-		// We fail out with an error message if there is any problem applying the parameters locally.
-
-		// Then when we know that these particular parameters apply successfully to these particular WorkloadIDs,
-		// and we do local applys in parallel, of course, only then do we send the command to ivyslave to
-		// update parameters.
-
-		// We send out exactly the same command whether ivyslave is running or whether it's stopped waiting for commands.
-		// - if it's running, the parameters will be applied to the "next subinterval".
-		// - if it's stopped, the parameters will be applied to both subinterval objects which will be subintervals 0 and 1.
-
-
-		int command_workload_IDs {0};
-
-		for (auto& pear : host_subthread_pointers)
-		{
-			pear.second->commandListOfWorkloadIDs.clear();
-			// we don't need to get a lock to do this because the slave driver thread only looks at this when we are waiting for it to perform an action on a set of WorkloadIDs.
-		}
-
-		for (auto& matchToken : listOfNameEqualsValueList.clauses.front()->value_tokens)
-		{
-			// 410321+1A
-
-			auto rollupInstance_it = pRollupType/*serial_number+Port*/->instances.find(toLower(matchToken));
-
-			if ( pRollupType->instances.end() == rollupInstance_it )
-			{
-				std::ostringstream o;
-				o << "rollup instance \"" << matchToken << "\" not found.  Valid choices are:";
-				for (auto& pear : pRollupType->instances)
-				{
-					o << "  " << pear.second->rollupInstanceID;
-				}
-				callers_error_message = o.str();
-				return false;
-			}
-
-			ListOfWorkloadIDs& listofWIDs = (*rollupInstance_it).second->workloadIDs;
-
-			for (auto& wID : listofWIDs.workloadIDs)
-			{
-				host_subthread_pointers[wID.getHostPart()]->commandListOfWorkloadIDs.workloadIDs.push_back(wID);
-				command_workload_IDs++;
-			}
-		}
-
-		if (0 == command_workload_IDs)
-		{
-			callers_error_message = "editRollup() failed as no target workloads were selected.";
-			return false;
-		}
-
-		// OK now we have built the individual lists of affected workload IDs for each test host for the upcoming command
-
-
-		trim(parametersText);
-
-		if (0 == parametersText.length())
-		{
-			callers_error_message = "editRollup() failed - called with an empty string as parameter updates.";
-			return false;
-		}
-
-		rewrite_total_IOPS(parametersText, command_workload_IDs);
-			// rewrites the first instance of "total_IOPS = 5000" to "IOPS=1000.000000000000" by dividing total_IOPS by instances.
-			// total_IOPS number forms recognized:  1 .2 3. 4.4 1.0e3 1e+3 1.e-3 3E4, which is perhaps more flexible than with IOPS, which may only take fixed point numbers
-			// returns true if it re-wrote, false if it didn't see "total_IOPS".
-
-		// Now we first verify that user parameters apply successfully to the "next subinterval" IogeneratorInput objects in the affected WorkloadTrackers
-
-		for (auto& pear : host_subthread_pointers)
-		{
-			for (auto& wID : pear.second->commandListOfWorkloadIDs.workloadIDs)
-			{
-				auto wit = workloadTrackers.workloadTrackerPointers.find(wID.workloadID);
-				if (workloadTrackers.workloadTrackerPointers.end() == wit)
-				{
-					std::ostringstream o;
-					o << "master_stuff::editRollup() - dreaded internal programming error - at the last moment the WorkloadTracker pointer lookup failed for workloadID = \"" << wID.workloadID << "\"";
-					callers_error_message += o.str();
-					std::cout << o.str() << std::endl;
-					return false;
-				}
-
-				WorkloadTracker* pWT = (*wit).second;
-				std::string error_message;
-				if (!pWT->wT_IogeneratorInput.setMultipleParameters(error_message, parametersText))
-				{
-					std::ostringstream o;
-					o << "<Error> Failed setting parameters \"" << parametersText
-                        << "\" into local WorkloadTracker object for WorkloadID = \"" << wID.workloadID << "\"" << std::endl << error_message;
-					callers_error_message = o.str();
-					return false;
-				}
-			}
-		}
-
-
-		// Finally, we have a list of WorkloadIDs for each test host, and we have confirmed that the parameter updates applied successfully to the local copies of the IogeneratorInput object.
-
-		for (auto& pear : host_subthread_pointers)
-		{
-			pipe_driver_subthread* p_host = pear.second;
-			if (0 == p_host->commandListOfWorkloadIDs.workloadIDs.size()) continue;
-
-			// get lock on talking to pipe_driver_subthread for this remote host
-			{
-				std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
-
-				// Already set earlier: ListOfWorkloadIDs p_host->commandListOfWorkloadIDs;
-				p_host->commandStart.setToNow();
-				p_host->commandString=std::string("[EditWorkload]");
-				p_host->commandIogeneratorParameters = parametersText;
-
-				p_host->command=true;
-				p_host->commandSuccess=false;
-				p_host->commandComplete=false;
-			}
-			p_host->master_slave_cv.notify_all();
-		}
-
-		// Now we wait for the hosts in no particular order to have finished executing the command.
-		// The slave driver thread does commandFinish.setToNow() when it is done, so we can still see the min/max/avg by-host in parallel editRollup execution time
-
-		for (auto& pear : host_subthread_pointers)
-		{
-			pipe_driver_subthread* p_host = pear.second;
-
-			if (0 != std::string("[EditWorkload]").compare(p_host->commandString)) continue;
-
-			// wait for the slave driver thread to say commandComplete
-			{
-				std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
-				while (!p_host->commandComplete) p_host->master_slave_cv.wait(u_lk);
-
-				if (!p_host->commandSuccess)
-				{
-					std::ostringstream o;
-					o << "ivymaster main thread notified by host driver subthread of failure to set parameters \""
-					  << parametersText << "\" in WorkloadIDs " << p_host-> commandListOfWorkloadIDs.toString() << std::endl
-					  << p_host->commandErrorMessage;  // don't forget to clear this when we get there
-					callers_error_message = o.str();
-					return false;
-				}
-			}
-//*debug*/{std::ostringstream o; o << "p_host->commandFinish = " << p_host->commandFinish.format_as_datetime_with_ns() << ", beforeEditWorkload = " << beforeEditWorkload.format_as_datetime_with_ns() << std::endl; log(masterlogfile,o.str());}
-			ivytime editWorkloadExecutionTime = p_host->commandFinish - beforeEditWorkload;
-
-			editWorkloadExecutionTimeSeconds.push(editWorkloadExecutionTime.getlongdoubleseconds());
-		}
-
-		{
-			std::ostringstream o;
-			o << "[EditRollup] \"" << rollupText << "\" [parameters] \"" << original_parametersText << "\";   -    execution time by host thread: - number of hosts = " <<   editWorkloadExecutionTimeSeconds.count()
-				<< " - average " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.avg()) << " ms"
-				<< " - min " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.min()) << " ms"
-				<< " - max " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.max()) << " ms"
-				<< std::endl;
-
-			std::cout<< o.str();
-			log(masterlogfile,o.str());
-		}
-	}
-
-	return true;
 }
 
 std::string master_stuff::getWPthumbnail(int subinterval_index) // use subinterval_index = -1 to get the t=0 gather thumbnail
@@ -1750,4 +891,1987 @@ std::string master_stuff::focus_metric_ID()
     return o.str();
 }
 
+// =============  ivy engine API calls:
+
+std::pair<bool /*success*/, std::string /* message */>
+master_stuff::set_iosequencer_template(
+    const std::string& template_name,
+    const std::string& parameters)
+{
+    {
+        std::ostringstream o;
+
+        o << "ivy engine API set_iosequencer_template(";
+        o << "template_name = " << put_in_quotes(template_name);
+        o << ", parameters = " << put_in_quotes(parameters);
+        o << ")" << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        log(ivy_engine_logfile,o.str());
+    }
+
+    std::unordered_map<std::string,IosequencerInput*>::iterator iogen_it;
+    iogen_it=iosequencer_templates.find(toLower(template_name));
+    if (iosequencer_templates.end()==iogen_it)
+    {
+        std::ostringstream o;
+        o << "<Error> [SetIosequencerTemplate] - invalid iosequencer name \"" << template_name << "\". "  << std::endl;
+        o << "Valid iosequencer names are:";
+        for (auto& pear : iosequencer_templates) o << " \"" << pear.first << "\" ";
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+    IosequencerInput* p=(*iogen_it).second;
+
+    std::string error_message;
+    if (!p->setMultipleParameters(error_message, parameters))
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine API - set iosequencer template - for iosequencer named \"" << template_name << "\" - error setting parameter values \"" << parameters << "\" - error message was - " << error_message << std::endl;
+        return std::make_pair(false,o.str());
+    }
+    return std::make_pair(true,std::string(""));
+}
+
+std::pair<bool /*success*/, std::string /* message */>
+master_stuff::createWorkload(
+    const std::string& workloadName,
+    const std::string& select_string,
+    const std::string& iosequencerName,
+    const std::string& parameters)
+{
+    {
+        std::ostringstream o;
+        o << "ivy engine API create_workload("
+            << "workload_name = " << put_in_quotes(workloadName)
+            << ", select = " << put_in_quotes(select_string)
+            << ", iosequencer = " << put_in_quotes(iosequencerName)
+            << ", parameters = " << put_in_quotes(parameters)
+            << ")" << std::endl;
+        std::cout << o.str();
+        log (m_s.masterlogfile,o.str());
+        log(ivy_engine_logfile,o.str());
+    }
+
+	// Look at proposed workload name
+
+	if (!looksLikeHostname(workloadName))
+	{
+                ostringstream o;
+		o << "Invalid workload name \"" << workloadName << "\".  Workload names start with an alphabetic [a-zA-Z] character and the rest is all alphanumerics and underscores [a-zA-Z0-9_].";
+        return std::make_pair(false,o.str());
+	}
+
+    JSON_select select;
+
+    if (!select.compile_JSON_select(select_string))
+    {
+        std::ostringstream o;
+        o << "<Error> create workload] failed - invalid \"select\" expression \"" << select_string << "\" - error message follows: " << select.error_message << std::endl;
+        log(m_s.masterlogfile,o.str());
+        std::cout << o.str();
+        m_s.kill_subthreads_and_exit();
+    }
+
+    { std::ostringstream o; o << "      select " << select << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str()); }
+
+	// Look at [select] clause and filter against all discovered test LUNs to define "createWorkloadLUNs".
+
+	LUNpointerList createWorkloadLUNs;
+
+	if (select.is_null())
+	{
+        createWorkloadLUNs.clone(m_s.availableTestLUNs);
+	}
+	else
+	{
+        createWorkloadLUNs.clear_and_set_filtered_version_of(m_s.availableTestLUNs,select);
+	}
+
+    if (createWorkloadLUNs.LUNpointers.size() == 0)
+    {
+        std::string msg = "<Error> [CreateWorkload] - [select] clause did not select any LUNs to create the workload on.\n";
+        std::cout << msg;
+        log(m_s.masterlogfile, msg);
+        m_s.kill_subthreads_and_exit();
+    }
+
+	if (trace_evaluate) { trace_ostream << "createWorkloadLUNs contains:" << std::endl << createWorkloadLUNs.toString() << std::endl; }
+
+	//LUN* p_sample_LUN = allDiscoveredLUNs.LUNpointers.front();
+
+	// Look at iosequencer name
+
+	std::unordered_map<std::string,IosequencerInput*>::iterator template_it;
+	template_it=iosequencer_templates.find(iosequencerName);
+	if (iosequencer_templates.end()==template_it)
+	{
+        ostringstream o;
+        o << "Create workload - invalid [iosequencer] specification - no such I/O generator name found - \"" << iosequencerName << "\".";
+        return std::make_pair(false,o.str());
+	}
+
+	// Make a copy of the selected iosequencer's default template as a starting point before
+	// we apply the user's parameters to the default template to create a "stamp", an IosequencerInput object
+	// that we will then clone for each WorkloadTracker that we create to track a particular test host workload thread.
+
+	// Later on, the DynamicFeedbackController can decide to update these parameters.
+
+	// Because we keep a local copy in ivymaster in the WorkloadTracker object of the most recent update to a workload's
+	// IosequencerInput object, we can also do things like "increase IOPS by 10%".
+
+	IosequencerInput i_i;  // the "stamp"
+	i_i.fromString((*template_it).second->toString(),masterlogfile);
+
+	// now apply the user-provided parameter settings on top of the template
+
+
+	if (0<parameters.length())
+	{
+		std::string my_error_message;
+		if (!i_i.setMultipleParameters(my_error_message, parameters))
+		{
+            ostringstream o;
+            o << "Create workload - failure setting initial parameters - \"" << parameters << "\"." <<std::endl
+                << my_error_message << std::endl;
+            return std::make_pair(false,o.str());
+		}
+	}
+
+
+	// The same WorkloadID in text form is used as the lookup key
+	//	- in ivymaster to lookup a WorkloadTracker object
+	//	- in ivyslave to lookup an I/O driver subthread
+
+	// sun159+/dev/sdc+poink
+
+	// A valid WorkloadID in text form
+	//	- is a single token [i.e. no spaces inside it] composed of three parts separated by two plus sign '+' characters
+	//	- the first part is a valid test host name according to how you named the host in your ivyscript file.
+	//		- canonical hostname, or alias or the IP address form
+	//	- the second part is a valid OS name for an available test LUN on that host
+	//		- could be /dev/sdxyz on Linux, or if this ever gets ported to using Windows asynchronous I/O, a physical drive name (or is it disk name - I can never remember.)
+	//	- the third part is the workload name from the [CreateWorkload] statement
+	//		- Valid workload names start with alphabetic [a-zA-Z] continue with alphanumerics & underscores [_a-zA-Z0-9]
+
+	WorkloadID workloadID;
+
+	// Check first that for all the test LUNs, the WorkloadIDs build as well-formed, and that none by those names already exist
+	for (auto& p_LUN : createWorkloadLUNs.LUNpointers)
+	{
+		if
+		(
+			!workloadID.set
+			(
+				  p_LUN->attribute_value(std::string("ivyscript_hostname"))
+				+ std::string("+")
+				+ p_LUN->attribute_value(std::string("LUN_name"))
+				+ std::string("+")
+				+ workloadName
+			)
+		)
+		{
+		        ostringstream o;
+			o << "Create workload - internal programming error - invalid WorkloadID = \"" << workloadID.workloadID <<   "\" generated that is not well formed as \"ivyscript_hostname+LUN_name+workload_name\".";
+            return std::make_pair(false,o.str());
+		}
+		std::map<std::string, WorkloadTracker*>::iterator it = workloadTrackers.workloadTrackerPointers.find(workloadID.workloadID);
+		if (it != workloadTrackers.workloadTrackerPointers.end())
+		{
+            ostringstream o;
+            o << "Create workload - failed - workload ID = \"" << workloadID.workloadID <<   "\" already exists.";
+            return std::make_pair(false,o.str());
+		}
+	}
+
+	createWorkloadExecutionTimeSeconds.clear();
+
+	for (auto& p_LUN : createWorkloadLUNs.LUNpointers)  // maybe come back later and do this for a set of LUNs in parallel, like we do for editWorkload().
+	{
+		std::string ivyscript_hostname = p_LUN->attribute_value(std::string("ivyscript_hostname"));
+
+		workloadID.set
+		(
+			  ivyscript_hostname
+			+ std::string("+")
+			+ p_LUN->attribute_value(std::string("LUN_name"))
+			+ std::string("+")
+			+ workloadName
+		);
+
+		// First we need to lookup the pointer to the subthread for the host, so we can talk to it.
+
+		std::unordered_map<std::string,pipe_driver_subthread*>::iterator it = host_subthread_pointers.find(ivyscript_hostname);
+
+		if (it == host_subthread_pointers.end())
+		{
+            ostringstream o;
+            o << "Create workload - internal programming error.  Failed looking up pipe_driver_subthread* for host=\"" << ivyscript_hostname <<   "\".";
+            return std::make_pair(false,o.str());
+		}
+
+		pipe_driver_subthread* p_host = (*it).second;
+
+		// Next we make a new WorkloadTracker object for the remote thread we are going to create on a test host.
+
+		WorkloadTracker* pWorkloadTracker = new WorkloadTracker(workloadID.workloadID, iosequencerName, p_LUN);
+
+		pWorkloadTracker->wT_IosequencerInput.copy(i_i);
+
+		workloadTrackers.workloadTrackerPointers[workloadID.workloadID] = pWorkloadTracker;
+
+		// We time how long it takes to make the thread
+		{
+			ostringstream o;
+			o << "Creating LUN workload thread on host \"" << p_host->ivyscript_hostname << "\", LUN \"" << p_LUN->attribute_value(std::string("LUN_name")) << "\", workload name \""
+			  << workloadName << "\", iosequencer \"" << iosequencerName << "\", parameters \"" << i_i.toString() << "\".";
+			log(masterlogfile,o.str());
+		}
+
+		ivytime beforeMakingThread;
+		beforeMakingThread.setToNow();
+
+		// get lock on talking to pipe_driver_subthread for this remote host
+		{
+			std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
+			// tell slave driver thread to talk to the other end and make the thread
+
+			p_host->commandString=std::string("[CreateWorkload]");
+
+			p_host->commandHost = p_LUN->attribute_value(std::string("ivyscript_hostname"));
+			p_host->commandLUN = p_LUN->attribute_value(std::string("LUN_name"));
+			p_host->commandWorkloadID = workloadID.workloadID;
+			p_host->commandIosequencerName = iosequencerName;
+			p_host->commandIosequencerParameters = i_i.toString();
+
+			p_host->command=true;
+			p_host->commandSuccess=false;
+			p_host->commandComplete=false;
+			p_host->commandErrorMessage.clear();
+		}
+		p_host->master_slave_cv.notify_all();
+
+		// wait for the outcome of making the remote thread
+		{
+			std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
+			while (!p_host->commandComplete) p_host->master_slave_cv.wait(u_lk);
+
+			if (!p_host->commandSuccess)
+			{
+				ostringstream o;
+				o << "Failed creating thread on host \"" << p_host->ivyscript_hostname << "\", LUN \"" << p_LUN->attribute_value(std::string("LUN_name")) << "\", workload name \""
+				  << workloadName << "\", iosequencer \"" << iosequencerName << "\", parameters \"" << i_i.toString() << "\".";
+                return std::make_pair(false,o.str());
+			}
+		}
+		ivytime afterMakingThread;
+		afterMakingThread.setToNow();
+		ivytime createThreadExecutionTime = afterMakingThread - beforeMakingThread;
+		createWorkloadExecutionTimeSeconds.push(createThreadExecutionTime.getlongdoubleseconds());
+	}
+
+
+	{
+		std::ostringstream o;
+		o << "      remote create thread execution time summary: total time " << createWorkloadExecutionTimeSeconds.sum()
+			<<" seconds - count " <<   createWorkloadExecutionTimeSeconds.count()
+			<< " - average " << createWorkloadExecutionTimeSeconds.avg()
+			<< " seconds - minimum " << createWorkloadExecutionTimeSeconds.min()
+			<< " seconds - maximum " << createWorkloadExecutionTimeSeconds.max()
+			<< " seconds." << std::endl;
+
+/*debug*/ std::cout<< o.str();
+
+		log(masterlogfile,o.str());
+	}
+
+
+	return std::make_pair(true,std::string(""));
+}
+
+std::pair<bool /*success*/, std::string /* message */>
+master_stuff::deleteWorkload(
+    const std::string& workloadName,
+    const std::string& select_string)
+{
+    {
+        std::ostringstream o;
+        o << "ivy engine API delete_workload("
+            << "workload name = " << put_in_quotes(workloadName)
+            << ", select = " << put_in_quotes(select_string)
+            << ")" << std::endl;
+        std::cout << o.str();
+        log (m_s.masterlogfile,o.str());
+        log(ivy_engine_logfile,o.str());
+   }
+
+    std::list <WorkloadID> delete_list {};
+
+    std::string s = workloadName;
+    trim(s); // removes leading/trailing whitespace
+
+    bool delete_all {false};
+
+    if (  (s.size() == 0)  ||  (s == "*")  )   // blank workload name or asterisk * means delete all
+    {
+        delete_all = true;
+    }
+    else
+    {
+        // Look at proposed workload name
+
+        if (!looksLikeHostname(s))
+        {
+            ostringstream o;
+            o << "Invalid workload name \"" << workloadName << "\".  Workload names start with an alphabetic [a-zA-Z] character and the rest is all alphanumerics and underscores [a-zA-Z0-9_].";
+            return std::make_pair(false,o.str());
+        }
+    }
+
+    JSON_select select;
+
+    if (!select.compile_JSON_select(select_string))
+    {
+        std::ostringstream o;
+        o << "<Error> delete workload] failed - invalid \"select\" expression \"" << select_string << "\" - error message follows: " << select.error_message << std::endl;
+        log(m_s.masterlogfile,o.str());
+        std::cout << o.str();
+        m_s.kill_subthreads_and_exit();
+    }
+    { std::ostringstream o; o << "delete workload select " << select << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str()); }
+
+    for (auto& pear : workloadTrackers.workloadTrackerPointers)
+    {
+        const std::string& key = pear.first;
+        WorkloadTracker* p_WorkloadTracker = pear.second;
+
+        WorkloadID w;
+
+        if (!w.set(key))
+        {
+		    ostringstream o;
+		    o << "<Error> delete workload - internal programming error.  The key of an entry in workloadTrackers.workloadTrackerPointers did not parse as a valid WorkloadID.";
+			std::cout << "Sorry if you are going to see this twice, but just in case: " << o.str() << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        if (delete_all)
+        {
+            delete_list.push_back(w);
+        }
+        else
+        {
+            if (stringCaseInsensitiveEquality(w.getWorkloadPart(),s))
+            {
+                // if the LUN behind this workload matches the Select clause, it's one we need to delete
+                if (select.is_null())
+                {
+                    delete_list.push_back(w);
+                }
+                else
+                {
+                    if (select.matches(&(p_WorkloadTracker->workloadLUN)))
+                    {
+                        delete_list.push_back(w);
+                    }
+                }
+            }
+        }
+    }
+
+    if (delete_list.size() == 0)
+    {
+        std::ostringstream o;
+        o << "<Error> [DeleteWorkload] - no matching instances of \"" << workloadName << "\" were available to delete.";
+        std::cout << "Sorry if you are going to see this twice, but just in case: " << o.str() << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+	deleteWorkloadExecutionTimeSeconds.clear();
+
+	for (auto& wid : delete_list)  // judged not worth the effor to for a set of LUNs in parallel, like we do for editWorkload(), since this is when workloads are stopped.
+	{
+		std::string ivyscript_hostname = wid.getHostPart();
+
+		// First we need to lookup the pointer to the subthread for the host, so we can talk to it.
+
+		std::unordered_map<std::string,pipe_driver_subthread*>::iterator
+            it = host_subthread_pointers.find(ivyscript_hostname);
+
+		if (it == host_subthread_pointers.end())
+		{
+		    ostringstream o;
+		    o << "<Error> [DeleteWorkload] - internal programming error.  Failed looking up pipe_driver_subthread* for host = \"" << ivyscript_hostname <<   "\".";
+            return std::make_pair(false,o.str());
+		}
+
+		pipe_driver_subthread* p_host = it->second;
+
+        auto wit = workloadTrackers.workloadTrackerPointers.find(wid.workloadID);
+
+        if (wit == workloadTrackers.workloadTrackerPointers.end())
+        {
+		    ostringstream o;
+		    o << "<Error> [DeleteWorkload] - internal programming error.  workloadTrackers.workloadTrackerPointers.find(\"" << wid.workloadID << "\") failed when about to delete it.";
+            return std::make_pair(false,o.str());
+        }
+
+		// We time how long it takes to delete the thread
+		{
+			ostringstream o;
+			o << "Deleting workload thread on host \"" << ivyscript_hostname
+			  << "\", LUN \"" << wid.getLunPart()
+			  << "\", workload \"" << wid.getWorkloadPart() << "\".";
+			log(masterlogfile,o.str());
+		}
+
+		ivytime beforeDeletingThread; beforeDeletingThread.setToNow();
+
+		// get lock on talking to pipe_driver_subthread for this remote host
+		{
+			std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
+			// tell slave driver thread to talk to the other end and make the thread
+
+			p_host->commandString=std::string("[DeleteWorkload]");
+			p_host->commandWorkloadID = wid.workloadID;
+
+			p_host->command=true;
+			p_host->commandSuccess=false;
+			p_host->commandComplete=false;
+			p_host->commandErrorMessage.clear();
+		}
+		p_host->master_slave_cv.notify_all();
+
+		// wait for the outcome of deleting the remote thread
+		{
+			std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
+			while (!p_host->commandComplete) p_host->master_slave_cv.wait(u_lk);
+
+			if (!p_host->commandSuccess)
+			{
+				ostringstream o;
+				o << "Failed deleting workload ID " << wid.workloadID;
+                return std::make_pair(false,o.str());
+			}
+		}
+		ivytime afterDeletingThread; afterDeletingThread.setToNow();
+
+		ivytime deleteThreadExecutionTime = afterDeletingThread - beforeDeletingThread;
+
+		deleteWorkloadExecutionTimeSeconds.push(deleteThreadExecutionTime.getlongdoubleseconds());
+
+		delete wit->second; // A struct really
+		workloadTrackers.workloadTrackerPointers.erase(wit);
+	}
+
+
+	{
+		std::ostringstream o;
+		o << "      remote delete workload thread execution time summary: total time " << deleteWorkloadExecutionTimeSeconds.sum()
+			<<" seconds - count " <<   deleteWorkloadExecutionTimeSeconds.count()
+			<< " - average " << deleteWorkloadExecutionTimeSeconds.avg()
+			<< "seconds - minimum " << deleteWorkloadExecutionTimeSeconds.min()
+			<< "seconds - maximum " << deleteWorkloadExecutionTimeSeconds.max() << "seconds." << std::endl;
+
+/*debug*/ std::cout<< o.str();
+
+		log(masterlogfile,o.str());
+	}
+
+
+	return std::make_pair(true,std::string(""));
+}
+
+std::pair<bool /*success*/, std::string /* message */>
+master_stuff::create_rollup(
+      std::string attributeNameComboText
+    , bool nocsvSection
+    , bool quantitySection
+    , bool maxDroopMaxtoMinIOPSSection
+    , std::string nocsvText
+    , ivy_int quantity
+    , ivy_float maxDroop
+)
+{
+    {
+        std::ostringstream o;
+        o << "ivy engine API create_rollup(";
+        o << "rollup_name = " << put_in_quotes(attributeNameComboText);
+        o << ", nocsv = ";                          if (nocsvSection)                o << true; else o << "false";
+        o << ", have_quantity_validation = ";       if (quantitySection)             o << true; else o << "false";
+        o << ", have_max_IOPS_droop_validation = "; if (maxDroopMaxtoMinIOPSSection) o << true; else o << "false";
+        o << ", nocsv_text = " << put_in_quotes(nocsvText);
+        o << ", quantity = " << quantity;
+        o << ", max_droop = " << maxDroop;
+        o << ")" << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        log(ivy_engine_logfile,o.str());
+    }
+
+    if ( !haveHosts )
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine API - attempt to create a rollup with no preceeding [hosts] statement to start up the ivy engine and discover the test configuration." << std::endl;
+        return std::make_pair(false, o.str());
+    }
+
+    std::pair<bool,std::string> rc;
+    rc.first = rollups.addRollupType(rc.second, attributeNameComboText, nocsvSection, quantitySection, maxDroopMaxtoMinIOPSSection, nocsvText, quantity, maxDroop);
+
+    if (!rc.first) return rc;
+
+    auto it = rollups.rollups.find(toLower(attributeNameComboText));
+    if (rollups.rollups.end() == it)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine API - create rollup failed - internal programming error.  Unable to find the new RollupType we supposedly just made."<< std::endl;
+        log(m_s.masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+
+    //m_s.need_to_rebuild_rollups=true; - removed so scripting language builtins see up to date data structures
+    rollups.rebuild();
+
+    return rc;
+}
+
+bool master_stuff::editRollup(std::string& callers_error_message, std::string rollupText, std::string original_parametersText)
+// returns true on success
+{
+    {
+        std::ostringstream o;
+        o << "ivy engine API edit_rollup("
+            << "rollup_name = " << put_in_quotes(rollupText)
+            << ", parameters = " << put_in_quotes(original_parametersText)
+            << ")" << std::endl;
+        std::cout << o.str();
+        log (m_s.masterlogfile,o.str());
+        log(ivy_engine_logfile,o.str());
+    }
+
+//variables
+	ListOfNameEqualsValueList listOfNameEqualsValueList(rollupText);
+	WorkloadTrackers editRollupWorkloadTrackers;
+	int fieldsInAttributeNameCombo,fieldsInAttributeValueCombo;
+	ivytime beforeEditWorkload;  // it's called editRollup at the ivymaster level, but once we build the list of edits by host, at the host level it's editWorkload
+
+    std::string parametersText = original_parametersText;
+//code
+
+//*debug*/{std::ostringstream o; o << "master_stuff::editRollup(, rollupText=\"" << rollupText << "\", parametersText=\"" << parametersText << "\")" << std::endl; std::cout << o.str(); log(masterlogfile,o.str());}
+
+	beforeEditWorkload.setToNow();
+	editWorkloadExecutionTimeSeconds.clear();
+
+
+
+	callers_error_message.clear();
+
+	if (!listOfNameEqualsValueList.parsedOK())
+	{
+		std::ostringstream o;
+
+		o << "Parse error.  Rollup specification \"" << rollupText << "\" should look like \"host=sun159\" or \"serial_number+port = { 410321+1A, 410321+2A }\" - "
+		  << listOfNameEqualsValueList.getParseErrorMessage();
+
+		callers_error_message = o.str();
+		return false;
+	}
+
+	if (1 < listOfNameEqualsValueList.clauses.size())
+	{
+		callers_error_message = "Rollup specifications with more than one attribute = value list clause are not implemented at this time.\n"
+			"Should multiple clauses do a union or an intersection of the WorkloadIDs selected in each clause?\n";
+		return false;
+	}
+
+	if (0 == listOfNameEqualsValueList.clauses.size())
+	{
+		editRollupWorkloadTrackers.clone(workloadTrackers);
+	}
+	else
+	{
+		// validate the "serial_number+Port" part of "serial_number+Port = { 410321+1A, 410321+2A }"
+
+		std::string rollupsKey;
+		std::string my_error_message;
+
+		rollupsKey = toLower(listOfNameEqualsValueList.clauses.front()->name_token);
+
+		if (!isPlusSignCombo(my_error_message, fieldsInAttributeNameCombo, rollupsKey ))
+		{
+			std::ostringstream o;
+			o << "rollup type \"" << listOfNameEqualsValueList.clauses.front()->name_token << "\" is malformed - " << my_error_message
+			  << " - The rollup type is the \"serial_number+Port\" part of \"serial_number+Port = { 410321+1A, 410321+2A }\".";
+			callers_error_message = o.str();
+			return false;
+		}
+
+		auto it = rollups.rollups.find(rollupsKey);  // thank you, C++11.
+
+		if (rollups.rollups.end() == it)
+		{
+			std::ostringstream o;
+//*debug*/		o << " rollupsKey=\"" << rollupsKey << "\" ";
+			o << "No such rollup \"" << listOfNameEqualsValueList.clauses.front()->name_token << "\".  Valid choices are:";
+			for (auto& pear : rollups.rollups)
+			{
+//*debug*/			o << " key=\"" << pear.first << "\"";
+				o << " " << pear.second->attributeNameCombo.attributeNameComboID;
+			}
+			callers_error_message = o.str();
+			return false;
+		}
+
+		RollupType* pRollupType = (*it).second;
+
+		// Before we start doing any matching, return an error message if the user's value combo tokens don't have the same number of fields as the rollup name key
+
+		for (auto& matchToken : listOfNameEqualsValueList.clauses.front()->value_tokens)
+		{
+			if (!isPlusSignCombo(my_error_message, fieldsInAttributeValueCombo, matchToken))
+			{
+				std::ostringstream o;
+				o << "rollup instance \"" << matchToken << "\" is malformed - " << my_error_message
+				  << " - A rollup instance in \"serial_number+Port = { 410321+1A, 410321+2A }\" is \"410321+1A\".";
+				callers_error_message = o.str();
+				return false;
+			}
+			if (fieldsInAttributeNameCombo != fieldsInAttributeValueCombo)
+			{
+				std::ostringstream o;
+				o << "rollup instance \"" << matchToken << "\" does not have the same number of \'+\'-delimited fields as the rollup type \"" << listOfNameEqualsValueList.clauses.front()->name_token << "\".";
+				callers_error_message = o.str();
+				return false;
+			}
+		}
+
+		// We make a ListOfWorkloadIDs for each test host, as this has the toString() and fromString() methods to send over the pipe to ivyslave at the other end;
+		// Then on the other end these are also the keys for looking up the iosequencer threads to post the parameter updates to.
+
+//   XXXXXXX  And we are going to need to add "shorthand" for ranges of LDEVs, or hostnames, or PGs, ...
+
+		// Then once we have the map ListOfWorkloadIDs[ivyscript_hostname] all built successfully
+		// before we start sending any updates to ivyslave hosts we first apply the parameter updates
+		// on the local copy we keep of the "next" subinterval IosequencerInput objects.
+
+		// We fail out with an error message if there is any problem applying the parameters locally.
+
+		// Then when we know that these particular parameters apply successfully to these particular WorkloadIDs,
+		// and we do local applys in parallel, of course, only then do we send the command to ivyslave to
+		// update parameters.
+
+		// We send out exactly the same command whether ivyslave is running or whether it's stopped waiting for commands.
+		// - if it's running, the parameters will be applied to the "next subinterval".
+		// - if it's stopped, the parameters will be applied to both subinterval objects which will be subintervals 0 and 1.
+
+
+		int command_workload_IDs {0};
+
+		for (auto& pear : host_subthread_pointers)
+		{
+			pear.second->commandListOfWorkloadIDs.clear();
+			// we don't need to get a lock to do this because the slave driver thread only looks at this when we are waiting for it to perform an action on a set of WorkloadIDs.
+		}
+
+		for (auto& matchToken : listOfNameEqualsValueList.clauses.front()->value_tokens)
+		{
+			// 410321+1A
+
+			auto rollupInstance_it = pRollupType/*serial_number+Port*/->instances.find(toLower(matchToken));
+
+			if ( pRollupType->instances.end() == rollupInstance_it )
+			{
+				std::ostringstream o;
+				o << "rollup instance \"" << matchToken << "\" not found.  Valid choices are:";
+				for (auto& pear : pRollupType->instances)
+				{
+					o << "  " << pear.second->rollupInstanceID;
+				}
+				callers_error_message = o.str();
+				return false;
+			}
+
+			ListOfWorkloadIDs& listofWIDs = (*rollupInstance_it).second->workloadIDs;
+
+			for (auto& wID : listofWIDs.workloadIDs)
+			{
+				host_subthread_pointers[wID.getHostPart()]->commandListOfWorkloadIDs.workloadIDs.push_back(wID);
+				command_workload_IDs++;
+			}
+		}
+
+		if (0 == command_workload_IDs)
+		{
+			callers_error_message = "editRollup() failed as no target workloads were selected.";
+			return false;
+		}
+
+		// OK now we have built the individual lists of affected workload IDs for each test host for the upcoming command
+
+
+		trim(parametersText);
+
+		if (0 == parametersText.length())
+		{
+			callers_error_message = "editRollup() failed - called with an empty string as parameter updates.";
+			return false;
+		}
+
+		rewrite_total_IOPS(parametersText, command_workload_IDs);
+			// rewrites the first instance of "total_IOPS = 5000" to "IOPS=1000.000000000000" by dividing total_IOPS by instances.
+			// total_IOPS number forms recognized:  1 .2 3. 4.4 1.0e3 1e+3 1.e-3 3E4, which is perhaps more flexible than with IOPS, which may only take fixed point numbers
+			// returns true if it re-wrote, false if it didn't see "total_IOPS".
+
+		// Now we first verify that user parameters apply successfully to the "next subinterval" IosequencerInput objects in the affected WorkloadTrackers
+
+		for (auto& pear : host_subthread_pointers)
+		{
+			for (auto& wID : pear.second->commandListOfWorkloadIDs.workloadIDs)
+			{
+				auto wit = workloadTrackers.workloadTrackerPointers.find(wID.workloadID);
+				if (workloadTrackers.workloadTrackerPointers.end() == wit)
+				{
+					std::ostringstream o;
+					o << "master_stuff::editRollup() - dreaded internal programming error - at the last moment the WorkloadTracker pointer lookup failed for workloadID = \"" << wID.workloadID << "\"";
+					callers_error_message += o.str();
+					std::cout << o.str() << std::endl;
+					return false;
+				}
+
+				WorkloadTracker* pWT = (*wit).second;
+				std::string error_message;
+				if (!pWT->wT_IosequencerInput.setMultipleParameters(error_message, parametersText))
+				{
+					std::ostringstream o;
+					o << "<Error> Failed setting parameters \"" << parametersText
+                        << "\" into local WorkloadTracker object for WorkloadID = \"" << wID.workloadID << "\"" << std::endl << error_message;
+					callers_error_message = o.str();
+					return false;
+				}
+			}
+		}
+
+
+		// Finally, we have a list of WorkloadIDs for each test host, and we have confirmed that the parameter updates applied successfully to the local copies of the IosequencerInput object.
+
+		for (auto& pear : host_subthread_pointers)
+		{
+			pipe_driver_subthread* p_host = pear.second;
+			if (0 == p_host->commandListOfWorkloadIDs.workloadIDs.size()) continue;
+
+			// get lock on talking to pipe_driver_subthread for this remote host
+			{
+				std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
+
+				// Already set earlier: ListOfWorkloadIDs p_host->commandListOfWorkloadIDs;
+				p_host->commandStart.setToNow();
+				p_host->commandString=std::string("[EditWorkload]");
+				p_host->commandIosequencerParameters = parametersText;
+
+				p_host->command=true;
+				p_host->commandSuccess=false;
+				p_host->commandComplete=false;
+			}
+			p_host->master_slave_cv.notify_all();
+		}
+
+		// Now we wait for the hosts in no particular order to have finished executing the command.
+		// The slave driver thread does commandFinish.setToNow() when it is done, so we can still see the min/max/avg by-host in parallel editRollup execution time
+
+		for (auto& pear : host_subthread_pointers)
+		{
+			pipe_driver_subthread* p_host = pear.second;
+
+			if (0 != std::string("[EditWorkload]").compare(p_host->commandString)) continue;
+
+			// wait for the slave driver thread to say commandComplete
+			{
+				std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
+				while (!p_host->commandComplete) p_host->master_slave_cv.wait(u_lk);
+
+				if (!p_host->commandSuccess)
+				{
+					std::ostringstream o;
+					o << "ivymaster main thread notified by host driver subthread of failure to set parameters \""
+					  << parametersText << "\" in WorkloadIDs " << p_host-> commandListOfWorkloadIDs.toString() << std::endl
+					  << p_host->commandErrorMessage;  // don't forget to clear this when we get there
+					callers_error_message = o.str();
+					return false;
+				}
+			}
+//*debug*/{std::ostringstream o; o << "p_host->commandFinish = " << p_host->commandFinish.format_as_datetime_with_ns() << ", beforeEditWorkload = " << beforeEditWorkload.format_as_datetime_with_ns() << std::endl; log(masterlogfile,o.str());}
+			ivytime editWorkloadExecutionTime = p_host->commandFinish - beforeEditWorkload;
+
+			editWorkloadExecutionTimeSeconds.push(editWorkloadExecutionTime.getlongdoubleseconds());
+		}
+
+		{
+			std::ostringstream o;
+			o << "     - execution time by host thread: - number of hosts = " <<   editWorkloadExecutionTimeSeconds.count()
+				<< " - average " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.avg()) << " ms"
+				<< " - min " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.min()) << " ms"
+				<< " - max " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.max()) << " ms"
+				<< std::endl;
+
+			std::cout<< o.str();
+			log(masterlogfile,o.str());
+		}
+	}
+
+	return true;
+}
+
+std::pair<bool /*success*/, std::string /* message */>
+master_stuff::delete_rollup(const std::string& attributeNameComboText)
+{
+    {
+        std::ostringstream o;
+        o << "ivy engine API delete_rollup("
+            << "rollup_name = " << put_in_quotes(attributeNameComboText)
+            << ")" << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        log(ivy_engine_logfile,o.str());
+    }
+    bool delete_all_not_all {false};
+
+    if (attributeNameComboText.size()==0 || attributeNameComboText == "*") { delete_all_not_all = true;}
+
+    if (delete_all_not_all)
+    {
+        // delete all rollups except "all"
+        for (auto& pear : rollups.rollups)
+        {
+            if (stringCaseInsensitiveEquality("all", pear.first)) continue;
+
+            std::string my_error_message;
+            if ( ! rollups.deleteRollup(my_error_message, pear.first))
+            {
+                std::ostringstream o;
+                o << "<Error> ivy engine API - for \"delete all rollups except the \'all\' rollup\" - failed trying to delete "
+                    << put_in_quotes(pear.first) << " - " << my_error_message << std::endl;
+                log(m_s.masterlogfile,o.str());
+                std::cout << o.str();
+                return std::make_pair(false,o.str());
+            }
+        }
+    }
+    else
+    {
+        if (stringCaseInsensitiveEquality(std::string("all"),attributeNameComboText))
+        {
+            std::string msg = "\nI\'m so sorry, Dave, I cannot delete the \"all\" rollup.\n\n";
+            log(m_s.masterlogfile,msg);
+            std::cout << msg;
+            return std::make_pair(false,msg);
+        }
+
+        std::string my_error_message;
+        if ( ! m_s.rollups.deleteRollup(my_error_message, attributeNameComboText))
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine API - delete rollup for " << put_in_quotes(attributeNameComboText) << " failed - " << my_error_message << std::endl;
+            log(m_s.masterlogfile,o.str());
+            std::cout << o.str();
+            return std::make_pair(false,o.str());
+        }
+    }
+
+    //m_s.need_to_rebuild_rollups=true; - removed so scripting language builtins see up to date data structures
+    rollups.rebuild();
+
+    return std::make_pair(true,std::string(""));
+}
+
+std::pair<bool /*success*/, std::string /* message */>
+master_stuff::go(const std::string& parameters)
+{
+    {
+        std::ostringstream o;
+        o << "ivy engine API go("
+            << "parameters = " << put_in_quotes(parameters)
+            << " )" << std::endl;
+        log (masterlogfile,o.str());
+        std::cout << o.str();
+        log(ivy_engine_logfile,o.str());
+    }
+    std::pair<bool,std::string> rc {};
+
+    if ( !haveHosts )
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine API \"go\" invoked with no preceeding ivy engine startup and no workloads created." << std::endl;
+        rc.first=false;
+        rc.second=o.str();
+        return rc;
+    }
+
+    // This code starts with the get go.  I just had to say that.
+
+    have_pid = false;
+    have_measure = false;
+    have_workload = false;
+    have_RAID_subsystem = false;
+    have_within = false;
+    have_max_above_or_below = false;
+
+    goStatementsSeen++;
+
+    get_go.setToNow();
+
+    {
+        std:: ostringstream o;
+        o << "step" << std::setw(4) << std::setfill('0') << (goStatementsSeen-1);
+        stepNNNN=o.str();
+    }
+    trim(goParameters);
+
+    std::pair<bool,std::string> r = go_parameters.fromString(parameters);
+    if (!r.first)
+    {
+        std::ostringstream o;
+        o << std::endl << "<Error> ivy engine API - Failed parsing [Go!] parameters \"" << parameters << "\"." << std::endl << std::endl
+            << "[Go] parameters should look like:" << std::endl << "     parameter1=value1, parameter2=\"value 2\", ..." << std:: endl
+            << "where parameter names are identifiers starting with an alphabetic and continuing with alphanumerics and underscores" << std::endl
+            << "and where parameter values need to be enclosed in quotes if they contain any characters other than"
+            << "English alphanumerics (\'a\'-\'z\', \'A\'-\'Z\', \'0\'-\'9\'), underscores (\'_\'), periods (\'.\'), or percent signs (\'%\')." << std::endl
+            << "Example of OK unquoted value:  accuracy_plus_minus = 2.5%" << std::endl << std::endl
+            << r.second << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        kill_subthreads_and_exit();
+    }
+
+    std::string valid_parameter_names = "stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, catnap_time_seconds, post_time_limit_seconds";
+
+    std::string valid_parameters_message =
+        "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
+        "                                                   catnap_time_seconds, post_time_limit_seconds.\n\n"
+        "For dfc = pid, additional valid parameters are:    p, i, d, target_value, starting_total_IOPS, min_IOPS.\n\n"
+        "For measure = on, additional valid parameters are: accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
+        "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n\n"
+        "For source = workload, additional valid parameters are: category, accumulator_type, accessor.\n\n"
+        "For source = RAID_subsystem, additional valid parameters are: subsystem_element, element_metric.\n\n";
+
+    if (go_parameters.contains("stepname")) stepName = go_parameters.retrieve("stepname");
+    else stepName = stepNNNN;
+
+    if (!go_parameters.contains(std::string("subinterval_seconds")))  go_parameters.contents[toLower(std::string("subinterval_seconds"))]  = subinterval_seconds_default;
+    if (!go_parameters.contains(std::string("warmup_seconds")))      go_parameters.contents[toLower(std::string("warmup_seconds"))]      = warmup_seconds_default;
+    if (!go_parameters.contains(std::string("measure_seconds")))     go_parameters.contents[toLower(std::string("measure_seconds"))]     = measure_seconds_default;
+    if (!go_parameters.contains(std::string("cooldown_by_wp")))      go_parameters.contents[toLower(std::string("cooldown_by_wp"))]      = cooldown_by_wp_default;
+
+    if (!go_parameters.contains(std::string("catnap_time_seconds")))
+    {
+        std::ostringstream o;
+        o << std::fixed << catnap_time_seconds_default;
+        go_parameters.contents[toLower(std::string("catnap_time_seconds"))] = o.str();
+    }
+
+    if (!go_parameters.contains(std::string("post_time_limit_seconds")))
+    {
+        std::ostringstream o;
+        o << std::fixed << post_time_limit_seconds_default;
+        go_parameters.contents[toLower(std::string("post_time_limit_seconds"))] = o.str();
+    }
+
+    if (go_parameters.contains(std::string("dfc")))
+    {
+
+        std::string controllerName = go_parameters.retrieve("dfc");
+
+        if (stringCaseInsensitiveEquality("pid", controllerName))
+        {
+            have_pid = true;
+            valid_parameter_names += ", dfc, p, i, d, target_value, starting_total_IOPS, min_IOPS";
+
+            if (!go_parameters.contains(std::string("p")))                        go_parameters.contents[toLower(std::string("p"                  ))] = p_default;
+            if (!go_parameters.contains(std::string("i")))                        go_parameters.contents[toLower(std::string("i"                  ))] = i_default;
+            if (!go_parameters.contains(std::string("d")))                        go_parameters.contents[toLower(std::string("d"                  ))] = d_default;
+            if (!go_parameters.contains(std::string("target_value")))             go_parameters.contents[toLower(std::string("target_value"       ))] = target_value_default;
+            if (!go_parameters.contains(std::string("starting_total_IOPS")))      go_parameters.contents[toLower(std::string("starting_total_IOPS"))] = starting_total_IOPS_default;
+            if (!go_parameters.contains(std::string("min_IOPS")))                 go_parameters.contents[toLower(std::string("min_IOPS"           ))] = min_IOPS_default;
+        }
+        else
+        {
+            std::ostringstream o;
+            o << std::endl << "<Error> ivy engine API go() - \"dfc\", if specified, may only be set to \"pid\"." << std::endl << std::endl;
+            std::cout << o.str();
+            log(masterlogfile,o.str());
+            kill_subthreads_and_exit();
+        }
+
+//        std::map<std::string, DynamicFeedbackController*>::iterator controller_it = availableControllers.find(toLower(controllerName));
+//
+//        if (availableControllers.end() == controller_it)
+//        {
+//            std::ostringstream o;
+//            o << std::endl << "Failed - Dynamic Feedback Controller (dfc) \"" << controllerName << "\" not found. Valid values are:" << std::endl;
+//            for (auto& pear : availableControllers) o << pear.first << std::endl;
+//            std::cout << o.str();
+//            log(masterlogfile,o.str());
+//            kill_subthreads_and_exit();
+//        }
+
+        the_dfc.reset();
+    }
+
+    if (go_parameters.contains(std::string("measure")))
+    {
+        std::string measure_parameter_value = go_parameters.retrieve("measure");
+
+        // measure = MB_per_second           is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=bytes_transferred, accessor=sum
+        // measure = IOPS                    is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=bytes_transferred, accessor=count
+        // measure = service_time_seconds    is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=service_time,      accessor=avg
+        // measure = response_time_seconds   is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=response_time,     accessor=avg
+        // measure = MP_core_busy_percent    is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=MP_core, element_metric=busy_percent
+        // measure = PG_busy_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=PG,      element_metric=busy_percent
+        // measure = CLPR_WP_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=CLPR,    element_metric=WP_percent
+
+
+        if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("MB_per_second")))
+        {
+            go_parameters.contents[toLower("measure")] = "on";
+            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[toLower("source")] = "workload";
+            go_parameters.contents[toLower("category")] = "overall";
+            go_parameters.contents[toLower("accumulator_type")] = "bytes_transferred";
+            go_parameters.contents[toLower("accessor")] = "sum";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("IOPS")))
+        {
+            go_parameters.contents[toLower("measure")] = "on";
+            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[toLower("source")] = "workload";
+            go_parameters.contents[toLower("category")] = "overall";
+            go_parameters.contents[toLower("accumulator_type")] = "bytes_transferred";
+            go_parameters.contents[toLower("accessor")] = "count";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("service_time_seconds")))
+        {
+            go_parameters.contents[toLower("measure")] = "on";
+            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[toLower("source")] = "workload";
+            go_parameters.contents[toLower("category")] = "overall";
+            go_parameters.contents[toLower("accumulator_type")] = "service_time";
+            go_parameters.contents[toLower("accessor")] = "avg";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("response_time_seconds")))
+        {
+            go_parameters.contents[toLower("measure")] = "on";
+            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[toLower("source")] = "workload";
+            go_parameters.contents[toLower("category")] = "overall";
+            go_parameters.contents[toLower("accumulator_type")] = "response_time";
+            go_parameters.contents[toLower("accessor")] = "avg";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("MP_core_busy_percent")))
+        {
+            go_parameters.contents[toLower("measure")] = "on";
+            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[toLower("source")] = "RAID_subsystem";
+            go_parameters.contents[toLower("subsystem_element")] = "MP_core";
+            go_parameters.contents[toLower("element_metric")] = "busy_percent";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("PG_busy_percent")))
+        {
+            go_parameters.contents[toLower("measure")] = "on";
+            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[toLower("source")] = "RAID_subsystem";
+            go_parameters.contents[toLower("subsystem_element")] = "PG";
+            go_parameters.contents[toLower("element_metric")] = "busy_percent";
+        }
+        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("CLPR_WP_percent")))
+        {
+            go_parameters.contents[toLower("measure")] = "on";
+            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[toLower("source")] = "RAID_subsystem";
+            go_parameters.contents[toLower("subsystem_element")] = "CLPR";
+            go_parameters.contents[toLower("element_metric")] = "WP_percent";
+        }
+
+        // maybe we have a measure_focus_rollup and a pid_focus_rollup and they default to focus_rollup which defaults to "all"?
+
+        // How hard would it be to have measure and pid each on their own focus_rollup?
+
+        measure_parameter_value = go_parameters.retrieve("measure");
+
+        if (stringCaseInsensitiveEquality(std::string("on"),measure_parameter_value))
+        {
+            have_measure = true;
+            valid_parameter_names += ", measure, accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds";
+            if (!go_parameters.contains(std::string("accuracy_plus_minus"))) go_parameters.contents[toLower(std::string("accuracy_plus_minus"))] = accuracy_plus_minus_default;
+            if (!go_parameters.contains(std::string("confidence")))          go_parameters.contents[toLower(std::string("confidence"))]          = confidence_default;
+            if (!go_parameters.contains(std::string("min_wp")))              go_parameters.contents[toLower(std::string("min_wp"))]              = min_wp_default;
+            if (!go_parameters.contains(std::string("max_wp")))              go_parameters.contents[toLower(std::string("max_wp"))]              = max_wp_default;
+            if (!go_parameters.contains(std::string("max_wp_change")))       go_parameters.contents[toLower(std::string("max_wp_change"))]       = max_wp_change_default;
+            if (!go_parameters.contains(std::string("timeout_seconds")))     go_parameters.contents[toLower(std::string("timeout_seconds"))]     = timeout_seconds_default;
+        }
+        else
+        {
+            if (!stringCaseInsensitiveEquality(std::string("off"),measure_parameter_value))
+            {
+                std::ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - \"measure\" may only be set to \"on\" or \"off\"." << std::endl << std::endl
+                                   << "Go statement specifies parameter values " << go_parameters.toString() << std::endl;
+                std::cout << o.str();
+                log(masterlogfile,o.str());
+                kill_subthreads_and_exit();
+            }
+        }
+
+    }
+
+    if (have_measure || have_pid)
+    {
+        valid_parameter_names += ", focus_rollup, source";
+
+        if (!go_parameters.contains(std::string("focus_rollup"))) go_parameters.contents[toLower(std::string("focus_rollup"))] = focus_rollup_default;
+        if (!go_parameters.contains(std::string("source")))       go_parameters.contents[toLower(std::string("source"))]       = source_default;
+
+        source_parameter = go_parameters.retrieve("source");
+
+        if (stringCaseInsensitiveEquality(source_parameter,std::string("workload")))
+        {
+            have_workload = true;
+            valid_parameter_names += ", category, accumulator_type, accessor";
+
+            if (!go_parameters.contains(std::string("category")))         go_parameters.contents[toLower(std::string("category"))]         = category_default;
+            if (!go_parameters.contains(std::string("accumulator_type"))) go_parameters.contents[toLower(std::string("accumulator_type"))] = accumulator_type_default;
+            if (!go_parameters.contains(std::string("accessor")))         go_parameters.contents[toLower(std::string("accessor"))]         = accessor_default;
+        }
+        else if (stringCaseInsensitiveEquality(source_parameter,std::string("RAID_subsystem")))
+        {
+            have_RAID_subsystem = true;
+            valid_parameter_names += ", subsystem_element, element_metric";
+
+            if (!go_parameters.contains(std::string("subsystem_element")))  go_parameters.contents[toLower(std::string("subsystem_element"))] = subsystem_element_default;
+            if (!go_parameters.contains(std::string("element_metric")))     go_parameters.contents[toLower(std::string("element_metric"))]    = element_metric_default;
+        }
+        else
+        {
+            std::ostringstream o;
+            o << std::endl << "<Error>  ivy engine API - go() - The only valid values for the \"source\" parameter are \"workload\" and \"RAID_subsystem\"." << std::endl << std::endl
+                               << "[Go] statement parameter values " << go_parameters.toString() << std::endl;
+            std::cout << o.str();
+            log(masterlogfile,o.str());
+            kill_subthreads_and_exit();
+        }
+    }
+
+    if (have_pid && have_measure)
+    {
+        valid_parameter_names += ", within";
+        if (go_parameters.contains(std::string("within")))
+        {
+            // within="1%"
+            // must be greater than zero, less than or equal to one.
+
+            have_within = true;
+
+            try
+            {
+                within = number_optional_trailing_percent(go_parameters.retrieve("within"));
+            }
+            catch(std::invalid_argument& iaex)
+            {
+                std::ostringstream o;
+                o << "<Error> ivy engine API - go() - Invalid \"within\" parameter value \"" << go_parameters.retrieve("within") << "\"." << std::endl;
+                o << "Must be a number greater than zero and less than or equal to 1." << std::endl;
+                std::cout << o.str();
+                log(masterlogfile,o.str());
+                kill_subthreads_and_exit();
+            }
+            if (within <= 0.0 || within >1)
+            {
+                std::ostringstream o;
+                o << "<Error> ivy engine API - go() - Invalid \"within\" parameter value \"" << go_parameters.retrieve("within") << "\".";
+                o << "  Must be a number greater than zero and less than or equal to 1." << std::endl;
+                std::cout << o.str();
+                log(masterlogfile,o.str());
+                kill_subthreads_and_exit();
+            }
+        }
+
+        valid_parameter_names += ", max_above_or_below";
+        if (go_parameters.contains(std::string("max_above_or_below")))
+        {
+            // must be a positive integer
+
+            // max number of consecutive intervals where the error signal stays the same sign
+
+            // "within" may be what you want to use most of the time, but I'm leaving this here for now.
+
+            have_max_above_or_below = true;
+
+            std::string maob_parm = go_parameters.retrieve("max_above_or_below");
+
+            trim(maob_parm);  // by reference
+
+            if ( (!isalldigits(maob_parm))  || (0==( max_above_or_below = (unsigned int) atoi(maob_parm.c_str()) )) )
+            {
+                std::ostringstream o;
+                o << "<Error> ivy engine API - go() - Invalid \"max_above_or_below\" parameter value \"" << go_parameters.retrieve("max_above_or_below") << "\"." << std::endl;
+                o << "Must be all digits representing a positive integer." << std::endl;
+                std::cout << o.str();
+                log(masterlogfile,o.str());
+                kill_subthreads_and_exit();
+            }
+        }
+    }
+
+    if (!go_parameters.containsOnlyValidParameterNames(valid_parameter_names))
+    {
+        std::ostringstream o;
+        o << std::endl << "<Error> ivy engine API - go() - Invalid [Go] statement parameter." << std::endl << std::endl
+                           << "Error found in [Go] statement parameter values: " << go_parameters.toString() << std::endl << std::endl
+                           << valid_parameters_message << std::endl << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        kill_subthreads_and_exit();
+    }
+
+
+    {
+        std::ostringstream o;
+        o << "Effective [Go!] statement parameters including defaulted parameters:" << go_parameters.toString() << std::endl;
+        std::cout << o.str();
+        log(masterlogfile, o.str());
+    }
+
+
+//----------------------------------- catnap_time_seconds
+    try
+    {
+        catnap_time_seconds = number_optional_trailing_percent(go_parameters.retrieve("catnap_time_seconds"));
+    }
+    catch(std::invalid_argument& iaex)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine API - go() - Invalid catnap_time_seconds parameter value \"" << go_parameters.retrieve("catnap_time_seconds") << "\"." << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        kill_subthreads_and_exit();
+    }
+
+//----------------------------------- post_time_limit_seconds
+    try
+    {
+        post_time_limit_seconds = number_optional_trailing_percent(go_parameters.retrieve("post_time_limit_seconds"));
+    }
+    catch(std::invalid_argument& iaex)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine API - go() - Invalid post_time_limit_seconds parameter value \"" << go_parameters.retrieve("post_time_limit_seconds") << "\"." << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        kill_subthreads_and_exit();
+    }
+
+//----------------------------------- subinterval_seconds
+    try
+    {
+        subinterval_seconds = number_optional_trailing_percent(go_parameters.retrieve("subinterval_seconds"));
+    }
+    catch(std::invalid_argument& iaex)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine API - go() - Invalid subinterval_seconds parameter value \"" << go_parameters.retrieve("subinterval_seconds") << "\"." << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        kill_subthreads_and_exit();
+    }
+
+    if (subinterval_seconds < min_subinterval_seconds || subinterval_seconds > max_subinterval_seconds )
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine API - go() - Invalid subinterval_seconds parameter value \"" << go_parameters.retrieve("subinterval_seconds") << "\".  Permitted range is from " << min_subinterval_seconds << " to " << max_subinterval_seconds << "." << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        kill_subthreads_and_exit();
+    }
+    subintervalLength = ivytime(subinterval_seconds);
+    if (subinterval_seconds < 3.)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine API - go() - Invalid subinterval_seconds parameter value \"" << go_parameters.retrieve("subinterval_seconds") << "\".  Permitted range is from " << min_subinterval_seconds << " to " << max_subinterval_seconds << "." << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        kill_subthreads_and_exit();
+    }
+
+//----------------------------------- warmup_seconds
+    try
+    {
+        warmup_seconds = number_optional_trailing_percent(go_parameters.retrieve("warmup_seconds"));
+    }
+    catch(std::invalid_argument& iae)
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid warmup_seconds parameter \"" << go_parameters.retrieve("warmup_seconds") << "\".  Must be a number." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+    if (warmup_seconds < subinterval_seconds)
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid warmup_seconds parameter \"" << go_parameters.retrieve("warmup_seconds") << "\".  Must be at least as long as subinterval_seconds = ." << subinterval_seconds << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+    min_warmup_count = (int) ceil( warmup_seconds / subinterval_seconds);
+
+
+//----------------------------------- measure_seconds
+    try
+    {
+        measure_seconds = number_optional_trailing_percent(go_parameters.retrieve("measure_seconds"));
+    }
+    catch(std::invalid_argument& iae)
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid measure_seconds parameter \"" << go_parameters.retrieve("measure_seconds") << "\".  Must be a number." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+    if (measure_seconds < subinterval_seconds)
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid measure_seconds parameter \"" << go_parameters.retrieve("measure_seconds") << "\".  Must be at least as long as subinterval_seconds = ." << subinterval_seconds << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+    min_measure_count = (int) ceil( measure_seconds / subinterval_seconds);
+
+//----------------------------------- cooldown_by_wp
+    if      ( stringCaseInsensitiveEquality(std::string("on"),  go_parameters.retrieve("cooldown_by_wp")) ) cooldown_by_wp = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"), go_parameters.retrieve("cooldown_by_wp")) ) cooldown_by_wp = false;
+    else
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid cooldown_by_wp parameter \"" << go_parameters.retrieve("cooldown_by_wp") << "\".  Must be \"on\" or \"off\"." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+
+
+    if (have_pid || have_measure)
+    {
+//----------------------------------- focus_rollup
+        focus_rollup_parameter = go_parameters.retrieve("focus_rollup");
+
+        auto it = rollups.rollups.find(toLower(focus_rollup_parameter));
+
+        if (it == rollups.rollups.end() )
+        {
+            ostringstream o;
+            o << "<Error> ivy engine API - go() - [Go] statement - invalid focus_rollup parameter \"" << focus_rollup_parameter << "\"." << std::endl;
+            o << "The rollups are"; for (auto& pear : rollups.rollups) o << "  \"" << pear.first << "\""; o << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+
+        p_focus_rollup = it->second;
+
+        if (have_workload)
+        {
+            source = source_enum::workload;
+
+//----------------------------------- category
+            category_parameter = go_parameters.retrieve("category");
+            if (stringCaseInsensitiveEquality(category_parameter,"overall")) category = category_enum::overall;
+            else if (stringCaseInsensitiveEquality(category_parameter,"read")) category = category_enum::read;
+            else if (stringCaseInsensitiveEquality(category_parameter,"write")) category = category_enum::write;
+            else if (stringCaseInsensitiveEquality(category_parameter,"random")) category = category_enum::random;
+            else if (stringCaseInsensitiveEquality(category_parameter,"sequential")) category = category_enum::sequential;
+            else if (stringCaseInsensitiveEquality(category_parameter,"random_read")) category = category_enum::random_read;
+            else if (stringCaseInsensitiveEquality(category_parameter,"sequential_read")) category = category_enum::sequential_read;
+            else if (stringCaseInsensitiveEquality(category_parameter,"sequential_write")) category = category_enum::sequential_write;
+            else
+            {
+                ostringstream o;
+                o << "<Error> ivy engine API - go() - [Go] statement - invalid category parameter \"" << category_parameter << "\"." << std::endl;
+                o << "The categories are overall, read, write, random, sequential, random_read, random_write, sequential_read, and sequential_write."; o << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+//----------------------------------- accumulator_type
+            accumulator_type_parameter = go_parameters.retrieve("accumulator_type");
+            if (stringCaseInsensitiveEquality(accumulator_type_parameter,"bytes_transferred")) accumulator_type = accumulator_type_enum::bytes_transferred;
+            else if (stringCaseInsensitiveEquality(accumulator_type_parameter,"service_time")) accumulator_type = accumulator_type_enum::service_time;
+            else if (stringCaseInsensitiveEquality(accumulator_type_parameter,"response_time")) accumulator_type = accumulator_type_enum::response_time;
+            else
+            {
+                ostringstream o;
+                o << "<Error> ivy engine API - go() - [Go] statement - invalid accumulator_type parameter \"" << accumulator_type_parameter << "\"." << std::endl;
+                o << "The accumulator_types are bytes_transferred, service_time, and response_timee."; o << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+//----------------------------------- accessor
+            accessor_parameter = go_parameters.retrieve("accessor");
+            if (stringCaseInsensitiveEquality(accessor_parameter,"avg")) accessor = accessor_enum::avg;
+            else if (stringCaseInsensitiveEquality(accessor_parameter,"count")) accessor = accessor_enum::count;
+            else if (stringCaseInsensitiveEquality(accessor_parameter,"min")) accessor = accessor_enum::min;
+            else if (stringCaseInsensitiveEquality(accessor_parameter,"max")) accessor = accessor_enum::max;
+            else if (stringCaseInsensitiveEquality(accessor_parameter,"sum")) accessor = accessor_enum::sum;
+            else if (stringCaseInsensitiveEquality(accessor_parameter,"variance")) accessor = accessor_enum::variance;
+            else if (stringCaseInsensitiveEquality(accessor_parameter,"standardDeviation")) accessor = accessor_enum::standardDeviation;
+            else
+            {
+                ostringstream o;
+                o << "<Error> ivy engine API - go() - invalid accessor parameter \"" << accessor_parameter << "\"." << std::endl;
+                o << "The accessors are avg, count, min, max, sum, variance, and standardDeviation."; o << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+
+        }
+        else if (have_RAID_subsystem)
+        {
+            source = source_enum::RAID_subsystem;
+
+            subsystem_element = go_parameters.retrieve("subsystem_element");
+            element_metric = go_parameters.retrieve("element_metric");
+
+            bool found_element {false};
+            bool found_metric {false};
+
+            for (auto& e_pear : subsystem_summary_metrics)
+            {
+                std::string& element = e_pear.first;
+
+                if (stringCaseInsensitiveEquality(element,subsystem_element))
+                {
+//----------------------------------- subsystem_element
+                    found_element = true;
+
+                    for (const std::pair<std::string,unsigned char>& metric_pair : e_pear.second)
+                    {
+                        const std::string metric = metric_pair.first;
+
+                        if (stringCaseInsensitiveEquality(metric,element_metric))
+                        {
+//----------------------------------- element_metric
+                            found_metric = true;
+
+                            break;
+                        }
+                    }
+
+                    if (!found_metric)
+                    {
+                        ostringstream o;
+
+                        o << "<Error> ivy engine API - go() - [Go] statement - invalid element_metric \"" << element_metric << "\" for subsystem_element \"" << subsystem_element << "\"." << std::endl;
+
+                        o << "The subsystem_elements and their element_metrics are:" << std::endl;
+
+                        for (auto& e_pear : subsystem_summary_metrics)
+                        {
+                            std::string& element = e_pear.first;
+
+                            o << "   subsystem_element = " << element << std::endl;
+
+                            for (const std::pair<std::string,unsigned char>& metric_pair : e_pear.second)
+                            {
+                                const std::string metric = metric_pair.first;
+
+                                o << "       element_metric = " << element;
+                                o << std::endl;
+
+                            }
+                        }
+
+                        o << std::endl << "The definition of the these subsystems metrics which are rolled up for each rollup instance is in subsystem_summary_metrics in master_stuff.h." << std::endl << std::endl;
+
+                        log(masterlogfile,o.str());
+                        std::cout << o.str();
+                        kill_subthreads_and_exit();
+                    }
+                    break;
+                }
+
+            }
+            if (!found_element)
+            {
+                ostringstream o;
+
+                o << "<Error> ivy engine API - go() - [Go] statement - invalid subsystem_element parameter \"" << subsystem_element << "\"." << std::endl;
+
+                o << "The subsystem_elements and their element_metrics are:" << std::endl;
+
+                for (auto& e_pear : subsystem_summary_metrics)
+                {
+                    std::string& element = e_pear.first;
+
+                    o << "   subsystem_element = " << element << std::endl;
+
+                    for (const std::pair<std::string,unsigned char>& metric_pair : e_pear.second)
+                    {
+                        const std::string metric = metric_pair.first;
+
+                        o << "       element_metric = " << element << std::endl;
+
+                    }
+                }
+
+                o << std::endl << "The definition of these subsystem element metrics which are rolled up for each rollup instance is in subsystem_summary_metrics in master_stuff.h." << std::endl << std::endl;
+
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+        }
+        else
+        {
+            ostringstream o;
+            o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid source parameter \"" << source_parameter << "\".  Must be \"workload\" or \"RAID_subsystem\"." << std::endl << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+    }
+
+    if (have_pid)
+    {
+        // valid_parameter_names += ", dfc, p, i, d, target_value, starting_total_IOPS, min_IOPS";
+
+            // If a parameter is not present, "retrieve" returns a null string.
+
+//----------------------------------- element_metric
+            target_value_parameter = go_parameters.retrieve("target_value");
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFCcategory::PID - when setting \"target_value\" parameter to value \""
+                    << target_value_parameter << "\": ";
+
+                target_value = number_optional_trailing_percent(target_value_parameter,where_the.str());
+            }
+
+//----------------------------------- p
+            p_parameter               = go_parameters.retrieve("p");
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFCcategory::PID - when setting \"p\" parameter to value \""
+                    << p_parameter << "\": ";
+
+                p_multiplier = number_optional_trailing_percent(p_parameter,where_the.str());
+            }
+
+//----------------------------------- i
+            i_parameter               = go_parameters.retrieve("i");
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFCcategory::PID - when setting \"i\" parameter  to value \""
+                    << i_parameter << "\": ";
+
+                i_multiplier = number_optional_trailing_percent(i_parameter,where_the.str());
+            }
+
+//----------------------------------- d
+            d_parameter               = go_parameters.retrieve("d");
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFCcategory::PID - when setting \"d\" parameter  to value \""
+                    << d_parameter << "\": ";
+
+                d_multiplier = number_optional_trailing_percent(d_parameter,where_the.str());
+            }
+
+//----------------------------------- starting_total_IOPS
+            starting_total_IOPS_parameter = go_parameters.retrieve("starting_total_IOPS");
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFCcategory::PID - when setting \"starting_total_IOPS\" parameter to value \""
+                    << starting_total_IOPS << "\": ";
+
+                starting_total_IOPS = number_optional_trailing_percent(starting_total_IOPS_parameter,where_the.str());
+                if (starting_total_IOPS < 0.0)
+                {
+                    ostringstream o;
+                    o << std::endl << "<Error> [Go] statement - invalid starting_total_IOPS parameter \"" << starting_total_IOPS_parameter << "\".  May not be negative." << std::endl << std::endl;
+                    log(masterlogfile,o.str());
+                    std::cout << o.str();
+                    kill_subthreads_and_exit();
+                }
+            }
+
+//----------------------------------- min_IOPS
+            min_IOPS_parameter = go_parameters.retrieve("min_IOPS");
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFCcategory::PID - when setting \"min_IOPS\" parameter to value \""
+                    << min_IOPS_parameter << "\": ";
+
+                min_IOPS = number_optional_trailing_percent(min_IOPS_parameter,where_the.str());
+                if (min_IOPS < 0.0)
+                {
+                    ostringstream o;
+                    o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid min_IOPS parameter \"" << min_IOPS_parameter << "\".  May not be negative." << std::endl << std::endl;
+                    log(masterlogfile,o.str());
+                    std::cout << o.str();
+                    kill_subthreads_and_exit();
+                }
+            }
+
+    }
+
+
+    if (have_measure)
+
+    {
+//----------------------------------- accuracy_plus_minus
+        accuracy_plus_minus_parameter = go_parameters.retrieve("accuracy_plus_minus");
+
+        try
+        {
+            accuracy_plus_minus_fraction = number_optional_trailing_percent(accuracy_plus_minus_parameter);
+        }
+        catch (std::invalid_argument& iaex)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine API - go() - Invalid accuracy_plus_minus parameter \"" << accuracy_plus_minus_parameter << "\".  Must be a number optionally with a trailing percent sign," << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+
+
+//----------------------------------- confidence
+        confidence_parameter = go_parameters.retrieve("confidence");
+        try
+        {
+            confidence = number_optional_trailing_percent(confidence_parameter);
+        }
+        catch(std::invalid_argument& iae)
+        {
+            ostringstream o;
+            o << "<Error> ivy engine API - go() - Invalid confidence parameter \"" << confidence_parameter << "\".  Must be a number." << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+
+
+//----------------------------------- timeout_seconds
+        timeout_seconds_parameter = go_parameters.retrieve("timeout_seconds");
+        try
+        {
+            timeout_seconds = number_optional_trailing_percent(timeout_seconds_parameter);
+        }
+        catch(std::invalid_argument& iae)
+        {
+            ostringstream o;
+            o << "<Error> ivy engine API - go() - Invalid timeout_seconds parameter \"" << timeout_seconds_parameter << "\".  Must be a number." << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+
+//----------------------------------- min_wp
+        min_wp_parameter = go_parameters.retrieve("min_wp");
+        try
+        {
+            min_wp = number_optional_trailing_percent(min_wp_parameter);
+
+        }
+        catch (std::invalid_argument& iaex)
+        {
+            ostringstream o;
+            o << "<Error> ivy engine API - go() - Invalid min_wp parameter \"" << min_wp_parameter << "\".  Must be from 0% to 100% or from 0.0 to 1.0." << std::endl;
+            log(masterlogfile,o.str());
+            kill_subthreads_and_exit();
+        }
+        if ( min_wp < 0.0 || min_wp > 1.0 )
+        {
+            ostringstream o;
+            o << "<Error> ivy engine API - go() - Invalid min_wp_range parameter \"" << min_wp_parameter << "\".  Must be from 0% to 100% or from 0.0 to 1.0." << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+
+//----------------------------------- max_wp
+        max_wp_parameter = go_parameters.retrieve("max_wp");
+        try
+        {
+            max_wp = number_optional_trailing_percent(go_parameters.retrieve("max_wp"));
+
+        }
+        catch (std::invalid_argument& iaex)
+        {
+            ostringstream o;
+            o << "<Error> ivy engine API - go() - Invalid max_wp parameter \"" << max_wp_parameter << "\".  Must be from 0% to 100% or from 0.0 to 1.0." << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+        if ( max_wp < 0.0 || max_wp > 1.0 || max_wp < min_wp)
+        {
+            ostringstream o;
+            o << "<Error> ivy engine API - go() - Invalid max_wp_change parameter \"" << max_wp_parameter << "\".  Must be from 0% to 100% or from 0.0 to 1.0 and must not be less than min_wp." << std::endl;
+            log(masterlogfile,o.str());
+            kill_subthreads_and_exit();
+        }
+
+//----------------------------------- max_wp_change
+        max_wp_change_parameter = go_parameters.retrieve("max_wp_change");
+        try
+        {
+            max_wp_change = number_optional_trailing_percent(max_wp_change_parameter);
+
+        }
+        catch (std::invalid_argument& iaex)
+        {
+            ostringstream o;
+            o << "<Error> ivy engine API - go() - Invalid max_wp_change parameter \"" << max_wp_change_parameter << "\"." << std::endl;
+            std::cout << o.str();
+            log(masterlogfile,o.str());
+            kill_subthreads_and_exit();
+        }
+        if ( max_wp_change < 0.0 || max_wp_change > 1.0 )
+        {
+            ostringstream o;
+            o << "<Error> ivy engine API - go() - Invalid max_wp_change parameter \"" << max_wp_change_parameter << "\".  Must be from 0% to 100% or from 0.0 to 1.0." << std::endl;
+            log(masterlogfile,o.str());
+            kill_subthreads_and_exit();
+        }
+    }
+
+    the_dfc.reset();
+
+    void prepare_dedupe();
+
+    prepare_dedupe();
+
+    run_subinterval_sequence(&the_dfc);
+
+    ivytime went; went.setToNow();
+    ivytime flight_duration = went - get_go;
+
+    {
+        std::ostringstream o;
+        o << "********* " << stepNNNN << " duration " << flight_duration.format_as_duration_HMMSS() << " \"" << stepName << "\"" << std::endl;
+
+        step_times << o.str();
+        log(masterlogfile, o.str());
+        std::cout << o.str();
+        rc.second = o.str();
+    }
+    rc.first=true;
+    return rc;
+}
+
+
+std::pair<bool,std::string>
+master_stuff::shutdown_subthreads()
+{
+    {
+        std::string m = "ivy engine API shutdown_subthreads()\n";
+        log(masterlogfile,m);
+        log(ivy_engine_logfile,m);
+        std::cout << m;
+    }
+
+	int notified=0;
+
+	for (auto&  pear : host_subthread_pointers)
+	{
+		{
+			//std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
+			pear.second->commandString=std::string("die");
+			pear.second->command=true;
+
+			std::ostringstream o;
+			o << "master_stuff::shutdown_subthreads() - posting \"die\" command to subthread for host " << pear.first
+                << " pid = " << pear.second->pipe_driver_pid << ", gettid() thread ID = " << pear.second->linux_gettid_thread_id<< std::endl;
+			log (masterlogfile, o.str());
+		}
+		pear.second->master_slave_cv.notify_all();
+		notified++;
+	}
+
+	int notified_subsystems {0};
+
+	for (auto& pear : subsystems)
+	{
+		if (0==pear.second->type().compare(std::string("Hitachi RAID")))
+		{
+			Hitachi_RAID_subsystem* pRAID = (Hitachi_RAID_subsystem*) pear.second;
+			if (pRAID->pRMLIBthread)
+			{
+				pipe_driver_subthread* p_pds = pRAID->pRMLIBthread;
+				{
+					//std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
+					p_pds->commandString=std::string("die");
+					p_pds->command=true;
+
+					std::ostringstream o;
+					o << "master_stuff::shutdown_subthreads() - posting \"die\" command to subthread for subsystem " << pear.first
+                        << " pid = " << p_pds->pipe_driver_pid << ", gettid() thread ID = " << p_pds->linux_gettid_thread_id<< std::endl;
+					log (masterlogfile, o.str());
+				}
+				p_pds->master_slave_cv.notify_all();
+				notified_subsystems++;
+			}
+		}
+	}
+
+    bool need_harakiri {false};
+
+	for (auto&  pear : host_subthread_pointers)
+	{
+        bool died_on_its_own;
+        died_on_its_own = false;
+
+        std::chrono::milliseconds nap(100);
+
+        for (unsigned int i = 0; i < 70; i++)
+        {
+//            if (pear.second->master_slave_lk.try_lock())
+//            {
+                if (pear.second->dead)
+                {
+                    died_on_its_own = true;
+                    break;
+                }
+//            }
+            std::this_thread::sleep_for(nap);
+        }
+
+        if (!died_on_its_own)
+        {
+            std::ostringstream o;
+            o << "********** Subthread for test host " << pear.first << " did not exit normally. " << std::endl;
+            log(m_s.masterlogfile,o.str());
+            std::cout << o.str();
+
+            need_harakiri = true;
+        }
+	}
+
+	for (auto& pear : subsystems)
+	{
+		if (0==pear.second->type().compare(std::string("Hitachi RAID")))
+		{
+			Hitachi_RAID_subsystem* pRAID = (Hitachi_RAID_subsystem*) pear.second;
+			if (pRAID->pRMLIBthread)
+			{
+				pipe_driver_subthread* p_pds = pRAID->pRMLIBthread;
+				{
+                    bool died_on_its_own;
+                    died_on_its_own = false;
+
+                    std::chrono::milliseconds nap(100);
+
+                    for (unsigned int i = 0; i < 30; i++)
+                    {
+  //                      if (p_pds->master_slave_lk.try_lock())
+  //                      {
+                            if (p_pds->dead)
+                            {
+                                died_on_its_own = true;
+                                break;
+                            }
+  //                      }
+                        std::this_thread::sleep_for(nap);
+                    }
+
+                    if (!died_on_its_own)
+                    {
+                        std::ostringstream o;
+                        o << "********** Subthread for command device on host " << p_pds->ivyscript_hostname
+                            << " subsystem serial number " << pRAID->serial_number
+                            << " did not exit normally." << std::endl;
+                        log(m_s.masterlogfile,o.str());
+                        std::cout << o.str();
+
+                        need_harakiri = true;
+                    }
+				}
+			}
+		}
+	}
+
+	std::ostringstream o;
+	o << "master_stuff::shutdown_subthreads() told " << notified << " host driver and "
+        << notified_subsystems << " command device subthreads to die." << std::endl;
+	log(masterlogfile,o.str());
+
+    bool something_bad_happened {false};
+
+	for (auto& host : hosts)
+	{
+		{
+			std::ostringstream o;
+			o << "scp " << SLAVEUSERID << '@' << host << ":" << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << host << "* " << testFolder << "/logs";
+			if (0 == system(o.str().c_str()))
+			{
+				log(masterlogfile,std::string("success: ")+o.str()+std::string("\n"));
+				std::ostringstream rm;
+				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << host << "*";
+				if (0 == system(rm.str().c_str()))
+					log(masterlogfile,std::string("success: ")+rm.str()+std::string("\n"));
+				else
+				{
+					log(masterlogfile,std::string("failure: ")+rm.str()+std::string("\n"));
+					something_bad_happened = true;
+				}
+			}
+			else {something_bad_happened = true; log(masterlogfile,std::string("failure: ")+o.str()+std::string("\n"));}
+		}
+	}
+
+    if (need_harakiri)
+    {
+        std::ostringstream o;
+        o << "One or more subthreads did not exit normally, abnormal termination." << std::endl;
+        log(m_s.masterlogfile,o.str());
+        std::cout << o.str();
+        kill(getpid(),SIGKILL);
+    }
+    else
+    {
+        for (auto& thread : threads)
+        {
+            thread.join();
+        }
+
+        for (auto& thread : ivymaster_RMLIB_threads)
+        {
+            thread.join();
+        }
+        {
+            std::ostringstream o;
+            if (m_s.overall_success)
+            {
+                o << "Successful run." << std::endl;
+            }
+            else
+            {
+                o << "All threads exited on their own, but there was an error." << std::endl;
+
+            }
+            std::cout << o.str();
+            log(m_s.masterlogfile, o.str());
+        }
+    }
+
+    return std::make_pair((!something_bad_happened) && (!need_harakiri),std::string(""));
+
+}
 

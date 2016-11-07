@@ -37,27 +37,27 @@ using namespace std;
 #include "ivyhelpers.h"
 #include "ivytime.h"
 #include "ivydefines.h"
-#include "iogenerator_stuff.h"
-#include "IogeneratorInput.h"
+#include "iosequencer_stuff.h"
+#include "IosequencerInput.h"
 #include "LUN.h"
 #include "Eyeo.h"
 #include "WorkloadID.h"
-#include "Iogenerator.h"
-#include "IogeneratorRandom.h"
+#include "Iosequencer.h"
+#include "IosequencerRandom.h"
 #include "WorkloadThread.h"
 
 
 
-bool IogeneratorRandom::setFrom_IogeneratorInput(IogeneratorInput* p_i_i)
+bool IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
-//*debug*/ log(logfilename,std::string("IogeneratorRandom::setFrom_IogeneratorInput() - entry.\n"));
-	if (!Iogenerator::setFrom_IogeneratorInput(p_i_i))
+//*debug*/ log(logfilename,std::string("IosequencerRandom::setFrom_IosequencerInput() - entry.\n"));
+	if (!Iosequencer::setFrom_IosequencerInput(p_i_i))
 		return false;
 
 	ivytime semence;
 	semence.setToNow();
        	deafrangen.seed(string_hash(threadKey + semence.format_as_datetime_with_ns()));
-//*debug*/ {ostringstream o; o<< "//*debug*/ IogeneratorRandom::setFrom_IogeneratorInput() coverageStartBlock=" << coverageStartBlock << ", coverageEndBlock=" << coverageEndBlock << ".\n"; log(logfilename, o.str()); }
+//*debug*/ {ostringstream o; o<< "//*debug*/ IosequencerRandom::setFrom_IosequencerInput() coverageStartBlock=" << coverageStartBlock << ", coverageEndBlock=" << coverageEndBlock << ".\n"; log(logfilename, o.str()); }
 
 	if (NULL != p_uniform_int_distribution) delete p_uniform_int_distribution;
 	if (NULL != p_uniform_real_distribution_0_to_1) delete p_uniform_real_distribution_0_to_1;
@@ -69,8 +69,8 @@ bool IogeneratorRandom::setFrom_IogeneratorInput(IogeneratorInput* p_i_i)
 
 
 
-bool IogeneratorRandom::generate(Eyeo& slang) {
-	// This is the base class IogeneratorRandom::generate() function that calculates the
+bool IosequencerRandom::generate(Eyeo& slang) {
+	// This is the base class IosequencerRandom::generate() function that calculates the
 	// random block number / LBA &
 
 	// Then the derived class generate() function calculates the scheduled time of the I/O.
@@ -80,35 +80,35 @@ bool IogeneratorRandom::generate(Eyeo& slang) {
 	// we assume that eyeocb.data already points to the Eyeo object
 	// and that eyeocb.aio_buf already points to a page-aligned I/O buffer
 
-	slang.eyeocb.aio_fildes = p_iogenerator_stuff->fd;
+	slang.eyeocb.aio_fildes = p_iosequencer_stuff->fd;
 
 	if (NULL == p_uniform_int_distribution)
 	{
-		log(logfilename, std::string("IogeneratorRandom::generate() - p_uniform_int_distribution not initialized.\n"));
+		log(logfilename, std::string("IosequencerRandom::generate() - p_uniform_int_distribution not initialized.\n"));
 		return false;
 	}
 	uint64_t current_block=(*p_uniform_int_distribution)(deafrangen);
 
-	slang.eyeocb.aio_offset = (p_IogeneratorInput->blocksize_bytes) * current_block;
-	slang.eyeocb.aio_nbytes = p_IogeneratorInput->blocksize_bytes;
+	slang.eyeocb.aio_offset = (p_IosequencerInput->blocksize_bytes) * current_block;
+	slang.eyeocb.aio_nbytes = p_IosequencerInput->blocksize_bytes;
 	slang.scheduled_time=ivytime(0);
 	slang.start_time=0;
 	slang.end_time=0;
 	slang.return_value=-2;
 	slang.errno_value=-2;
 
-	if (0.0 == p_IogeneratorInput->fractionRead)
+	if (0.0 == p_IosequencerInput->fractionRead)
 	{
 		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;
 	}
-	else if (1.0 == p_IogeneratorInput->fractionRead)
+	else if (1.0 == p_IosequencerInput->fractionRead)
 	{
 		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PREAD;
 	}
 	else
 	{
 		ivy_float random_0_to_1 = (*p_uniform_real_distribution_0_to_1)(deafrangen);
-		if ( random_0_to_1 <= p_IogeneratorInput->fractionRead )
+		if ( random_0_to_1 <= p_IosequencerInput->fractionRead )
 			slang.eyeocb.aio_lio_opcode=IOCB_CMD_PREAD;
 		else
 			slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;

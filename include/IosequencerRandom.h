@@ -19,7 +19,7 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
-class IogeneratorRandom : public Iogenerator {
+class IosequencerRandom : public Iosequencer {
 	// this is the base class of random_steady and random_independent.
 protected:
 //        size_t seed_hash;
@@ -28,10 +28,10 @@ protected:
         std::default_random_engine deafrangen;
 
 public:
-	IogeneratorRandom(LUN* pL, std::string lf, std::string tK, iogenerator_stuff* p_is, WorkloadThread* pWT) : Iogenerator(pL, lf, tK, p_is, pWT) {}
+	IosequencerRandom(LUN* pL, std::string lf, std::string tK, iosequencer_stuff* p_is, WorkloadThread* pWT) : Iosequencer(pL, lf, tK, p_is, pWT) {}
 
 	virtual std::string instanceType()=0;
 	virtual bool isRandom()=0;  // This is used to plug the I/O statistics into "random" and "sequential" categories.
-	bool setFrom_IogeneratorInput(IogeneratorInput*);
+	bool setFrom_IosequencerInput(IosequencerInput*);
 	bool generate(Eyeo& slang);
 };

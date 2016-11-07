@@ -35,10 +35,10 @@
 #include "ivyhelpers.h"
 #include "LUN.h"
 #include "AttributeNameCombo.h"
-#include "IogeneratorInputRollup.h"
+#include "IosequencerInputRollup.h"
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
-#include "IogeneratorInput.h"
+#include "IosequencerInput.h"
 #include "SubintervalOutput.h"
 #include "SubintervalRollup.h"
 #include "SequenceOfSubintervalRollup.h"
@@ -49,7 +49,6 @@
 #include "RollupType.h"
 #include "ivylinuxcpubusy.h"
 #include "LUN.h"
-#include "Select.h"
 #include "LUNpointerList.h"
 #include "GatherData.h"
 #include "Subsystem.h"
@@ -136,7 +135,7 @@ RollupType::RollupType
     rebuild();
 }
 
-bool RollupType::add_workload_detail_line(std::string& callers_error_message, WorkloadID& wID, IogeneratorInput& iI, SubintervalOutput& sO)
+bool RollupType::add_workload_detail_line(std::string& callers_error_message, WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO)
 {
     std::string error_message;
 

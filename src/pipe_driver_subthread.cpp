@@ -63,8 +63,8 @@ using namespace std;
 #include "RunningStat.h"
 #include "discover_luns.h"
 #include "LDEVset.h"
-#include "IogeneratorInput.h"
-#include "IogeneratorInputRollup.h"
+#include "IosequencerInput.h"
+#include "IosequencerInputRollup.h"
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
 #include "SubintervalOutput.h"
@@ -74,7 +74,6 @@ using namespace std;
 #include "WorkloadID.h"
 #include "ListOfWorkloadIDs.h"
 #include "LUN.h"
-#include "Select.h"
 #include "LUNpointerList.h"
 #include "GatherData.h"
 #include "Subsystem.h"
@@ -528,7 +527,7 @@ void pipe_driver_subthread::orderSlaveToDie()
         kill (ssh_pid,SIGTERM);
     }
 
-    // give other end some time to kill its iogenerator & RMLIB subthreads
+    // give other end some time to kill its iosequencer & RMLIB subthreads
 
     ivytime one_second(1,0);
     nanosleep(&(one_second.t),NULL);
@@ -1575,7 +1574,7 @@ void pipe_driver_subthread::threadRun()
                     if (0==std::string("[CreateWorkload]").compare(commandString))
                     {
                         ostringstream utterance;
-                        utterance << "[CreateWorkload]" << commandWorkloadID << "[Parameters]" << commandIogeneratorParameters << std::endl;
+                        utterance << "[CreateWorkload]" << commandWorkloadID << "[Parameters]" << commandIosequencerParameters << std::endl;
 
                         try
                         {
@@ -1600,7 +1599,7 @@ void pipe_driver_subthread::threadRun()
                     {
 
                         ostringstream utterance;
-                        utterance << "[EditWorkload]" << commandListOfWorkloadIDs.toString() << "[Parameters]" << commandIogeneratorParameters << std::endl;
+                        utterance << "[EditWorkload]" << commandListOfWorkloadIDs.toString() << "[Parameters]" << commandIosequencerParameters << std::endl;
 
                         try
                         {
@@ -1786,7 +1785,7 @@ void pipe_driver_subthread::threadRun()
                         {
                             try
                             {
-                                detail_line = get_line_from_pipe(ivytime(2), std::string("get iogenerator detail line"));
+                                detail_line = get_line_from_pipe(ivytime(2), std::string("get iosequencer detail line"));
                             }
                             catch (std::runtime_error& reex)
                             {
@@ -1828,7 +1827,7 @@ void pipe_driver_subthread::threadRun()
                             if ('<' != detail_line[0])
                             {
                                 std::ostringstream o;
-                                o << "For host " << ivyscript_hostname << ", bogus iogenerator detail line didn\'t even start with \'<\'. bogus detail line was \"" << detail_line << "\"." << std::endl;
+                                o << "For host " << ivyscript_hostname << ", bogus iosequencer detail line didn\'t even start with \'<\'. bogus detail line was \"" << detail_line << "\"." << std::endl;
                                 log(logfilename,o.str());
                                 std::cout << o.str();
                                 kill_ssh_and_harvest();
@@ -1843,7 +1842,7 @@ void pipe_driver_subthread::threadRun()
                             if (startsWith(detail_line,std::string("<end>"))) break;
 
                             WorkloadID detailWID;
-                            IogeneratorInput detailInput;
+                            IosequencerInput detailInput;
                             SubintervalOutput detailOutput;
 
                             std::istringstream detailstream(detail_line);
@@ -1868,7 +1867,7 @@ void pipe_driver_subthread::threadRun()
                             if (!detailInput.fromIstream(detailstream,logfilename))
                             {
                                 std::ostringstream o;
-                                o << "For host " << ivyscript_hostname << ", internal programming error - detail line IogeneratorInput failed to parse correctly - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
+                                o << "For host " << ivyscript_hostname << ", internal programming error - detail line IosequencerInput failed to parse correctly - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
                                 log(logfilename,o.str());
                                 std::cout << o.str();
                                 kill_ssh_and_harvest();

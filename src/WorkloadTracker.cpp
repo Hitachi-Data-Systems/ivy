@@ -24,14 +24,14 @@
 #include "ivyhelpers.h"
 #include "LUN.h"
 #include "WorkloadID.h"
-#include "IogeneratorInput.h"
+#include "IosequencerInput.h"
 #include "WorkloadTracker.h"
 
-WorkloadTracker::WorkloadTracker(std::string ID, std::string iogenerator_name, LUN* pL) : workloadID(ID)
+WorkloadTracker::WorkloadTracker(std::string ID, std::string iosequencer_name, LUN* pL) : workloadID(ID)
 {
 	workloadLUN.copyOntoMe(pL);
 	workloadLUN.attributes[std::string("workloadid")] = ID;
-	workloadLUN.attributes[std::string("iogenerator_name")] = iogenerator_name;
+	workloadLUN.attributes[std::string("iosequencer_name")] = iosequencer_name;
 
 	WorkloadID workloadID(ID);
 	if (workloadID.isWellFormed)

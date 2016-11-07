@@ -26,21 +26,20 @@
 
 #include "ivyhelpers.h"
 #include "LUN.h"
-#include "Select.h"
 #include "LUNpointerList.h"
 
 //#define IVY_TRACE_LUNPOINTERLIST
 
-bool LUNpointerList::clear_and_set_filtered_version_of(LUNpointerList& source,Select* pSelect)
+bool LUNpointerList::clear_and_set_filtered_version_of(LUNpointerList& source,JSON_select& select)
 {
 
 	LUNpointers.clear();
 
-	if (pSelect == nullptr) return false;
+	if (select.is_null()) return false;
 
 	for (LUN*& p_LUN : source.LUNpointers)
 	{
-		if (pSelect->matches(p_LUN))
+		if (select.matches(p_LUN))
 		{
 #ifdef IVY_TRACE_LUNPOINTERLIST
 			std::cout << "kept: " << p_LUN->toString() <<std::endl;

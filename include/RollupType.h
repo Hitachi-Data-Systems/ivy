@@ -75,7 +75,7 @@ public:
 
 	bool isValid() {return attributeNameCombo.isValid;}  // Ian: limited meaning - unfortunate choice of name
 
-	bool add_workload_detail_line(std::string& callers_error_msg, WorkloadID& wID, IogeneratorInput& iI, SubintervalOutput& sO);
+	bool add_workload_detail_line(std::string& callers_error_msg, WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO);
 
 	bool passesDataVariationValidation();
 

@@ -123,3 +123,5 @@ std::string quote_wrap_csvline_except_numbers(const std::string csvline); // Thi
 std::string column_header_to_identifier(const std::string&s);
 
 void xorshift64star(uint64_t&);
+
+std::string put_in_quotes(const std::string&);

@@ -19,12 +19,17 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
-class IogeneratorRandomSteady : public IogeneratorRandom {
-public:
-	IogeneratorRandomSteady(LUN* pL, std::string logfilename, std::string tK, iogenerator_stuff* p_is, WorkloadThread* pWT) : IogeneratorRandom(pL, logfilename, tK, p_is, pWT) {}
+#include <linux/aio_abi.h>      /* for AIO types and constants */
 
-	std::string instanceType() { return std::string("random_steady"); }
-	bool isRandom() { return true; }
-	bool generate(Eyeo&);
-};
+typedef struct iosequencer_stuff {
+
+	long long int LUN_size_bytes;
+
+	int sector_size=512;
+
+	int fd {-1};
+
+	aio_context_t act{0};
+
+} iosequencer_stuff;
 

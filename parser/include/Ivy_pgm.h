@@ -23,13 +23,13 @@
 
 #include "SymbolTableEntry.h"
 #include "Frame.h"
-#include "location.hh"
+#include "../lexyacc/location.hh"
 
 #define INDENT 3
 #define STACKSIZE (64*1024)
 
-extern int srclineno;
-extern int string_start_line;
+extern int ivyscript_srclineno;
+extern int ivyscript_string_start_line;
 
 extern std::ostream& trace_ostream;
 extern bool trace_lexer;
@@ -58,6 +58,10 @@ private:
     char pile[STACKSIZE];
 public:
     std::string ivyscript_filename;
+    std::string test_name;
+    std::string output_folder_root;
+    bool already_have_output_folder_root {false};
+    bool have_hosts {false};
     unsigned int executing_frame {0u}; // offset from "stack" to beginning of currently executing frame
     char* stack = pile;
     char* stacktop = pile;
@@ -76,22 +80,22 @@ public:
     std::string input_file_name {};
     size_t max_stack_offset {STACKSIZE - biggest_type};
     size_t next_avail_static {0u};
-    // not yet//int srclineno; // hey, make sure lex uses this one - pass PD_DOC
+    // not yet//int ivyscript_srclineno; // hey, make sure lex uses this one - pass PD_DOC
     size_t stack_size {STACKSIZE};
-    // not yet//int string_start_line; // make sure lex uses this one - pass PD_DOC
+    // not yet//int ivyscript_string_start_line; // make sure lex uses this one - pass PD_DOC
     bool successful_compile {false};
     bool unsuccessful_compile {false};
     int warning_count {0};
     std::string compile_msg {};
 
 // methods
-    Ivy_pgm(const std::string& f);
+    Ivy_pgm(const std::string& f, const std::string& tn);
     ~Ivy_pgm();
 
     Block* p_global_Block()  {if (blockStack.size() == 0) return nullptr; else return blockStack.back();}
     Block* p_current_Block() {if (blockStack.size() == 0) return nullptr; else return blockStack.front();}
 
-    void load_program(const std::string& filename);
+    //void load_program(const std::string& filename);
 
     void warning(const std::string&);
     void error(const std::string&);

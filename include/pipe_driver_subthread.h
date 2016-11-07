@@ -85,7 +85,7 @@ public:
 	std::string commandString;
 
 	std::string commandHost, commandLUN, commandWorkloadID;
-	std::string commandIogeneratorName, commandIogeneratorParameters;
+	std::string commandIosequencerName, commandIosequencerParameters;
 	ListOfWorkloadIDs commandListOfWorkloadIDs;  // used to send out parameter updates for dynamic feedback control
 
 	ivytime commandStart, commandFinish;

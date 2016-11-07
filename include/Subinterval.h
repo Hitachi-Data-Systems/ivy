@@ -19,7 +19,7 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
-#include "IogeneratorInput.h"
+#include "IosequencerInput.h"
 #include "SubintervalOutput.h"
 #include "ivytime.h"
 
@@ -118,7 +118,7 @@ class Subinterval {
 
 public:
 
-	IogeneratorInput
+	IosequencerInput
 		input;
 
 	SubintervalOutput

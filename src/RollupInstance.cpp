@@ -30,10 +30,10 @@
 #include "ivyhelpers.h"
 #include "LUN.h"
 #include "AttributeNameCombo.h"
-#include "IogeneratorInputRollup.h"
+#include "IosequencerInputRollup.h"
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
-#include "IogeneratorInput.h"
+#include "IosequencerInput.h"
 #include "SubintervalOutput.h"
 #include "SubintervalRollup.h"
 #include "SequenceOfSubintervalRollup.h"
@@ -229,7 +229,7 @@ bool RollupInstance::makeMeasurementRollup(std::string& callers_error_message, u
 }
 
 
-bool RollupInstance::add_workload_detail_line(std::string& callers_error_message, WorkloadID& wID, IogeneratorInput& iI, SubintervalOutput& sO)
+bool RollupInstance::add_workload_detail_line(std::string& callers_error_message, WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO)
 {
 	std::string my_error_message;
 
@@ -246,7 +246,7 @@ bool RollupInstance::add_workload_detail_line(std::string& callers_error_message
 	if ( ! subintervalRollup.inputRollup.add(my_error_message,iI.getParameterNameEqualsTextValueCommaSeparatedList()) )
 	{
 		std::ostringstream o;
-		o << "RollupInstance::add_workload_detail_line() - failed adding in IogeneratorInput.getParameterNameEqualsTextValueCommaSeparatedList()=\""
+		o << "RollupInstance::add_workload_detail_line() - failed adding in IosequencerInput.getParameterNameEqualsTextValueCommaSeparatedList()=\""
 		  << iI.getParameterNameEqualsTextValueCommaSeparatedList() << "\" to the last SubintervalRollup in the sequence of " << subintervals.sequence.size() << ".";
 		callers_error_message = o.str();
 		return false;

@@ -25,9 +25,8 @@
 #include "ivyhelpers.h"
 #include "LUN.h"
 #include "WorkloadID.h"
-#include "IogeneratorInput.h"
+#include "IosequencerInput.h"
 #include "WorkloadTracker.h"
-#include "Select.h"
 #include "WorkloadTrackerPointerList.h"
 
 std::string WorkloadTrackerPointerList::toString()

@@ -63,8 +63,8 @@ public:
 	WorkloadID workloadID; // to get the string form of the workload ID, refer to workloadID.workloadID.
 	LUN* pLUN;
 	long long int maxLBA;
-	iogenerator_stuff iogenerator_variables;
-	std::string iogeneratorParameters; // just used to print a descriptive line when the thread fires up.
+	iosequencer_stuff iosequencer_variables;
+	std::string iosequencerParameters; // just used to print a descriptive line when the thread fires up.
 	std::mutex* p_ivyslave_main_mutex;
 
 	std::thread std_thread;
@@ -85,12 +85,12 @@ public:
 	Subinterval* p_current_subinterval;
 	Subinterval* p_other_subinterval;
 
-	IogeneratorInput* p_current_IogeneratorInput;
-	IogeneratorInput* p_other_IogeneratorInput;
+	IosequencerInput* p_current_IosequencerInput;
+	IosequencerInput* p_other_IosequencerInput;
 	SubintervalOutput* p_current_SubintervalOutput;
 	SubintervalOutput* p_other_SubintervalOutput;
 
-	Iogenerator* p_my_iogenerator;
+	Iosequencer* p_my_iosequencer;
 
 	std::list<Eyeo*> allEyeosThatExist;
 
@@ -119,7 +119,7 @@ public:
 
 	ivytime max_io_run_time_seconds = ivytime(IO_TIME_LIMIT_SECONDS);
 
-	std::map<std::string, Iogenerator*> available_iogenerators;
+	std::map<std::string, Iosequencer*> available_iosequencers;
 
 	bool dieImmediately{false};
 	bool ivyslave_main_posted_command = false;  // This is used for thread interlock, so made it volatile just in case.

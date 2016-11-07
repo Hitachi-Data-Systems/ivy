@@ -1,8 +1,8 @@
-
+%define api.prefix {yy}
 %language "C++"
 %defines
 %locations
-%define parser_class_name "ivy"
+%define parser_class_name {ivy}
 
 %{
 
@@ -29,10 +29,8 @@
 #include <iostream>
 #include <cassert>
 
-#include "SelectClause.h"
-#include "Select.h"
+#include "JSON_select.h"
 #include "Xpr.h"
-#include "host_range.h"
 #include "Ivy_pgm.h"
 #include "Arg.h"
 #include "Stmt.h"
@@ -69,14 +67,6 @@ using namespace std;
 	std::list<std::string>* p_stringlist;
 	std::pair<const std::string,SymbolTableEntry>* p_STE_pair;
 	Frame* p_Frame;
-	std::list<host_spec*>* p_host_spec_pointer_list;
-
-	SelectClauseValue* p_SelectClauseValue;
-	std::list<SelectClauseValue*>* p_SelectClauseValue_pointer_list;
-
-	SelectClause* p_SelectClause;
-	std::list<SelectClause*>* p_SelectClause_pointer_list;
-	Select* p_Select;
 };
 /* declare tokens */
 
@@ -85,8 +75,8 @@ using namespace std;
 %token <p_str> ID STRING_CONSTANT DOTTED_QUAD_IP_ADDR
 %token <p_chars> LOGICAL_OR LOGICAL_AND BITWISE_OR BITWISE_XOR BITWISE_AND EQ NE LT GT LE GE PLUS MINUS MULT DIV REMAINDER ASSIGN
 %token KW_INT KW_DOUBLE KW_STRING KW_IF KW_THEN KW_ELSE KW_FOR KW_WHILE KW_RETURN KW_STATIC KW_CONST KW_DO
-%token KW_IS KW_TO KW_HOSTS KW_OUTPUT_FOLDER_ROOT KW_SET_IOGENERATOR_TEMPLATE KW_CREATE_WORKLOAD KW_DELETE_WORKLOAD KW_SELECT
-%token KW_IOGENERATOR KW_PARAMETERS KW_CREATE_ROLLUP KW_NOCSV KW_QUANTITY KW_MAX_DROOP_MAX_TO_MIN_IOPS KW_DELETE_ROLLUP KW_EDIT_ROLLUP KW_GO
+%token KW_TO KW_HOSTS KW_OUTPUT_FOLDER_ROOT KW_SET_IOSEQUENCER_TEMPLATE KW_CREATE_WORKLOAD KW_DELETE_WORKLOAD KW_SELECT
+%token KW_IOSEQUENCER KW_PARAMETERS KW_CREATE_ROLLUP KW_NOCSV KW_QUANTITY KW_MAX_DROOP_MAX_TO_MIN_IOPS KW_DELETE_ROLLUP KW_EDIT_ROLLUP KW_GO
 
 %nonassoc NOT_ELSE
 %nonassoc ELSE
@@ -110,17 +100,11 @@ using namespace std;
 %type <p_STE> decl_prefix
 %type <p_STE_pair> variable allocated_id
 %type <p_Frame> function_declaration
-%type <p_xpr> x logical_x string_x possibly_null_x int_x double_x optional_quantity optional_max_droop_max_to_min_iops optional_parameters parameters
+%type <p_xpr> x logical_x string_x possibly_null_x int_x double_x optional_quantity optional_max_droop_max_to_min_iops optional_parameters parameters select optional_select
 %type <p_stmt> statement
 %type <p_arg> func_arg_decl
 %type <p_arglist> func_arg_decl_list func_arg_decl_nonempty_list
 %type <p_xprlist> xprlist xprlist_nonempty
-%type <p_host_spec_pointer_list> host_list
-%type <p_SelectClauseValue> select_clause_value
-%type <p_SelectClauseValue_pointer_list> select_clause_value_list
-%type <p_SelectClause> select_clause
-%type <p_SelectClause_pointer_list> select_clause_list
-%type <p_Select> select optional_select
 %type <heleboel> optional_nocsv
 
 
@@ -260,16 +244,16 @@ statement:
 
     | KW_OUTPUT_FOLDER_ROOT STRING_CONSTANT ';'
         {
-            if (m_s.have_parsed_OutputFolderRoot)
+            if (context_ref.already_have_output_folder_root)
             {
                 std::ostringstream o;
                 o << "<Error> - two [OutputFolderRoot] statements in one program." << std::endl;
                 p_Ivy_pgm->error(o.str());
             }
 
-            m_s.have_parsed_OutputFolderRoot=true;
+            context_ref.already_have_output_folder_root=true;
 
-            m_s.outputFolderRoot = *$2;
+            context_ref.output_folder_root = *$2;
 
             $$  = new Stmt_null(@$);
             if (trace_parser)
@@ -279,38 +263,34 @@ statement:
             }
         }
 
-    | KW_HOSTS host_list select ';'
+    | KW_HOSTS string_x select ';'
         {
             if (trace_parser)
             {
-                trace_ostream << "[Hosts] host_list:";
-                for (auto& s: *$2) { s->display(indent_increment,trace_ostream); }
+                trace_ostream << "[Hosts] host list expression:";
+                $2->display(indent_increment,trace_ostream);
                 trace_ostream << "[Hosts] select_clause_list:";
                 { $3->display(indent_increment,trace_ostream); }
             }
             $$ = (Stmt*) new Stmt_hosts(@$,$2,$3);
         }
 
-    | KW_HOSTS host_list ';'
+    | KW_HOSTS string_x ';'
         {
-            if (trace_parser)
-            {
-                trace_ostream << "[Hosts] host_list:";
-                for (auto& s: *$2) { s->display(indent_increment,trace_ostream); }
-                trace_ostream << "[Hosts] statement - missing [Select] clause.";
-            }
-            $$ = (Stmt*) new Stmt_hosts(@$,$2,nullptr);
+            std::ostringstream o;
+            o << "<Error> - [Hosts] statement must have a [Select] clause specifying at least \"serial_number\" or \"vendor\"." << std::endl;
+            p_Ivy_pgm->error(o.str());
         }
-    | KW_SET_IOGENERATOR_TEMPLATE string_x KW_PARAMETERS string_x ';'
+    | KW_SET_IOSEQUENCER_TEMPLATE string_x KW_PARAMETERS string_x ';'
         {
-            $$ = new Stmt_set_iogenerator_template(@$,$2,$4);
+            $$ = new Stmt_set_iosequencer_template(@$,$2,$4);
             if (trace_parser)
             {
                 $$->display("",trace_ostream);
             }
         }
 
-    | KW_CREATE_WORKLOAD string_x optional_select KW_IOGENERATOR string_x optional_parameters ';'
+    | KW_CREATE_WORKLOAD string_x optional_select KW_IOSEQUENCER string_x optional_parameters ';'
         {
             $$ = new Stmt_create_workload(@$,$2,$3,$5,$6);
             if (trace_parser)
@@ -606,7 +586,6 @@ possibly_null_x:
                 /*debug*/ if (trace_parser) trace_ostream << "possibly_null_x: not-null expression" << std::endl;
                 $$ = $1;
             }
-
 ;
 
 x:
@@ -812,55 +791,7 @@ double_x:
 ;
 
 
-
-host_list:
-    /* empty */
-        {
-            $$ = new std::list<host_spec*>();
-            /*debug*/ if (trace_parser) display_host_spec_pointer_list($$,trace_ostream);
-        }
-
-    | host_list ','
-        {
-            /* use of comma list separators is optional */
-            if (trace_parser) { trace_ostream << "host_list at " << @$ << " ignoring commas." << std::endl; }
-            $$=$1;
-        }
-
-    | host_list string_x KW_TO string_x
-        {
-            $1->push_back(new hostname_range(@$,$2,$4));
-            $$ = $1;
-            if (trace_parser)
-            {
-                trace_ostream << "host_list range - from and to expressions follow:" << std::endl;
-                $2->display(indent_increment,trace_ostream);
-                $4->display(indent_increment,trace_ostream);
-            }
-        }
-    | host_list string_x
-        {
-            $1->push_back(new individual_hostname(@$,$2));
-            $$ = $1;
-            if (trace_parser)
-            {
-                trace_ostream << "host_list at " << @$ << " adding string expression: " << std::endl;
-                $2->display(indent_increment,trace_ostream);
-            }
-
-        }
-    | host_list DOTTED_QUAD_IP_ADDR
-        {
-            $1->push_back(new individual_dotted_quad(@$,*($2)));
-            $$ = $1;
-            if (trace_parser)
-            {
-                trace_ostream << "host_list at " << @$ << " adding dotted quad IP address: " << (*$2) << std::endl;
-            }
-        }
-;
-
-optional_select: /* type Select*, which is nullptr if there was no [Select] keyword */
+optional_select: /* type is pointer to string expression, or nullptr if there was no [Select] keyword */
         {
             $$ = nullptr;
         }
@@ -872,97 +803,14 @@ optional_select: /* type Select*, which is nullptr if there was no [Select] keyw
 ;
 
 select:
-    KW_SELECT select_clause_list
+    KW_SELECT string_x
         {
-            $$ = new Select(@$,$2,m_s.masterlogfile);
+            $$ = $2;
             if (trace_parser) {$$->display("",trace_ostream);}
         }
-    | KW_SELECT '{' select_clause_list '}'
-        {   /* cobbled together way to allow new JSON format without changing grammar too much */
-            $$ = new Select(@$,$3,m_s.masterlogfile);
-            if (trace_parser) {$$->display("",trace_ostream);}
-        }
-;
-
-select_clause_list:
-    /* empty */
+    | KW_SELECT
         {
-            $$ = new std::list<SelectClause*>();
-            if (trace_parser) { trace_ostream << "select_clause_list at " << @$ << " - first pass, creating new empty list." << std::endl; }
-        }
-
-    | select_clause_list ','
-        {
-            $$=$1;
-            if (trace_parser) { trace_ostream << "select_clause_list at " << @$ << " ignoring commas." << std::endl; }
-        }
-
-    | select_clause_list select_clause
-        {
-            $1->push_back($2);
-            $$ = $1;
-            if (trace_parser) { trace_ostream << "select_clause_list at " << @$ << " adding list item:" << std::endl; $2->display("",trace_ostream); }
-        }
-;
-
-select_clause:
-    string_x KW_IS select_clause_value
-        { /* original Flex/Bison syntax retained for compatibility with early .ivyscript programs */
-            $$ = new SelectClause(@$,$1,new std::list<SelectClauseValue*>(),m_s.masterlogfile);
-            $$->p_SelectClauseValue_pointer_list->push_back($3);
-            if (trace_parser)
-            {
-                trace_ostream << "select_clause with a single value at " << @$ << " on:" << std::endl;
-                $3->display("",trace_ostream);
-            }
-        }
-    | string_x KW_IS '{' select_clause_value_list '}'
-        { /* original Flex/Bison syntax retained for compatibility with early .ivyscript programs */
-            $$ = new SelectClause(@$,$1,$4,m_s.masterlogfile);
-            if (trace_parser) { trace_ostream << "select_clause with a list of values at " << @$ << std::endl; }
-        }
-    | string_x ':' select_clause_value
-        {
-            $$ = new SelectClause(@$,$1,new std::list<SelectClauseValue*>(),m_s.masterlogfile);
-            $$->p_SelectClauseValue_pointer_list->push_back($3);
-            if (trace_parser)
-            {
-                trace_ostream << "select_clause with a single value at " << @$ << " on:" << std::endl;
-                $3->display("",trace_ostream);
-            }
-        }
-    | string_x ':' '[' select_clause_value_list ']'
-        {
-            $$ = new SelectClause(@$,$1,$4,m_s.masterlogfile);
-            if (trace_parser) { trace_ostream << "select_clause with a list of values at " << @$ << std::endl; }
-        }
-;
-
-
-select_clause_value:
-    string_x
-        {
-            $$ = new SelectClauseValue(@$,$1);
-            if (trace_parser) { trace_ostream << "select_clause_value at " << @$ <<" on:" << std::endl; $1->display("",trace_ostream); }
-        }
-;
-
-select_clause_value_list:
-    // create list on first (empty) match and then add entries
-        {
-            $$=new std::list<SelectClauseValue*>();
-            if (trace_parser) {trace_ostream << "Recognizing select_clause_value_list at " << @$ << " - first pass, creating new empty list." << std::endl;}
-        }
-    | select_clause_value_list select_clause_value
-        {
-            $1->push_back($2);
-            $$ = $1;
-            if (trace_parser) { trace_ostream << "select_clause_value_list at " << @$ << " adding list item:" << std::endl;$2->display("",trace_ostream); }
-        }
-    | select_clause_value_list ','
-        {
-            $$ = $1;
-            if (trace_parser) { trace_ostream << "select_clause_value_list at " << @$ << " ignoring commas." << std::endl; }
+            $$ = nullptr;
         }
 ;
 

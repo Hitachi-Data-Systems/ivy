@@ -19,15 +19,12 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
-class IogeneratorSequential : public Iogenerator {
+class IosequencerRandomIndependent : public IosequencerRandom {
 public:
-	IogeneratorSequential(LUN* pL, std::string lf, std::string tK, iogenerator_stuff* p_is, WorkloadThread* pWT) : Iogenerator(pL, lf, tK, p_is, pWT) {}
+	IosequencerRandomIndependent(LUN* pL, std::string logfilename, std::string tK, iosequencer_stuff* p_is, WorkloadThread* pWT) : IosequencerRandom(pL, logfilename, tK, p_is, pWT) {}
 
+	std::string instanceType() { return std::string("random_independent"); }
+	bool isRandom() { return true; }
 	bool generate(Eyeo&);
-	bool setFrom_IogeneratorInput(IogeneratorInput*);
-	bool isRandom() { return false; }
-	std::string instanceType() { return std::string("sequential"); }
-	long long int lastIOblockNumber=0;  // default of zero means block 1 will be the first one read or written.
 };
-
 

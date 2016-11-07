@@ -45,9 +45,9 @@
 #include "Eyeo.h"
 #include "LUN.h"
 #include "WorkloadID.h"
-#include "iogenerator_stuff.h"
-#include "IogeneratorInput.h"
-#include "Iogenerator.h"
+#include "iosequencer_stuff.h"
+#include "IosequencerInput.h"
+#include "Iosequencer.h"
 #include "ivylinuxcpubusy.h"
 #include "ivybuilddate.h"
 #include "RunningStat.h"
@@ -55,10 +55,10 @@
 #include "SubintervalOutput.h"
 #include "Subinterval.h"
 #include "WorkloadThread.h"
-#include "IogeneratorRandom.h"
-#include "IogeneratorRandomSteady.h"
-#include "IogeneratorRandomIndependent.h"
-#include "IogeneratorSequential.h"
+#include "IosequencerRandom.h"
+#include "IosequencerRandomSteady.h"
+#include "IosequencerRandomIndependent.h"
+#include "IosequencerSequential.h"
 
 extern bool routine_logging;
 
@@ -121,7 +121,7 @@ std::ostream& operator<< (std::ostream& o, const ThreadState s)
 
 
 WorkloadThread::WorkloadThread(std::string wID, LUN* pL, long long int lastLBA, std::string parms, std::mutex* p_imm)
-        : workloadID(wID), pLUN(pL), maxLBA(lastLBA), iogeneratorParameters(parms), p_ivyslave_main_mutex(p_imm)
+        : workloadID(wID), pLUN(pL), maxLBA(lastLBA), iosequencerParameters(parms), p_ivyslave_main_mutex(p_imm)
 {}
 
 std::string threadStateToString (const ThreadState ts)
@@ -153,7 +153,7 @@ void WorkloadThread::WorkloadThreadRun() {
 	{
 		std::ostringstream o;
 
-		o<< "WorkloadThreadRun() fireup for workloadID = \"" << workloadID.workloadID << "\", iogenerator parameters = \"" << iogeneratorParameters << "\", ivy build date " << IVYBUILDDATE << std::endl;
+		o<< "WorkloadThreadRun() fireup for workloadID = \"" << workloadID.workloadID << "\", iosequencer parameters = \"" << iosequencerParameters << "\", ivy build date " << IVYBUILDDATE << std::endl;
 
 		log(slavethreadlogfile,o.str());
 	}
@@ -175,14 +175,14 @@ void WorkloadThread::WorkloadThreadRun() {
 			return;
 		}
 		std::istringstream is(secsize);
-		is >> iogenerator_variables.sector_size;
+		is >> iosequencer_variables.sector_size;
 	}
 	else
 	{
-		iogenerator_variables.sector_size = 512;
+		iosequencer_variables.sector_size = 512;
 	}
 
-	iogenerator_variables.LUN_size_bytes = (1+ maxLBA) * iogenerator_variables.sector_size;
+	iosequencer_variables.LUN_size_bytes = (1+ maxLBA) * iosequencer_variables.sector_size;
 
 	if (!pLUN->contains_attribute_name(std::string("LUN name")))
 	{
@@ -194,9 +194,9 @@ void WorkloadThread::WorkloadThreadRun() {
 
 	std::string LUNname = pLUN->attribute_value(std::string("LUN name"));
 
-	iogenerator_variables.fd=open64(LUNname.c_str(),O_RDWR+O_DIRECT);
+	iosequencer_variables.fd=open64(LUNname.c_str(),O_RDWR+O_DIRECT);
 
-	if (-1 == iogenerator_variables.fd) {
+	if (-1 == iosequencer_variables.fd) {
 		std::ostringstream o;
 		o << "WorkloadThreadRun() - open64(\"" << LUNname << "\",O_RDWR+O_DIRECT) failed errno = " << errno << " (" << strerror(errno) << ')' << std::endl;
 		log(slavethreadlogfile, o.str());
@@ -205,9 +205,9 @@ void WorkloadThread::WorkloadThreadRun() {
 
 
 
-	available_iogenerators[std::string("random_steady")] = new IogeneratorRandomSteady(pLUN, slavethreadlogfile, workloadID.workloadID, &iogenerator_variables, this);
-	available_iogenerators[std::string("random_independent")] = new IogeneratorRandomIndependent(pLUN, slavethreadlogfile, workloadID.workloadID, &iogenerator_variables, this);
-	available_iogenerators[std::string("sequential")] = new IogeneratorSequential(pLUN, slavethreadlogfile, workloadID.workloadID, &iogenerator_variables, this);
+	available_iosequencers[std::string("random_steady")] = new IosequencerRandomSteady(pLUN, slavethreadlogfile, workloadID.workloadID, &iosequencer_variables, this);
+	available_iosequencers[std::string("random_independent")] = new IosequencerRandomIndependent(pLUN, slavethreadlogfile, workloadID.workloadID, &iosequencer_variables, this);
+	available_iosequencers[std::string("sequential")] = new IosequencerSequential(pLUN, slavethreadlogfile, workloadID.workloadID, &iosequencer_variables, this);
 
 	state = ThreadState::waiting_for_command;
 
@@ -250,29 +250,29 @@ void WorkloadThread::WorkloadThreadRun() {
 		subinterval_number=0;
 
 		p_current_subinterval = &(subinterval_array[currentSubintervalIndex]);
-		p_current_IogeneratorInput = & (p_current_subinterval-> input);
+		p_current_IosequencerInput = & (p_current_subinterval-> input);
 		p_current_SubintervalOutput = & (p_current_subinterval->output);
 		p_other_subinterval = &(subinterval_array[otherSubintervalIndex]);
-		p_other_IogeneratorInput = & (p_other_subinterval-> input);
+		p_other_IosequencerInput = & (p_other_subinterval-> input);
 		p_other_SubintervalOutput = & (p_other_subinterval->output);
 
-		std::map<std::string, Iogenerator*>::iterator iogen_ptr_it = available_iogenerators.find(p_current_IogeneratorInput->iogenerator_type);
-		if (available_iogenerators.end() == iogen_ptr_it)
+		std::map<std::string, Iosequencer*>::iterator iogen_ptr_it = available_iosequencers.find(p_current_IosequencerInput->iosequencer_type);
+		if (available_iosequencers.end() == iogen_ptr_it)
 		{
-			std::ostringstream o; o << "WorkloadThread::WorkloadThreadRun() - Got a \"Go!\" but the first subinterval\'s IogeneratorInput\'s iogenerator_type \""
-				<< p_current_IogeneratorInput->iogenerator_type << "\" is not one of the available iogenerator types." << std::endl;
+			std::ostringstream o; o << "WorkloadThread::WorkloadThreadRun() - Got a \"Go!\" but the first subinterval\'s IosequencerInput\'s iosequencer_type \""
+				<< p_current_IosequencerInput->iosequencer_type << "\" is not one of the available iosequencer types." << std::endl;
 			log(slavethreadlogfile,o.str());
 			state=ThreadState::died;
 			return;
 		}
-		p_my_iogenerator = (*iogen_ptr_it).second;
-		if (!p_my_iogenerator->setFrom_IogeneratorInput(p_current_IogeneratorInput))
+		p_my_iosequencer = (*iogen_ptr_it).second;
+		if (!p_my_iosequencer->setFrom_IosequencerInput(p_current_IosequencerInput))
 		{
-			log(slavethreadlogfile,std::string("WorkloadThread::WorkloadThreadRun() - call to iogenerator::setFrom_IogeneratorInput(() failed.\n"));
+			log(slavethreadlogfile,std::string("WorkloadThread::WorkloadThreadRun() - call to iosequencer::setFrom_IosequencerInput(() failed.\n"));
 			state=ThreadState::died;
 			return;
 		}
-//*debug*/ log(slavethreadlogfile,std::string("WorkloadThread::WorkloadThreadRun() - iogenerator::setFrom_IogeneratorInput went OK.\n"));
+//*debug*/ log(slavethreadlogfile,std::string("WorkloadThread::WorkloadThreadRun() - iosequencer::setFrom_IosequencerInput went OK.\n"));
 
 		if (!prepare_linux_AIO_driver_to_start())
 		{
@@ -283,14 +283,14 @@ void WorkloadThread::WorkloadThreadRun() {
 
 		state=ThreadState::running;
 
-		int bufsize = p_current_IogeneratorInput->blocksize_bytes;
+		int bufsize = p_current_IosequencerInput->blocksize_bytes;
 		while (0 != (bufsize % 4096)) bufsize++;
 		long int memory_allocation_size = 4095 + (bufsize * allEyeosThatExist.size());
 
         if (routine_logging)
         {
             std::ostringstream o;
-            o << "getting I/O buffer memory for Eyeos.  blksize= " << p_current_IogeneratorInput->blocksize_bytes
+            o << "getting I/O buffer memory for Eyeos.  blksize= " << p_current_IosequencerInput->blocksize_bytes
                 << ", rounded up to multiple of 4096 is bufsize = " << bufsize << ", number of Eyeos = " << allEyeosThatExist.size()
                 << ", memory allocation size with 4095 bytes for alignment padding is " << memory_allocation_size << std::endl;
             log(slavethreadlogfile,o.str()); }
@@ -433,10 +433,10 @@ void WorkloadThread::WorkloadThreadRun() {
 					currentSubintervalIndex = 0; otherSubintervalIndex = 1;
 				}
 				p_current_subinterval = &subinterval_array[currentSubintervalIndex];
-				p_current_IogeneratorInput = & (p_current_subinterval-> input);
+				p_current_IosequencerInput = & (p_current_subinterval-> input);
 				p_current_SubintervalOutput = & (p_current_subinterval->output);
 				p_other_subinterval = &subinterval_array[otherSubintervalIndex];
-				p_other_IogeneratorInput = & (p_other_subinterval-> input);
+				p_other_IosequencerInput = & (p_other_subinterval-> input);
 				p_other_SubintervalOutput = & (p_other_subinterval->output);
 				cancel_stalled_IOs();
 
@@ -499,13 +499,13 @@ void WorkloadThread::WorkloadThreadRun() {
 
 bool WorkloadThread::prepare_linux_AIO_driver_to_start()
 {
-	// Coming in, we expect the subinterval_array[] IogeneratorInput and SubintervalOutput objects to be prepared.
-	// That means p_current_subinterval, p_current_IogeneratorInput, and p_current_SubintervalOutput are set.
+	// Coming in, we expect the subinterval_array[] IosequencerInput and SubintervalOutput objects to be prepared.
+	// That means p_current_subinterval, p_current_IosequencerInput, and p_current_SubintervalOutput are set.
 
-	// Note: When the iogenerator gets to the end of a stubinterval, it always switches the currentSubintervalIndex and otherSubintervalIndex variables.
-	//       That way, the subinterval that is sent up to ivymaster is always "otherSubintervalIndex", whether or not the iogenerator is to stop.
+	// Note: When the iosequencer gets to the end of a stubinterval, it always switches the currentSubintervalIndex and otherSubintervalIndex variables.
+	//       That way, the subinterval that is sent up to ivymaster is always "otherSubintervalIndex", whether or not the iosequencer is to stop.
 
-	//       However, when the iogenerator thread is told to "stop", what it does before stopping is copy the IogeneratorInput object
+	//       However, when the iosequencer thread is told to "stop", what it does before stopping is copy the IosequencerInput object
 	//       for the last subinterval that ran to the other one that didn't run, the other one that would have been the next one if we hadn't stopped.
 
 	// This doesn't bother the asynchronous collection / sending up of the data for the last subinterval.
@@ -521,9 +521,9 @@ bool WorkloadThread::prepare_linux_AIO_driver_to_start()
 	// Empty the freeStack, precomputeQ, and postprocessQ.  Then fill the freeStack with our list of all Eyeos that exist.
 	// Create the aio context.
 
-	precomputedepth = 2 * p_current_IogeneratorInput->maxTags;
+	precomputedepth = 2 * p_current_IosequencerInput->maxTags;
 
-	EyeoCount = 2 * (precomputedepth + p_current_IogeneratorInput->maxTags);  // the 2x is a postprocess queue allowance
+	EyeoCount = 2 * (precomputedepth + p_current_IosequencerInput->maxTags);  // the 2x is a postprocess queue allowance
 	for (int i=allEyeosThatExist.size() ; i < EyeoCount; i++)
 		allEyeosThatExist.push_back(new Eyeo(i,this));
 
@@ -536,7 +536,7 @@ bool WorkloadThread::prepare_linux_AIO_driver_to_start()
 ///*debug*/ if (0 == pE->buf_size)
 ///*debug*/{
 //
-//		if (!pE->resize_buf(p_current_IogeneratorInput->blocksize_bytes))
+//		if (!pE->resize_buf(p_current_IosequencerInput->blocksize_bytes))
 //		{
 //			log(slavethreadlogfile,std::string("WorkloadThread::prepare_linux_AIO_driver_to_start() - Eyeo.resize_buf failed.\n"));
 //			return false;
@@ -552,11 +552,11 @@ bool WorkloadThread::prepare_linux_AIO_driver_to_start()
     running_IOs.clear();
     cancelled_IOs=0;
 
-	iogenerator_variables.act=0;  // must be set to zero otherwise io_setup() will fail with return code 22 - invalid parameter.
+	iosequencer_variables.act=0;  // must be set to zero otherwise io_setup() will fail with return code 22 - invalid parameter.
 
-	if (0 != (rc=io_setup(p_current_IogeneratorInput->maxTags,&(iogenerator_variables.act)))) {
+	if (0 != (rc=io_setup(p_current_IosequencerInput->maxTags,&(iosequencer_variables.act)))) {
 		std::ostringstream o;
-		o << "io_setup(" << p_current_IogeneratorInput->maxTags << "," << (&iogenerator_variables.act) << ") failed return code " << rc
+		o << "io_setup(" << p_current_IosequencerInput->maxTags << "," << (&iosequencer_variables.act) << ") failed return code " << rc
 			<< ", errno=" << errno << " - " << strerror(errno) << std::endl;
 		log(slavethreadlogfile,o.str());
 		return false;
@@ -617,11 +617,11 @@ void WorkloadThread::popandpostprocessoneEyeo() {
 	// NOTE:  The breakdown of bytes_transferred (MB/s) follows service time.
 
 
-	if ( p_current_IogeneratorInput->blocksize_bytes == (unsigned int) p_dun->return_value) {
+	if ( p_current_IosequencerInput->blocksize_bytes == (unsigned int) p_dun->return_value) {
 
 		int rs, rw, bucket;
 
-		if (p_my_iogenerator->isRandom())
+		if (p_my_iosequencer->isRandom())
 		{
 			rs = 0;
 		}
@@ -642,7 +642,7 @@ void WorkloadThread::popandpostprocessoneEyeo() {
 		bucket = Accumulators_by_io_type::get_bucket_index( service_time_seconds );
 
 		p_current_SubintervalOutput->u.a.service_time.rs_array[rs][rw][bucket].push(service_time_seconds);
-		p_current_SubintervalOutput->u.a.bytes_transferred.rs_array[rs][rw][bucket].push(p_current_IogeneratorInput->blocksize_bytes);
+		p_current_SubintervalOutput->u.a.bytes_transferred.rs_array[rs][rw][bucket].push(p_current_IosequencerInput->blocksize_bytes);
 
 		if (have_response_time)
 		{
@@ -660,7 +660,7 @@ void WorkloadThread::popandpostprocessoneEyeo() {
 				// %%%%%%%%%%%%%%% come back here later and decide if we want to re-drive failing I/Os, keeping track of the original I/O start time so we record the total respone time for all attempts.
 		} else {
 			std::ostringstream o;
-			o << "Thread for " << workloadID.workloadID << "- I/O only transferred " << p_dun->return_value << " out of requested " << p_current_IogeneratorInput->blocksize_bytes << std::endl;
+			o << "Thread for " << workloadID.workloadID << "- I/O only transferred " << p_dun->return_value << " out of requested " << p_current_IosequencerInput->blocksize_bytes << std::endl;
 			log(slavethreadlogfile,o.str());
 		}
 	}
@@ -720,7 +720,7 @@ void WorkloadThread::popandpostprocessoneEyeo() {
 bool WorkloadThread::linux_AIO_driver_run_subinterval()
 // see also https://code.google.com/p/kernel/wiki/AIOUserGuide
 {
-//*debug*/ {std::ostringstream o; o << "WorkloadThread::linux_AIO_driver_run_subinterval() Entered with IOPS=" << p_current_IogeneratorInput->IOPS << std::endl;log(slavethreadlogfile,o.str());}
+//*debug*/ {std::ostringstream o; o << "WorkloadThread::linux_AIO_driver_run_subinterval() Entered with IOPS=" << p_current_IosequencerInput->IOPS << std::endl;log(slavethreadlogfile,o.str());}
 
 	ivytime& subinterval_ending_time = p_current_subinterval->end_time;
 
@@ -745,7 +745,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 	 	if (0 < postprocessQ.size())
 			waitduration = ivytime(0);
-		else if ( (0.0 == p_current_IogeneratorInput->IOPS) || cooldown )
+		else if ( (0.0 == p_current_IosequencerInput->IOPS) || cooldown )
 		{
 			waitduration=subinterval_ending_time - now;
 			while (precomputeQ.size())  // may be paranoiaadd
@@ -757,9 +757,9 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 		}
 		else if (precomputeQ.size() < precomputedepth)
 			waitduration = ivytime(0);
-		else if ( (nextIO_schedule_time <= now) && (queue_depth < p_current_IogeneratorInput->maxTags) )
+		else if ( (nextIO_schedule_time <= now) && (queue_depth < p_current_IosequencerInput->maxTags) )
 			waitduration = ivytime(0);
-		else if (queue_depth >= p_current_IogeneratorInput->maxTags)
+		else if (queue_depth >= p_current_IosequencerInput->maxTags)
 			waitduration=subinterval_ending_time - now;
 		else if (nextIO_schedule_time > subinterval_ending_time)
 			waitduration=subinterval_ending_time - now;
@@ -784,7 +784,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 				std::ostringstream o;
 				o << "Possible construction zone.  nanosleep() failed " << errno << " - " << strerror(errno) << std::endl;
 				log(slavethreadlogfile,o.str());
-				//io_destroy(iogenerator_variables.act);
+				//io_destroy(iosequencer_variables.act);
 				return false;
 				// later we might need to come back if we need to catch or ignore signals
 			}
@@ -800,7 +800,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 			// when we do the io_getevents() call, if we set the mifnimum number of events needed to 0 (zero), I expect the call to be non-blocking;
 
-			if (0 < (reaped = io_getevents(iogenerator_variables.act,events_needed,MAX_IOEVENTS_REAP_AT_ONCE,&(ReapHeap[0]),&(waitduration.t)))) {
+			if (0 < (reaped = io_getevents(iosequencer_variables.act,events_needed,MAX_IOEVENTS_REAP_AT_ONCE,&(ReapHeap[0]),&(waitduration.t)))) {
 //*debug*/{ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() reaped = " << reaped << std::endl; log(slavethreadlogfile,o.str());}
 				now.setToNow();  // because we may have waited
 
@@ -833,7 +833,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                         <<  "  " << __FILE__ << " line " << __LINE__
                         ;
                         log(slavethreadlogfile,o.str());
-                        io_destroy(iogenerator_variables.act);
+                        io_destroy(iosequencer_variables.act);
                         return false;
                     }
                     running_IOs.erase(running_IOs_iter);
@@ -848,7 +848,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 		// we have fallen through from harvesting all available events and waiting
 //*debug*/{ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() we have fallen through from harvesting all available events and waiting. " << std::endl; log(slavethreadlogfile,o.str());}
-		if ( (precomputeQ.size() > 0) && (nextIO_schedule_time <= now) && (queue_depth < p_current_IogeneratorInput->maxTags) ) {
+		if ( (precomputeQ.size() > 0) && (nextIO_schedule_time <= now) && (queue_depth < p_current_IosequencerInput->maxTags) ) {
 			// It's time to launch the next I/O[s].
 
 			uint64_t launch_count=0;
@@ -857,7 +857,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 			        (!precomputeQ.empty())
 			     && (now >= (precomputeQ.front()->scheduled_time))
 			     && (launch_count < (MAX_IOS_LAUNCH_AT_ONCE-1))  // launch count starts at zero
-			     && (queue_depth+launch_count < p_current_IogeneratorInput->maxTags)
+			     && (queue_depth+launch_count < p_current_IosequencerInput->maxTags)
 			)
 			{
 				LaunchPad[launch_count]=precomputeQ.front();
@@ -874,17 +874,17 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                     <<  "  " << __FILE__ << " line " << __LINE__
                     ;
                     log(slavethreadlogfile,o.str());
-                    io_destroy(iogenerator_variables.act);
+                    io_destroy(iosequencer_variables.act);
                     return false;
                 }
 				launch_count++;
 			}
-			rc = io_submit(iogenerator_variables.act, launch_count, (struct iocb **) LaunchPad /* iocb comes first in an Eyeo */);
+			rc = io_submit(iosequencer_variables.act, launch_count, (struct iocb **) LaunchPad /* iocb comes first in an Eyeo */);
 			if (-1==rc) {
 				std::ostringstream o;
 				o << "io_submit() failed, errno=" << errno << " - " << strerror(errno) << std::endl;
 				log(slavethreadlogfile,o.str());
-				io_destroy(iogenerator_variables.act);
+				io_destroy(iosequencer_variables.act);
 				return false;
 			} else {
 //*debug*/{ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() launched " << rc << " I/Os." << std::endl; log(slavethreadlogfile,o.str());}
@@ -929,7 +929,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                         <<  "  " << __FILE__ << " line " << __LINE__
                         ;
                         log(slavethreadlogfile,o.str());
-                        io_destroy(iogenerator_variables.act);
+                        io_destroy(iosequencer_variables.act);
                         return false;
                     }
                     running_IOs.erase(running_IOs_iter);
@@ -954,14 +954,14 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 		(
                ( precomputeQ.size() < precomputedepth )
             && ( !cooldown )
-            && ( 0.0 != p_current_IogeneratorInput->IOPS )
+            && ( 0.0 != p_current_IosequencerInput->IOPS )
             && ( ( precomputeQ.size() == 0 ) || ( (now + precompute_horizon) > precomputeQ.back()->scheduled_time ) )
         )
 		{
 			// precompute an I/O
 			if (freeStack.empty()) {
 				log(slavethreadlogfile,"freeStack is empty - can\'t precompute.\n");
-				io_destroy(iogenerator_variables.act);
+				io_destroy(iosequencer_variables.act);
 				return false;  // should not occur unless there's a design fault or maybe if CPU-bound
 			}
 			Eyeo* p_Eyeo = freeStack.top();
@@ -969,7 +969,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 //*debug*/{std::ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() calling generate() to precompute an I/O. " << std::endl; log(slavethreadlogfile,o.str());}
 
-//*debug*/{std::ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() p_my_iogenerator->instanceType()=\"" << p_my_iogenerator->instanceType() << '\"' << std::endl; log(slavethreadlogfile,o.str());}
+//*debug*/{std::ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() p_my_iosequencer->instanceType()=\"" << p_my_iosequencer->instanceType() << '\"' << std::endl; log(slavethreadlogfile,o.str());}
 
             // deterministic generation of "seed" for this I/O.
             if (have_writes)
@@ -991,10 +991,10 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                 }
             }
 
-			// now need to call the iogenerator function to populate this Eyeo.
-			if (!p_my_iogenerator->generate(*p_Eyeo)) {
-				log(slavethreadlogfile,"iogenerator::generate() failed.\n");
-				io_destroy(iogenerator_variables.act);
+			// now need to call the iosequencer function to populate this Eyeo.
+			if (!p_my_iosequencer->generate(*p_Eyeo)) {
+				log(slavethreadlogfile,"iosequencer::generate() failed.\n");
+				io_destroy(iosequencer_variables.act);
 				return false;  // come back when we need to
 			}
 //*debug*/{ostringstream o; o << "/*debug*/ precomputed I/O. = " << p_Eyeo->toString() << std::endl; log(slavethreadlogfile,o.str());}
@@ -1033,7 +1033,7 @@ bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
 
 		// when we do the io_getevents() call, if we set the minimum number of events needed to 0 (zero), I expect the call to be non-blocking;
 
-		if (0 < (reaped = io_getevents(iogenerator_variables.act,events_needed,MAX_IOEVENTS_REAP_AT_ONCE,&(ReapHeap[0]),&(catch_wait_duration.t))))
+		if (0 < (reaped = io_getevents(iosequencer_variables.act,events_needed,MAX_IOEVENTS_REAP_AT_ONCE,&(ReapHeap[0]),&(catch_wait_duration.t))))
 		{
 			queue_depth-=reaped;
 //*debug*/{ std::ostringstream o; o << "bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval() - reaped " << reaped << " I/Os resulting in new queue_depth = " << queue_depth << std::endl; log(slavethreadlogfile,o.str());}
@@ -1059,7 +1059,7 @@ bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
                     <<  "  " << __FILE__ << " line " << __LINE__
                     ;
                     log(slavethreadlogfile,o.str());
-                    io_destroy(iogenerator_variables.act);
+                    io_destroy(iosequencer_variables.act);
                     return false;
                 }
                 running_IOs.erase(running_IOs_iter);
@@ -1084,7 +1084,7 @@ bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
         <<  "  " << __FILE__ << " line " << __LINE__
         ;
         log(slavethreadlogfile,o.str());
-        io_destroy(iogenerator_variables.act);
+        io_destroy(iosequencer_variables.act);
         return false;
     }
 
@@ -1095,7 +1095,7 @@ bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
 
     running_IOs.clear();
 
-	io_destroy(iogenerator_variables.act);
+	io_destroy(iosequencer_variables.act);
 
 	return true;
 
@@ -1138,7 +1138,7 @@ void WorkloadThread::ivy_cancel_IO(struct iocb* p_iocb)
             log(slavethreadlogfile,o.str());
             return;
         }
-        rc = io_cancel(iogenerator_variables.act,p_iocb, &ioev);
+        rc = io_cancel(iosequencer_variables.act,p_iocb, &ioev);
     }
 
     if (rc == 0)

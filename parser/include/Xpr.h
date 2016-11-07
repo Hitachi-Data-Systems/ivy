@@ -27,7 +27,7 @@
 #include "Ivy_pgm.h"
 #include "Builtin.h"
 #include "SymbolTableEntry.h"
-#include "location.hh"
+#include "../parser/lexyacc/location.hh"
 
 class Xpr {
 public:

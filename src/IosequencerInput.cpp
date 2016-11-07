@@ -27,9 +27,9 @@
 
 #include "ivyhelpers.h"
 #include "ivydefines.h"
-#include "IogeneratorInput.h"
+#include "IosequencerInput.h"
 
-bool IogeneratorInput::setParameter(std::string& callers_error_message, std::string parameterNameEqualsValue) {
+bool IosequencerInput::setParameter(std::string& callers_error_message, std::string parameterNameEqualsValue) {
 
 	callers_error_message.clear();
 
@@ -78,40 +78,40 @@ bool IogeneratorInput::setParameter(std::string& callers_error_message, std::str
 		return false;
 	}
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("iogenerator")) ) {
+	if ( stringCaseInsensitiveEquality(parameterName, std::string("iosequencer")) ) {
 		if (stringCaseInsensitiveEquality(parameterValue,std::string("random_steady"))) {
-			if (iogeneratorIsSet && 0 != iogenerator_type.compare(std::string("random_steady"))) {
-				callers_error_message = std::string("when trying to set iogenerator=random_steady it was already set to ")
-					+ iogenerator_type + std::string("\".  \"iogenerator\" type may not be changed once set.");
+			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("random_steady"))) {
+				callers_error_message = std::string("when trying to set iosequencer=random_steady it was already set to ")
+					+ iosequencer_type + std::string("\".  \"iosequencer\" type may not be changed once set.");
 				return false;
 			}
-			iogenerator_type=parameterValue;
+			iosequencer_type=parameterValue;
 		} else if (stringCaseInsensitiveEquality(parameterValue,std::string("random_independent"))) {
-			if (iogeneratorIsSet && 0 != iogenerator_type.compare(std::string("random_independent"))) {
-				callers_error_message = std::string("when trying to set iogenerator=random_independent it was already set to ")
-					+ iogenerator_type + std::string("\".  \"iogenerator\" type may not be changed once set.");
+			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("random_independent"))) {
+				callers_error_message = std::string("when trying to set iosequencer=random_independent it was already set to ")
+					+ iosequencer_type + std::string("\".  \"iosequencer\" type may not be changed once set.");
 				return false;
 			}
-			iogenerator_type=parameterValue;
+			iosequencer_type=parameterValue;
 		} else if (stringCaseInsensitiveEquality(parameterValue,std::string("sequential"))) {
-			if (iogeneratorIsSet && 0 != iogenerator_type.compare(std::string("sequential"))) {
-				callers_error_message = std::string("when trying to set iogenerator=sequential it was already set to ")
-					+ iogenerator_type + std::string("\".  \"iogenerator\" type may not be changed once set.");
+			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("sequential"))) {
+				callers_error_message = std::string("when trying to set iosequencer=sequential it was already set to ")
+					+ iosequencer_type + std::string("\".  \"iosequencer\" type may not be changed once set.");
 				return false;
 			}
-			iogenerator_type=parameterValue;
+			iosequencer_type=parameterValue;
 		} else {
-			callers_error_message = std::string("invalid iogenerator type \"")+parameterNameEqualsValue
+			callers_error_message = std::string("invalid iosequencer type \"")+parameterNameEqualsValue
 				+std::string("\".");
 			return false;
 		}
-		iogeneratorIsSet=true;
+		iosequencerIsSet=true;
 		return true;
 	}
 
-	if (!iogeneratorIsSet) {
-		callers_error_message = std::string("IogeneratorInput::setParameter(\"")+parameterNameEqualsValue
-			+std::string("\",): \"iogenerator\" must be set to a valid iogenerator type before setting any other parameters.\n");
+	if (!iosequencerIsSet) {
+		callers_error_message = std::string("IosequencerInput::setParameter(\"")+parameterNameEqualsValue
+			+std::string("\",): \"iosequencer\" must be set to a valid iosequencer type before setting any other parameters.\n");
 		return false;
 	}
 
@@ -228,9 +228,9 @@ bool IogeneratorInput::setParameter(std::string& callers_error_message, std::str
 
 			return false;
 		}
-		if (0 == iogenerator_type.compare(std::string("sequential")) && ld != 0. && ld != (hadPercent ? 100.0 : 1.0) )
+		if (0 == iosequencer_type.compare(std::string("sequential")) && ld != 0. && ld != (hadPercent ? 100.0 : 1.0) )
 		{
-			callers_error_message = std::string("The sequential iogenerator only accepts fractionRead = 0% or 100% or 0.0 or 1.0, not \"")+parameterValue
+			callers_error_message = std::string("The sequential iosequencer only accepts fractionRead = 0% or 100% or 0.0 or 1.0, not \"")+parameterValue
 				+ std::string("\".");
 			return false;
 		}
@@ -459,7 +459,7 @@ bool IogeneratorInput::setParameter(std::string& callers_error_message, std::str
 }
 
 
-bool IogeneratorInput::setMultipleParameters(std::string& callers_error_message, std::string commaSeparatedList)
+bool IosequencerInput::setMultipleParameters(std::string& callers_error_message, std::string commaSeparatedList)
 {
 	callers_error_message.clear();
 
@@ -497,23 +497,23 @@ bool IogeneratorInput::setMultipleParameters(std::string& callers_error_message,
 	return (sawGoodOne && (!sawBadOne));
 }
 
-std::string IogeneratorInput::toStringFull() {  // we might need to use this form to make iogenerator input rollups correctly track all instances even of default values
-	if (iogeneratorIsSet)
-		return std::string("IogeneratorInput<") + getParameterNameEqualsTextValueCommaSeparatedList() + std::string(">");
+std::string IosequencerInput::toStringFull() {  // we might need to use this form to make iosequencer input rollups correctly track all instances even of default values
+	if (iosequencerIsSet)
+		return std::string("IosequencerInput<") + getParameterNameEqualsTextValueCommaSeparatedList() + std::string(">");
 	else
-		return std::string("IogeneratorInput<>");
+		return std::string("IosequencerInput<>");
 }
 
-std::string IogeneratorInput::toString() {
-	if (iogeneratorIsSet)
-		return std::string("IogeneratorInput<") + getNonDefaultParameterNameEqualsTextValueCommaSeparatedList() + std::string(">");
+std::string IosequencerInput::toString() {
+	if (iosequencerIsSet)
+		return std::string("IosequencerInput<") + getNonDefaultParameterNameEqualsTextValueCommaSeparatedList() + std::string(">");
 	else
-		return std::string("IogeneratorInput<>");
+		return std::string("IosequencerInput<>");
 }
 
-void IogeneratorInput::reset() {
-        iogenerator_type=std::string("INVALID");
-        iogeneratorIsSet=false;
+void IosequencerInput::reset() {
+        iosequencer_type=std::string("INVALID");
+        iosequencerIsSet=false;
 	blocksize_bytes=blocksize_bytes_default;
 	maxTags=maxTags_default;
 	IOPS=IOPS_default; // -1.0 means "drive I/Os as fast as possible"
@@ -532,9 +532,9 @@ void IogeneratorInput::reset() {
 }
 
 
-bool IogeneratorInput::fromString(std::string s, std::string logfilename) {
+bool IosequencerInput::fromString(std::string s, std::string logfilename) {
 	reset();
-	std::string n {"IogeneratorInput<>"};
+	std::string n {"IosequencerInput<>"};
 	if (s==n) {
 		return true;
 	}
@@ -542,7 +542,7 @@ bool IogeneratorInput::fromString(std::string s, std::string logfilename) {
 		return false;
 	}
 
-	std::string t{"IogeneratorInput<"};
+	std::string t{"IosequencerInput<"};
 	if (t != s.substr(0,t.length())) {
 		return false;
 	}
@@ -559,13 +559,13 @@ bool IogeneratorInput::fromString(std::string s, std::string logfilename) {
 	}
 	else
 	{
-		fileappend(logfilename,std::string("IogeneratorInput::fromString() - setting parameters failed - ")+ my_error_message);
+		fileappend(logfilename,std::string("IosequencerInput::fromString() - setting parameters failed - ")+ my_error_message);
 		return false;
 	}
 
 }
 
-bool IogeneratorInput::fromIstream(std::istream& i, std::string logfile)
+bool IosequencerInput::fromIstream(std::istream& i, std::string logfile)
 {
 	reset();
 
@@ -581,9 +581,9 @@ bool IogeneratorInput::fromIstream(std::istream& i, std::string logfile)
 	}
 }
 
-std::string IogeneratorInput::getParameterNameEqualsTextValueCommaSeparatedList() {
+std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList() {
 	std::ostringstream o;
-	o << "iogenerator=" << iogenerator_type;
+	o << "iosequencer=" << iosequencer_type;
 	o<< ",blocksize=";
 	if (0==(blocksize_bytes%(1024*1024))) {
 		o << (blocksize_bytes/(1024*1024)) << "MiB";
@@ -598,7 +598,7 @@ std::string IogeneratorInput::getParameterNameEqualsTextValueCommaSeparatedList(
 	o << ",fractionRead=" << fractionRead;
 	o << ",VolumeCoverageFractionStart=" <<  volCoverageFractionStart;
 	o << ",VolumeCoverageFractionEnd=" << volCoverageFractionEnd;
-    if(0==iogenerator_type.compare(std::string("sequential")))
+    if(0==iosequencer_type.compare(std::string("sequential")))
     {
 		o << ",seqStartFractionOfCoverage=" << seqStartFractionOfCoverage;
 	}
@@ -613,9 +613,9 @@ std::string IogeneratorInput::getParameterNameEqualsTextValueCommaSeparatedList(
 	return o.str();
 }
 
-std::string IogeneratorInput::getNonDefaultParameterNameEqualsTextValueCommaSeparatedList() {
+std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSeparatedList() {
 	std::ostringstream o;
-	o << "iogenerator=" << iogenerator_type;
+	o << "iosequencer=" << iosequencer_type;
 
 	if (!defaultBlocksize())
 	{
@@ -655,10 +655,10 @@ std::string IogeneratorInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 	return o.str();
 }
 
-void IogeneratorInput::copy(const IogeneratorInput& source)
+void IosequencerInput::copy(const IosequencerInput& source)
 {
-	iogenerator_type=source.iogenerator_type;
-	iogeneratorIsSet=source.iogeneratorIsSet;
+	iosequencer_type=source.iosequencer_type;
+	iosequencerIsSet=source.iosequencerIsSet;
 	blocksize_bytes=source.blocksize_bytes;
 	maxTags=source.maxTags;
 	IOPS=source.IOPS;

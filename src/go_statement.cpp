@@ -21,7 +21,7 @@
 #include "ParameterValueLookupTable.h"
 #include "MeasureDFC.h"
 #include "run_subinterval_sequence.h"
-
+#include "../parser/lexyacc/location.hh"
 // [Go!]
 //    stepname = stepNNNN,
 //    subinterval_seconds = 5,

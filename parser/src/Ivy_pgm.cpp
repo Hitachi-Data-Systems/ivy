@@ -28,7 +28,7 @@
 #include "ivyhelpers.h"
 
 
-Ivy_pgm::Ivy_pgm(const std::string& f) : ivyscript_filename(f)
+Ivy_pgm::Ivy_pgm(const std::string& f, const std::string& tn) : ivyscript_filename(f), test_name(tn)
 {
     blockStack.push_front(new Block()); // this is the outermost or "global Block".
     init_builtin_table();
@@ -462,12 +462,12 @@ void Ivy_pgm::warning(const std::string& s)
 	warning_count++;
 
 	o << "*** Warning: " <<  s << " ***" << std::endl
-        << "*** Line " << srclineno << " of " + ivyscript_filename << " ***" << std::endl;
+        << "*** Line " << ivyscript_srclineno << " of " + ivyscript_filename << " ***" << std::endl;
 	std::cout << o.str();
 	compile_msg += o.str();
 #ifdef _DEBUG
 	trace << "\n*** Warning: " << s << " ***\n";
-	trace << "\n*** Line " << srclineno << " of " << input_file_name << " ***" <<endl;
+	trace << "\n*** Line " << ivyscript_srclineno << " of " << input_file_name << " ***" <<endl;
 #endif
 	return;
 }

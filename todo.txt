@@ -1,3 +1,9 @@
+- add the ivy builtin functions to the ivy engine API
+
+- change "iogenerator" to "iosequencer" in the doc & add to parser.
+
+- fix select parser ignoring crap past the accepted expression as in "LDEV : 00:00 }"
+
 - add JSON representation to edit rollup.
 
 - update documentation to lead with measure=on shorthand, and leave details to programmer's reference

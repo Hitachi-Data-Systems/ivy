@@ -37,23 +37,23 @@ using namespace std;
 #include "ivyhelpers.h"
 #include "ivytime.h"
 #include "ivydefines.h"
-#include "iogenerator_stuff.h"
-#include "IogeneratorInput.h"
+#include "iosequencer_stuff.h"
+#include "IosequencerInput.h"
 #include "LUN.h"
 #include "Eyeo.h"
 #include "WorkloadID.h"
-#include "Iogenerator.h"
-#include "IogeneratorRandom.h"
-#include "IogeneratorRandomSteady.h"
+#include "Iosequencer.h"
+#include "IosequencerRandom.h"
+#include "IosequencerRandomSteady.h"
 
 
 
-bool IogeneratorRandomSteady::generate(Eyeo& slang)
+bool IosequencerRandomSteady::generate(Eyeo& slang)
 {
-	if (!IogeneratorRandom::generate(slang))
+	if (!IosequencerRandom::generate(slang))
 		return false;
 
-	if (-1 == p_IogeneratorInput->IOPS)
+	if (-1 == p_IosequencerInput->IOPS)
 	{	// iorate=max
 		slang.scheduled_time = ivytime(0);
 	}
@@ -65,11 +65,11 @@ bool IogeneratorRandomSteady::generate(Eyeo& slang)
 		}
 		else
 		{
-			slang.scheduled_time = previous_scheduled_time + ivytime(1/(p_IogeneratorInput->IOPS));
+			slang.scheduled_time = previous_scheduled_time + ivytime(1/(p_IosequencerInput->IOPS));
 		}
 		previous_scheduled_time = slang.scheduled_time;
 	}
-//*debug*/ { ostringstream o; o << "IogeneratorRandomSteady::generate() - IOPS = " << p_IogeneratorInput->IOPS << ", scheduled_time = " << slang.scheduled_time.format_as_datetime_with_ns() << std::endl; log(logfilename,o.str());}
+//*debug*/ { ostringstream o; o << "IosequencerRandomSteady::generate() - IOPS = " << p_IosequencerInput->IOPS << ", scheduled_time = " << slang.scheduled_time.format_as_datetime_with_ns() << std::endl; log(logfilename,o.str());}
 	return true;
 }
 

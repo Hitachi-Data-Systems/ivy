@@ -19,17 +19,15 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
-#include <linux/aio_abi.h>      /* for AIO types and constants */
+class IosequencerSequential : public Iosequencer {
+public:
+	IosequencerSequential(LUN* pL, std::string lf, std::string tK, iosequencer_stuff* p_is, WorkloadThread* pWT) : Iosequencer(pL, lf, tK, p_is, pWT) {}
 
-typedef struct iogenerator_stuff {
+	bool generate(Eyeo&);
+	bool setFrom_IosequencerInput(IosequencerInput*);
+	bool isRandom() { return false; }
+	std::string instanceType() { return std::string("sequential"); }
+	long long int lastIOblockNumber=0;  // default of zero means block 1 will be the first one read or written.
+};
 
-	long long int LUN_size_bytes;
-
-	int sector_size=512;
-
-	int fd {-1};
-
-	aio_context_t act{0};
-
-} iogenerator_stuff;
 

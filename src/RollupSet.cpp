@@ -36,11 +36,11 @@ using namespace std;
 #include "ivyhelpers.h"
 #include "LUN.h"
 #include "AttributeNameCombo.h"
-#include "IogeneratorInputRollup.h"
+#include "IosequencerInputRollup.h"
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
-#include "IogeneratorInput.h"
-#include "IogeneratorInputRollup.h"
+#include "IosequencerInput.h"
+#include "IosequencerInputRollup.h"
 #include "SubintervalOutput.h"
 #include "SubintervalRollup.h"
 #include "SequenceOfSubintervalRollup.h"
@@ -50,7 +50,6 @@ using namespace std;
 #include "AttributeNameCombo.h"
 #include "RollupType.h"
 #include "ivylinuxcpubusy.h"
-#include "Select.h"
 #include "LUNpointerList.h"
 #include "GatherData.h"
 #include "Subsystem.h"
@@ -137,7 +136,7 @@ bool RollupSet::initialize(std::string& callers_error_message)
 }
 
 
-bool RollupSet::add_workload_detail_line(std::string& callers_error_message, WorkloadID& wID, IogeneratorInput& iI, SubintervalOutput& sO)
+bool RollupSet::add_workload_detail_line(std::string& callers_error_message, WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO)
 {
     std::string error_message;
 

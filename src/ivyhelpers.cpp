@@ -978,8 +978,39 @@ void xorshift64star(uint64_t& x)  //https://en.wikipedia.org/wiki/Xorshift
 	return;
 }
 
+std::string put_in_quotes(const std::string& s)
+{
+    std::ostringstream o;
+    o << '\"';
 
+    for (unsigned int i=0; i< s.size(); i++)
+    {
+        char c = s[i];
 
+        switch (c)
+        {
+            case '\r': o << "\\r"; break;
+            case '\n': o << "\\n"; break;
+            case '\v': o << "\\v"; break;
+            case '\t': o << "\\t"; break;
+            case '\"': o << "\\\""; break;
+            case '\'': o << "\\\'"; break;
+            default:
+                {
+                    if (isprint(c))
+                    {
+                        o << c;
+                        break;
+                    }
+                    o << "0x" << std::hex << std::setw(2) << std::setfill('0') << c;
+                }
+        }
+    }
+
+    o << '\"';
+
+    return o.str();
+}
 
 
 

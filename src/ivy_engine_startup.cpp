@@ -17,152 +17,248 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Data Systems.
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <stdexcept>
-#include <list>
 
+
+#include <sys/stat.h>
+
+#include "ivybuilddate.h"
 #include "master_stuff.h"
-#include "host_range.h"
-#include "Stmt.h"
+#include "hosts_list.h"
 
 extern bool routine_logging;
+void initialize_io_time_clip_levels();
 
 void invokeThread(pipe_driver_subthread* T)
 {
     T->threadRun();
 }
 
-bool Stmt_hosts::execute()
+
+std::pair<bool /*success*/, std::string /* message */>
+    master_stuff::startup(
+            const std::string& output_folder_root,
+            const std::string& test_name,
+            const std::string& ivyscript_filename,
+            const std::string& hosts_string,
+            const std::string& select_available_test_LUNs)
 {
-    if (trace_evaluate) { trace_ostream << "[hosts] statement at " << bookmark << ":" << std::endl; }
-
-    if (m_s.haveHosts)
+    std::string api_log_entry;
     {
         std::ostringstream o;
-
-        o << "[Hosts] statement at " << bookmark << " - error - There may be only one [hosts] statement." << std::endl;
-        p_Ivy_pgm->error(o.str());
+        o << "ivy engine API startup("
+            << "output_folder_root = "           << put_in_quotes(output_folder_root)
+            << ", test_name = "                  << put_in_quotes(test_name)
+            << ", ivyscript_filename = "         << put_in_quotes(ivyscript_filename)
+            << ", test_hosts = "                 << put_in_quotes(hosts_string)
+            << ", select = " << put_in_quotes(select_available_test_LUNs)
+            << ")" << std::endl;
+        std::cout << o.str();
+        api_log_entry = o.str();
     }
 
-    if (phspl == nullptr)
+    outputFolderRoot = output_folder_root;
+    testName = test_name;
+
+    struct stat struct_stat;
+
+    if( stat(outputFolderRoot.c_str(),&struct_stat))
     {
         std::ostringstream o;
-
-        o << "[Hosts] statement at " << bookmark << " - internal programming error - null pointer to host_spec_pointer_list." << std::endl;
-        p_Ivy_pgm->error(o.str());
-    }
-    else
-    {
-        get_host_list(phspl,&(m_s.hosts)); // this evaluates the string expressions and builds a std::list<std::string> with the results
+        o << "<Error> directory \"" << outputFolderRoot << "\" does not exist." << std::endl;
+        std::cout << o.str();
+        return std::make_pair(false,o.str());
     }
 
-    std::ostringstream console_msg;
-
-    extern std::string inter_statement_divider;
-
-    console_msg << inter_statement_divider << std::endl << "[Hosts]";
-    for (auto& s: m_s.hosts) console_msg << " " << s;
-    console_msg << std::endl;
-    std::cout << console_msg.str();
-    log(m_s.masterlogfile, console_msg.str());
-
-    m_s.write_clear_script();
-
-    if (trace_evaluate)
-    {
-        trace_ostream << "[Hosts] statement - generated host list contains " << m_s.hosts.size() << " entries:";
-        for (auto& s: m_s.hosts) trace_ostream << " " << s;
-        trace_ostream << std::endl;
-    }
-
-    if (m_s.hosts.size() == 0)
+    if(!S_ISDIR(struct_stat.st_mode))
     {
         std::ostringstream o;
-
-        o << "[Hosts] statement at " << bookmark << " - error - No hosts specified." << std::endl;
-        p_Ivy_pgm->error(o.str());
+        o << "<Error> \"" << outputFolderRoot << "\" is not a directory." << std::endl;
+        std::cout << o.str();
+        return std::make_pair(false,o.str());
     }
 
-    if (p_Select == nullptr)
+    testFolder=outputFolderRoot + std::string("/") + testName;
+
+    if(0==stat(testFolder.c_str(),&struct_stat))  // output folder already exists
     {
-        std::ostringstream o;
+        if(!S_ISDIR(struct_stat.st_mode))
+        {
+            std::ostringstream o;
+            o << "<Error> Output folder for this test run \"" << testFolder << "\" already exists but is not a directory." << std::endl;
+            std::cout << o.str();
+            return std::make_pair(false,o.str());
+        }
+        // output folder already exists and is a directory, so we delete it to make a fresh one.
+        if (0 == system((std::string("rm -rf ")+testFolder).c_str()))   // ugly but easy.
+        {
+            std::ostringstream o;
+            o << "      Deleted pre-existing folder \"" << testFolder << "\"." << std::endl;
+            std::cout << o.str();
 
-        o << "[Hosts] statement at " << bookmark << " - error - missing [Select] clause." << std::endl;
-        p_Ivy_pgm->error(o.str());
-    }
-
-
-    if (trace_evaluate)
-    {
-        if (p_Select == nullptr) trace_ostream << "Stmt_hosts has null pointer to [Select] clause.";
+        }
         else
         {
-            trace_ostream << "[Hosts] statement at " << bookmark << " [Select] clause list contains ";
-
-            if ( p_Select->p_SelectClause_pointer_list == nullptr)
-            {
-                trace_ostream << "null pointer to SelectClause pointer list." << std::endl;
-            }
-            else
-            {
-                trace_ostream << p_Select->p_SelectClause_pointer_list->size() << " entries:" << std::endl;
-
-                for (auto& p : (*p_Select->p_SelectClause_pointer_list))
-                {
-                    trace_ostream << "\"" << p->attribute_name_token() << "\" is ";
-                    auto l = p->attribute_value_tokens();
-                    if (l.size() == 1)
-                    {
-                        trace_ostream << l.front();
-                    }
-                    else
-                    {
-                        trace_ostream << "{";
-                        for (auto& s : l) { trace_ostream << " \"" << s << "\"";}
-                        trace_ostream << "}";
-                    }
-                    trace_ostream << std::endl;
-                }
-            }
+            std::ostringstream o;
+            o << "<Error> Failed trying to delete previously existing version of test run output folder \"" << testFolder << "\"." << std::endl;
+            std::cout << o.str();
+            return std::make_pair(false,o.str());
         }
+
     }
+
+    if (mkdir(testFolder.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+    {
+        std::ostringstream o;
+        o << "<Error> Failed trying to create output folder \"" << testFolder << "\" << errno = " << errno << " " << strerror(errno) << std::endl;
+        std::cout << o.str();
+        return std::make_pair(false,o.str());
+    }
+
+    std::cout << "      Created test run output folder \"" << testFolder << "\"." << std::endl;
+
+    if (mkdir((testFolder+std::string("/logs")).c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+    {
+        std::ostringstream o;
+        o << "<Error> - Failed trying to create logs subfolder in output folder \"" << testFolder << "\" << errno = " << errno << " " << strerror(errno) << std::endl;
+        std::cout << o.str();
+        return std::make_pair(false,o.str());
+    }
+
+    masterlogfile = testFolder + std::string("/logs/log.ivymaster.txt");
+    ivy_engine_logfile = testFolder + std::string("/logs/ivy_engine_API_calls.txt");
+
+
+    log(masterlogfile,      api_log_entry);
+    log(ivy_engine_logfile, api_log_entry);
+
+    {
+        std::ostringstream o;
+        o << "ivymaster build date date " << IVYBUILDDATE << " - fireup." << std::endl;
+        log(masterlogfile,o.str());
+    }
+
+    if (!routine_logging) log(masterlogfile,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
+
+    std::string copyivyscriptcmd = std::string("cp -p ") + ivyscript_filename + std::string(" ") +
+                                   testFolder + std::string("/") + testName + std::string(".ivyscript");
+    if (0!=system(copyivyscriptcmd.c_str()))   // now getting lazy, but purist maintainers could write C++ code to do this.
+    {
+        std::ostringstream o;
+        o << "<Error> Failed trying to copy input ivyscript to output folder: \"" << copyivyscriptcmd << "\"." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        return std::make_pair(false,o.str());
+    }
+
+    std::string rollupsInitializeMessage;
+    if (!rollups.initialize(rollupsInitializeMessage))
+    {
+        std::ostringstream o;
+        o << "<Error> Internal programming error - failed initializing rollups in ivymaster.cpp saying: " << rollupsInitializeMessage << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        return std::make_pair(false,o.str());
+    }
+
+    test_start_time.setToNow();
+
+    initialize_io_time_clip_levels();
+
+    availableControllers[toLower(std::string("measure"))] = &the_dfc;
+
+    std::string my_error_message;
+
+    if ( ! random_steady_template.setParameter(my_error_message, std::string("iosequencer=random_steady")))
+    {
+        std::ostringstream o;
+        o << "<Error> dreaded internal programming error - ivymaster startup - failed trying to set the default random steady I/O generator template - " << my_error_message << std::endl;
+        std::cout << o.str();
+        return std::make_pair(false,o.str());
+    }
+
+    if ( ! random_independent_template.setParameter(my_error_message, std::string("iosequencer=random_independent")))
+    {
+        std::ostringstream o;
+        o << "<Error> dreaded internal programming error - ivymaster startup - failed trying to set the default random independent I/O generator template - " << my_error_message << std::endl;
+        std::cout << o.str();
+        return std::make_pair(false,o.str());
+    }
+
+    if ( ! sequential_template.setParameter(my_error_message, std::string("iosequencer=sequential")))
+    {
+        std::ostringstream o;
+        o << "<Error> dreaded internal programming error - ivymaster startup - failed trying to set the default sequential I/O generator template - " << my_error_message << std::endl;
+        std::cout << o.str();
+        return std::make_pair(false,o.str());
+    }
+
+    hosts_list test_hosts;
+    if (!test_hosts.compile(hosts_string))
+    {
+        std::ostringstream o;
+
+        o << "<Error> failed parsing list of test hosts \"" << hosts_string << "\" - " << test_hosts.message;
+        return std::make_pair(false,o.str());
+    }
+
+    for (auto& s: test_hosts.hosts) { hosts.push_back(s);}
+
+    write_clear_script();  // This writes a shell script to run the clear_hung_ivy_threads executable on all involved hosts - handy if you are a developer and you mess things up
+
+    if (hosts.size() == 0)
+    {
+        std::ostringstream o;
+
+        o << "<Error> ivy engine startup failed - No hosts specified." << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    JSON_select select;
+
+    if (!select.compile_JSON_select(select_available_test_LUNs))
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine startup failure - invalid select expression for available test LUNs \"" << select_available_test_LUNs << "\" - error message follows: " << select.error_message << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+
+    { std::ostringstream o; o << "select " << select << std::endl; std::cout << o.str(); log(masterlogfile,o.str()); }
 
     if
     (
-        (!p_Select->contains_attribute("serial_number"))
+        (!select.contains_attribute("serial_number"))
         &&
-        (!p_Select->contains_attribute("vendor"))
+        (!select.contains_attribute("vendor"))
     )
     {
         std::ostringstream o;
 
-        o << "[Hosts] statement at " << bookmark << " - [Select] clause must specify either \"serial_number\" or \"vendor\"." << std::endl;
-        p_Ivy_pgm->error(o.str());
+        o << "<Error> ivy engine startup failure -  select for available test LUNs \"" << select_available_test_LUNs << "\" - must specify either \"serial_number\" or \"vendor\"." << std::endl;
+        return std::make_pair(false,o.str());
     }
 
-    for ( auto& host : m_s.hosts )
+    for ( auto& host : hosts )
     {
-        log( m_s.masterlogfile, std::string("Starting thread for ") + host + std::string("\n") );
+        log( masterlogfile, std::string("Starting thread for ") + host + std::string("\n") );
         std::cout << "Starting thread for " << host << std::endl;
         pipe_driver_subthread* p_pipe_driver_subthread = new pipe_driver_subthread
             (
                 host,
-                m_s.outputFolderRoot,
-                m_s.testName,
-                m_s.testFolder+std::string("/logs")
+                outputFolderRoot,
+                testName,
+                testFolder+std::string("/logs")
             );
-        m_s.host_subthread_pointers[host] = p_pipe_driver_subthread;
-        m_s.threads.push_back(std::thread(invokeThread,p_pipe_driver_subthread));
+        host_subthread_pointers[host] = p_pipe_driver_subthread;
+        threads.push_back(std::thread(invokeThread,p_pipe_driver_subthread));
     }
-    ofstream ahl(m_s.testFolder+std::string("/all_discovered_LUNs.txt"));
-    ofstream ahl_csv(m_s.testFolder+std::string("/all_discovered_LUNs.csv"));
+    ofstream ahl(testFolder+std::string("/all_discovered_LUNs.txt"));
+    ofstream ahl_csv(testFolder+std::string("/all_discovered_LUNs.csv"));
 
     bool first_host {true};
 
-    for (auto&  pear : m_s.host_subthread_pointers)
+    for (auto&  pear : host_subthread_pointers)
     {
         {
             std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
@@ -184,7 +280,7 @@ bool Stmt_hosts::execute()
                     std::ostringstream o;
                     o << "pipe_driver_subthread successful fireup for host " << pear.first << std::endl;
                     std::cout << o.str();
-                    log(m_s.masterlogfile,o.str());
+                    log(masterlogfile,o.str());
                 }
                 else
                 {
@@ -193,9 +289,9 @@ bool Stmt_hosts::execute()
                     o << std::endl << "Usually if try to run ivy again, it will work the next time.  Don\'t know why this happens." << std::endl;
                     o << std::endl << "Run the \"clear_hung_ivy_threads.sh\" script to clear any hung ivy / ivyslave / ivy_cmddev threads on the ivy master host and all test hosts." << std::endl;
                     std::cout << o.str();
-                    log(m_s.masterlogfile,o.str());
+                    log(masterlogfile,o.str());
                     u_lk.unlock();
-                    m_s.kill_subthreads_and_exit(); // doesn't return
+                    kill_subthreads_and_exit(); // doesn't return
                 }
 
             }
@@ -204,25 +300,25 @@ bool Stmt_hosts::execute()
                 std::ostringstream o;
                 o << "Aborting - timeout waiting " << timeout_seconds << " seconds for pipe_driver_subthread fireup for host " << pear.first << std::endl;
                 std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
+                log(masterlogfile,o.str());
                 u_lk.unlock();
-                m_s.kill_subthreads_and_exit(); // doesn't return
+                kill_subthreads_and_exit(); // doesn't return
             }
         }
 
 
-        {ostringstream o; o << "Subthread for \"" << pear.first << "\" posted startupComplete." << std::endl; std::cout  << o.str(); log(m_s.masterlogfile,o.str());}
+        {ostringstream o; o << "Subthread for \"" << pear.first << "\" posted startupComplete." << std::endl; std::cout  << o.str(); log(masterlogfile,o.str());}
 
         for (auto& pLUN : pear.second->thisHostLUNs.LUNpointers)
         {
-            m_s.allDiscoveredLUNs.LUNpointers.push_back(pLUN);
+            allDiscoveredLUNs.LUNpointers.push_back(pLUN);
             ahl << pLUN->toString() << std::endl;
         }
 //*debug*/{ostringstream o; o << "Loop for \"" << pear.first << "\" about to copy on sample LUN." << std::endl; std::cout  << o.str(); log(masterlogfile,o.str());}
 
-//*debug*/{ostringstream o; o << "Loop for \"" << pear.first << "\" HostSampleLUN=" << pear.second->HostSampleLUN.toString() << std::endl; std::cout  << o.str(); log(m_s.masterlogfile,o.str());}
+//*debug*/{ostringstream o; o << "Loop for \"" << pear.first << "\" HostSampleLUN=" << pear.second->HostSampleLUN.toString() << std::endl; std::cout  << o.str(); log(masterlogfile,o.str());}
 
-        m_s.TheSampleLUN.copyOntoMe(&pear.second->HostSampleLUN);
+        TheSampleLUN.copyOntoMe(&pear.second->HostSampleLUN);
 
         if (first_host) {ahl_csv << pear.second->lun_csv_header;}
         ahl_csv << pear.second->lun_csv_body.str();
@@ -231,77 +327,77 @@ bool Stmt_hosts::execute()
     }
     ahl.close();
     ahl_csv.close();
-    m_s.allThreadsSentTheLUNsTheySee=true;
+    allThreadsSentTheLUNsTheySee=true;
     /*debug*/
     if (routine_logging){
         ostringstream o;
-        o <<"allDiscoveredLUNs contains:"<<std::endl<< m_s.allDiscoveredLUNs.toString() <<std::endl;
+        o <<"allDiscoveredLUNs contains:"<<std::endl<< allDiscoveredLUNs.toString() <<std::endl;
         //std::cout<<o.str();
-        log(m_s.masterlogfile,o.str());
+        log(masterlogfile,o.str());
     }
     else
     {
         ostringstream o;
-        o <<"Discovered " << m_s.allDiscoveredLUNs.LUNpointers.size() << " LUNs on the test hosts." << std::endl;
+        o <<"Discovered " << allDiscoveredLUNs.LUNpointers.size() << " LUNs on the test hosts." << std::endl;
         //std::cout<<o.str();
-        log(m_s.masterlogfile,o.str());
+        log(masterlogfile,o.str());
     }
 
-    if (0 == m_s.allDiscoveredLUNs.LUNpointers.size())
+    if (0 == allDiscoveredLUNs.LUNpointers.size())
     {
         std::ostringstream o;
-        o << m_s.ivyscript_line_number << ": \"" << m_s.ivyscript_line << "\"" << std::endl;
+        o << ivyscript_line_number << ": \"" << ivyscript_line << "\"" << std::endl;
         o << "No LUNs were found on any of the hosts." << std::endl;
         std::cout << o.str();
-        log (m_s.masterlogfile,o.str());
-        m_s.ivyscriptIfstream.close();
-        m_s.kill_subthreads_and_exit();
+        log (masterlogfile,o.str());
+        ivyscriptIfstream.close();
+        kill_subthreads_and_exit();
     }
 
 
-    m_s.allDiscoveredLUNs.split_out_command_devices_into(m_s.commandDeviceLUNs);
+    allDiscoveredLUNs.split_out_command_devices_into(commandDeviceLUNs);
 
     /*debug*/
     {
         ostringstream o;
-        o <<"commandDeviceLUNs contains:"<<std::endl<< m_s.commandDeviceLUNs.toString() <<std::endl;
+        o <<"commandDeviceLUNs contains:"<<std::endl<< commandDeviceLUNs.toString() <<std::endl;
         //std::cout<<o.str();
-        log(m_s.masterlogfile,o.str());
+        log(masterlogfile,o.str());
     }
 
-    for (LUN* pLUN : m_s.allDiscoveredLUNs.LUNpointers)
+    for (LUN* pLUN : allDiscoveredLUNs.LUNpointers)
     {
-        if (p_Select->matches(pLUN))
+        if (select.matches(pLUN))
         {
-            m_s.availableTestLUNs.LUNpointers.push_back(pLUN);
+            availableTestLUNs.LUNpointers.push_back(pLUN);
         }
     }
 
 
-    if ( 0 == m_s.availableTestLUNs.LUNpointers.size() )
+    if ( 0 == availableTestLUNs.LUNpointers.size() )
     {
         std::ostringstream o;
         o << "No LUNs matched [hosts] statement [select] clause." << std::endl;
         //p_Select->display("",o);
 
         std::cout << o.str();
-        log(m_s.masterlogfile,o.str());
-        m_s.kill_subthreads_and_exit();
+        log(masterlogfile,o.str());
+        kill_subthreads_and_exit();
     }
 
-    for (auto& pLUN : m_s.availableTestLUNs.LUNpointers) pLUN -> createNicknames();
+    for (auto& pLUN : availableTestLUNs.LUNpointers) pLUN -> createNicknames();
 
     // Now we create the Subsystem objects
 
-    for (auto& pLUN : m_s.availableTestLUNs.LUNpointers)
+    for (auto& pLUN : availableTestLUNs.LUNpointers)
     {
         std::string serial_number = pLUN->attribute_value(std::string("serial_number"));
         trim(serial_number);
 
         Subsystem* pSubsystem;
 
-        auto subsystemIt = m_s.subsystems.find(serial_number);
-        if (m_s.subsystems.end() == subsystemIt)
+        auto subsystemIt = subsystems.find(serial_number);
+        if (subsystems.end() == subsystemIt)
         {
             std::string product = pLUN->attribute_value("product");
             trim(product);
@@ -313,7 +409,7 @@ bool Stmt_hosts::execute()
             {
                 pSubsystem = new Subsystem(serial_number);
             }
-            m_s.subsystems[serial_number] = pSubsystem;
+            subsystems[serial_number] = pSubsystem;
         }
         else
         {
@@ -331,7 +427,7 @@ bool Stmt_hosts::execute()
     // pipe_driver_subthread, which fires up the ivy_cmddev executable remotely via ssh
     // communicating via stdin/stdout pipes the same way we communicate with remote ivyslave instances.
 
-    for (auto& pear : m_s.subsystems)
+    for (auto& pear : subsystems)
     {
         Subsystem* pSubsystem = pear.second;
 
@@ -340,7 +436,7 @@ bool Stmt_hosts::execute()
             Hitachi_RAID_subsystem* pRAIDsubsystem {(Hitachi_RAID_subsystem*) pSubsystem};
             bool have_cmd_dev {false};
 
-            for (auto& pL : m_s.commandDeviceLUNs.LUNpointers)
+            for (auto& pL : commandDeviceLUNs.LUNpointers)
                 // for each command device LUN as candidate to match as first command device for this subsystem.
             {
                 if (0 == pSubsystem->serial_number.compare(pL->attribute_value("serial_number")))
@@ -367,14 +463,14 @@ bool Stmt_hosts::execute()
                     std::ostringstream o;
                     o << "Connecting to " << cmd_dev_description << std::endl;
                     std::cout << o.str();
-                    log(m_s.masterlogfile,o.str());
+                    log(masterlogfile,o.str());
 
                     pipe_driver_subthread* p_pipe_driver_subthread = new pipe_driver_subthread(
 
                         pL->attribute_value("ivyscript_hostname")
-                        , m_s.outputFolderRoot
-                        , m_s.testName,
-                        m_s.testFolder+std::string("/logs")
+                        , outputFolderRoot
+                        , testName,
+                        testFolder+std::string("/logs")
                     );
 
                     p_pipe_driver_subthread->pCmdDevLUN = pL;  // Seeing this set tells the subthread it's running a command device.
@@ -385,11 +481,11 @@ bool Stmt_hosts::execute()
 
                     pRAIDsubsystem->pRMLIBthread=p_pipe_driver_subthread;
 
-                    m_s.ivymaster_RMLIB_threads.push_back(std::thread(invokeThread,p_pipe_driver_subthread));
+                    ivymaster_RMLIB_threads.push_back(std::thread(invokeThread,p_pipe_driver_subthread));
                     // Note: I wasn't sure, since std::thread is not copyable but is moveable, how to handle
                     //       the case when the command device doesn't start up correctly.  So in the interest of
                     //       time, I left any unsuccessful-startup command device threads in moribund state
-                    //       in m_s.ivymaster_RMLIB_threads to be joined when ivy shuts down.
+                    //       in ivymaster_RMLIB_threads to be joined when ivy shuts down.
 
                     // wait with timeout for thread status to show "startupComplete", i.e. waiting for command;
 
@@ -413,8 +509,8 @@ bool Stmt_hosts::execute()
                                 std::ostringstream o;
                                 o << "ivy_cmddev pipe_driver_subthread successful fireup for subsystem " << pSubsystem->serial_number << std::endl;
                                 std::cout << o.str();
-                                log(m_s.masterlogfile,o.str());
-                                m_s.haveCmdDev = true;
+                                log(masterlogfile,o.str());
+                                haveCmdDev = true;
                                 have_cmd_dev = true;
                             }
                             else
@@ -423,7 +519,7 @@ bool Stmt_hosts::execute()
                                 o   << "Unsuccessful startup for command device = " << cmd_dev_description << std::endl
                                     << "Reason - " <<  p_pipe_driver_subthread->commandErrorMessage << std::endl;
                                 std::cout << o.str();
-                                log(m_s.masterlogfile,o.str());
+                                log(masterlogfile,o.str());
                                 pRAIDsubsystem->command_device_description.clear();
                                 pRAIDsubsystem->pRMLIBthread=nullptr;
                             }
@@ -433,7 +529,7 @@ bool Stmt_hosts::execute()
                             std::ostringstream o;
                             o   << "Timeout waiting " << timeout_seconds << " seconds for for startup of command device = " << cmd_dev_description << std::endl;
                             std::cout << o.str();
-                            log(m_s.masterlogfile,o.str());
+                            log(masterlogfile,o.str());
                             pRAIDsubsystem->command_device_description.clear();
                             pRAIDsubsystem->pRMLIBthread=nullptr;
                         }
@@ -464,7 +560,7 @@ bool Stmt_hosts::execute()
                         {
                             std::ostringstream o;
                             o << "Posted \"get config\" to thread for subsystem serial " << pRAIDsubsystem->serial_number << " managed on host " << p_pipe_driver_subthread->ivyscript_hostname << '.' << std::endl;
-                            log(m_s.masterlogfile,o.str());
+                            log(masterlogfile,o.str());
                         }
                     }
                     p_pipe_driver_subthread->master_slave_cv.notify_all();
@@ -487,8 +583,8 @@ bool Stmt_hosts::execute()
                                 std::ostringstream o;
                                 o << "\"get config\" to thread for subsystem serial " << pRAIDsubsystem->serial_number
                                   << " managed on host " << p_pipe_driver_subthread->ivyscript_hostname << " failed.  Aborting." << std::endl;
-                                log(m_s.masterlogfile,o.str());
-                                m_s.kill_subthreads_and_exit();
+                                log(masterlogfile,o.str());
+                                kill_subthreads_and_exit();
                             }
 
                             ivytime config_gather_complete;
@@ -500,7 +596,7 @@ bool Stmt_hosts::execute()
                                 std::ostringstream o;
                                 o << "\"get config\" reported complete with duration " << pRAIDsubsystem->config_gather_time.format_as_duration_HMMSSns()
                                   << " by thread for subsystem serial " << pRAIDsubsystem->serial_number << " managed on host " << p_pipe_driver_subthread->ivyscript_hostname << '.' << std::endl;
-                                log(m_s.masterlogfile,o.str());
+                                log(masterlogfile,o.str());
                             }
                         }
                         else // timeout
@@ -511,15 +607,15 @@ bool Stmt_hosts::execute()
                               << " managed on host " << p_pipe_driver_subthread->ivyscript_hostname
                               << " to complete a \"get config\"." <<  std::endl;
                             std::cout << o.str();
-                            log(m_s.masterlogfile,o.str());
+                            log(masterlogfile,o.str());
                             u_lk.unlock();
-                            m_s.kill_subthreads_and_exit();
+                            kill_subthreads_and_exit();
                         }
                     }
 
                     // post process after gather to augment available test LUN attributes with LDEV attributes from the config gather
 
-                    for (auto pLUN : m_s.availableTestLUNs.LUNpointers)
+                    for (auto pLUN : availableTestLUNs.LUNpointers)
                     {
                         if ( 0 == std::string("Hitachi RAID").compare(pSubsystem->type())  &&  0 == pSubsystem->serial_number.compare(pLUN->attribute_value("serial_number")))
                         {
@@ -531,7 +627,7 @@ bool Stmt_hosts::execute()
 
                             if (0 < pLUN->attribute_value("CLPR").length())
                             {
-                                m_s.cooldown_WP_watch_set.insert(std::make_pair(pLUN->attribute_value("CLPR"),pSubsystem));
+                                cooldown_WP_watch_set.insert(std::make_pair(pLUN->attribute_value("CLPR"),pSubsystem));
                             }
 
 
@@ -553,8 +649,8 @@ bool Stmt_hosts::execute()
                                   << ", but the LUN did have the \"ldev\" attribute." <<  std::endl
                                   << "  LUN =" << pLUN->toString() <<  std::endl;
                                 std::cout << o.str();
-                                log(m_s.masterlogfile,o.str());
-                                m_s.kill_subthreads_and_exit();
+                                log(masterlogfile,o.str());
+                                kill_subthreads_and_exit();
                             }
 
                             std::string LUN_ldev = pLUN->attribute_value(std::string("ldev"));
@@ -566,8 +662,8 @@ bool Stmt_hosts::execute()
                                   << ", but the LUN's \"ldev\" attribute value was the null string." <<  std::endl
                                   << "  LUN =" << pLUN->toString() <<  std::endl;
                                 std::cout << o.str();
-                                log(m_s.masterlogfile,o.str());
-                                m_s.kill_subthreads_and_exit();
+                                log(masterlogfile,o.str());
+                                kill_subthreads_and_exit();
                             }
 
                             auto subsystemLDEVit = pRAIDsubsystem->configGatherData.data.find(std::string("LDEV"));
@@ -578,8 +674,8 @@ bool Stmt_hosts::execute()
                                   << ", but the subsystem configuration data from a command device didn\'t have \"LDEV\" element type." <<  std::endl
                                   << "  LUN =" << pLUN->toString() <<  std::endl;
                                 std::cout << o.str();
-                                log(m_s.masterlogfile,o.str());
-                                m_s.kill_subthreads_and_exit();
+                                log(masterlogfile,o.str());
+                                kill_subthreads_and_exit();
                             }
 
                             std::string cmddev_LDEV = toUpper(LUN_ldev);
@@ -592,8 +688,8 @@ bool Stmt_hosts::execute()
                                   << ", but the subsystem didn\'t have the \"LDEV\" instance \"" << cmddev_LDEV << "\"." <<  std::endl
                                   << "  LUN =" << pLUN->toString() <<  std::endl;
                                 std::cout << o.str();
-                                log(m_s.masterlogfile,o.str());
-                                m_s.kill_subthreads_and_exit();
+                                log(masterlogfile,o.str());
+                                kill_subthreads_and_exit();
                             }
 
                             for (auto& pear : (*subsystemLDEVinstanceIt).second)
@@ -651,12 +747,12 @@ bool Stmt_hosts::execute()
                 std::ostringstream o;
                 o << "No command device found for subsystem " << pSubsystem->serial_number << std::endl;
                 std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
+                log(masterlogfile,o.str());
             }
 
             pRAIDsubsystem->configGatherData.print_csv_file_set
             (
-                m_s.testFolder,
+                testFolder,
                 pRAIDsubsystem->serial_number+std::string(".config")
             );
 
@@ -664,24 +760,24 @@ bool Stmt_hosts::execute()
 
     } // end for each subsystem
 
-    for (auto& pLUN : m_s.availableTestLUNs.LUNpointers)
+    for (auto& pLUN : availableTestLUNs.LUNpointers)
     {
-        m_s.TheSampleLUN.copyOntoMe(pLUN);  // add nicknames, and command device LDEV attributes to TheSampleLUN.
+        TheSampleLUN.copyOntoMe(pLUN);  // add nicknames, and command device LDEV attributes to TheSampleLUN.
     }
 
 
-    for (auto& pLUN : m_s.availableTestLUNs.LUNpointers) // populate test config thumbnail data structures
+    for (auto& pLUN : availableTestLUNs.LUNpointers) // populate test config thumbnail data structures
     {
-        m_s.available_LUNs_thumbnail.add(pLUN);
+        available_LUNs_thumbnail.add(pLUN);
     }
 
     {
         std::ostringstream o;
-        o << m_s.available_LUNs_thumbnail;
+        o << available_LUNs_thumbnail;
 
         bool saw_command_device {false};
 
-        for (auto& pear : m_s.subsystems)
+        for (auto& pear : subsystems)
         {
             if (0 == std::string("Hitachi RAID").compare(pear.second->type()))
             {
@@ -696,10 +792,10 @@ bool Stmt_hosts::execute()
 
         if (saw_command_device) o << std::endl;
 
-        log(m_s.masterlogfile,o.str());
+        log(masterlogfile,o.str());
         std::cout << o.str();
 
-        ofstream ofs(m_s.testFolder+std::string("/available_test_config.txt"));
+        ofstream ofs(testFolder+std::string("/available_test_config.txt"));
         ofs << o.str();
         ofs.close();
 
@@ -708,44 +804,44 @@ bool Stmt_hosts::execute()
     if (routine_logging)
     {
         ostringstream o;
-        o << "After adding subsystem config attributes, availableTestLUNs contains:" << std::endl << m_s.availableTestLUNs.toString() << std::endl;
+        o << "After adding subsystem config attributes, availableTestLUNs contains:" << std::endl << availableTestLUNs.toString() << std::endl;
         // std::cout << o.str();
-        log(m_s.masterlogfile,o.str());
+        log(masterlogfile,o.str());
     }
     else
     {
         ostringstream o;
-        o <<"availableTestLUNs contains " << m_s.availableTestLUNs.LUNpointers.size() << " LUNs." << std::endl;
+        o <<"availableTestLUNs contains " << availableTestLUNs.LUNpointers.size() << " LUNs." << std::endl;
         //std::cout<<o.str();
-        log(m_s.masterlogfile,o.str());
+        log(masterlogfile,o.str());
     }
 
 
-    ofstream atlcsv(m_s.testFolder+std::string("/available_test_LUNs.csv"));
-    m_s.availableTestLUNs.print_csv_file(atlcsv);
+    ofstream atlcsv(testFolder+std::string("/available_test_LUNs.csv"));
+    availableTestLUNs.print_csv_file(atlcsv);
     atlcsv.close();
 
-    if (m_s.cooldown_WP_watch_set.size() == 0)
+    if (cooldown_WP_watch_set.size() == 0)
 
     {
         std::ostringstream o;
         o << "No command devices for RAID_subsystem LDEVs, so cooldown_by_wp settings will not have any effect." << std::endl;
-        log(m_s.masterlogfile,o.str());
+        log(masterlogfile,o.str());
         std::cout << o.str();
     }
     else
     {
         std::ostringstream o;
         o << "Cooldown_WP_watch_set contains:";
-        for (auto& pear : m_s.cooldown_WP_watch_set) o << " < " << pear.first << ", " << pear.second->serial_number << " >";
+        for (auto& pear : cooldown_WP_watch_set) o << " < " << pear.first << ", " << pear.second->serial_number << " >";
         o << std::endl << std::endl;
-        log(m_s.masterlogfile,o.str());
+        log(masterlogfile,o.str());
         std::cout << o.str();
     }
 
-    m_s.haveHosts = true;
+    haveHosts = true;
 
-    return false; // false means "no return statement was executed"
+
+
+    return std::make_pair(true,std::string("hello, whirled!"));
 }
-
-

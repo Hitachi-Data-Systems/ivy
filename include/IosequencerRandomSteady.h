@@ -19,11 +19,11 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
-class IogeneratorRandomIndependent : public IogeneratorRandom {
+class IosequencerRandomSteady : public IosequencerRandom {
 public:
-	IogeneratorRandomIndependent(LUN* pL, std::string logfilename, std::string tK, iogenerator_stuff* p_is, WorkloadThread* pWT) : IogeneratorRandom(pL, logfilename, tK, p_is, pWT) {}
+	IosequencerRandomSteady(LUN* pL, std::string logfilename, std::string tK, iosequencer_stuff* p_is, WorkloadThread* pWT) : IosequencerRandom(pL, logfilename, tK, p_is, pWT) {}
 
-	std::string instanceType() { return std::string("random_independent"); }
+	std::string instanceType() { return std::string("random_steady"); }
 	bool isRandom() { return true; }
 	bool generate(Eyeo&);
 };

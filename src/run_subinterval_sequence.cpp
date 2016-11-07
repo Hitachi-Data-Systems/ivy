@@ -179,14 +179,14 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
     m_s.in_cooldown_mode = false;
 
-    // On the other end, iogenerator threads are waiting to start.  This is because when you first
+    // On the other end, iosequencer threads are waiting to start.  This is because when you first
     // create the thread, it sets up the first two subintervals with the parameters specified,
     // and then when a subinterval sequence ends, once ivyslave stops upon command and sends the last
     // subinterval detail lines, it will set up the first two subintervals to have identical subinterval
     // input parameters to the last completed subinterval.  This is a starting point for any ModifyWorkload
     // commands that may follow.
 
-    // post "Go!" command to start the iogenerator threads running
+    // post "Go!" command to start the iosequencer threads running
     for (auto& pear : m_s.host_subthread_pointers)
     {
         {
@@ -217,9 +217,9 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
 
 
-    // Now the iogenerator threads are running the first subinterval
+    // Now the iosequencer threads are running the first subinterval
 
-    while (true) // loop starts where we wait for iogenerator threads to have posted the results of a subinterval
+    while (true) // loop starts where we wait for iosequencer threads to have posted the results of a subinterval
     {
         m_s.running_subinterval++;
 
@@ -403,7 +403,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 // Wait for each subtask to post "subinterval complete".
                 while (!pear.second->commandComplete) pear.second->master_slave_cv.wait(u_lk);
 
-                // Note that it is the subtask for each host that does the posting of iogenerator detail lines
+                // Note that it is the subtask for each host that does the posting of iosequencer detail lines
                 // into the various rollups.  It does this after grabbing the lock to serialize access to the
                 // "master_stuff" structure the rollups are kept in that is shared by the main thread and all
                 // the host driver subthreads.
@@ -451,7 +451,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             log(m_s.masterlogfile,o.str());
             std::cout << o.str() << std::endl;
         }
-
         auto allTypeIterator = m_s.rollups.rollups.find(std::string("all"));
 
         if ( m_s.rollups.rollups.end() == allTypeIterator )
@@ -478,16 +477,17 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 ivytime test_duration = n - m_s.test_start_time;
                 ivytime step_duration = n - m_s.get_go;
 
-
                 std::ostringstream o;
                 o << "At " << test_duration.format_as_duration_HMMSS() << " into test \"" << m_s.testName << "\" and "
                   << "at " << step_duration.format_as_duration_HMMSS() << " into " << m_s.stepNNNN
                   << " \"" << m_s.stepName << "\" "
                   << " rollups complete at " << rollup_time.format_as_duration_HMMSSns() << " after subinterval end." << std::endl;
+
                 if (m_s.haveCmdDev)
                 {
                     o << m_s.getWPthumbnail(((*allAllIterator).second->subintervals.sequence.size())-1);
                 }
+
                 o << allAllSubintervalOutput.thumbnail(allAllSubintervalRollup.durationSeconds()) << std::endl;
 
                 std::cout << o.str();
@@ -500,7 +500,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
         // if we said "stop" the last time around, we still go through the top of the loop
         // again to wait for the last subinterval to finish, and we break from the loop here.
 
-        // A subinterval is now complete, including posting all the iogenerator detail lines
+        // A subinterval is now complete, including posting all the iosequencer detail lines
         // into the various rollups.
 
         // This next bit of code generalizes the concept of dynamic feedback control and
@@ -599,7 +599,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
 
         // Note that at the point the evaluateSubinterval() routine decides to stop, the next
-        // and last subinterval has already started, and the iogenerator thread won't stop
+        // and last subinterval has already started, and the iosequencer thread won't stop
         // until it reaches the end of that last subinterval.  The data from the last subinterval
         // will show in the subinterval-by-subinterval detail csv files, but it cannot become
         // part of valid measurement data because we always require at least one subinterval
@@ -1005,7 +1005,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                         o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
 
                         if (m_s.ivymaster_RMLIB_threads.size()>0) { o << pRollupInstance->test_config_thumbnail.csv_headers(); }
-                        o << IogeneratorInputRollup::CSVcolumnTitles();
+                        o << IosequencerInputRollup::CSVcolumnTitles();
                         o << m_s.measurement_rollup_CPU.csvTitles();
 
                         if (m_s.ivymaster_RMLIB_threads.size()>0)
@@ -1430,7 +1430,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                         std::ostringstream o;
                         o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
                         if (m_s.ivymaster_RMLIB_threads.size()>0) { o << Test_config_thumbnail::csv_headers(); }
-                        o << IogeneratorInputRollup::CSVcolumnTitles();
+                        o << IosequencerInputRollup::CSVcolumnTitles();
                         o << avgcpubusypercent::csvTitles();
 
                         if (m_s.ivymaster_RMLIB_threads.size()>0)
