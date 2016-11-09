@@ -35,7 +35,7 @@ std::string startup_log_file {"~/ivy_startup.txt"};
 
 std::ostringstream startup_ostream;
 
-std::string inter_statement_divider {"---------------------"};
+std::string inter_statement_divider {"=================================================================================================="};
 
 bool routine_logging {false};
 
@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
 
 	if (context.successful_compile && !context.unsuccessful_compile )
 	{
-        std::cout << std::endl << "Successful compile, test name is \"" << test_name << "\"." << std::endl;
+        std::cout << "Successful compile, test name is \"" << test_name << "\"." << std::endl;
 
 
         try {

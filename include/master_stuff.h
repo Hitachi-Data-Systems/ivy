@@ -381,59 +381,137 @@ public:
 
     std::string focus_metric_ID();
 
-// ivy engine API methods
+    // ivy engine API methods
 
-	std::pair<bool /*success*/, std::string /* message */>
-        startup(
-            const std::string& output_folder_root,
-            const std::string& test_name,
-            const std::string& ivyscript_filename,
-            const std::string& test_hosts,
-            const std::string& select);
+        std::pair<bool /*true = success*/, std::string /* message */>
+    startup(
+        const std::string& output_folder_root,  //    /home/ivogelesang/Desktop
+        const std::string& test_name,           //    testy
+            // ivyscript uses as the test name the ivyscript filename, with any path part removed, and with the .ivyscript suffix removed
+            // in other words, if you ran ../redlof/testy.ivyscript, the ivyscript interpreter would set the test name to testy.
 
-	std::pair<bool /*success*/, std::string /* message */>
-        set_iosequencer_template(
-            const std::string& template_name,
-            const std::string& parameters);
+        const std::string& ivyscript_filename,  // optional - nonblank gives name of a file to be copied to the test folder
+                                                //    ../redlof/testy.ivyscript
+        const std::string& test_hosts,          //    horde16-31, 192.168.0.0, torque
+        const std::string& select);             //    { "port" : [ "1A", "2A" ], "LDEV" : "00:00-00:FF" }
 
-
-	std::pair<bool /*success*/, std::string /* message */>
-        createWorkload(
-            const std::string& workload_name,
-            const std::string& select,
-            const std::string& iosequencer,
-            const std::string& parameters);
-
-	std::pair<bool /*success*/, std::string /* message */>
-        deleteWorkload(
-            const std::string& workload_name,
-            const std::string& select_string);
-
-	std::pair<bool /*success*/, std::string /* message */>
-        create_rollup(
-          std::string rollup_name
-		, bool nocsvSection
-		, bool have_quantity_validation
-		, bool have_max_IOPS_droop_validation
-		, std::string nocsv_text
-		, ivy_int quantity
-		, ivy_float max_droop
-	);
-
-	bool
-        editRollup(std::string& callers_error_message,
-            std::string rollupText,
-            std::string parametersText);
-
-	std::pair<bool /*success*/, std::string /* message */>
-        delete_rollup(const std::string& rollup_name);
+        std::pair<bool /*true = success*/, std::string /* message */>
+    set_iosequencer_template(
+        const std::string& template_name,       //    random_steady, random_independent, sequential
+        const std::string& parameters);         //    IOPS = 100, blocksize = 4 KiB
 
 
-	std::pair<bool /*success*/, std::string /* message */>
-        go(const std::string& parameters);
+        std::pair<bool /*true = success*/, std::string /* message */>
+    createWorkload(
+        const std::string& workload_name,
+        const std::string& select,              //    { "PG" : [ "1-*", "2-1:8" ], "LDEV" : "00:00-00:FF" }
+        const std::string& iosequencer,         //    random_steady, random_independent, sequential
+        const std::string& parameters);
 
-    std::pair<bool,std::string>
-        shutdown_subthreads();
+        std::pair<bool /*true = success*/, std::string /* message */>
+    deleteWorkload(
+        const std::string& workload_name,
+        const std::string& select_string);
+
+        std::pair<bool /*true = success*/, std::string /* message */>
+    create_rollup(
+        std::string rollup_name
+        , bool dont_make_csv_files  /* true means don't make csv files for this rollup */
+        , bool have_quantity_validation
+        , bool have_max_IOPS_droop_validation
+        , ivy_int quantity
+        , ivy_float max_droop);
+
+        std::pair<bool /*true = success*/, std::string /* message */>
+    edit_rollup(
+        const std::string& rollup_name,        //   serial_number+Port = { 410321+1A, 410321+2A }
+            // all=all gets every workload thread
+        const std::string& parameters);
+
+        std::pair<bool /*true = success*/, std::string /* message */>
+    delete_rollup(
+        const std::string& rollup_name);       //   serial_number+port
+
+
+        std::pair<bool /*true = success*/, std::string /* message */>
+    go(
+        const std::string& parameters);        //   measure_seconds = 300
+
+        std::pair<bool,std::string>
+    shutdown_subthreads();
+
+    // accessor API methods to help scripting
+
+    // This next group of methods is for ivy engine API users to easily locate ivy output csv files
+
+    std::string output_folder_root(){return outputFolderRoot;}
+        // This is specified on the ivy engine API "startup" call.
+        // The place where ivy will make a subfolder for this test run.
+
+    std::string test_name()         {return testName;}
+        // This is specified on the ivy engine API "startup" call.
+        // An identifier (name) for this test run.
+        // - used as the subfolder name from the output folder root
+        // - used as part of csv file names, so that even if you dump all the csv files into one folder, they won't collide.
+        // ivyscript sets the test name to be what the user specified as in input filename, but with any path part removed.
+
+    std::string test_folder()       {return testFolder;}
+        // output_folder_root / test_name
+
+    // These next ones are updated after every "test step", or "go" call to run a subinterval sequence
+    std::string last_result();    // look for "success"
+    std::string step_NNNN()         {return stepNNNN;}
+    std::string step_name()         {return stepName;}
+    std::string step_folder()       {return stepFolder;}
+
+    // ivy comes with a handy general purpose "treat a csv file as a spreadsheet" class.
+    // The idea is you build the csv file name using the above, then you use the csvfile class
+    // to easily pick out the value for row (test step number) 2, column "IOPS".
+
+// ==== start of clip from csvfile.h
+//        int rows();
+//            // returns the number of rows following the header row.
+//            // returns 0 if there is only a header row.
+//            // returns -1 if file loaded didn't exist or was empty.
+//
+//        int header_columns();
+//            // returns -1 if file loaded didn't exist or was empty.
+//
+//        int columns_in_row(int row /* from -1 */);
+//            // row number -1 means header row
+//            // returns -1 for an invalid row
+//
+//        std::string column_header(int column /* from 0*/ );
+//
+//        std::string raw_cell_value(int /* row from -1 */, int                 /* column number from 0 */ );
+//        std::string raw_cell_value(int /* row from -1 */, const std::string&  /* column header */        );
+//            // returns the exact characters found between commas in the source file
+//            // returns the empty string on invalid row or column
+//
+//        std::string cell_value(int /* row from -1 */, int                /* column number from 0 */ );
+//        std::string cell_value(int /* row from -1 */, const std::string& /* column header */ );
+//            // This "unwraps" the raw cell value.
+//
+//            // First if it starts with =" and ends with ", we just clip those off and return the rest.
+//
+//            // Otherwise, an unwrapped CSV column value first has leading/trailing whitespace removed and then if what remains is a single quoted string,
+//            // the quotes are removed and any internal "escaped" quotes have their escaping backslashes removed, i.e. \" -> ".
+//
+//        std::string row(int); // -1 gives you the header row
+//            // e.g. nsome,56.2,="bork"
+//
+//        std::string column(int                /* column number */);
+//        std::string column(const std::string& /* column header */);
+//            // This returns a column slice, e.g. "IOPS,56,67,88"
+//
+//        int lookup_column(const std::string& /* header name */);
+// ==== start of clip from csvfile.h
+
+    // Misc.
+
+    std::string logfile()           {return masterlogfile;}   // if API user would like to append to ivy command line master thread log file
+
+    std::string show_rollup_structure();   // available for diagnostic use
 };
 
 extern master_stuff m_s;

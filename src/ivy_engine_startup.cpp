@@ -139,15 +139,19 @@ std::pair<bool /*success*/, std::string /* message */>
 
     if (!routine_logging) log(masterlogfile,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
 
-    std::string copyivyscriptcmd = std::string("cp -p ") + ivyscript_filename + std::string(" ") +
-                                   testFolder + std::string("/") + testName + std::string(".ivyscript");
-    if (0!=system(copyivyscriptcmd.c_str()))   // now getting lazy, but purist maintainers could write C++ code to do this.
+
+    if (ivyscript_filename.size() > 0)
     {
-        std::ostringstream o;
-        o << "<Error> Failed trying to copy input ivyscript to output folder: \"" << copyivyscriptcmd << "\"." << std::endl;
-        log(masterlogfile,o.str());
-        std::cout << o.str();
-        return std::make_pair(false,o.str());
+        std::string copyivyscriptcmd = std::string("cp -p ") + ivyscript_filename + std::string(" ") +
+                                       testFolder + std::string("/") + testName + std::string(".ivyscript");
+        if (0!=system(copyivyscriptcmd.c_str()))   // now getting lazy, but purist maintainers could write C++ code to do this.
+        {
+            std::ostringstream o;
+            o << "<Error> Failed trying to copy input ivyscript to output folder: \"" << copyivyscriptcmd << "\"." << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            return std::make_pair(false,o.str());
+        }
     }
 
     std::string rollupsInitializeMessage;

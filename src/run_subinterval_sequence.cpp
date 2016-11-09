@@ -241,11 +241,13 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
         {
             std::ostringstream o;
 
-            o << std::endl << "==================================================================================================" << std::endl;
-
-            o << std::endl << "Top of subinterval " << (m_s.rollups.current_index()+1)
-              << " from " << m_s.subintervalStart.format_as_datetime_with_ns()
-              <<  " to  " << m_s.subintervalEnd.format_as_datetime_with_ns() << std::endl;
+            o << std::endl << "--------------------------------------------------------------------------------------------------" << std::endl
+                << "Test name = " << put_in_quotes(m_s.testName)
+                << ", step number = " << put_in_quotes(m_s.stepNNNN)
+                << ", step name = " << put_in_quotes(m_s.stepName)
+                << " - Top of subinterval " << (m_s.rollups.current_index()+1)
+                << " from " << m_s.subintervalStart.format_as_datetime_with_ns()
+                <<  " to  " << m_s.subintervalEnd.format_as_datetime_with_ns() << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile,o.str());
         }

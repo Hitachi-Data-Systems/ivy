@@ -73,7 +73,7 @@ bool Stmt_hosts::execute()
 
     console_msg
         << inter_statement_divider << std::endl
-        << "[Hosts] \"" << hosts_string << "\" [Select] " << put_in_quotes(select_string) <<std::endl;
+        << "[Hosts] \"" << hosts_string << "\" [Select] " << put_in_quotes(select_string) << ";" << std::endl << std::endl;
 
     std::cout << console_msg.str();
 
@@ -200,7 +200,7 @@ bool Stmt_set_iosequencer_template::execute()
     p_parameters_Xpr->evaluate((void*)&parameters);
 
     std::ostringstream console_msg;
-    console_msg << inter_statement_divider << std::endl << "[SetIosequencerDefault] \"" << iogen << "\" [Parameters] \"" << parameters << "\";" << std::endl;
+    console_msg << inter_statement_divider << std::endl << "[SetIosequencerDefault] \"" << iogen << "\" [Parameters] \"" << parameters << "\";" << std::endl << std::endl;
     std::cout << console_msg.str();
     log(m_s.masterlogfile,console_msg.str());
 
@@ -275,7 +275,7 @@ bool Stmt_create_rollup::execute()
         }
     }
 
-    console_msg << ";" << std::endl;
+    console_msg << ";" << std::endl << std::endl;
 
     std::cout << console_msg.str();
     log (m_s.masterlogfile, console_msg.str());
@@ -297,7 +297,6 @@ bool Stmt_create_rollup::execute()
         , haveNocsv
         , haveQuantity
         , haveMaxDroopMaxtoMinIOPS
-        , "" /*nocsvText*/
         , int_quantity
         , max_IOPS_droop
     );
@@ -340,7 +339,7 @@ bool Stmt_delete_rollup::execute()
 
     {
         std::ostringstream o;
-        o << inter_statement_divider << std::endl << "[DeleteRollup] " << put_in_quotes(attributeNameComboText) << ";" << std::endl;
+        o << inter_statement_divider << std::endl << "[DeleteRollup] " << put_in_quotes(attributeNameComboText) << ";" << std::endl << std::endl;
         std::cout << o.str();
         log(m_s.masterlogfile,o.str());
     }
@@ -388,7 +387,7 @@ bool Stmt_create_workload::execute()
         console_msg << " [Parameters] \"" << parameters << "\"";
     }
 
-    console_msg << std::endl;
+    console_msg << ";" << std::endl << std::endl;
 
     std::cout << console_msg.str();
     log(m_s.masterlogfile, console_msg.str());
@@ -438,7 +437,7 @@ bool Stmt_delete_workload::execute()
     }
 
     std::ostringstream console_msg;
-    console_msg << inter_statement_divider << std::endl << "[DeleteWorkload] \"" << workloadName << "\";" << std::endl;
+    console_msg << inter_statement_divider << std::endl << "[DeleteWorkload] \"" << workloadName << "\";" << std::endl << std::endl;
     std::cout << console_msg.str();
     log(m_s.masterlogfile,console_msg.str());
 
@@ -482,23 +481,24 @@ bool Stmt_edit_rollup::execute()
         p_Ivy_pgm->error(o.str());
     }
 
-    std::string my_error_message{}, rollupSpecText{}, parameters{};
+    std::string rollupSpecText{}, parameters{};
 
     p_rollup_name_Xpr->evaluate((void*)&rollupSpecText);
     p_parameters_Xpr->evaluate((void*)&parameters);
 
     std::ostringstream console_msg;
     console_msg << inter_statement_divider << std::endl
-        << "[EditRollup] " << put_in_quotes(rollupSpecText) << " [Parameters] " << put_in_quotes(parameters) << ";" << std::endl;
+        << "[EditRollup] " << put_in_quotes(rollupSpecText) << " [Parameters] " << put_in_quotes(parameters) << ";" << std::endl << std::endl;
 
     std::cout << console_msg.str();
     log(m_s.masterlogfile, console_msg.str());
 
-    if (!( m_s.editRollup(my_error_message, rollupSpecText, parameters) ))
+    std::pair<bool,std::string>
+    rc = m_s.edit_rollup(rollupSpecText, parameters);
+    if (!rc.first )
     {
         std::ostringstream o;
-        o << m_s.ivyscript_line_number << ": \"" << m_s.ivyscript_line << "\"" << std::endl
-          << "- [EditRollup] failed - " << my_error_message << std::endl;
+        o << "<Error> ivy engine API edit_rollup(" << put_in_quotes(rollupSpecText) << ", " << put_in_quotes(parameters) << ") failed - " << rc.second << std::endl;
         log(m_s.masterlogfile,o.str());
         std::cout << o.str();
         p_Ivy_pgm->error(o.str());
@@ -519,7 +519,7 @@ bool Stmt_go::execute()
     {
         std::ostringstream o;
         o << inter_statement_divider << std::endl
-            << "[Go!] " << put_in_quotes(parameters) << ";" << std::endl;
+            << "[Go!] " << put_in_quotes(parameters) << ";" << std::endl << std::endl;
         std::cout << o.str();
         log(m_s.masterlogfile,o.str());
     }

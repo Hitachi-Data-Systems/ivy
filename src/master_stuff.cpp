@@ -793,17 +793,19 @@ std::string master_stuff::focus_caption()
     return o.str();
 }
 
-std::string last_result()
+std::string master_stuff::last_result()
 {
-    if (m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS) return "success";
-    if (m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_FAILURE) return "failure";
-    if (m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_CONTINUE) return "continue <internal programming error if you see this>";
-    return "<Error> internal programming error - last_result() - unknown m_s.lastEvaluateSubintervalReturnCode";
+    if (lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS) return "success";
+    if (lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_FAILURE) return "failure";
+    if (lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_CONTINUE) return "continue <internal programming error if you see this>";
+    return "<Error> internal programming error - last_result() - unknown lastEvaluateSubintervalReturnCode";
 }
+
+std::string last_result() {return m_s.last_result();}  // used by a builtin function
 
 int exit_statement() { m_s.kill_subthreads_and_exit(); return 0; }
 
-std::string show_rollup_structure()
+std::string master_stuff::show_rollup_structure()
 {
     std::ostringstream o;
 
@@ -811,7 +813,7 @@ std::string show_rollup_structure()
 
     bool first_type_pass {true};
 
-    for (auto& pear : m_s.rollups.rollups)
+    for (auto& pear : rollups.rollups)
     {
         if (first_type_pass) first_type_pass = false;
         else                 o << ",";
@@ -857,6 +859,7 @@ std::string show_rollup_structure()
     return o.str();
 }
 
+std::string show_rollup_structure(){ return m_s.show_rollup_structure();}
 
 std::string master_stuff::focus_metric_ID()
 {
@@ -1389,7 +1392,6 @@ master_stuff::create_rollup(
     , bool nocsvSection
     , bool quantitySection
     , bool maxDroopMaxtoMinIOPSSection
-    , std::string nocsvText
     , ivy_int quantity
     , ivy_float maxDroop
 )
@@ -1401,7 +1403,6 @@ master_stuff::create_rollup(
         o << ", nocsv = ";                          if (nocsvSection)                o << true; else o << "false";
         o << ", have_quantity_validation = ";       if (quantitySection)             o << true; else o << "false";
         o << ", have_max_IOPS_droop_validation = "; if (maxDroopMaxtoMinIOPSSection) o << true; else o << "false";
-        o << ", nocsv_text = " << put_in_quotes(nocsvText);
         o << ", quantity = " << quantity;
         o << ", max_droop = " << maxDroop;
         o << ")" << std::endl;
@@ -1418,7 +1419,7 @@ master_stuff::create_rollup(
     }
 
     std::pair<bool,std::string> rc;
-    rc.first = rollups.addRollupType(rc.second, attributeNameComboText, nocsvSection, quantitySection, maxDroopMaxtoMinIOPSSection, nocsvText, quantity, maxDroop);
+    rc.first = rollups.addRollupType(rc.second, attributeNameComboText, nocsvSection, quantitySection, maxDroopMaxtoMinIOPSSection, quantity, maxDroop);
 
     if (!rc.first) return rc;
 
@@ -1438,7 +1439,8 @@ master_stuff::create_rollup(
     return rc;
 }
 
-bool master_stuff::editRollup(std::string& callers_error_message, std::string rollupText, std::string original_parametersText)
+std::pair<bool /*success*/, std::string /* message */>
+master_stuff::edit_rollup(const std::string& rollupText, const std::string& original_parametersText)
 // returns true on success
 {
     {
@@ -1461,14 +1463,8 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
     std::string parametersText = original_parametersText;
 //code
 
-//*debug*/{std::ostringstream o; o << "master_stuff::editRollup(, rollupText=\"" << rollupText << "\", parametersText=\"" << parametersText << "\")" << std::endl; std::cout << o.str(); log(masterlogfile,o.str());}
-
 	beforeEditWorkload.setToNow();
 	editWorkloadExecutionTimeSeconds.clear();
-
-
-
-	callers_error_message.clear();
 
 	if (!listOfNameEqualsValueList.parsedOK())
 	{
@@ -1477,15 +1473,14 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 		o << "Parse error.  Rollup specification \"" << rollupText << "\" should look like \"host=sun159\" or \"serial_number+port = { 410321+1A, 410321+2A }\" - "
 		  << listOfNameEqualsValueList.getParseErrorMessage();
 
-		callers_error_message = o.str();
-		return false;
+		return std::make_pair(false,o.str());
 	}
 
 	if (1 < listOfNameEqualsValueList.clauses.size())
 	{
-		callers_error_message = "Rollup specifications with more than one attribute = value list clause are not implemented at this time.\n"
-			"Should multiple clauses do a union or an intersection of the WorkloadIDs selected in each clause?\n";
-		return false;
+		return std::make_pair(false,
+            "Rollup specifications with more than one attribute = value list clause are not implemented at this time.\n"
+			"Should multiple clauses do a union or an intersection of the WorkloadIDs selected in each clause?\n");
 	}
 
 	if (0 == listOfNameEqualsValueList.clauses.size())
@@ -1506,8 +1501,7 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 			std::ostringstream o;
 			o << "rollup type \"" << listOfNameEqualsValueList.clauses.front()->name_token << "\" is malformed - " << my_error_message
 			  << " - The rollup type is the \"serial_number+Port\" part of \"serial_number+Port = { 410321+1A, 410321+2A }\".";
-			callers_error_message = o.str();
-			return false;
+            return std::make_pair(false,o.str());
 		}
 
 		auto it = rollups.rollups.find(rollupsKey);  // thank you, C++11.
@@ -1522,8 +1516,7 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 //*debug*/			o << " key=\"" << pear.first << "\"";
 				o << " " << pear.second->attributeNameCombo.attributeNameComboID;
 			}
-			callers_error_message = o.str();
-			return false;
+            return std::make_pair(false,o.str());
 		}
 
 		RollupType* pRollupType = (*it).second;
@@ -1537,15 +1530,13 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 				std::ostringstream o;
 				o << "rollup instance \"" << matchToken << "\" is malformed - " << my_error_message
 				  << " - A rollup instance in \"serial_number+Port = { 410321+1A, 410321+2A }\" is \"410321+1A\".";
-				callers_error_message = o.str();
-				return false;
+                return std::make_pair(false,o.str());
 			}
 			if (fieldsInAttributeNameCombo != fieldsInAttributeValueCombo)
 			{
 				std::ostringstream o;
 				o << "rollup instance \"" << matchToken << "\" does not have the same number of \'+\'-delimited fields as the rollup type \"" << listOfNameEqualsValueList.clauses.front()->name_token << "\".";
-				callers_error_message = o.str();
-				return false;
+                return std::make_pair(false,o.str());
 			}
 		}
 
@@ -1591,8 +1582,7 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 				{
 					o << "  " << pear.second->rollupInstanceID;
 				}
-				callers_error_message = o.str();
-				return false;
+                return std::make_pair(false,o.str());
 			}
 
 			ListOfWorkloadIDs& listofWIDs = (*rollupInstance_it).second->workloadIDs;
@@ -1604,11 +1594,7 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 			}
 		}
 
-		if (0 == command_workload_IDs)
-		{
-			callers_error_message = "editRollup() failed as no target workloads were selected.";
-			return false;
-		}
+		if (0 == command_workload_IDs) { return std::make_pair(false,string("edit_rollup() failed - zero test host workload threads selected\n")); }
 
 		// OK now we have built the individual lists of affected workload IDs for each test host for the upcoming command
 
@@ -1617,8 +1603,7 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 
 		if (0 == parametersText.length())
 		{
-			callers_error_message = "editRollup() failed - called with an empty string as parameter updates.";
-			return false;
+			return std::make_pair(false,std::string("edit_rollup() failed - called with an empty string as parameter updates.\n"));
 		}
 
 		rewrite_total_IOPS(parametersText, command_workload_IDs);
@@ -1636,10 +1621,8 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 				if (workloadTrackers.workloadTrackerPointers.end() == wit)
 				{
 					std::ostringstream o;
-					o << "master_stuff::editRollup() - dreaded internal programming error - at the last moment the WorkloadTracker pointer lookup failed for workloadID = \"" << wID.workloadID << "\"";
-					callers_error_message += o.str();
-					std::cout << o.str() << std::endl;
-					return false;
+					o << "master_stuff::editRollup() - dreaded internal programming error - at the last moment the WorkloadTracker pointer lookup failed for workloadID = \"" << wID.workloadID << "\"" << std::endl;
+                    return std::make_pair(false,o.str());
 				}
 
 				WorkloadTracker* pWT = (*wit).second;
@@ -1649,8 +1632,7 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 					std::ostringstream o;
 					o << "<Error> Failed setting parameters \"" << parametersText
                         << "\" into local WorkloadTracker object for WorkloadID = \"" << wID.workloadID << "\"" << std::endl << error_message;
-					callers_error_message = o.str();
-					return false;
+                    return std::make_pair(false,o.str());
 				}
 			}
 		}
@@ -1699,8 +1681,7 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 					o << "ivymaster main thread notified by host driver subthread of failure to set parameters \""
 					  << parametersText << "\" in WorkloadIDs " << p_host-> commandListOfWorkloadIDs.toString() << std::endl
 					  << p_host->commandErrorMessage;  // don't forget to clear this when we get there
-					callers_error_message = o.str();
-					return false;
+                    return std::make_pair(false,o.str());
 				}
 			}
 //*debug*/{std::ostringstream o; o << "p_host->commandFinish = " << p_host->commandFinish.format_as_datetime_with_ns() << ", beforeEditWorkload = " << beforeEditWorkload.format_as_datetime_with_ns() << std::endl; log(masterlogfile,o.str());}
@@ -1717,12 +1698,12 @@ bool master_stuff::editRollup(std::string& callers_error_message, std::string ro
 				<< " - max " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.max()) << " ms"
 				<< std::endl;
 
-			std::cout<< o.str();
 			log(masterlogfile,o.str());
+			std::cout<< o.str();
+            return std::make_pair(true,o.str());
 		}
 	}
-
-	return true;
+	return std::make_pair(false,std::string("let Ian know if this happens."));
 }
 
 std::pair<bool /*success*/, std::string /* message */>
@@ -2138,7 +2119,7 @@ master_stuff::go(const std::string& parameters)
 
     {
         std::ostringstream o;
-        o << "Effective [Go!] statement parameters including defaulted parameters:" << go_parameters.toString() << std::endl;
+        o << std::endl << "Effective [Go!] statement parameters including defaulted parameters:" << go_parameters.toString() << std::endl << std::endl;
         std::cout << o.str();
         log(masterlogfile, o.str());
     }

@@ -69,7 +69,6 @@ public:
 		, bool nocsvSection
 		, bool quantitySection
 		, bool maxDroopMaxtoMinIOPSSection
-		, std::string nocsvText
 		, ivy_int quantity
 		, ivy_float maxDroop
 	);

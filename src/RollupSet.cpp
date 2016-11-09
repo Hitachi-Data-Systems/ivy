@@ -126,7 +126,7 @@ bool RollupSet::initialize(std::string& callers_error_message)
 
     std::string my_error_message;
 
-    if (!addRollupType(my_error_message,"all", false, false, false, "", 1, 1.0))
+    if (!addRollupType(my_error_message,"all", false, false, false, 1, 1.0))
     {
         callers_error_message = "RollupSet::initialize() - addRollupType(\"all\") failed saying: " + my_error_message;
         return false;
@@ -163,7 +163,6 @@ bool RollupSet::addRollupType
     , bool nocsvSection
     , bool quantitySection
     , bool maxDroopMaxtoMinIOPSSection
-    , std::string nocsvText
     , ivy_int quantity
     , ivy_float maxDroop
 )
@@ -181,12 +180,6 @@ bool RollupSet::addRollupType
     std::string setErrorMessage;
 
     error_message.clear();
-
-    if ( 0 != nocsvText.length() )
-    {
-        error_message = "The [nocsv] section must be left blank.";
-        return false;
-    }
 
     if (!aNC.set(setErrorMessage, attributeNameComboText, &(m_s.TheSampleLUN)))
     {

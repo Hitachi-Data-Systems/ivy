@@ -1,12 +1,8 @@
-- add the ivy builtin functions to the ivy engine API
+- integrate the old catscan SVP configuration file collector into ivy.  Integrate SVP config file attributes into ivy RAID_subsystem object.
 
-- change "iogenerator" to "iosequencer" in the doc & add to parser.
+- look at flex/bison parser, JSON format for edit_rollup() and for go parameters.
 
 - fix select parser ignoring crap past the accepted expression as in "LDEV : 00:00 }"
-
-- add JSON representation to edit rollup.
-
-- update documentation to lead with measure=on shorthand, and leave details to programmer's reference
 
 // maybe we have a measure_focus_rollup and a pid_focus_rollup and they default to focus_rollup?
 // How hard would it be to have measure and pid each on their own focus_rollup?

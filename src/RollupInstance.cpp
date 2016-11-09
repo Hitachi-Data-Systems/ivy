@@ -610,11 +610,13 @@ void RollupInstance::perform_PID()
     {
         std::ostringstream o;
         o << "total_IOPS=" << std::fixed << std::setprecision(6) << total_IOPS;
-        std::string my_msg;
-        if (!m_s.editRollup(my_msg, attributeNameComboID+std::string("=")+rollupInstanceID, o.str()))
+        std::string s = attributeNameComboID + std::string("=") + rollupInstanceID;
+        std::pair<bool,std::string> rc = m_s.edit_rollup(s, o.str());
+        if (!rc.first)
         {
             std::ostringstream o2;
-            o2 << "For subinterval " << (subinterval_count-1) << ", m_s.editRollup(\"" << (attributeNameComboID+std::string("=")+rollupInstanceID) << "\", \"" << o.str() << "\") failed - " << my_msg << std::endl;
+            o2 << "<Error> In PID loop for subinterval " << (subinterval_count-1) << ", ivy engine API edit_rollup(" << put_in_quotes(s) << ", " << put_in_quotes(o.str()) << ") failed - " << rc.second << std::endl
+                << "in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
             std::cout << o2.str();
             log(m_s.masterlogfile, o2.str());
             m_s.kill_subthreads_and_exit();
