@@ -591,6 +591,91 @@ void rollup_Hitachi_RAID_data(const std::string& logfilename, Hitachi_RAID_subsy
         } // for (auto& instance_pair : this_element_it->second)
     } //if (this_element_it != currentGD.data.end() && last_element_it != lastGD.data.end())
 
+    auto this_element_it_port = currentGD.data.find(std::string("port"));
+    auto last_element_it_port =    lastGD.data.find(std::string("port"));
+
+    if (this_element_it_port != currentGD.data.end() && last_element_it_port != lastGD.data.end())
+    {
+        for (auto& instance_pair : this_element_it_port->second)
+        {
+            const std::string portname = instance_pair.first;
+            auto last_instance_it = last_element_it_port->second.find(portname);
+            if (last_instance_it == last_element_it_port->second.end())
+            {
+                std::ostringstream o;
+                o << "When post-processing port I/O for gathers.size() = " << p_Hitachi_RAID_subsystem->gathers.size()
+                  << ", for port \"" << portname << "\", the previous gather did not have data from such a port." << std::endl;
+                throw std::runtime_error(o.str());
+            }
+            std::map<std::string,metric_value>& this_metrics = instance_pair.second;
+            std::map<std::string,metric_value>& last_metrics = last_instance_it->second;
+
+            auto this_it = this_metrics.find(std::string("cumulative_IO_count"));
+            auto last_it = last_metrics.find(std::string("cumulative_IO_count"));
+
+            ivy_float IOPS, initiator_IOPS, bytes_per_second, initiator_bytes_per_second;
+
+            if (this_it != this_metrics.end() && last_it != last_metrics.end())
+            {
+                uint64_t this_value  = this_it->second.uint64_t_value( std::string("port ") + portname + std::string(" cumulative_IO_count = \"") + this_it->second.value + std::string("\"") );
+                uint64_t last_value  = last_it->second.uint64_t_value( std::string("port ") + portname + std::string(" cumulative_IO_count = \"") + last_it->second.value + std::string("\"") );
+                IOPS = (this_value-last_value)/m_s.subinterval_seconds;
+                std::ostringstream o;
+                o << IOPS;
+                this_metrics[std::string("IOPS")].value = o.str();
+            }
+
+            this_it = this_metrics.find(std::string("cumulative_initiator_IO_count"));
+            last_it = last_metrics.find(std::string("cumulative_initiator_IO_count"));
+            if (this_it != this_metrics.end() && last_it != last_metrics.end())
+            {
+                uint64_t this_value  = this_it->second.uint64_t_value( std::string("port ") + portname + std::string(" cumulative_initiator_IO_count = \"") + this_it->second.value + std::string("\"") );
+                uint64_t last_value  = last_it->second.uint64_t_value( std::string("port ") + portname + std::string(" cumulative_initiator_IO_count = \"") + last_it->second.value + std::string("\"") );
+                initiator_IOPS = (this_value-last_value)/m_s.subinterval_seconds;
+                std::ostringstream o;
+                o << initiator_IOPS;
+                this_metrics[std::string("initiator_IOPS")].value = o.str();
+            }
+
+            this_it = this_metrics.find(std::string("cumulative_block_count"));
+            last_it = last_metrics.find(std::string("cumulative_block_count"));
+            if (this_it != this_metrics.end() && last_it != last_metrics.end())
+            {
+                uint64_t this_value  = this_it->second.uint64_t_value( std::string("port ") + portname + std::string(" cumulative_block_count = \"") + this_it->second.value + std::string("\"") );
+                uint64_t last_value  = last_it->second.uint64_t_value( std::string("port ") + portname + std::string(" cumulative_block_count = \"") + last_it->second.value + std::string("\"") );
+                bytes_per_second = (this_value-last_value)*sector_size_bytes/m_s.subinterval_seconds;
+                std::ostringstream o;
+                o << bytes_per_second;
+                this_metrics[std::string("bytes_per_second")].value = o.str();
+            }
+
+            this_it = this_metrics.find(std::string("cumulative_initiator_block_count"));
+            last_it = last_metrics.find(std::string("cumulative_initiator_block_count"));
+            if (this_it != this_metrics.end() && last_it != last_metrics.end())
+            {
+                uint64_t this_value  = this_it->second.uint64_t_value( std::string("port ") + portname + std::string(" cumulative_initiator_block_count = \"") + this_it->second.value + std::string("\"") );
+                uint64_t last_value  = last_it->second.uint64_t_value( std::string("port ") + portname + std::string(" cumulative_initiator_block_count = \"") + last_it->second.value + std::string("\"") );
+                initiator_bytes_per_second = (this_value-last_value)*sector_size_bytes/m_s.subinterval_seconds;
+                std::ostringstream o;
+                o << initiator_bytes_per_second;
+                this_metrics[std::string("initiator_bytes_per_second")].value = o.str();
+            }
+
+            if ( IOPS > 0.0 && bytes_per_second > 0.0)
+            {
+                std::ostringstream o;
+                o << ( (bytes_per_second/IOPS) / 1024.0);
+                this_metrics[std::string("blocksize_KiB")].value = o.str();
+            }
+
+            if ( initiator_IOPS > 0.0 && initiator_bytes_per_second > 0.0)
+            {
+                std::ostringstream o;
+                o << ( (bytes_per_second/IOPS) / 1024.0);
+                this_metrics[std::string("initiator_blocksize_KiB")].value = o.str();
+            }
+        }
+    }
 
     for (auto& rolluptypepear : m_s.rollups.rollups)
     {

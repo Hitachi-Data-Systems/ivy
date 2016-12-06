@@ -1311,6 +1311,81 @@ void pipe_driver_subthread::threadRun()
                         }
 
 
+                        // element port
+                            // instance 1a
+                                // mainframe:
+                                    // IO_count (rollover)
+                                    // block_count (rollover)
+                                // open
+                                    // max_IOPS 32-bit (not rollover)
+                                    // min_IOPS 32-bit (not rollover)
+                                    // avg_IOPS 32-bit (not rollover)
+                                    // max_KBPS 32-bit (not rollover)
+                                    // min_KBPS 32-bit (not rollover)
+                                    // avg_KBPS 32-bit (not rollover)
+
+                                    // IO_count 64-bit (rollover)
+                                    // block_count 64-bit(rollover)
+
+                                    // initiator_max_IOPS 32-bit (not rollover)
+                                    // initiator_min_IOPS 32-bit (not rollover)
+                                    // initiator_avg_IOPS 32-bit (not rollover)
+                                    // initiator_max_KBPS 32-bit (not rollover)
+                                    // initiator_min_KBPS 32-bit (not rollover)
+                                    // initiator_avg_KBPS 32-bit (not rollover)
+
+                                    // initiator_IO_count 64-bit (rollover)
+                                    // initiator_block_count 64-bit (rollover)
+                        gatherStart.setToNow();
+                        try
+                        {
+                            send_and_get_OK("get PORTIO");
+                            try
+                            {
+                                process_ivy_cmddev_response(currentGD, gatherStart);
+                            }
+                            catch (std::invalid_argument& iaex)
+                            {
+                                std::ostringstream o;
+                                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get PORTIO\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+                            catch (std::runtime_error& reex)
+                            {
+                                std::ostringstream o;
+                                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get PORIO\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            std::ostringstream o;
+                            o << "\"get PORTIO\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            master_slave_cv.notify_all();
+                            return;
+                        }
+
+
+
                         // Post-processing after gather to fill in derived metrics.
 
 
@@ -1327,7 +1402,7 @@ void pipe_driver_subthread::threadRun()
 
                             if (this_element_it != currentGD.data.end() && last_element_it != lastGD.data.end()) // processing MP_core from 2nd gather on
                             {
-                                std::map<uint64_t, RunningStat<ivy_float, ivy_int>> mpu_busy;
+                                std::map<std::string, RunningStat<ivy_float, ivy_int>> mpu_busy;
 
                                 for (auto this_instance_it = this_element_it->second.begin(); this_instance_it != this_element_it->second.end(); this_instance_it++)
                                 {
@@ -1411,8 +1486,7 @@ void pipe_driver_subthread::threadRun()
                                     auto this_MPU_it = this_instance_it->second.find(std::string("MPU"));
                                     if (this_MPU_it != this_instance_it->second.end())
                                     {
-                                        uint64_t mpu_number = this_MPU_it->second.uint64_t_value("this_MPU_it->second"); // throws std::invalid_argument
-                                        mpu_busy[mpu_number].push(busy_percent);
+                                        mpu_busy[this_MPU_it->second.value/* HM800: 0-3, RAID800 e.g. 2PM */].push(busy_percent);
                                     }
                                 } // for each location MP10-00
                                 for (auto& pear : mpu_busy)
@@ -2314,7 +2388,7 @@ void pipe_driver_subthread::process_ivy_cmddev_response(GatherData& gd, ivytime 
             if (!token_identifier)
             {
                 std::ostringstream o;
-                o << "process_ivy_cmddev_response() failed - attribute name must be an identifer starting with an alphabetic and continuing alphanumerics/underscores - instead token is \"" << token << "\"." << std::endl;
+                o << "process_ivy_cmddev_response() failed - attribute name must be an identifier starting with an alphabetic and continuing alphanumerics/underscores - instead token is \"" << token << "\"." << std::endl;
                 log(logfilename, o.str());
                 throw std::invalid_argument(o.str());
             }
@@ -2324,7 +2398,7 @@ void pipe_driver_subthread::process_ivy_cmddev_response(GatherData& gd, ivytime 
             if ("=" != token)
             {
                 std::ostringstream o;
-                o << "process_ivy_cmddev_response() failed looking for equals sign \'=\' after attribue name \"" << attribute << "\" - instead token is \"" << token << "\"." << std::endl;
+                o << "process_ivy_cmddev_response() failed looking for equals sign \'=\' after attribute name \"" << attribute << "\" - instead token is \"" << token << "\"." << std::endl;
                 log(logfilename, o.str());
                 throw std::invalid_argument(o.str());
             }
