@@ -701,6 +701,7 @@ void rollup_Hitachi_RAID_data(const std::string& logfilename, Hitachi_RAID_subsy
             for (auto& mpear : m_s.subsystem_summary_metrics)
             {
                 std::string summary_element = mpear.first;
+//{std::ostringstream o; o << "subsystem_summary_metrics element =\"" << summary_element << "\"" << std::endl; log(logfilename,o.str()); std::cout << o.str();}
 
                 std::vector<std::pair<std::string, unsigned char> >& summary_metrics = mpear.second;
 
@@ -709,12 +710,15 @@ void rollup_Hitachi_RAID_data(const std::string& logfilename, Hitachi_RAID_subsy
 
                 if ( gd_el_it == currentGD.data.end() )
                 {
+//{std::ostringstream o; o << "subsystem_summary_metrics element =\"" << summary_element << "\" not found in currentGD." << std::endl; log(logfilename,o.str()); std::cout << o.str();}
                     continue;
                 }
 
                 for (auto& gd_el_instance_pear : gd_el_it->second)
                 {
                     const std::string& gd_el_instance = gd_el_instance_pear.first;
+//{std::ostringstream o; o << "subsystem_summary_metrics element =\"" << summary_element << "\", instance \"" << gd_el_instance << "\"." << std::endl; log(logfilename,o.str()); std::cout << o.str();}
+
                     std::map<std::string,metric_value>& gd_el_instance_metrics = gd_el_instance_pear.second;
 
                     std::string& serial = p_Hitachi_RAID_subsystem->serial_number;

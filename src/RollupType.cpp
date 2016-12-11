@@ -280,6 +280,47 @@ void RollupType::rebuild()
             }
         }
 
+        extern std::map<std::string, std::vector<std::string>> RAID800_MP_cores_by_MPU;
+        //        {
+        //            "0",
+        //            {
+        //                "MPU 00 1MA MP#0(MP#00)",
+        //                "MPU 00 1MA MP#4(MP#04)",
+        //                "MPU 00 1MA MP#1(MP#01)",
+        //                "MPU 00 1MA MP#5(MP#05)",
+        //                "MPU 00 1MA MP#2(MP#02)",
+        //                "MPU 00 1MA MP#6(MP#06)",
+        //                "MPU 00 1MA MP#3(MP#03)",
+        //                "MPU 00 1MA MP#7(MP#07)"
+        //            }
+        //        }
+
+        if ( pWorkloadTracker->workloadLUN.contains_attribute_name("hitachi_product") )
+        {
+            if ( 0 == std::string("RAID800").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product")) )
+            {
+                if (pWorkloadTracker->workloadLUN.contains_attribute_name("MPU"))
+                {
+                    std::string MPU = pWorkloadTracker->workloadLUN.attribute_value("MPU");
+                    auto it = RAID800_MP_cores_by_MPU.find(MPU);
+                    if (it == RAID800_MP_cores_by_MPU.end())
+                    {
+                        std::ostringstream o;
+                        o << "RollupType::rebuild(), when putting in RAID800 MP_core and MP# parameters, did not MPU \"" << MPU << "\" in RAID800_MP_cores_by_MPU." << std::endl;
+                        std::cout << o.str();
+                        m_s.kill_subthreads_and_exit();
+                    }
+                    for (auto& s : it->second)
+                    {
+                        std::string MP_core = s.substr(0,15);
+                        std::string MP_number = s.substr(16,5);
+                        pRollupInstance->config_filter[serial][toLower("MP_core")].insert(MP_core);
+                        pRollupInstance->config_filter[serial][toLower("MP_number")].insert(MP_number);
+                    }
+                }
+            }
+        }
+
         auto pg_names_it = pWorkloadTracker->workloadLUN.attributes.find("pg_names");
         if (pg_names_it != pWorkloadTracker->workloadLUN.attributes.end())
         {

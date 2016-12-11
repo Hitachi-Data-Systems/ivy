@@ -1,3 +1,7 @@
+- in LDEV config data, the path type for a (the default) host group shows type iSCSI instead of Fibre Channel.
+
+- In config RMLIB.csv, prints an "RMLIB" column header with value "-log"?  (I did have the -log command line option, but is this column supposed to show and if so, what would values look like?)
+
 - integrate the old catscan SVP configuration file collector into ivy.  Integrate SVP config file attributes into ivy RAID_subsystem object.
 
 - look at flex/bison parser, JSON format for edit_rollup() and for go parameters.

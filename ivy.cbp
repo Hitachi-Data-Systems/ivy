@@ -499,6 +499,9 @@
 		<Unit filename="src/hosts_list.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="src/ivy_RAID800.cpp">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="src/ivy_engine_startup.cpp">
 			<Option target="ivymaster" />
 		</Unit>

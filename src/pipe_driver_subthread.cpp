@@ -1408,13 +1408,13 @@ void pipe_driver_subthread::threadRun()
                                 {
                                     // for each MP_core instance
 
-                                    const std::string& location = this_instance_it->first;
+                                    std::string MP_core_instance_name = this_instance_it->first;
 
-                                    auto last_instance_it = last_element_it->second.find(location);
+                                    auto last_instance_it = last_element_it->second.find(MP_core_instance_name);
 
                                     if (last_instance_it == last_element_it->second.end() )
                                     {
-                                        throw std::runtime_error(std::string("pipe_driver_subthread.cpp: Computation of subsystem MP % busy as delta busy counter divided by delta elapsed counter - corresponding MP_core not found in previous gather for current gather location =\"") + location + std::string("\"."));
+                                        throw std::runtime_error(std::string("pipe_driver_subthread.cpp: Computation of subsystem MP % busy as delta busy counter divided by delta elapsed counter - corresponding MP_core not found in previous gather for current gather location =\"") + MP_core_instance_name + std::string("\"."));
                                     }
 
                                     auto this_elapsed_it = this_instance_it->second.find(std::string("elapsed_counter"));
@@ -1477,18 +1477,20 @@ void pipe_driver_subthread::threadRun()
                                     std::ostringstream o;
                                     ivy_float busy_percent = 100. * ( ((ivy_float) this_busy) - ((ivy_float) last_busy) ) / ( ((ivy_float) this_elapsed) - ((ivy_float) last_elapsed) );
                                     o << std::fixed <<  std::setprecision(3) << busy_percent  << "%";
-                                    auto& metric_value = this_instance_it->second["busy_percent"];
-                                    metric_value.start = this_elapsed_it->second.start;
-                                    metric_value.complete = this_elapsed_it->second.complete;
-                                    metric_value.value = o.str();
-                                    currentGD.data["MP_busy"]["all"][location] = metric_value;
-
+                                    {
+                                        auto& metric_value = this_instance_it->second["busy_percent"];
+                                        metric_value.start = this_elapsed_it->second.start;
+                                        metric_value.complete = this_elapsed_it->second.complete;
+                                        metric_value.value = o.str();
+                                        currentGD.data["MP_busy"]["all"][MP_core_instance_name] = metric_value;
+                                    }
                                     auto this_MPU_it = this_instance_it->second.find(std::string("MPU"));
                                     if (this_MPU_it != this_instance_it->second.end())
                                     {
-                                        mpu_busy[this_MPU_it->second.value/* HM800: 0-3, RAID800 e.g. 2PM */].push(busy_percent);
+                                        mpu_busy[this_MPU_it->second.value/* MPU as decimal digits HM800: 0-3, RAID800 0-15 */].push(busy_percent);
                                     }
-                                } // for each location MP10-00
+                                }
+
                                 for (auto& pear : mpu_busy)
                                 {
                                     std::ostringstream m;
@@ -1542,6 +1544,9 @@ void pipe_driver_subthread::threadRun()
                             // from the time that the ivy_cmddev executable starts.  This is because ivy_cmddev extends every
                             // RMLIB unsigned 32 bit cumulative counter value that is subject to rollovers to a 64-bit unsigned value
                             // using as the upper 32 bits the number of rollovers that ivy_cmddev has seen for this particular counter.
+
+                            // For 64-bit unsigned RMLIB raw counters, ivy_cmddev reports a 64-bit unsigned int representing the
+                            // amount that the raw counter has incremented since the ivy_cmddev run started.
 
                             m_s.rollups.not_participating.push_back(subsystem_summary_data());
 

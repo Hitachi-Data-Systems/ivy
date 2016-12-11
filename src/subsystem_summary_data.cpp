@@ -394,7 +394,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
             need_comma = true;
         }
     }
-    else o << "< no MP_core data >";
+    else o << " < no MP_core data >";
 
     auto ldev_it = data.find("LDEV");
     if (ldev_it != data.end())
