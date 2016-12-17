@@ -401,7 +401,7 @@ public:
 			p_from->evaluate((void*)&from_arg);
 
 			std::ostringstream os;
-			os << std::fixed << from_arg;
+			os /* << std::fixed  - took this out as it had the unintended consequence of having it print annoying trailing zeros. */ << from_arg;
 			*((std::string*)p_result)=os.str();
 			if (trace_evaluate) trace_ostream << "Xpr_typecast_gender_bender_to_string::evaluate() at " << bookmark
                 << " from " << p_from->genre().print() << " value " << from_arg

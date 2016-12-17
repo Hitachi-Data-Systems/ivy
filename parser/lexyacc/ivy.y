@@ -255,6 +255,9 @@ statement:
 
             context_ref.output_folder_root = *$2;
 
+            std::cout << "parsed output folder root as \"" << context_ref.output_folder_root << "\"" << std::endl;
+            system("sleep 1");
+
             $$  = new Stmt_null(@$);
             if (trace_parser)
             {

@@ -330,13 +330,26 @@ void WorkloadThread::WorkloadThreadRun() {
 
 			while (true) // loop running subintervals, until we are told "stop"
 			{
-
                 if (routine_logging){
                     std::ostringstream o;
                     o << "Top of subinterval " << subinterval_number << " " << p_current_subinterval->start_time.format_as_datetime_with_ns()
                         << " to " << p_current_subinterval->end_time.format_as_datetime_with_ns() << " currentSubintervalIndex=" << currentSubintervalIndex
                         << ", otherSubintervalIndex=" << otherSubintervalIndex << std::endl;
                         log(slavethreadlogfile,o.str());
+                }
+
+                if (p_current_IosequencerInput->hot_zone_size_bytes > 0)
+                {
+                    if (p_my_iosequencer->instanceType() == "random_steady" || p_my_iosequencer->instanceType() == "random_independent")
+                    {
+                        IosequencerRandom* p = (IosequencerRandom*) p_my_iosequencer;
+                        if (!p->set_hot_zone_parameters(p_current_IosequencerInput))
+                        {
+                            log(slavethreadlogfile,std::string("WorkloadThread::WorkloadThreadRun() - call to IosequencerRandom::set_hot_zone_parameters(() failed.\n"));
+                            state=ThreadState::died;
+                            return;
+                        }
+                    }
                 }
 
 				try {

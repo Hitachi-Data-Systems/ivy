@@ -75,6 +75,11 @@ public:
     unsigned int this_thread_in_workload {this_thread_in_workload_default};
     uint64_t pattern_seed {pattern_seed_default};
 
+    uint64_t hot_zone_size_bytes {0};
+    ivy_float hot_zone_IOPS_fraction {0};
+    ivy_float hot_zone_read_fraction {0};
+    ivy_float hot_zone_write_fraction {0};
+
 public:
 	inline IosequencerInput(){reset();}
 

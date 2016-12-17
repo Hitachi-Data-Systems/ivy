@@ -1014,6 +1014,75 @@ std::string put_in_quotes(const std::string& s)
 
 
 
+uint64_t number_optional_trailing_KiB_MiB_GiB_TiB(const std::string& s_parameter)
+{
+    std::string s = s_parameter;
+
+    uint64_t multiplier {1};
+
+    if (endsWith(s,"KiB"))
+    {
+        multiplier = ((uint64_t) 1024);
+        s.erase(s.size()-3,3);
+    }
+    else if (endsWith(s,"MiB"))
+    {
+        multiplier = ((uint64_t) 1024) * ((uint64_t) 1024);
+        s.erase(s.size()-3,3);
+    }
+    else if (endsWith(s,"GiB"))
+    {
+        multiplier = ((uint64_t) 1024) * ((uint64_t) 1024) * ((uint64_t) 1024);
+        s.erase(s.size()-3,3);
+    }
+    else if (endsWith(s,"TiB"))
+    {
+        multiplier = ((uint64_t) 1024) * ((uint64_t) 1024) * ((uint64_t) 1024) * ((uint64_t) 1024);
+        s.erase(s.size()-3,3);
+    }
+
+    trim(s);
+
+    if (!std::regex_match(s, digits_regex))
+	{
+		std::ostringstream o;
+		o << "<Error> number_optional_trailing_KiB_MiB_GiB_TiB(\"" << s_parameter << "\") - not one or more digits optionally followed by KiB, MiB, GiB, or TiB." << std::endl ;
+		throw std::invalid_argument(o.str());
+	}
+
+	uint64_t value;
+	{
+		std::istringstream is(s);
+		is >> value;
+	}
+
+    return value * multiplier;
+}
+
+
+std::string put_on_KiB_etc_suffix(uint64_t n)
+{
+    static const uint64_t tera {((uint64_t) 1024) * ((uint64_t) 1024) * ((uint64_t) 1024) * ((uint64_t) 1024) };
+    static const uint64_t giga {((uint64_t) 1024) * ((uint64_t) 1024) * ((uint64_t) 1024) };
+    static const uint64_t mega {((uint64_t) 1024) * ((uint64_t) 1024) };
+    static const uint64_t kilo {((uint64_t) 1024) };
+
+    std::string suffix {};
+
+    if (n>0)
+    {
+             if (0 == n % tera) {suffix = " TiB"; n /= tera;}
+        else if (0 == n % giga) {suffix = " GiB"; n /= giga;}
+        else if (0 == n % mega) {suffix = " MiB"; n /= mega;}
+        else if (0 == n % kilo) {suffix = " KiB"; n /= kilo;}
+    }
+
+    std::ostringstream o;
+    o << n << suffix;
+
+    return o.str();
+}
+
 
 
 

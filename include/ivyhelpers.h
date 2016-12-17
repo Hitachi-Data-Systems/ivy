@@ -125,3 +125,7 @@ std::string column_header_to_identifier(const std::string&s);
 void xorshift64star(uint64_t&);
 
 std::string put_in_quotes(const std::string&);
+
+uint64_t number_optional_trailing_KiB_MiB_GiB_TiB(const std::string& s_parameter);
+
+std::string put_on_KiB_etc_suffix(uint64_t n);

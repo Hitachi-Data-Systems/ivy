@@ -115,6 +115,145 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 		return false;
 	}
 
+//	        "For iosequencer = { random_steady, random_independent } additional parameters are \n"
+//        "                  hot_zone_size_bytes - default 0 (zero), accepts KiB, MiB, GiB, TiB suffixes,\n"
+//        "                  hot_zone_fraction - default 0 (zero) fraction of all I/Os that should go to the hit_area.  Accepts % suffix.\n"
+//        "                  hot_zone_read_fraction - default 0 (zero) fraction of all read I/Os that should go to the hit_area.\n"
+//        "                  hot_zone_write_fraction - default 0 (zero) fraction of all write I/Os that should go to the hit_area.\n"
+//        "                  If either of hot_zone_read_fraction or hot_zone_write_fraction are non-zero, hot_zone_fraction is ignored.\n\n"
+
+	if ( stringCaseInsensitiveEquality(parameterName, std::string("hot_zone_size_bytes")) )
+	{
+        if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - hot_zone_size_bytes is only valid for random_steady and random_independent iosequencers." << std::endl;
+            callers_error_message = o.str();
+			return false;
+        }
+        try
+        {
+            hot_zone_size_bytes = number_optional_trailing_KiB_MiB_GiB_TiB(parameterValue);
+        }
+        catch (const std::exception &e)
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - invalid parameter value.  Must be an unsigned integer (digits) optionally followed by KiB, MiB, GiB, or TiB." << std::endl
+                << "Error when trying to parse the value was " << e.what() << std::endl;
+            callers_error_message = o.str();
+			return false;
+        }
+
+        return true;
+    }
+
+	if ( stringCaseInsensitiveEquality(parameterName, std::string("hot_zone_IOPS_fraction")) )
+	{
+        if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
+        {
+            callers_error_message = std::string("IosequencerInput::setParameter(\"")+parameterNameEqualsValue
+			+std::string("\",): hot_zone_IOPS_fraction is only valid for random_steady and random_independent iosequencers.\n");
+			return false;
+        }
+        try
+        {
+            hot_zone_IOPS_fraction = number_optional_trailing_percent(parameterValue,"");
+        }
+        catch (const std::exception &e)
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - invalid parameter value.  Must be a number optionally followed by a percent sign \'%\'." << std::endl
+                << "Error when trying to parse the value was " << e.what() << std::endl;
+
+            callers_error_message = o.str();
+			return false;
+        }
+        if (hot_zone_IOPS_fraction > 1.0 || hot_zone_IOPS_fraction < 0.0)
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\") - value must be from 0.0 to 1.0 (from 0% to 100%).";
+            callers_error_message = o.str();
+			return false;
+        }
+        return true;
+    }
+
+	if ( stringCaseInsensitiveEquality(parameterName, std::string("hot_zone_read_fraction")) )
+	{
+        if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
+        {
+            callers_error_message = std::string("IosequencerInput::setParameter(\"")+parameterNameEqualsValue
+			+std::string("\",): hot_zone_read_fraction is only valid for random_steady and random_independent iosequencers.\n");
+			return false;
+        }
+        try
+        {
+            hot_zone_read_fraction = number_optional_trailing_percent(parameterValue,"");
+        }
+        catch (const std::exception &e)
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - invalid parameter value.  Must be a number optionally followed by a percent sign \'%\'." << std::endl
+                << "Error when trying to parse the value was " << e.what() << std::endl;
+            callers_error_message = o.str();
+			return false;
+        }
+        if (hot_zone_read_fraction > 1.0 || hot_zone_read_fraction < 0.0)
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\") - value must be from 0.0 to 1.0 (from 0% to 100%).";
+            callers_error_message = o.str();
+			return false;
+        }
+        return true;
+    }
+
+
+	if ( stringCaseInsensitiveEquality(parameterName, std::string("hot_zone_write_fraction")) )
+	{
+        if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
+        {
+            callers_error_message = std::string("IosequencerInput::setParameter(\"")+parameterNameEqualsValue
+			+std::string("\",): hot_zone_write_fraction is only valid for random_steady and random_independent iosequencers.\n");
+			return false;
+        }
+        try
+        {
+            hot_zone_write_fraction = number_optional_trailing_percent(parameterValue,"");
+        }
+        catch (const std::exception &e)
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - invalid parameter value.  Must be a number optionally followed by a percent sign \'%\'." << std::endl
+                << "Error when trying to parse the value was " << e.what() << std::endl;
+            callers_error_message = o.str();
+			return false;
+        }
+        if (hot_zone_write_fraction > 1.0 || hot_zone_write_fraction < 0.0)
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\") - value must be from 0.0 to 1.0 (from 0% to 100%).";
+            callers_error_message = o.str();
+			return false;
+        }
+
+        return true;
+    }
+
+
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("blocksize")) ) {
 
 		bool KiB{false}, MiB{false};
@@ -529,6 +668,12 @@ void IosequencerInput::reset() {
 	threads_in_workload_name = threads_in_workload_name_default;
 	this_thread_in_workload = this_thread_in_workload_default;
 	pattern_seed = pattern_seed_default;
+
+	hot_zone_size_bytes = 0;
+	hot_zone_IOPS_fraction = 0.0;
+	hot_zone_read_fraction = 0.0;
+	hot_zone_write_fraction = 0.0;
+
 }
 
 
@@ -610,6 +755,22 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
     o << ",this_thread_in_workload=" << this_thread_in_workload;
     o << ",pattern_seed=" << pattern_seed;
 
+    if( 0 == iosequencer_type.compare(std::string("random_steady"))
+     || 0 == iosequencer_type.compare(std::string("random_independent")) )
+    {
+        o << ",hot_zone_size_bytes=" << put_on_KiB_etc_suffix(hot_zone_size_bytes);
+
+        if (hot_zone_read_fraction != 0.0 || hot_zone_write_fraction != 0.0)
+        {
+            o << ",hot_zone_read_fraction=\"" << (hot_zone_read_fraction*100.0) << "%\"";
+            o << ",hot_zone_write_fraction=\"" << (hot_zone_write_fraction*100.0) << "%\"";
+        }
+        else
+        {
+            o << ",hot_zone_IOPS_fraction=\"" << (hot_zone_IOPS_fraction*100.0) << "%\"";
+        }
+    }
+
 	return o.str();
 }
 
@@ -621,7 +782,7 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 	{
 		o<< ",blocksize=";
 		if (0==(blocksize_bytes%(1024*1024))) {
-			o << (blocksize_bytes/(1024*1024)) << "MiB";
+			o << (blocksize_bytes/(1024*1024)) << " MiB";
 		} else if (0==(blocksize_bytes%1024)) {
 			o << (blocksize_bytes/1024) << " KiB";
 		} else {
@@ -652,6 +813,26 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
     if (!defaultThreads_in_workload_name()) { o << ",threads_in_workload_name=" << threads_in_workload_name;}
     if (!defaultThis_thread_in_workload())  { o << ",this_thread_in_workload=" << this_thread_in_workload;}
     if (!defaultPattern_seed())             { o << ",pattern_seed=" << pattern_seed;}
+
+    if( 0 == iosequencer_type.compare(std::string("random_steady"))
+     || 0 == iosequencer_type.compare(std::string("random_independent")) )
+    {
+        if (hot_zone_size_bytes > 0)
+        {
+            o << ",hot_zone_size_bytes=" << put_on_KiB_etc_suffix(hot_zone_size_bytes);
+
+            if (hot_zone_read_fraction != 0.0 || hot_zone_write_fraction != 0.0)
+            {
+                o << ",hot_zone_read_fraction=\"" << (hot_zone_read_fraction*100.0) << "%\"";
+                o << ",hot_zone_write_fraction=\"" << (hot_zone_write_fraction*100.0) << "%\"";
+            }
+            else
+            {
+                o << ",hot_zone_IOPS_fraction=\"" << (hot_zone_IOPS_fraction*100.0) << "%\"";
+            }
+        }
+    }
+
 	return o.str();
 }
 
@@ -674,6 +855,12 @@ void IosequencerInput::copy(const IosequencerInput& source)
 	threads_in_workload_name=source.threads_in_workload_name;
 	this_thread_in_workload=source.this_thread_in_workload;
 	pattern_seed=source.pattern_seed;
+
+	hot_zone_size_bytes     = source.hot_zone_size_bytes;
+	hot_zone_IOPS_fraction  = source.hot_zone_IOPS_fraction;
+	hot_zone_read_fraction  = source.hot_zone_read_fraction;
+	hot_zone_write_fraction = source.hot_zone_write_fraction;
+
 }
 
 
