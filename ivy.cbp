@@ -315,9 +315,6 @@
 		<Unit filename="parser/include/Xpr.h">
 			<Option target="ivymaster" />
 		</Unit>
-		<Unit filename="parser/include/pd_pgm.h">
-			<Option target="ivymaster" />
-		</Unit>
 		<Unit filename="parser/lexyacc/ivy.l">
 			<Option compile="1" />
 			<Option target="ivymaster" />

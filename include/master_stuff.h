@@ -139,7 +139,7 @@ public:
             {"sequential", &sequential_template},
         };
 
-	std::string outputFolderRoot {default_outputFolderRoot};
+	std::string outputFolderRoot {default_outputFolderRoot}; // actually the default is in ivy_pgm.h
 	std::string masterlogfile {"./ivy_default_log_file.txt"};
 	std::string ivy_engine_logfile {"./ivy_engine_API_calls.txt"};
 

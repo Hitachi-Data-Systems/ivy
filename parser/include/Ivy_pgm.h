@@ -24,6 +24,7 @@
 #include "SymbolTableEntry.h"
 #include "Frame.h"
 #include "../lexyacc/location.hh"
+#include "ivydefines.h"
 
 #define INDENT 3
 #define STACKSIZE (64*1024)
@@ -59,7 +60,7 @@ private:
 public:
     std::string ivyscript_filename;
     std::string test_name;
-    std::string output_folder_root;
+    std::string output_folder_root {default_outputFolderRoot};
     bool already_have_output_folder_root {false};
     bool have_hosts {false};
     unsigned int executing_frame {0u}; // offset from "stack" to beginning of currently executing frame

@@ -437,7 +437,7 @@ void WorkloadThread::WorkloadThreadRun() {
 				}
 
 				subinterval_array[currentSubintervalIndex].subinterval_status=subinterval_state::ready_to_send;
-/*debug*/{std::ostringstream o; o << "Workload thread marking subinterval_array[" << currentSubintervalIndex << "].subinterval_status = subinterval_state::ready_to_send"; log(slavethreadlogfile, o.str());}
+//*debug*/{std::ostringstream o; o << "Workload thread marking subinterval_array[" << currentSubintervalIndex << "].subinterval_status = subinterval_state::ready_to_send"; log(slavethreadlogfile, o.str());}
 
 				if (0 == currentSubintervalIndex)
 				{

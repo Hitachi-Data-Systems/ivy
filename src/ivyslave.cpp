@@ -853,9 +853,9 @@ int main(int argc, char* argv[])
 					pear.second->subinterval_array[0].output.clear();  // later if energetic figure out if these must already be cleared.
 					pear.second->subinterval_array[1].output.clear();
 					pear.second->subinterval_array[0].subinterval_status=subinterval_state::ready_to_run;
-/*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[0].subinterval_status = subinterval_state::ready_to_send"; log(pear.second->slavethreadlogfile, o.str());}
+//*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[0].subinterval_status = subinterval_state::ready_to_send"; log(pear.second->slavethreadlogfile, o.str());}
 					pear.second->subinterval_array[1].subinterval_status=subinterval_state::ready_to_run;
-/*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[1].subinterval_status = subinterval_state::ready_to_send"; log(pear.second->slavethreadlogfile, o.str());}
+//*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[1].subinterval_status = subinterval_state::ready_to_send"; log(pear.second->slavethreadlogfile, o.str());}
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
 					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command.");
@@ -882,7 +882,7 @@ int main(int argc, char* argv[])
 //*debug*/{ostringstream o; o << "Posting IVYSLAVE_SAYS_RUN command for second subinterval for " << pear.first  << std::endl; log(slavelogfile,o.str());}
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
-					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command.");
+					if (routine_logging) { log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command."); }
 
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting second subinterval MainThreadCommand::run");
 				}
@@ -927,7 +927,7 @@ int main(int argc, char* argv[])
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
 					pear.second->cooldown = cooldown_flag;
 
-					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command with cooldown flag.");
+					if (routine_logging) { log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command with cooldown flag."); }
 
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting MainThreadCommand::run");
 //*debug*/{ostringstream o; o << "Posted MainThreadCommand::run command to " << pear.first << std::endl; log(slavelogfile,o.str());}
