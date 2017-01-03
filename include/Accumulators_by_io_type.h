@@ -35,25 +35,26 @@ public:
 	                                       [2] /* 0 = read, 1 = write */
 	                                       [io_time_buckets];  // defined in ivydefines.h, to match io_time_clip_levels in Accumulators_by_io_type.cpp
 // methods
-/*0*/	RunningStat<ivy_float,ivy_int> overall();
-/*1*/	RunningStat<ivy_float,ivy_int> random();
-/*2*/	RunningStat<ivy_float,ivy_int> sequential();
-/*3*/	RunningStat<ivy_float,ivy_int> read();
-/*4*/	RunningStat<ivy_float,ivy_int> write();
-/*5*/	RunningStat<ivy_float,ivy_int> randomRead();
-/*6*/	RunningStat<ivy_float,ivy_int> randomWrite();
-/*7*/	RunningStat<ivy_float,ivy_int> sequentialRead();
-/*8*/	RunningStat<ivy_float,ivy_int> sequentialWrite();
+/*0*/	RunningStat<ivy_float,ivy_int> overall() const;
+/*1*/	RunningStat<ivy_float,ivy_int> random() const ;
+/*2*/	RunningStat<ivy_float,ivy_int> sequential() const;
+/*3*/	RunningStat<ivy_float,ivy_int> read() const;
+/*4*/	RunningStat<ivy_float,ivy_int> write() const;
+/*5*/	RunningStat<ivy_float,ivy_int> randomRead() const;
+/*6*/	RunningStat<ivy_float,ivy_int> randomWrite() const;
+/*7*/	RunningStat<ivy_float,ivy_int> sequentialRead() const;
+/*8*/	RunningStat<ivy_float,ivy_int> sequentialWrite() const;
 
-	RunningStat<ivy_float,ivy_int> getRunningStatByCategory(int);
+	RunningStat<ivy_float,ivy_int> getRunningStatByCategory(int) const;
 
-	static int max_category_index() { return 8; }
+//	const RunningStat<ivy_float,ivy_int>& get_const_RunningStat_ref_by_category(int) const;
+
+	constexpr static int max_category_index() { return 8; }
 
 	static std::string getRunningStatTitleByCategory(int);
 
 	static std::string getCategories();
 
 	static int get_bucket_index(ivy_float io_time);
-
 };
 

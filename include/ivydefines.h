@@ -99,6 +99,9 @@
 // measure = on parameters
 #define accuracy_plus_minus_default std::string("5%")
 #define confidence_default          std::string("95%")
+
+#define plus_minus_series_confidence_default std::string("95%")
+
 #define min_wp_default              std::string("0%")
 #define max_wp_default              std::string("100%")
 #define max_wp_change_default        std::string("5%")
@@ -151,3 +154,5 @@ extern std::string indent_increment;
 #define unique_word_count (32*1024)
 
 extern char* unique_words[];
+
+#define non_random_sample_correction_factor_default (2.0) /* Applied to accuracy +/- to adjust for subintervals being consecutive rather than taking samples (subintervals) at random from a large populatyion */

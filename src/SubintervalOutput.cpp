@@ -30,10 +30,11 @@
 #include "Accumulators_by_io_type.h"
 #include "IosequencerInput.h"
 #include "SubintervalOutput.h"
+#include "SubintervalRollup.h"
 
 
 void SubintervalOutput::clear() {
-	for (int i=0; i<SubintervalOutput::RunningStatCount(); i++ ) {
+	for (unsigned int i=0; i<SubintervalOutput::RunningStatCount(); i++ ) {
 		u.accumulator_array[i].clear();
 	}
 	return;
@@ -45,7 +46,7 @@ bool SubintervalOutput::fromIstream(std::istream& is) {
 		clear();
 		return false;
 	}
-	for (int i=0; i<SubintervalOutput::RunningStatCount(); i++ ) {
+	for (unsigned int i=0; i<SubintervalOutput::RunningStatCount(); i++ ) {
 		if (!u.accumulator_array[i].fromIstream(is)) {
 			clear();
 			return false;
@@ -71,7 +72,7 @@ bool SubintervalOutput::fromString(std::string& s) {
 std::string SubintervalOutput::toString() {
 	std::ostringstream o;
 	o << '<';
-	for (int i=0; i<SubintervalOutput::RunningStatCount(); i++ ) {
+	for (unsigned int i=0; i<SubintervalOutput::RunningStatCount(); i++ ) {
 		o<< u.accumulator_array[i].toString();
 	}
 	o << '>';
@@ -79,23 +80,34 @@ std::string SubintervalOutput::toString() {
 }
 
 void SubintervalOutput::add(const SubintervalOutput& s_o) {
-	for (int i=0; i<SubintervalOutput::RunningStatCount(); i++ ) {
+	for (unsigned int i=0; i<SubintervalOutput::RunningStatCount(); i++ ) {
 		u.accumulator_array[i] += s_o.u.accumulator_array[i];
 	}
 	return;
 }
 
 
-/*static*/ std::string SubintervalOutput::csvTitles()
+/*static*/ std::string SubintervalOutput::csvTitles(bool measurement_columns)
 {
 	std::ostringstream o;
 	for (int i=0; i <= Accumulators_by_io_type::max_category_index(); i++)
 	{
 /*1*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " IOPS";
+        if (measurement_columns)
+        {
+
+            //o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " IOPS +/- subinterval count";
+            o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " IOPS +/- estimate";
+        }
 /*2*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Decimal MB/s";
 /*3*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Blocksize (KiB)";
 /*4*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Little\'s Law Avg Q";
 /*5*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Service Time (ms)";
+        if (measurement_columns)
+        {
+            //o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " service time +/- subinterval count";
+            o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " service time +/- estimate";
+        }
 /*6*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Service Time (ms)";
 /*7*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Service Time (ms)";
 /*8*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Service Time Standard Deviation (ms)";
@@ -108,9 +120,9 @@ void SubintervalOutput::add(const SubintervalOutput& s_o) {
 }
 
 
+bool lookupDoubleSidedStudentsTMultiplier(std::string& /*callers_error_message*/, ivy_float& /*return_value*/, const int /*sample_count*/, const std::string& /*confidence*/);
 
-
-std::string SubintervalOutput::csvValues(ivy_float seconds)
+std::string SubintervalOutput::csvValues(ivy_float seconds, SubintervalRollup* p_SubintervalRollup, ivy_float non_random_sample_correction_factor)
 {
 
 	if ( 0 >= seconds)
@@ -134,7 +146,11 @@ std::string SubintervalOutput::csvValues(ivy_float seconds)
 
 		if (0 == bytes_transferred.count())
 		{
-			for (int i=0; i<12; i++) o << ',';
+            unsigned int columns = 12;
+
+            if (nullptr != p_SubintervalRollup) { columns += 4; }
+
+			for (unsigned int i=0; i < columns; i++) o << ',';
 		}
 		else
 		{
@@ -150,6 +166,37 @@ std::string SubintervalOutput::csvValues(ivy_float seconds)
 				/* IOPS */
 				o << ',' << ( ((ivy_float) bytes_transferred.count()) / seconds );
 
+				if (nullptr != p_SubintervalRollup)
+				{
+                    RunningStat<ivy_float, ivy_int>& samples = p_SubintervalRollup->IOPS_series[i];
+
+//                    o << ',';
+//
+//                    if (samples.count() > 0) { o << samples.count(); }
+
+                    o << ',';
+
+                    if ( samples.count() >= 2 && samples.avg() != 0.0)
+                    {
+                        ivy_float students_t_multiplier;
+
+                        {
+                            std::string my_error_message;
+                            if (lookupDoubleSidedStudentsTMultiplier(my_error_message, students_t_multiplier, samples.count(), plus_minus_series_confidence_default))
+                            {
+                                ivy_float plusminusfraction =  (  students_t_multiplier * samples.standardDeviation() / sqrt((ivy_float) samples.count())   ) / samples.avg();
+
+                                plusminusfraction *= non_random_sample_correction_factor;
+                                    // This adjusts the plus-minus magnitude to compensate for the fact that there is a correlation between the measurements in successive subintervals
+                                    // making the excursions locally smaller than if you had run infinitely many subintervals and you selected subintervals at random from that population,
+                                    // which is what the math (student's T distribution) is based on.
+
+                                o << (100.0 * plusminusfraction) << '%';
+                            }
+                        }
+                    }
+				}
+
 				/* Decimal MB/s */
 				o << ',' << ( (bytes_transferred.sum() / 1000000.0) / seconds );
 
@@ -161,6 +208,37 @@ std::string SubintervalOutput::csvValues(ivy_float seconds)
 
 				/* Average Service Time (ms) */
 				o << ',' << (service_time.avg() * 1000.0);
+
+				if (nullptr != p_SubintervalRollup)
+				{
+                    RunningStat<ivy_float, ivy_int>& samples = p_SubintervalRollup->service_time_series[i];
+
+//                    o << ',';
+//
+//                    if (samples.count() > 0) { o << samples.count(); }
+
+                    o << ',';
+
+                    if ( samples.count() >= 2 && samples.avg() != 0.0)
+                    {
+                        ivy_float students_t_multiplier;
+
+                        {
+                            std::string my_error_message;
+                            if (lookupDoubleSidedStudentsTMultiplier(my_error_message, students_t_multiplier, samples.count(), "95%"))
+                            {
+                                ivy_float plusminusfraction =  (  students_t_multiplier * samples.standardDeviation() / sqrt((ivy_float) samples.count())   ) / samples.avg();
+
+                                plusminusfraction *= non_random_sample_correction_factor;
+                                    // This adjusts the plus-minus magnitude to compensate for the fact that there is a correlation between the measurements in successive subintervals
+                                    // making the excursions locally smaller than if you had run infinitely many subintervals and you selected subintervals at random from that population,
+                                    // which is what the math (student's T distribution) is based on.
+
+                                o << (100.0 * plusminusfraction) << '%';
+                            }
+                        }
+                    }
+				}
 
 				/* Min Service Time (ms) */
 				o << ',' << (service_time.min() * 1000.0);

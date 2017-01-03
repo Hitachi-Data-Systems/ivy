@@ -88,7 +88,7 @@ public:
 
 	void rebuild();
 
-	bool passesDataVariationValidation();
+	std::pair<bool,std::string> passesDataVariationValidation();
 
 	inline int current_index() {return subintervalIndex;}
 

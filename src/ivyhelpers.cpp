@@ -307,16 +307,38 @@ bool endsIn(std::string s, std::string ending) {
 	return s.substr(s.length()-ending.length()) == ending;
 }
 
-
-bool looksLikeFilename(std::string s) {
+std::pair<bool,std::string> looksLikeFilename(std::string s)
+{
 	// returns true if all alphanumerics, underscores, periods (dots), single slashes, or single backslashes
-	if (s.length()==0) return false;
-	for (unsigned int i=0; i<s.length(); i++) {
-		if (i>0 && (s[i-1]=='/') && (s[i]=='/')) return false;
-		if (i>0 && (s[i-1]=='\\') && (s[i]=='\\')) return false;
-		if (!(isalnum(s[i]) || s[i]=='_' || s[i] =='.' || s[i]=='\\' || s[i]=='/')) return false;
+	if (s.length()==0) return std::make_pair(false,std::string("Filename is the empty string.  Not acceptable as a filename."));
+
+	for (unsigned int i=0; i<s.length(); i++)
+	{
+		if (i>0 && (s[i-1]=='/') && (s[i]=='/'))
+		{
+            std::ostringstream o;
+            o << "Invalid filename \"" << s << "\".  As a safety precaution, ivy does not accept filenames with consecutive forward slashes /." << std::endl
+                << "ivy filenames must be composed of alphanumerics [a-zA-Z0-9], periods \'.\', under_scores, and single forward slashes." << std::endl;
+            return std::make_pair(false,o.str());
+		}
+		if (s[i]=='\\')
+		{
+            std::ostringstream o;
+            o << "Invalid filename \"" << s << "\".  You were probably thinking Windows-style filenames and used a backslash '\\'." << std::endl
+                << "ivy filenames must be composed of alphanumerics [a-zA-Z0-9], periods \'.\', under_scores, and single forward slashes." << std::endl;
+            return std::make_pair(false,o.str());
+		}
+
+		if (!(isalnum(s[i]) || s[i]=='_' || s[i] =='.' || s[i]=='\\' || s[i]=='/'))
+		{
+            std::ostringstream o;
+            o << "Invalid filename \"" << s << "\"." << std::endl
+                << "Where the first character is at position zero, the character \'" << s[i] << "\' at position " << i << " is not accepted by ivy in a filename as a safety precaution." << std::endl
+                << "ivy filenames must be composed of alphanumerics [a-zA-Z0-9], periods \'.\', under_scores, and single forward slashes /." << std::endl;
+            return std::make_pair(false,o.str());
+		}
 	}
-	return true;
+	return std::make_pair(true,std::string(""));
 }
 
 bool looksLikeHostname(std::string s) {

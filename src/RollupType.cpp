@@ -582,15 +582,24 @@ bool RollupType::makeMeasurementRollup(std::string callers_error_message, int fi
 
 }
 
-bool RollupType::passesDataVariationValidation()
+std::pair<bool,std::string> RollupType::passesDataVariationValidation()
 {
-    if ( 0 == instances.size() ) return false;
+    if ( 0 == instances.size() )
+    {
+        std::ostringstream o;
+        o << "[internal programming error - RollupType " << attributeNameCombo.attributeNameComboID << " has no instances.]";
+        return std::make_pair(false,o.str());
+    }
+
+    std::ostringstream o;
+    bool retval=true;
 
     if (haveQuantityValidation)
     {
         if (quantityRequired != instances.size())
         {
-            return false;
+            o << "[rollup " << attributeNameCombo.attributeNameComboID << " quantity validation failure - require " << quantityRequired << ", but saw " << instances.size() << " instances]";
+            retval=false;
         }
     }
 
@@ -600,11 +609,12 @@ bool RollupType::passesDataVariationValidation()
 
         if (IOPSdroop >= maxDroopMaxToMinIOPS)
         {
-            return false;
+            o << "[rollup " << attributeNameCombo.attributeNameComboID << " max IOPS drop validation failure - IOPS droop was " << (100.*IOPSdroop) << "%, but maxDroop = " << (100.*maxDroopMaxToMinIOPS) << "%.]";
+            retval=false;
         }
     }
 
-    return true;
+    return std::make_pair(retval,o.str());
 }
 
 /*static*/ std::string RollupType::getDataValidationCsvTitles()

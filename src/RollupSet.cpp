@@ -314,7 +314,7 @@ bool RollupSet::makeMeasurementRollup(std::string callers_error_message, unsigne
 {
     {
         std::ostringstream o;
-        o << "Successful measurement from subinterval " << firstMeasurementIndex << " to " << lastMeasurementIndex << "." << std::endl
+        o << "Making measurement rollup from subinterval " << firstMeasurementIndex << " to " << lastMeasurementIndex << "." << std::endl
             << "Measurement from " << starting_ending_times[firstMeasurementIndex].first.format_as_datetime_with_ns() << " to "
             << starting_ending_times[lastMeasurementIndex].second.format_as_datetime_with_ns() << std::endl;
         log(m_s.masterlogfile, o.str());
@@ -385,11 +385,25 @@ bool RollupSet::makeMeasurementRollup(std::string callers_error_message, unsigne
 }
 
 
-bool RollupSet::passesDataVariationValidation()
+std::pair<bool,std::string> RollupSet::passesDataVariationValidation()
 {
-    if (rollups.size() == 0) return false;
-    for (auto& pear : rollups) if (!( pear.second->passesDataVariationValidation() )) return false;
-    return true;
+    std::string s {};
+    bool retval {true};
+
+    if (rollups.size() == 0)
+    {
+        std::ostringstream o;
+        o << "[internal programming error - RollupSet has no RollupType instances, not even the \"all\" rollup.]";
+        return std::make_pair(false,o.str());
+    }
+
+    for (auto& pear : rollups)
+    {
+        std::pair<bool,std::string> r = pear.second->passesDataVariationValidation();
+        if (!r.first) { retval = false; s += r.second; }
+    }
+
+    return std::make_pair(retval,s);
 }
 
 

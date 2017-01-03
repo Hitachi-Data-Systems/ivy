@@ -135,6 +135,9 @@ public:
         // set by isValidMeasurementStartingFrom()
    	ivy_float best;
 
+   	unsigned int best_first, best_last;
+   	bool best_first_last_valid {false};
+
 // methods
 	RollupInstance(RollupType* pRT, RollupSet* pRS, std::string nameCombo, std::string valueCombo)
 		: attributeNameComboID(nameCombo), rollupInstanceID(valueCombo), pRollupType(pRT), pRollupSet(pRS)

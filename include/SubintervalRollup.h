@@ -28,10 +28,13 @@ public:
 	IosequencerInputRollup inputRollup;
 	SubintervalOutput outputRollup;
 	ivytime startIvytime, endIvytime;
+	RunningStat<ivy_float,ivy_int> IOPS_series        [ 1 + Accumulators_by_io_type::max_category_index()] {};
+	RunningStat<ivy_float,ivy_int> service_time_series[ 1 + Accumulators_by_io_type::max_category_index()] {};
+
 //methods
 	SubintervalRollup(ivytime subinterval_start, ivytime subinterval_end) : startIvytime(subinterval_start), endIvytime(subinterval_end) {}
 	SubintervalRollup() {startIvytime = ivytime(0); endIvytime = ivytime(0);}
-	void clear() {inputRollup.clear(); outputRollup.clear(); startIvytime=ivytime(0); endIvytime=ivytime(0);}
+	void clear();
 	void addIn(const SubintervalRollup& other);
 	ivy_float durationSeconds() { ivytime dur = endIvytime - startIvytime; return dur.getlongdoubleseconds();}
 };

@@ -360,6 +360,11 @@ public:
 
     std::ostringstream step_times;
 
+    ivy_float non_random_sample_correction_factor {non_random_sample_correction_factor_default /*in ivydefines.h */};
+
+//    bool have_best_of_wurst {false};
+    unsigned int best_of_wurst_first, best_of_wurst_last;
+    bool have_timeout_rollup {false};
 
 // methods
 	void kill_subthreads_and_exit();

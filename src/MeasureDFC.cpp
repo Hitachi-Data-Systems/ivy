@@ -39,10 +39,7 @@ int MeasureDFC::evaluateSubinterval()
 {
 	current++;
 
-    bool first_pass {true};
-
 	{
-
 		if (current < ( m_s.min_warmup_count + m_s.min_measure_count - 1)) /* if we say success at subinterval min_warmup_subintervals + min_sample_size, there's one more running that will be a cooldown subinterval */
 		{
 			std::ostringstream o;
@@ -50,6 +47,7 @@ int MeasureDFC::evaluateSubinterval()
                 << " subintervals to accommodate " << m_s.warmup_seconds << " warmup_seconds and " << m_s.measure_seconds << " measure_seconds with subintervals " << m_s.subinterval_seconds << " seconds long." << std::endl << std::endl;
 			std::cout << o.str();
 			log(m_s.masterlogfile, o.str());
+			m_s.have_timeout_rollup = false;
 			return  EVALUATE_SUBINTERVAL_CONTINUE;
 		}
 
@@ -73,10 +71,11 @@ int MeasureDFC::evaluateSubinterval()
 
 			return EVALUATE_SUBINTERVAL_FAILURE;
 		}
-
 	}
 
-
+    bool first_pass {true};
+        // This first pass refers to times through when evaluating candidates for "measure".
+        // We don't get here without the "measure" feature and without having already run the minimum number of warmup and measure subintervals.
 
     // This next bit does a search for possible subsequences ending in the current subinterval which
     // represent a valid measurement of "the focus metric" within each instance of the focus rollup,
@@ -250,14 +249,14 @@ int MeasureDFC::evaluateSubinterval()
 
             ivy_float x = pRollupInstance -> plusminusfraction_percent_above_below_target;
 
-            if (first_pass) // this is true for each rollup instance the first time through the shortest candidate subinterval sequence
+            if (first_pass || (x < pRollupInstance->best))
             {
                 pRollupInstance->best = x;
             }
-            else
-            {
-                if (x < pRollupInstance->best ) pRollupInstance->best = x;
-            }
+
+            pRollupInstance->best_first = now_processing;
+            pRollupInstance->best_last = current;
+            pRollupInstance->best_first_last_valid = true;
 
             if ( !matched)
             {
@@ -340,6 +339,7 @@ std::string wurst_of_the_best()
             none_yet=false;
             wurst = pear.second->best;
             s = pear.first;
+            m_s.p_focus_rollup->p_wurst_RollupInstance = pear.second;
         }
         else
         {
@@ -347,6 +347,7 @@ std::string wurst_of_the_best()
             {
                 wurst = pear.second->best;
                 s = pear.first;
+                m_s.p_focus_rollup->p_wurst_RollupInstance = pear.second;
             }
         }
     }

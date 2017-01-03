@@ -83,15 +83,17 @@ int main(int argc, char* argv[])
         ivyscriptFilename = item;
     }
 
-    if (!looksLikeFilename(ivyscriptFilename)) // returns true if all alphanumerics, underscores, periods (dots), single slashes, or single backslashes
+    auto pear = looksLikeFilename(ivyscriptFilename);
+
+    if (!pear.first) // returns true if all alphanumerics, underscores, periods (dots), single slashes, or single backslashes
     {
-        std::cout << "ivyscript filename \"" + ivyscriptFilename + "\" doesn't look like a filename." << std::endl;
+        std::cout << pear.second;
         return -1;
     }
 
     if (!endsIn(ivyscriptFilename, ".ivyscript")) ivyscriptFilename += std::string(".ivyscript");
 
-    std::regex ivyscript_filename_regex(R"ivy((.*[/\\])?([a-zA-Z][_\.[:alnum:]]*)(\.ivyscript))ivy");
+    std::regex ivyscript_filename_regex(R"ivy((.*[/])?([a-zA-Z][_\.[:alnum:]]*)(\.ivyscript))ivy");
     // Three sub matches
     // - optional path part,
     // - root part, which is an identifier, possibly with embedded periods,

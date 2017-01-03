@@ -817,9 +817,10 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 //*debug*/{ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() reaped = " << reaped << std::endl; log(slavethreadlogfile,o.str());}
 				now.setToNow();  // because we may have waited
 
+#ifdef IVY_TRACK_AIO
 				p_current_SubintervalOutput->u.a.harvestcount.push((ivy_float)reaped);
 				p_current_SubintervalOutput->u.a.preharvestqueuedepth.push((ivy_float)queue_depth);
-
+#endif
 				for (int i=0; i< reaped; i++) {
 
 					struct io_event* p_event;
@@ -854,7 +855,9 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 					queue_depth--;
 					postprocessQ.push(p_Eyeo);
 				}
+#ifdef IVY_TRACK_AIO
 				p_current_SubintervalOutput->u.a.postharvestqueuedepth.push((ivy_float)queue_depth);
+#endif
 				continue;  // start back up to the top and only do other stuff if there's nothing to reap
 			}
 		}
@@ -902,9 +905,11 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 			} else {
 //*debug*/{ostringstream o; o << "/*debug*/ WorkloadThread::linux_AIO_driver_run_subinterval() launched " << rc << " I/Os." << std::endl; log(slavethreadlogfile,o.str());}
 				// return code is number of I/Os succesfully launched.
+#ifdef IVY_TRACK_AIO
 				p_current_SubintervalOutput->u.a.submitcount.push((ivy_float)rc);
 				p_current_SubintervalOutput->u.a.presubmitqueuedepth.push((ivy_float)queue_depth);
 				p_current_SubintervalOutput->u.a.postsubmitqueuedepth.push((ivy_float)(queue_depth+rc));
+#endif
 				queue_depth+=rc;
 				if (maxqueuedepth<queue_depth) maxqueuedepth=queue_depth;
 
@@ -914,8 +919,10 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 					"io_submit() return code zero.  No I/Os successfully submitted.\n");
 
 				int number_to_put_back=launch_count - rc;
-				p_current_SubintervalOutput->u.a.putback.push((ivy_float) number_to_put_back);
 
+#ifdef IVY_TRACK_AIO
+				p_current_SubintervalOutput->u.a.putback.push((ivy_float) number_to_put_back);
+#endif
 				if (routine_logging && number_to_put_back>0)
 				{
 					std::ostringstream o;

@@ -159,7 +159,7 @@ ivy_float histogram_bucket_scale_factor(unsigned int i)
 	}
 }
 
-RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::getRunningStatByCategory(int category_index)
+RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::getRunningStatByCategory(int category_index) const
 {
 	switch (category_index)
 	{
@@ -185,7 +185,7 @@ RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::getRunningStatByCategor
 	}
 }
 
-RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::overall()
+RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::overall() const
 {
 	RunningStat<ivy_float, ivy_int> x;
 
@@ -196,7 +196,7 @@ RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::overall()
 	return x;
 }
 
-RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::randomRead()
+RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::randomRead() const
 {
 	RunningStat<ivy_float, ivy_int> x;
 
@@ -207,7 +207,7 @@ RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::randomRead()
 	return x;
 }
 
-RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::randomWrite()
+RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::randomWrite() const
 {
 	RunningStat<ivy_float, ivy_int> x;
 
@@ -218,7 +218,7 @@ RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::randomWrite()
 	return x;
 }
 
-RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::random()
+RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::random() const
 {
 	RunningStat<ivy_float, ivy_int> x;
 
@@ -230,7 +230,7 @@ RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::random()
 }
 
 
-RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::sequentialRead()
+RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::sequentialRead() const
 {
 	RunningStat<ivy_float, ivy_int> x;
 
@@ -241,7 +241,7 @@ RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::sequentialRead()
 	return x;
 }
 
-RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::sequentialWrite()
+RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::sequentialWrite() const
 {
 	RunningStat<ivy_float, ivy_int> x;
 
@@ -252,7 +252,7 @@ RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::sequentialWrite()
 	return x;
 }
 
-RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::sequential()
+RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::sequential() const
 {
 	RunningStat<ivy_float, ivy_int> x;
 
@@ -263,7 +263,7 @@ RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::sequential()
 	return x;
 }
 
-RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::read()
+RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::read() const
 {
 	RunningStat<ivy_float, ivy_int> x;
 
@@ -274,7 +274,7 @@ RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::read()
 	return x;
 }
 
-RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::write()
+RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::write() const
 {
 	RunningStat<ivy_float, ivy_int> x;
 

@@ -275,6 +275,10 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
+		<Unit filename="include/studentsTdistribution.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
 		<Unit filename="include/subsystem_summary_data.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
@@ -548,6 +552,10 @@
 		<Unit filename="src/select/select.y">
 			<Option compile="1" />
 			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/studentsTdistribution.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/subsystem_summary_data.cpp">
 			<Option target="ivymaster" />

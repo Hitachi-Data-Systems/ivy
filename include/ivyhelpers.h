@@ -72,7 +72,8 @@ std::string convert_non_alphameric_or_hyphen_or_equals_to_underscore(std::string
 std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(std::string);
 bool stringCaseInsensitiveEquality(std::string s1, std::string s2);
 
-bool looksLikeFilename(std::string s);
+std::pair<bool,std::string> looksLikeFilename(std::string s);
+
 bool looksLikeHostname(std::string s);
 bool looksLikeIPv4Addr(std::string s);
 bool looksLikeNumberedHostRange(std::string s, std::list<std::string>&hnl);

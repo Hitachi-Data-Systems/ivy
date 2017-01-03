@@ -66,6 +66,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
     m_s.measureDFC_failure_point = -1;  // where cooldown extends to wait for WP to empty, this is the point where we declared failure and stopped driving I/O.
 
+//    m_s.have_best_of_wurst = false;
+    m_s.have_timeout_rollup = false;
+
+
     // Clear out Subsystem data from a possible earlier subinterval sequence,
     // and then make the first gather for t=0, recording how long it takes.
 
@@ -166,6 +170,8 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
         }
 
     }
+
+    m_s.have_timeout_rollup = false;
 
     if (m_s.have_pid || m_s.have_measure)
     {
@@ -795,14 +801,66 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
         pear.second->print_subinterval_csv_line_set( pear.second->serial_number + std::string(".perf"));
     }
 
+    unsigned int first, last;
 
-    if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode)
+
+
+    if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode
+     || EVALUATE_SUBINTERVAL_FAILURE == m_s.lastEvaluateSubintervalReturnCode)
     {
+
+        if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode)
+        {
+            {
+                std::ostringstream o;
+                o << "Successful valid measurement, either fixed duration, or using the \"measure\" feature." << std::endl;
+                std::cout << o.str();
+                log(m_s.masterlogfile,o.str());
+            }
+            first = p_DynamicFeedbackController->firstMeasurementSubintervalIndex();
+            last  = p_DynamicFeedbackController->lastMeasurementSubintervalIndex();
+        }
+        else
+        {
+            if (nullptr == m_s.p_focus_rollup)
+            {
+                std::ostringstream o;
+                o << std::endl << "Writhe and fail, gasping that although the test result was FAILURE, we didn\'t have a pointer to the focus rollup." << std::endl
+                    << "Error occurred in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
+                std::cout << o.str();
+                log(m_s.masterlogfile,o.str());
+                m_s.kill_subthreads_and_exit();
+                exit(-1);
+            }
+
+            {
+                std::ostringstream o;
+                o << "Measurement timed out without reaching target accuracy.  Making measurement rollup for best subsequence that got the closest to the target for all instances of the focus rollup." << std::endl;
+                std::cout << o.str();
+                log(m_s.masterlogfile,o.str());
+            }
+
+            if (!m_s.p_focus_rollup->p_wurst_RollupInstance->best_first_last_valid)
+            {
+                std::ostringstream o;
+                o << std::endl << "Dreaded internal programming error.  Writhe and fail, gasping that the wurst RollupInstance didn\'t have valid best subsequence first and last indexes." << std::endl
+                    << "Error occurred in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
+                std::cout << o.str();
+                log(m_s.masterlogfile,o.str());
+                m_s.kill_subthreads_and_exit();
+                exit(-1);
+            }
+
+            first = m_s.p_focus_rollup->p_wurst_RollupInstance->best_first;
+            last  = m_s.p_focus_rollup->p_wurst_RollupInstance->best_last;
+            m_s.have_timeout_rollup = true;
+        }
+
         {
             std::ostringstream o;
-            o << "Measurement success, making measurement rollups from subinterval " << p_DynamicFeedbackController->firstMeasurementSubintervalIndex()
-                << " to " << p_DynamicFeedbackController->lastMeasurementSubintervalIndex()
-                << ".  (Haven't checked rollup [quantity] and [maxDroop] criteria yet.)" << std::endl;
+            o << "Making measurement rollups from subinterval " << first << " to " << last << ".";
+            if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode) { o << ".  (Haven't checked rollup [quantity] and [maxDroop] criteria yet.)"; }
+            o << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile,o.str());
         }
@@ -810,13 +868,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
         std::string measurementRollupErrorMessage;
 
-        if (!m_s.rollups.makeMeasurementRollup
-                (
-                    measurementRollupErrorMessage
-                    , p_DynamicFeedbackController->firstMeasurementSubintervalIndex()
-                    , p_DynamicFeedbackController->lastMeasurementSubintervalIndex()
-                )
-           )
+        if (!m_s.rollups.makeMeasurementRollup(measurementRollupErrorMessage, first, last))
         {
             std::ostringstream o;
             o << std::endl << "writhe and fail, gasping that the RollupSet::makeMeasurementRollup()\'s last words were - " << measurementRollupErrorMessage << std::endl;
@@ -826,13 +878,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             exit(-1);
         }
 
-        if (!m_s.make_measurement_rollup_CPU
-                (
-                    measurementRollupErrorMessage
-                    , p_DynamicFeedbackController->firstMeasurementSubintervalIndex()
-                    , p_DynamicFeedbackController->lastMeasurementSubintervalIndex()
-                )
-           )
+        if (!m_s.make_measurement_rollup_CPU(measurementRollupErrorMessage, first, last))
         {
             std::ostringstream o;
             o << std::endl << "writhe and fail, gasping that master_stuff::make_measurement_rollup_CPU()\'s last words were - " << measurementRollupErrorMessage << std::endl;
@@ -842,13 +888,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             exit(-1);
         }
 
-    }
-    else
-    {
-        std::ostringstream o;
-        o << "Measurement failure." << std::endl;
-        std::cout << o.str();
-        log(m_s.masterlogfile,o.str());
     }
 
 
@@ -1000,11 +1039,11 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
                 if ( need_header || need_type_header)
                 {
-                    // we need to print the header line. Note that measurement rollup lines and step subinterval rollup lines have the same titles and columns
+                    // we need to print the header line.
                     {
                         std::ostringstream o;
 
-                        o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
+                        o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,valid or invalid,Phase,Rollup Type,Rollup Instance";
 
                         if (m_s.ivymaster_RMLIB_threads.size()>0) { o << pRollupInstance->test_config_thumbnail.csv_headers(); }
                         o << IosequencerInputRollup::CSVcolumnTitles();
@@ -1017,7 +1056,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                             o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
                         }
 
-                        o << SubintervalOutput::csvTitles();
+                        o << ",non random sample correction factor";
+                        o << ",plus minus series statistical confidence";
+
+                        o << SubintervalOutput::csvTitles(true);
                         if (m_s.ivymaster_RMLIB_threads.size()>0)
                         {
                             o << subsystem_summary_data::csvHeadersPartTwo();
@@ -1048,20 +1090,20 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                     }
                 }
 
-                if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode)
+                if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode || m_s.have_timeout_rollup)
                 {
                     std::ostringstream csvline;
 
                     csvline << m_s.testName << ',' << m_s.stepNNNN << ',' << m_s.stepName;
 
-                    ivytime warmup_start = m_s.rollups.starting_ending_times[0].first;
-                    ivytime warmup_complete = m_s.rollups.starting_ending_times[m_s.rollups.measurement_first_index-1].second;
+                    ivytime warmup_start    = m_s.rollups.starting_ending_times[0].first;
+                    ivytime warmup_complete = m_s.rollups.starting_ending_times[first-1].second;
                     ivytime warmup_duration = warmup_complete - warmup_start;
 
-                    ivytime start = m_s.rollups.measurement_starting_ending_times.first;
-                    ivytime duration = m_s.rollups.measurement_starting_ending_times.second - start;
+                    ivytime start    = m_s.rollups.starting_ending_times[first].first;
+                    ivytime duration = m_s.rollups.starting_ending_times[last].second - start;
 
-                    ivytime cooldown_start = m_s.rollups.starting_ending_times[m_s.rollups.measurement_last_index+1].first;
+                    ivytime cooldown_start = m_s.rollups.starting_ending_times[last+1].first;
                     ivytime cooldown_complete = m_s.rollups.starting_ending_times[ m_s.rollups.starting_ending_times.size() - 1 ].second;
                     ivytime cooldown_duration = cooldown_complete - cooldown_start;
 
@@ -1070,8 +1112,25 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                     csvline << ',' << duration.format_as_duration_HMMSSns();
                     csvline << ',' << cooldown_duration.format_as_duration_HMMSSns();
                     csvline << ','; // Write Pending only shows in by-subinterval csv lines
-                    csvline << ',' << "measurement"; // subintervalIndex;
-                    csvline << ',' << "measurement"; // phase
+                    csvline << ',';
+                    if ( m_s.have_timeout_rollup || !m_s.rollups.passesDataVariationValidation().first)
+                    {
+                        csvline << "invalid"; // subintervalIndex;
+                    }
+                    else
+                    {
+                        csvline << "valid"; // subintervalIndex;
+                    }
+
+                    csvline << ',' << m_s.rollups.passesDataVariationValidation().second;
+                    if (m_s.have_timeout_rollup)
+                    {
+                        csvline << "timeout"; // phase
+                    }
+                    else
+                    {
+                        csvline << "measurement"; // phase
+                    }
                     csvline << ',' << pRollupType->attributeNameCombo.attributeNameComboID;
                     csvline << ',' << pRollupInstance->rollupInstanceID ; // rollupInstanceID;
 
@@ -1114,13 +1173,9 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
                             //, application service time Littles law q depth per drive
                             csvline << "," << std::fixed << std::setprecision(1) << (st.avg()*iops_per_drive);
-
                         }
                     }
 
-                    if (m_s.rollups.passesDataVariationValidation())
-                    {
-                        if (EVALUATE_SUBINTERVAL_SUCCESS==m_s.lastEvaluateSubintervalReturnCode)
                         {
                             ivy_float seconds = pRollupInstance->measurementRollup.durationSeconds();
 
@@ -1179,7 +1234,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                                 }
                             }
 
-                            csvline << pRollupInstance->measurementRollup.outputRollup.csvValues(seconds);
+                            csvline << "," << m_s.non_random_sample_correction_factor;
+                            csvline << "," << plus_minus_series_confidence_default;
+
+                            csvline << pRollupInstance->measurementRollup.outputRollup.csvValues(seconds,&(pRollupInstance->measurementRollup),m_s.non_random_sample_correction_factor);
 
                             if (m_s.ivymaster_RMLIB_threads.size() > 0)
                             {
@@ -1188,7 +1246,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                                 csvline << m_s.rollups.not_participating_measurement.csvValuesPartTwo();
                             }
 
-                            // histograms
+                            // histogram_s
                             {
                                 RunningStat<ivy_float,ivy_int> st = pRollupInstance->measurementRollup.outputRollup.overall_service_time_RS();
                                 ivy_float total_IOPS = st.count() / seconds;
@@ -1292,15 +1350,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                             }
 
                         }
-                        else
-                        {
-                            csvline << "measure=on failed to identify first and last stable measurement period subinterval numbers.";
-                        }
-                    }
-                    else
-                    {
-                        csvline << ",One or more RollupTypes failed data validation.  Please see data validation csv files for details.";
-                    }
 
 
                     {

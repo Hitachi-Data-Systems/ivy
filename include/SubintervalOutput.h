@@ -22,6 +22,8 @@
 #include "Accumulators_by_io_type.h"
 #include "RunningStat.h"
 
+class SubintervalRollup;
+
 class SubintervalOutput {
 
 public:
@@ -32,6 +34,7 @@ public:
 				bytes_transferred,
 				response_time,		// Application-view response including any waiting for I/O to be issued.
 				service_time;		// Time from when I/O starts running until it ends.
+#ifdef IVY_TRACK_AIO
 			RunningStat<ivy_float, ivy_int>
 				presubmitqueuedepth,
 				postsubmitqueuedepth,
@@ -40,6 +43,7 @@ public:
 				postharvestqueuedepth,
 				harvestcount,
 				putback;  // between submitcount and putback we may have enough, but we are not recording how many I/Os we try to submit;
+#endif
 		} a;
 		RunningStat<ivy_float, ivy_int> accumulator_array[sizeof(a)/sizeof(RunningStat<ivy_float, ivy_int>)];
 		u_type(){
@@ -51,14 +55,29 @@ public:
 
 
 // methods
-	inline static int RunningStatCount() {return(sizeof(u)/sizeof(RunningStat<ivy_float,ivy_int>));}
+	constexpr static unsigned int RunningStatCount() { return(sizeof(u)/sizeof(RunningStat<ivy_float,ivy_int>)); }
 	std::string toString();
 	bool fromIstream(std::istream&);
 	bool fromString(std::string&);
 	void add(const SubintervalOutput&);
 	void clear();
-	static std::string csvTitles();
-	std::string csvValues(ivy_float seconds);
+
+    // When we print csv titles and csv values for each category (categories are overall, random, random read, etc.),
+    // there is an extra column added only for the measurement rollup where we have a set of "samples", one for each
+    // subinterval of average IOPS and average service time.
+        // Not so much a set as a time series, but we apply a correction factor m_s.non_random_sample_correction_factor
+        // to exaggerate local variation from subinterval to subinterval to allow for a kind of "fractal"
+        // sense of how much variation there might be were subintervals randomly included out of a much larger population.
+    // This extra column shows for each of IOPS and service time the estimated plus/minus accuracy.
+    // Then when the measurement csv file line is printed, two overall "settings" values are shown:
+    //  - m_s.non_random_sample_correction_factor
+    //        * at present, this factor is hard-coded in master_stuff.
+    //  - +/- statistical confidence
+    //        * at present, hard coded to a fixed value originally "95%"
+    // Extra columns for measurement rollup csv columns are indicated by a pointer to a SubintervalRollup object.
+	static std::string csvTitles(bool measurement_columns = false);
+	std::string csvValues(ivy_float seconds, SubintervalRollup* = nullptr, ivy_float non_random_sample_correction_factor = non_random_sample_correction_factor_default);
+
 	std::string thumbnail(ivy_float seconds);
 	RunningStat<ivy_float,ivy_int> overall_service_time_RS();
 	RunningStat<ivy_float,ivy_int> overall_bytes_transferred_RS();
