@@ -68,7 +68,6 @@ using namespace std;
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
 #include "SubintervalOutput.h"
-#include "ivybuilddate.h"
 #include "ivylinuxcpubusy.h"
 #include "Subinterval_CPU.h"
 #include "WorkloadID.h"
@@ -636,13 +635,12 @@ void pipe_driver_subthread::threadRun()
         logmsg << "pipe_driver_subthread startup for " << ivyscript_hostname;
         if (pCmdDevLUN)
         {
-            logmsg << " to run ivy_cmddev";
+            logmsg << " to run ivy_cmddev.";
         }
         else
         {
-            logmsg << " to run ivyslave";
+            logmsg << " to run ivyslave.";
         }
-        logmsg <<   ".  ivy build date was " << IVYBUILDDATE << "." << std::endl;
         log(logfilename, logmsg.str());
     }
     else

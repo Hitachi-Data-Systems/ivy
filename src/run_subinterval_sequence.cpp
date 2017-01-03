@@ -1108,9 +1108,9 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                     ivytime cooldown_duration = cooldown_complete - cooldown_start;
 
                     csvline << ',' << start.format_as_datetime();
-                    csvline << ',' << warmup_duration.format_as_duration_HMMSSns();
-                    csvline << ',' << duration.format_as_duration_HMMSSns();
-                    csvline << ',' << cooldown_duration.format_as_duration_HMMSSns();
+                    csvline << ',' << warmup_duration.format_as_duration_HMMSS();
+                    csvline << ',' << duration.format_as_duration_HMMSS();
+                    csvline << ',' << cooldown_duration.format_as_duration_HMMSS();
                     csvline << ','; // Write Pending only shows in by-subinterval csv lines
                     csvline << ',';
                     if ( m_s.have_timeout_rollup || !m_s.rollups.passesDataVariationValidation().first)

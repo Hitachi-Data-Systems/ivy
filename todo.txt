@@ -27,8 +27,6 @@
 
 - rename parameter service_time to service_time_seconds
 
-- when measure=off, provide an accuracy plus/minus value for IOPS & service time.
-
 - test using LVM and impact LUN discovery / SCSI Inquiry
 - test with multipath software (HDLM / MPIO)
 

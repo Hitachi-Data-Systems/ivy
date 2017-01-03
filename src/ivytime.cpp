@@ -44,7 +44,7 @@
 
 using namespace std;
 
-#include "../include/ivytime.h"
+#include "ivytime.h"
 
 ivytime::ivytime() {
 	t.tv_sec=0;

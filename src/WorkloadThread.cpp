@@ -49,7 +49,6 @@
 #include "IosequencerInput.h"
 #include "Iosequencer.h"
 #include "ivylinuxcpubusy.h"
-#include "ivybuilddate.h"
 #include "RunningStat.h"
 #include "Accumulators_by_io_type.h"
 #include "SubintervalOutput.h"
@@ -153,7 +152,8 @@ void WorkloadThread::WorkloadThreadRun() {
 	{
 		std::ostringstream o;
 
-		o<< "WorkloadThreadRun() fireup for workloadID = \"" << workloadID.workloadID << "\", iosequencer parameters = \"" << iosequencerParameters << "\", ivy build date " << IVYBUILDDATE << std::endl;
+		o<< "WorkloadThreadRun() fireup for workloadID = \"" << workloadID.workloadID
+            << "\", iosequencer parameters = \"" << iosequencerParameters << "\"." << std::endl;
 
 		log(slavethreadlogfile,o.str());
 	}
