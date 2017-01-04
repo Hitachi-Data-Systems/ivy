@@ -598,7 +598,7 @@ std::pair<bool,std::string> RollupType::passesDataVariationValidation()
     {
         if (quantityRequired != instances.size())
         {
-            o << "[rollup " << attributeNameCombo.attributeNameComboID << " quantity validation failure - require " << quantityRequired << ", but saw " << instances.size() << " instances]";
+            o << "[rollup " << attributeNameCombo.attributeNameComboID << " quantity validation failure - require " << quantityRequired << " but saw " << instances.size() << " instances]";
             retval=false;
         }
     }
@@ -609,7 +609,7 @@ std::pair<bool,std::string> RollupType::passesDataVariationValidation()
 
         if (IOPSdroop >= maxDroopMaxToMinIOPS)
         {
-            o << "[rollup " << attributeNameCombo.attributeNameComboID << " max IOPS drop validation failure - IOPS droop was " << (100.*IOPSdroop) << "%, but maxDroop = " << (100.*maxDroopMaxToMinIOPS) << "%.]";
+            o << "[rollup " << attributeNameCombo.attributeNameComboID << " max IOPS drop validation failure - IOPS droop was " << (100.*IOPSdroop) << "% but maxDroop = " << (100.*maxDroopMaxToMinIOPS) << "%.]";
             retval=false;
         }
     }

@@ -1043,7 +1043,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                     {
                         std::ostringstream o;
 
-                        o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,valid or invalid,Phase,Rollup Type,Rollup Instance";
+                        o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,valid or invalid,invalid reason,Rollup Type,Rollup Instance";
 
                         if (m_s.ivymaster_RMLIB_threads.size()>0) { o << pRollupInstance->test_config_thumbnail.csv_headers(); }
                         o << IosequencerInputRollup::CSVcolumnTitles();
@@ -1122,15 +1122,14 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                         csvline << "valid"; // subintervalIndex;
                     }
 
-                    csvline << ',' << m_s.rollups.passesDataVariationValidation().second;
-                    if (m_s.have_timeout_rollup)
-                    {
-                        csvline << "timeout"; // phase
-                    }
-                    else
-                    {
-                        csvline << "measurement"; // phase
-                    }
+                    std::string validation_errors {};
+
+                    if (m_s.have_timeout_rollup) validation_errors = "[measurement timeout]";
+
+                    validation_errors += m_s.rollups.passesDataVariationValidation().second;
+
+                    csvline << ',' << validation_errors;
+
                     csvline << ',' << pRollupType->attributeNameCombo.attributeNameComboID;
                     csvline << ',' << pRollupInstance->rollupInstanceID ; // rollupInstanceID;
 
