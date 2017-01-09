@@ -474,7 +474,7 @@ void master_stuff::write_clear_script()
     return;
 }
 
-bool master_stuff::make_measurement_rollup_CPU(std::string callers_error_message, unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
+std::pair<bool,std::string> master_stuff::make_measurement_rollup_CPU(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
 {
 		if (cpu_by_subinterval.size() < 3)
 		{
@@ -482,8 +482,7 @@ bool master_stuff::make_measurement_rollup_CPU(std::string callers_error_message
 			o << "master_stuff::make_measurement_rollup_CPU() - The total number of subintervals in the cpu_by_subinterval sequence is " << cpu_by_subinterval.size()
 			<< std::endl << "and there must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, "
 			<< std::endl << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
-			callers_error_message = o.str();
-			return false;
+			return std::make_pair(false,o.str());
 		}
 
 		if
@@ -497,8 +496,7 @@ bool master_stuff::make_measurement_rollup_CPU(std::string callers_error_message
 			o << "master_stuff::make_measurement_rollup_CPU() - Invalid first (" << firstMeasurementIndex << ") and last (" << lastMeasurementIndex << ") measurement period indices."
 			<< std::endl << " There must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, "
 			<< std::endl << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
-			callers_error_message = o.str();
-			return false;
+			return std::make_pair(false,o.str());
 		}
 
 		measurement_rollup_CPU.clear();
@@ -508,7 +506,7 @@ bool master_stuff::make_measurement_rollup_CPU(std::string callers_error_message
 			measurement_rollup_CPU.rollup(cpu_by_subinterval[i]);
 		}
 
-		return true;
+		return std::make_pair(true,"");
 }
 
 std::string master_stuff::getWPthumbnail(int subinterval_index) // use subinterval_index = -1 to get the t=0 gather thumbnail
@@ -927,11 +925,13 @@ master_stuff::set_iosequencer_template(
     }
     IosequencerInput* p=(*iogen_it).second;
 
-    std::string error_message;
-    if (!p->setMultipleParameters(error_message, parameters))
+    auto rv = p->setMultipleParameters(parameters);
+    if (!rv.first)
     {
         std::ostringstream o;
-        o << "<Error> ivy engine API - set iosequencer template - for iosequencer named \"" << template_name << "\" - error setting parameter values \"" << parameters << "\" - error message was - " << error_message << std::endl;
+        o << "<Error> ivy engine API - set iosequencer template - for iosequencer named \"" << template_name
+            << "\" - error setting parameter values \"" << parameters
+            << "\" - error message was - " << rv.second << std::endl;
         return std::make_pair(false,o.str());
     }
     return std::make_pair(true,std::string(""));
@@ -1032,12 +1032,12 @@ master_stuff::createWorkload(
 
 	if (0<parameters.length())
 	{
-		std::string my_error_message;
-		if (!i_i.setMultipleParameters(my_error_message, parameters))
+		auto rv = i_i.setMultipleParameters(parameters);
+		if (!rv.first)
 		{
             ostringstream o;
             o << "Create workload - failure setting initial parameters - \"" << parameters << "\"." <<std::endl
-                << my_error_message << std::endl;
+                << rv.second << std::endl;
             return std::make_pair(false,o.str());
 		}
 	}
@@ -1418,8 +1418,7 @@ master_stuff::create_rollup(
         return std::make_pair(false, o.str());
     }
 
-    std::pair<bool,std::string> rc;
-    rc.first = rollups.addRollupType(rc.second, attributeNameComboText, nocsvSection, quantitySection, maxDroopMaxtoMinIOPSSection, quantity, maxDroop);
+    std::pair<bool,std::string> rc = rollups.addRollupType(attributeNameComboText, nocsvSection, quantitySection, maxDroopMaxtoMinIOPSSection, quantity, maxDroop);
 
     if (!rc.first) return rc;
 
@@ -1626,12 +1625,12 @@ master_stuff::edit_rollup(const std::string& rollupText, const std::string& orig
 				}
 
 				WorkloadTracker* pWT = (*wit).second;
-				std::string error_message;
-				if (!pWT->wT_IosequencerInput.setMultipleParameters(error_message, parametersText))
+				auto rv = pWT->wT_IosequencerInput.setMultipleParameters(parametersText);
+				if (!rv.first)
 				{
 					std::ostringstream o;
 					o << "<Error> Failed setting parameters \"" << parametersText
-                        << "\" into local WorkloadTracker object for WorkloadID = \"" << wID.workloadID << "\"" << std::endl << error_message;
+                        << "\" into local WorkloadTracker object for WorkloadID = \"" << wID.workloadID << "\"" << std::endl << rv.second;
                     return std::make_pair(false,o.str());
 				}
 			}
@@ -1729,12 +1728,12 @@ master_stuff::delete_rollup(const std::string& attributeNameComboText)
         {
             if (stringCaseInsensitiveEquality("all", pear.first)) continue;
 
-            std::string my_error_message;
-            if ( ! rollups.deleteRollup(my_error_message, pear.first))
+            auto rc = rollups.deleteRollup(pear.first);
+            if ( !rc.first )
             {
                 std::ostringstream o;
                 o << "<Error> ivy engine API - for \"delete all rollups except the \'all\' rollup\" - failed trying to delete "
-                    << put_in_quotes(pear.first) << " - " << my_error_message << std::endl;
+                    << put_in_quotes(pear.first) << " - " << rc.second << std::endl;
                 log(m_s.masterlogfile,o.str());
                 std::cout << o.str();
                 return std::make_pair(false,o.str());
@@ -1751,11 +1750,11 @@ master_stuff::delete_rollup(const std::string& attributeNameComboText)
             return std::make_pair(false,msg);
         }
 
-        std::string my_error_message;
-        if ( ! m_s.rollups.deleteRollup(my_error_message, attributeNameComboText))
+        auto rc = m_s.rollups.deleteRollup(attributeNameComboText);
+        if ( !rc.first )
         {
             std::ostringstream o;
-            o << "<Error> ivy engine API - delete rollup for " << put_in_quotes(attributeNameComboText) << " failed - " << my_error_message << std::endl;
+            o << "<Error> ivy engine API - delete rollup for " << put_in_quotes(attributeNameComboText) << " failed - " << rc.second << std::endl;
             log(m_s.masterlogfile,o.str());
             std::cout << o.str();
             return std::make_pair(false,o.str());

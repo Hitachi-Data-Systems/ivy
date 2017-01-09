@@ -82,9 +82,12 @@ public:
 
 	std::pair<bool,std::string> passesDataVariationValidation();
 
-	bool makeMeasurementRollup(std::string callers_error_message, int firstMeasurementIndex, int lastMeasurementIndex);
-static	std::string getDataValidationCsvTitles();
+	std::pair<bool,std::string> makeMeasurementRollup(int firstMeasurementIndex, int lastMeasurementIndex);
+
+	static	std::string getDataValidationCsvTitles();
+
 	std::string getDataValidationCsvValues();
+
 	void printMe(std::ostream&);
 };
 

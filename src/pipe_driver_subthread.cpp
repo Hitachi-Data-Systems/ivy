@@ -1976,12 +1976,11 @@ void pipe_driver_subthread::threadRun()
                             {
                                 std::unique_lock<std::mutex> s_lk(m_s.master_mutex);
 
-                                std::string my_error_message;
-
-                                if (!m_s.rollups.add_workload_detail_line(my_error_message, detailWID, detailInput, detailOutput))
+                                auto rc = m_s.rollups.add_workload_detail_line(detailWID, detailInput, detailOutput);
+                                if (!rc.first)
                                 {
                                     std::ostringstream o;
-                                    o << "Rollup of detail line failed. \"" << detail_line << "\" - " << my_error_message << std::endl;
+                                    o << "Rollup of detail line failed. \"" << detail_line << "\" - " << rc.second << std::endl;
                                     log(logfilename, o.str());
                                     kill_ssh_and_harvest();
                                     commandComplete = true;

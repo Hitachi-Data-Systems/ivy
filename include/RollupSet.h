@@ -59,13 +59,12 @@ public:
 	RollupSet(){}
 	inline ~RollupSet() {  for (auto pear : rollups) delete pear.second; }
 
-	bool initialize(std::string& callers_error_message); // false & set error_message if passed a null pointer or if there was some problem building the default "overall" rollup.
+	std::pair<bool,std::string> initialize(); // false & set error_message if passed a null pointer or if there was some problem building the default "overall" rollup.
 	std::string getErrorMessage(){ return my_error_message; }
-	bool add_workload_detail_line(std::string& my_error_msg, WorkloadID&, IosequencerInput&, SubintervalOutput&);
-	bool addRollupType
+	std::pair<bool,std::string> add_workload_detail_line(WorkloadID&, IosequencerInput&, SubintervalOutput&);
+	std::pair<bool,std::string> addRollupType
 	(
-		std::string& error_message
-		, std::string attributeNameComboText
+		  std::string attributeNameComboText
 		, bool nocsvSection
 		, bool quantitySection
 		, bool maxDroopMaxtoMinIOPSSection
@@ -79,12 +78,12 @@ public:
 
     RollupInstance* get_all_equals_all_instance(); // throws runtime_error if it can't find the all=all rollup.
 
-	bool deleteRollup(std::string& callers_error_message, std::string attributeNameComboText);
+	std::pair<bool,std::string> deleteRollup(std::string attributeNameComboText);
         // error_message is clear()ed upon entry and is set with an error message if it returns false
 
 	void resetSubintervalSequence();
 	void startNewSubinterval(ivytime start, ivytime end);
-	bool makeMeasurementRollup(std::string callers_error_message, unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);
+	std::pair<bool,std::string> makeMeasurementRollup(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);
 
 	void rebuild();
 

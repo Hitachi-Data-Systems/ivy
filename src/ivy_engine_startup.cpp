@@ -154,11 +154,11 @@ std::pair<bool /*success*/, std::string /* message */>
         }
     }
 
-    std::string rollupsInitializeMessage;
-    if (!rollups.initialize(rollupsInitializeMessage))
+    std::pair<bool,std::string> retval = rollups.initialize();
+    if (!retval.first)
     {
         std::ostringstream o;
-        o << "<Error> Internal programming error - failed initializing rollups in ivymaster.cpp saying: " << rollupsInitializeMessage << std::endl;
+        o << "<Error> Internal programming error - failed initializing rollups in ivymaster.cpp saying: " << retval.second << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         return std::make_pair(false,o.str());
@@ -170,28 +170,29 @@ std::pair<bool /*success*/, std::string /* message */>
 
     availableControllers[toLower(std::string("measure"))] = &the_dfc;
 
-    std::string my_error_message;
-
-    if ( ! random_steady_template.setParameter(my_error_message, std::string("iosequencer=random_steady")))
+    auto rv = random_steady_template.setParameter("iosequencer=random_steady");
+    if ( ! rv.first)
     {
         std::ostringstream o;
-        o << "<Error> dreaded internal programming error - ivymaster startup - failed trying to set the default random steady I/O generator template - " << my_error_message << std::endl;
+        o << "<Error> dreaded internal programming error - ivymaster startup - failed trying to set the default random steady I/O generator template - " << rv.second << std::endl;
         std::cout << o.str();
         return std::make_pair(false,o.str());
     }
 
-    if ( ! random_independent_template.setParameter(my_error_message, std::string("iosequencer=random_independent")))
+    rv = random_independent_template.setParameter("iosequencer=random_independent");
+    if ( !rv.first )
     {
         std::ostringstream o;
-        o << "<Error> dreaded internal programming error - ivymaster startup - failed trying to set the default random independent I/O generator template - " << my_error_message << std::endl;
+        o << "<Error> dreaded internal programming error - ivymaster startup - failed trying to set the default random independent I/O generator template - " << rv.second << std::endl;
         std::cout << o.str();
         return std::make_pair(false,o.str());
     }
 
-    if ( ! sequential_template.setParameter(my_error_message, std::string("iosequencer=sequential")))
+    rv = sequential_template.setParameter("iosequencer=sequential");
+    if ( !rv.first )
     {
         std::ostringstream o;
-        o << "<Error> dreaded internal programming error - ivymaster startup - failed trying to set the default sequential I/O generator template - " << my_error_message << std::endl;
+        o << "<Error> dreaded internal programming error - ivymaster startup - failed trying to set the default sequential I/O generator template - " << rv.second << std::endl;
         std::cout << o.str();
         return std::make_pair(false,o.str());
     }

@@ -37,7 +37,7 @@ class IosequencerInputRollup {
 	long int count{0};
 
 public:
-	bool add (std::string& callers_error_message, std::string parameterNameEqualsTextValueCommaSeparatedList); // returns false on malformed input
+	std::pair<bool,std::string> add (std::string parameterNameEqualsTextValueCommaSeparatedList); // returns false on malformed input
 	std::string getParameterTextValueByName(std::string, bool detail=true);
 	void print_values_seen(std::ostream&);
 	static std::string CSVcolumnTitles(); // This function needs to be updated when you add a new iosequencer parameter

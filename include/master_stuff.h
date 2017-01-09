@@ -369,7 +369,7 @@ public:
 // methods
 	void kill_subthreads_and_exit();
 	void error(std::string);
-	bool make_measurement_rollup_CPU(std::string callers_error_message, unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);
+	std::pair<bool, std::string> make_measurement_rollup_CPU(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);
 	std::string getWPthumbnail(int subinterval_index); // throws std::invalid_argument.    Shows WP for each CLPR on the watch list as briefly as possible.
 
     ivy_float get_rollup_metric

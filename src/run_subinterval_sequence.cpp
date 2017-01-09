@@ -866,22 +866,24 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
         }
         // Dropping the first few and last few subintervals, build the measurement rollup set
 
-        std::string measurementRollupErrorMessage;
-
-        if (!m_s.rollups.makeMeasurementRollup(measurementRollupErrorMessage, first, last))
+        auto retval = m_s.rollups.makeMeasurementRollup(first, last);
+        if (!retval.first)
         {
             std::ostringstream o;
-            o << std::endl << "writhe and fail, gasping that the RollupSet::makeMeasurementRollup()\'s last words were - " << measurementRollupErrorMessage << std::endl;
+            o << std::endl << "writhe and fail, gasping that the RollupSet::makeMeasurementRollup()\'s last words were - " << retval.second << std::endl
+                << std::endl << "Source code reference: function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile,o.str());
             m_s.kill_subthreads_and_exit();
             exit(-1);
         }
 
-        if (!m_s.make_measurement_rollup_CPU(measurementRollupErrorMessage, first, last))
+        retval = m_s.make_measurement_rollup_CPU(first, last);
+        if (!retval.first)
         {
             std::ostringstream o;
-            o << std::endl << "writhe and fail, gasping that master_stuff::make_measurement_rollup_CPU()\'s last words were - " << measurementRollupErrorMessage << std::endl;
+            o << std::endl << "writhe and fail, gasping that master_stuff::make_measurement_rollup_CPU()\'s last words were - " << retval.second << std::endl
+                << std::endl << "Source code reference: function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile,o.str());
             m_s.kill_subthreads_and_exit();

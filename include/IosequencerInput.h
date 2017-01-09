@@ -83,8 +83,8 @@ public:
 public:
 	inline IosequencerInput(){reset();}
 
-	bool setParameter(std::string& callers_error_message, std::string parameterNameEqualsValue);
-	bool setMultipleParameters(std::string& callers_error_message, std::string commaSeparatedList);
+	std::pair<bool,std::string> setParameter(std::string parameterNameEqualsValue);
+	std::pair<bool,std::string> setMultipleParameters(std::string commaSeparatedList);
 	std::string toStringFull();
 	std::string toString();
 	bool fromString(std::string, std::string logfilename);

@@ -186,7 +186,7 @@ std::string IosequencerInputRollup::CSVcolumnValues(bool detail)
 }
 
 
-bool	IosequencerInputRollup::add(std::string& callers_error_message, std::string parameterNameEqualsTextValueCommaSeparatedList)
+std::pair<bool,std::string>	IosequencerInputRollup::add(std::string parameterNameEqualsTextValueCommaSeparatedList)
 {
 
 	bool wellFormedInput{true};
@@ -195,8 +195,7 @@ bool	IosequencerInputRollup::add(std::string& callers_error_message, std::string
 
 	if (0==parameterNameEqualsTextValueCommaSeparatedList.length())
 	{
-		callers_error_message = "IogeneratoInputRollup::add() called with null list of parameter name = value";
-		return false;
+		return std::make_pair(false,"IogeneratoInputRollup::add() called with null list of parameter name = value");
 	}
 
 	unsigned int i=0, start, len;
@@ -214,7 +213,7 @@ bool	IosequencerInputRollup::add(std::string& callers_error_message, std::string
 		if (i<parameterNameEqualsTextValueCommaSeparatedList.length() && ',' == parameterNameEqualsTextValueCommaSeparatedList[i])
 			i++; // step over comma
 	}
-	return wellFormedInput;
+	return std::make_pair(wellFormedInput,"");
 
 }
 

@@ -62,7 +62,7 @@ void RollupInstance::printMe(std::ostream& o)
 }
 
 
-bool RollupInstance::makeMeasurementRollup(std::string& callers_error_message, unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
+std::pair<bool,std::string> RollupInstance::makeMeasurementRollup(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
 {
 		if (subintervals.sequence.size() < 3)
 		{
@@ -70,8 +70,7 @@ bool RollupInstance::makeMeasurementRollup(std::string& callers_error_message, u
 			o << "RollupInstance::makeMeasurementRollup() - The total number of subintervals in the sequence is " << subintervals.sequence.size()
 			<< std::endl << "and there must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, "
 			<< std::endl << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
-			callers_error_message = o.str();
-			return false;
+			return std::make_pair(false,o.str());
 		}
 
 		if
@@ -85,8 +84,7 @@ bool RollupInstance::makeMeasurementRollup(std::string& callers_error_message, u
 			o << "RollupInstance::makeMeasurementRollup() - Invalid first (" << firstMeasurementIndex << ") and last (" << lastMeasurementIndex << ") measurement period indices."
 			<< std::endl << " There must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, "
 			<< std::endl << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
-			callers_error_message = o.str();
-			return false;
+			return std::make_pair(false,o.str());
 		}
 
 		measurementRollup.clear();
@@ -99,11 +97,11 @@ bool RollupInstance::makeMeasurementRollup(std::string& callers_error_message, u
             if (subsystem_data_by_subinterval.size() > i) measurement_subsystem_data.addIn(subsystem_data_by_subinterval[i]);
 		}
 
-		return true;
+		return std::make_pair(true,"");
 }
 
 
-bool RollupInstance::add_workload_detail_line(std::string& callers_error_message, WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO)
+std::pair<bool,std::string> RollupInstance::add_workload_detail_line(WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO)
 {
 	std::string my_error_message;
 
@@ -111,24 +109,23 @@ bool RollupInstance::add_workload_detail_line(std::string& callers_error_message
 
 	if (-1 == index)
 	{
-		callers_error_message = "RollupInstance::add_workload_detail_line() failed because the RollupInstance subinterval sequence was empty.";
-		return false;
+		return std::make_pair(false,"RollupInstance::add_workload_detail_line() failed because the RollupInstance subinterval sequence was empty.");
 	}
 
 	SubintervalRollup& subintervalRollup = subintervals.sequence[index];
 
-	if ( ! subintervalRollup.inputRollup.add(my_error_message,iI.getParameterNameEqualsTextValueCommaSeparatedList()) )
+    auto retval = subintervalRollup.inputRollup.add(iI.getParameterNameEqualsTextValueCommaSeparatedList());
+	if ( !retval.first )
 	{
 		std::ostringstream o;
 		o << "RollupInstance::add_workload_detail_line() - failed adding in IosequencerInput.getParameterNameEqualsTextValueCommaSeparatedList()=\""
 		  << iI.getParameterNameEqualsTextValueCommaSeparatedList() << "\" to the last SubintervalRollup in the sequence of " << subintervals.sequence.size() << ".";
-		callers_error_message = o.str();
-		return false;
+		return std::make_pair(false,o.str());
 	}
 
 	subintervalRollup.outputRollup.add(sO);  // for two existing SubintervalOutput objects, this call doesn't fail.
 
-	return true;
+	return std::make_pair(true,"");
 }
 
 

@@ -144,12 +144,12 @@ public:
 		{}
 
 //	void postWorkloadSubintervalResult (int subinterval_number, std::string workloadID, IosequencerInput& detailInput, SubintervalOutput& detailOutput);
-	bool add_workload_detail_line(std::string& callers_error_msg, WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO);
+	std::pair<bool,std::string> add_workload_detail_line(WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO);
 
 	bool sendDynamicFeedbackControlParameterUpdate(std::string updates);
 
 
-	bool makeMeasurementRollup(std::string& callers_error_message, unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);
+	std::pair<bool,std::string> makeMeasurementRollup(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);
 
 	std::string getIDprefixTitles() {return "Test Name,Step Number,Step Name,Start Time,End Time,Subinterval Number,Subinterval Phase,Rollup Type,Rollup Instance,";}
 	std::string getIDprefixValues(std::string phase, ivytime start_time, ivytime end_time);

@@ -644,26 +644,29 @@ int main(int argc, char* argv[])
 						if ( ThreadState::running  == p_WorkloadThread->state || ThreadState::waiting_for_command == p_WorkloadThread->state )
 						{
 ///*debug*/{std::ostringstream o;  o << std::endl <<  "Workload thread \"" << p_WorkloadThread->workloadID.workloadID << "\" is stopped, setting into both, parameters = \"" << parametersText<< "\".";   fileappend(slavelogfile, o.str());}
-							std::string error_message;
+							auto rv = p_WorkloadThread->subinterval_array[0].input.setMultipleParameters(parametersText);
 
-							if (!p_WorkloadThread->subinterval_array[0].input.setMultipleParameters(error_message, parametersText))
+							if (!rv.first)
 							{
 								std::ostringstream o;
 								o << "<Error> Internal programming error since we already successfully set these parameters into the corresponding WorkloadTracker objects in ivymaster - failed setting parameters \""
 								  << parametersText << "\" into subinterval_array[0].input iosequencer_input object for WorkloadID \""
 								  << wID.workloadID << "\" - "
-								  << error_message;
+								  << rv.second;
 								say(o.str());
 								killAllSubthreads(slavelogfile);
 								return -1;
 							}
-							if (!p_WorkloadThread->subinterval_array[1].input.setMultipleParameters(error_message, parametersText))
+
+							rv = p_WorkloadThread->subinterval_array[1].input.setMultipleParameters(parametersText);
+
+							if (!rv.first)
 							{
 								std::ostringstream o;
 								o << "<Error> Internal programming error since we already successfully set these parameters into the corresponding WorkloadTracker objects in ivymaster - failed setting parameters \""
 								  << parametersText << "\" into subinterval_array[1].input iosequencer_input object for WorkloadID \""
 								  << wID.workloadID << "\" - "
-								  << error_message;
+								  << rv.second;
 								say(o.str());
 								killAllSubthreads(slavelogfile);
 								return -1;

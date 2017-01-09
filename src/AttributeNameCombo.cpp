@@ -31,29 +31,24 @@
 #include "AttributeNameCombo.h"
 
 
-bool isValidAttributeName(std::string& callers_error_message, std::string token, LUN* pSampleLUN)
+std::pair<bool,std::string> isValidAttributeName(std::string token, LUN* pSampleLUN)
 {
-	if (stringCaseInsensitiveEquality(token, std::string("all"))) return true;
+	if (stringCaseInsensitiveEquality(token, std::string("all"))) return std::make_pair(true,"");
 
-	if (pSampleLUN->contains_attribute_name(token)) return true;
+	if (pSampleLUN->contains_attribute_name(token)) return std::make_pair(true,"");
+    std::ostringstream o;
+    bool needComma {false};
 
-	{
-		std::ostringstream o;
-		bool needComma {false};
+    o << "invalid attribute name \"" << token << "\".  Valid LUN attribute names are ";
 
-		o << "invalid attribute name \"" << token << "\".  Valid LUN attribute names are ";
+    for (auto& pear : pSampleLUN->attributes)
+    {
+        if (needComma) o << ", ";
+        needComma = true;
+        o << "\"" << pear.first << "\"";
+    }
 
-		for (auto& pear : pSampleLUN->attributes)
-		{
-			if (needComma) o << ", ";
-			needComma = true;
-			o << "\"" << pear.first << "\"";
-		}
-
-		callers_error_message = o.str();
-	}
-
-	return false;
+    return std::make_pair(false,o.str());
 }
 
 
@@ -73,7 +68,7 @@ void AttributeNameCombo::clear()
 }
 
 
-bool AttributeNameCombo::set(std::string& callers_error_message, std::string t, LUN* pSampleLUN)  //  serial_number+Port
+std::pair<bool,std::string> AttributeNameCombo::set(std::string t, LUN* pSampleLUN)  //  serial_number+Port
 {
 
 	// A valid attribute name combo token consists of one or more valid LUN-lister column header attribute names,
@@ -101,7 +96,6 @@ bool AttributeNameCombo::set(std::string& callers_error_message, std::string t, 
 	// - Validate that each chunk either matches a built-in attribute like host or workload,
 	//   or that it matches one of the column headers in the sample LUN provided to the constructor.
 
-	callers_error_message.clear();
 	clear();
 
 	attributeNameComboID=t;
@@ -110,8 +104,7 @@ bool AttributeNameCombo::set(std::string& callers_error_message, std::string t, 
 
 	if (0 == attributeNameComboID.length())
 	{
-		callers_error_message = "AttributeNameCombo::set() - called with null string.";
-		return false;
+		return std::make_pair(false,std::string("AttributeNameCombo::set() - called with null string."));
 	}
 
 	cursor = 0;
@@ -131,18 +124,17 @@ bool AttributeNameCombo::set(std::string& callers_error_message, std::string t, 
 			consume();
 		}
 
-		std::string my_error_message;
+		std::pair<bool,std::string> retval = isValidAttributeName(token, pSampleLUN);
 
-		if (isValidAttributeName(my_error_message, token, pSampleLUN))  // either a LUN-lister column heading, or an ivy nickname
+		if (retval.first)  // either a LUN-lister column heading, or an ivy nickname
 		{
 			attributeNames.push_back(token);
 		}
 		else
 		{
 			std::ostringstream o;
-			o << "AttributeNameCombo::set() - " << my_error_message;
-			callers_error_message = o.str();
-			return false;
+			o << "AttributeNameCombo::set() - " << retval.second;
+			return std::make_pair(false,o.str());
 		}
 
 		if (cursor > last_cursor) break;
@@ -154,7 +146,8 @@ bool AttributeNameCombo::set(std::string& callers_error_message, std::string t, 
 	}
 
 	isValid=true;
-	return true;
+
+	return std::make_pair(true,"");
 }
 
 

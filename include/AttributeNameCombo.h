@@ -37,7 +37,7 @@ public:
 	AttributeNameCombo(){}
 	void clear();
 	void clone(AttributeNameCombo& other);
-	bool set(std::string& callers_error_message, std::string text, LUN* p_SampleLUN);  // true if text was a valid attribute combo token
+	std::pair<bool,std::string> set(std::string text, LUN* p_SampleLUN);  // true if text was a valid attribute combo token
 };
 
 

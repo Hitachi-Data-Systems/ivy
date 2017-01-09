@@ -114,29 +114,27 @@ std::string RollupSet::debugListRollups()
 }
 
 
-bool RollupSet::initialize(std::string& callers_error_message)
+std::pair<bool,std::string> RollupSet::initialize()
 {
-    callers_error_message.clear();
-
     if (initialized)
     {
-        callers_error_message = "RollupSet::initialize() called on an already-initialized RollupSet object. - return false and doing nothing.";
-        return false;
+        return std::make_pair(false,"RollupSet::initialize() called on an already-initialized RollupSet object. - return false and doing nothing.");
     }
 
-    std::string my_error_message;
+    auto rc = addRollupType("all", false, false, false, 1, 1.0);
 
-    if (!addRollupType(my_error_message,"all", false, false, false, 1, 1.0))
+    if (!rc.first)
     {
-        callers_error_message = "RollupSet::initialize() - addRollupType(\"all\") failed saying: " + my_error_message;
-        return false;
+        std::ostringstream o;
+        o << "RollupSet::initialize() - addRollupType(\"all\") failed saying: " << rc.second;
+        return std::make_pair(false,o.str());
     }
 
-    return true;
+    return std::make_pair(true,"");
 }
 
 
-bool RollupSet::add_workload_detail_line(std::string& callers_error_message, WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO)
+std::pair<bool,std::string> RollupSet::add_workload_detail_line(WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO)
 {
     std::string error_message;
 
@@ -148,18 +146,17 @@ bool RollupSet::add_workload_detail_line(std::string& callers_error_message, Wor
         {
             std::ostringstream o;
             o << "RollupSet::add_workload_detail_line() for WorkloadID " << wID.workloadID << " add_workload_detail_line() for " << pear.first << " failed - " << error_message;
-            callers_error_message = o.str();
+            return std::make_pair(false,o.str());
         }
     }
 
-    return true;
+    return std::make_pair(true,"");
 }
 
 
-bool RollupSet::addRollupType
+std::pair<bool,std::string> RollupSet::addRollupType
 (
-    std::string& error_message
-    , std::string attributeNameComboText
+      std::string attributeNameComboText
     , bool nocsvSection
     , bool quantitySection
     , bool maxDroopMaxtoMinIOPSSection
@@ -177,24 +174,22 @@ bool RollupSet::addRollupType
 //*debug*/ if (maxDroopMaxtoMinIOPSSection) std::cout << "true,"; else std::cout << "false,\"";
 //*debug*/ std::cout << nocsvText << "\",\"" << quantityText << "\",\"" << maxDroopMaxtoMinIOPSText << "\")" << std::endl;
     AttributeNameCombo aNC;
-    std::string setErrorMessage;
 
-    error_message.clear();
+    std::pair<bool,std::string> retval = aNC.set(attributeNameComboText, &(m_s.TheSampleLUN));
 
-    if (!aNC.set(setErrorMessage, attributeNameComboText, &(m_s.TheSampleLUN)))
+
+    if (!retval.first)
     {
         std::ostringstream o;
-        o << "RollupSet::addRollupType - invalid attribute name combo - \"" << attributeNameComboText << "\" - " << setErrorMessage;
-        error_message = o.str();
-        return false;
+        o << "RollupSet::addRollupType - invalid attribute name combo - \"" << attributeNameComboText << "\" - " << retval.second;
+        return std::make_pair(false,o.str());
     }
 
     if (!aNC.isValid)
     {
         std::ostringstream o;
-        o << "RollupSet::addRollupType - no such attribute name combo - \"" << attributeNameComboText << "\" - " << setErrorMessage;
-        error_message = o.str();
-        return false;
+        o << "RollupSet::addRollupType - no such attribute name combo - \"" << attributeNameComboText << "\" - " << retval.second;
+        return std::make_pair(false,o.str());
     }
 
     // OK, all the fields are validated, let's build the rollup
@@ -212,16 +207,16 @@ bool RollupSet::addRollupType
     if (!pRollupType->isValid())
     {
         std::ostringstream o;
-        o << "- [CreateRollup] Dreadfully sorry.  Seem to have had a bit of a cock-up in the back office.  New RollupType wasn\'t valid.  AAAaaaarrgggghhhh.   " << std::endl;
-        error_message = o.str();
-        std::cerr << o.str() << std::endl;
+        o << "- [CreateRollup] Dreadfully sorry.  Seem to have had a bit of a cock-up in the back office.  New RollupType wasn\'t valid.  AAAaaaarrgggghhhh.   " << std::endl
+            << std::endl << "Source code reference: function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
+        std::cout << o.str() << std::endl;
         delete pRollupType;
-        return false;
+        return std::make_pair(false,o.str());
     }
 
     rollups[toLower(aNC.attributeNameComboID)] = pRollupType;
 
-    return true;
+    return std::make_pair(true,"");
 }
 
 class RollupInstance;
@@ -250,18 +245,17 @@ RollupInstance* RollupSet::get_all_equals_all_instance()
     return instance_it->second;
 }
 
-bool RollupSet::deleteRollup(std::string& callers_error_message, std::string attributeNameComboText)
+std::pair<bool,std::string> RollupSet::deleteRollup(std::string attributeNameComboText)
 {
     auto it = rollups.find(toLower(attributeNameComboText));
     if (it == rollups.end())
     {
         std::ostringstream o;
         o << "deleteRollup(\"" << attributeNameComboText << "\") - no such RollupType.";
-        callers_error_message = o.str();
-        return false;
+        return std::make_pair(false,o.str());
     }
     rollups.erase(it);
-    return true;
+    return std::make_pair(true,"");
 }
 
 
@@ -310,7 +304,7 @@ void RollupSet::startNewSubinterval(ivytime start, ivytime end)
 }
 
 
-bool RollupSet::makeMeasurementRollup(std::string callers_error_message, unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
+std::pair<bool,std::string> RollupSet::makeMeasurementRollup(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
 {
     {
         std::ostringstream o;
@@ -335,12 +329,13 @@ bool RollupSet::makeMeasurementRollup(std::string callers_error_message, unsigne
 
 //*debug*/ { std::ostringstream o; o << "RollupSet::makeMeasurementRollup(, " << firstMeasurementIndex << " ," << lastMeasurementIndex << ").  About to make measurement rollup in rollup type " << pRollupType->attributeNameCombo.attributeNameComboID << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
 
-        if (!pRollupType->makeMeasurementRollup(my_message, firstMeasurementIndex, lastMeasurementIndex))
+        auto rv = pRollupType->makeMeasurementRollup(firstMeasurementIndex, lastMeasurementIndex);
+
+        if (!rv.first)
         {
             std::ostringstream o;
-            o << "RollupSet::makeMeasurementRollup() - failed in makeMeasurementRollup() for RollupType \"" << pear.first << "\" - " << my_message;
-            callers_error_message = o.str();
-            return false;
+            o << "RollupSet::makeMeasurementRollup() - failed in makeMeasurementRollup() for RollupType \"" << pear.first << "\" - " << rv.second;
+            return std::make_pair(false,o.str());
         }
     }
 
@@ -381,7 +376,7 @@ bool RollupSet::makeMeasurementRollup(std::string callers_error_message, unsigne
         }
     }
 
-    return true;
+    return std::make_pair(true,"");
 }
 
 

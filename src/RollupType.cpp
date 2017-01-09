@@ -137,8 +137,6 @@ RollupType::RollupType
 
 bool RollupType::add_workload_detail_line(std::string& callers_error_message, WorkloadID& wID, IosequencerInput& iI, SubintervalOutput& sO)
 {
-    std::string error_message;
-
     auto it = rollupInstanceByWorkloadID.find(toLower(wID.workloadID));
     if (rollupInstanceByWorkloadID.end() == it)
     {
@@ -150,10 +148,13 @@ bool RollupType::add_workload_detail_line(std::string& callers_error_message, Wo
 
     RollupInstance* pRollupInstance = (*it).second;
 
-    if (!pRollupInstance->add_workload_detail_line(error_message, wID, iI, sO))
+    auto retval = pRollupInstance->add_workload_detail_line(wID, iI, sO);
+    if (!retval.first)
     {
         std::ostringstream o;
-        o << "RollupType::add_workload_detail_line() for rollup type " << attributeNameCombo.attributeNameComboID << " - failed calling  add_workload_detail_line() for Rollup Instance " << (*it).first << " for WorkloadID " << wID.workloadID << " - " << error_message;
+        o << "RollupType::add_workload_detail_line() for rollup type " << attributeNameCombo.attributeNameComboID
+            << " - failed calling  add_workload_detail_line() for Rollup Instance " << (*it).first
+            << " for WorkloadID " << wID.workloadID << " - " << retval.second;
         callers_error_message = o.str();
         return false;
     }
@@ -513,7 +514,7 @@ void RollupType::rebuild()
 }
 
 
-bool RollupType::makeMeasurementRollup(std::string callers_error_message, int firstMeasurementIndex, int lastMeasurementIndex)
+std::pair<bool,std::string> RollupType::makeMeasurementRollup(int firstMeasurementIndex, int lastMeasurementIndex)
 {
 
 //*debug*/ { std::ostringstream o; o << "RollupType::makeMeasurementRollup[" << attributeNameCombo.attributeNameComboID << "](, " << firstMeasurementIndex << " ," << lastMeasurementIndex << ")" << std::endl; std::cout << o.str(); log(m_s.masterlogfile, o.str());}
@@ -526,10 +527,12 @@ bool RollupType::makeMeasurementRollup(std::string callers_error_message, int fi
         RollupInstance* pRollupInstance;
         pRollupInstance = pear.second;
 //*debug*/ { std::ostringstream o; o << "RollupType::makeMeasurementRollup[" << attributeNameCombo.attributeNameComboID << "]() for instance " << pRollupInstance->attributeNameComboID << '=' << pRollupInstance->rollupInstanceID << std::endl; std::cout << o.str(); log(m_s.masterlogfile, o.str());}
-        if(!pRollupInstance->makeMeasurementRollup(my_error_message, firstMeasurementIndex, lastMeasurementIndex))
+        auto retval = pRollupInstance->makeMeasurementRollup(firstMeasurementIndex, lastMeasurementIndex);
+        if(!retval.first)
         {
             std::ostringstream o;
-            o << "RollupType::makeMeasurementRollup() - failure calling makeMeasurementRollup() for RollupInstance \"" << pear.first << "\" - " << my_error_message;
+            o << "RollupType::makeMeasurementRollup() - failure calling makeMeasurementRollup() for RollupInstance \"" << pear.first << "\" - " << retval.second;
+            return std::make_pair(false,o.str());
         }
 
         ivy_float durSec = pRollupInstance->measurementRollup.durationSeconds();
@@ -543,8 +546,7 @@ bool RollupType::makeMeasurementRollup(std::string callers_error_message, int fi
               << durSec << " for a start time of \""
               << pRollupInstance->measurementRollup.startIvytime.format_as_datetime_with_ns() << " and ending at "
               << pRollupInstance->measurementRollup.endIvytime.format_as_datetime_with_ns() << ".";
-            callers_error_message=o.str();
-            return false;
+            return std::make_pair(false,o.str());
         }
 
 
@@ -578,7 +580,7 @@ bool RollupType::makeMeasurementRollup(std::string callers_error_message, int fi
         }
     }
 
-    return true;
+    return std::make_pair(true,"");
 
 }
 

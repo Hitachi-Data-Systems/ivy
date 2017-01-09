@@ -29,14 +29,13 @@
 #include "ivydefines.h"
 #include "IosequencerInput.h"
 
-bool IosequencerInput::setParameter(std::string& callers_error_message, std::string parameterNameEqualsValue) {
-
-	callers_error_message.clear();
-
+std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameterNameEqualsValue) {
+    // This is ancient code from when regexes were still broken in libstdc++.
 	if (parameterNameEqualsValue.length()<3)
 	{
-		callers_error_message= std::string("not name=value - \"")+parameterNameEqualsValue + std::string("\".");
-		return false;
+        std::ostringstream o;
+        o << "not name=value - \"" << parameterNameEqualsValue << "\".";
+		return std::make_pair(false,o.str());
 	}
 
 	unsigned int equalsPosition=1;
@@ -44,9 +43,11 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 	while ( (equalsPosition<(parameterNameEqualsValue.length()-2)) && (parameterNameEqualsValue[equalsPosition]!='='))
 		equalsPosition++;
 
-	if (parameterNameEqualsValue[equalsPosition]!='=') {
-		callers_error_message = std::string("not name=value - \"")+parameterNameEqualsValue + std::string("\".");
-		return false;
+	if (parameterNameEqualsValue[equalsPosition]!='=')
+	{
+        std::ostringstream o;
+        o << "not name=value - \"" << parameterNameEqualsValue << "\".";
+		return std::make_pair(false,o.str());
 	}
 
 	std::string parameterName, parameterValue;
@@ -66,54 +67,70 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 		parameterValue.erase(0,1);
 	}
 
-	if (parameterName=="") {
-		callers_error_message = std::string("looking for name=value - parameter name missing in \"")+parameterNameEqualsValue
-			+std::string("\".");
-		return false;
+	if (parameterName=="")
+	{
+        std::ostringstream o;
+        o << "looking for name=value - parameter name missing in \"" << parameterNameEqualsValue << "\".";
+		return std::make_pair(false,o.str());
 	}
 
-	if (parameterValue=="") {
-		callers_error_message = std::string("looking for name=value - parameter value missing in \"")+parameterNameEqualsValue
-			+std::string("\".");
-		return false;
+	if (parameterValue=="")
+	{
+        std::ostringstream o;
+        o << "looking for name=value - parameter value missing in \"" << parameterNameEqualsValue << "\".";
+		return std::make_pair(false,o.str());
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("iosequencer")) ) {
 		if (stringCaseInsensitiveEquality(parameterValue,std::string("random_steady"))) {
-			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("random_steady"))) {
-				callers_error_message = std::string("when trying to set iosequencer=random_steady it was already set to ")
-					+ iosequencer_type + std::string("\".  \"iosequencer\" type may not be changed once set.");
-				return false;
-			}
+			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("random_steady")))
+            {
+                std::ostringstream o;
+                o << "when setting \"" << parameterNameEqualsValue
+                    << "\", iosequencer was already set to " << iosequencer_type
+                    << "\".  iosequencer type may not be changed once set.";
+                return std::make_pair(false,o.str());
+            }
 			iosequencer_type=parameterValue;
 		} else if (stringCaseInsensitiveEquality(parameterValue,std::string("random_independent"))) {
-			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("random_independent"))) {
-				callers_error_message = std::string("when trying to set iosequencer=random_independent it was already set to ")
-					+ iosequencer_type + std::string("\".  \"iosequencer\" type may not be changed once set.");
-				return false;
-			}
+			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("random_independent")))
+            {
+                std::ostringstream o;
+                o << "when setting \"" << parameterNameEqualsValue
+                    << "\", iosequencer was already set to " << iosequencer_type
+                    << "\".  iosequencer type may not be changed once set.";
+                return std::make_pair(false,o.str());
+            }
 			iosequencer_type=parameterValue;
 		} else if (stringCaseInsensitiveEquality(parameterValue,std::string("sequential"))) {
-			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("sequential"))) {
-				callers_error_message = std::string("when trying to set iosequencer=sequential it was already set to ")
-					+ iosequencer_type + std::string("\".  \"iosequencer\" type may not be changed once set.");
-				return false;
-			}
+			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("sequential")))
+            {
+                std::ostringstream o;
+                o << "when setting \"" << parameterNameEqualsValue
+                    << "\", iosequencer was already set to " << iosequencer_type
+                    << "\".  iosequencer type may not be changed once set.";
+                return std::make_pair(false,o.str());
+            }
 			iosequencer_type=parameterValue;
-		} else {
-			callers_error_message = std::string("invalid iosequencer type \"")+parameterNameEqualsValue
-				+std::string("\".");
-			return false;
+		}
+		else
+		{
+            std::ostringstream o;
+            o << "when setting \"" << parameterNameEqualsValue
+                << "\", invalid iosequencer type \""  << parameterValue << "\".";
+            return std::make_pair(false,o.str());
 		}
 		iosequencerIsSet=true;
-		return true;
+        return std::make_pair(true,"");
 	}
 
-	if (!iosequencerIsSet) {
-		callers_error_message = std::string("IosequencerInput::setParameter(\"")+parameterNameEqualsValue
-			+std::string("\",): \"iosequencer\" must be set to a valid iosequencer type before setting any other parameters.\n");
-		return false;
-	}
+	if (!iosequencerIsSet)
+    {
+        std::ostringstream o;
+        o << "when setting \"" << parameterNameEqualsValue
+            << "\", \"iosequencer\" was not already set.  \"iosequencer\" must be set to a valid iosequencer type before setting any other parameters.";
+        return std::make_pair(false,o.str());
+    }
 
 //	        "For iosequencer = { random_steady, random_independent } additional parameters are \n"
 //        "                  hot_zone_size_bytes - default 0 (zero), accepts KiB, MiB, GiB, TiB suffixes,\n"
@@ -129,9 +146,8 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
                 << ", parameter value \"" << parameterValue << "\")"
-                << " - hot_zone_size_bytes is only valid for random_steady and random_independent iosequencers." << std::endl;
-            callers_error_message = o.str();
-			return false;
+                << " - hot_zone_size_bytes is only valid for random_steady and random_independent iosequencers, not " << iosequencer_type  << "." << std::endl;
+            return std::make_pair(false,o.str());
         }
         try
         {
@@ -144,21 +160,23 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
                 << ", parameter value \"" << parameterValue << "\")"
                 << " - invalid parameter value.  Must be an unsigned integer (digits) optionally followed by KiB, MiB, GiB, or TiB." << std::endl
                 << "Error when trying to parse the value was " << e.what() << std::endl;
-            callers_error_message = o.str();
-			return false;
+            return std::make_pair(false,o.str());
         }
 
-        return true;
+        return std::make_pair(true,"");
     }
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("hot_zone_IOPS_fraction")) )
 	{
         if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
         {
-            callers_error_message = std::string("IosequencerInput::setParameter(\"")+parameterNameEqualsValue
-			+std::string("\",): hot_zone_IOPS_fraction is only valid for random_steady and random_independent iosequencers.\n");
-			return false;
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - hot_zone_IOPS_fraction is only valid for random_steady and random_independent iosequencers, not " << iosequencer_type  << "." << std::endl;
+            return std::make_pair(false,o.str());
         }
+
         try
         {
             hot_zone_IOPS_fraction = number_optional_trailing_percent(parameterValue,"");
@@ -170,29 +188,30 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
                 << ", parameter value \"" << parameterValue << "\")"
                 << " - invalid parameter value.  Must be a number optionally followed by a percent sign \'%\'." << std::endl
                 << "Error when trying to parse the value was " << e.what() << std::endl;
-
-            callers_error_message = o.str();
-			return false;
+            return std::make_pair(false,o.str());
         }
+
         if (hot_zone_IOPS_fraction > 1.0 || hot_zone_IOPS_fraction < 0.0)
         {
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
                 << ", parameter value \"" << parameterValue << "\") - value must be from 0.0 to 1.0 (from 0% to 100%).";
-            callers_error_message = o.str();
-			return false;
+            return std::make_pair(false,o.str());
         }
-        return true;
+        return std::make_pair(true,"");
     }
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("hot_zone_read_fraction")) )
 	{
         if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
         {
-            callers_error_message = std::string("IosequencerInput::setParameter(\"")+parameterNameEqualsValue
-			+std::string("\",): hot_zone_read_fraction is only valid for random_steady and random_independent iosequencers.\n");
-			return false;
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - hot_zone_read_fraction is only valid for random_steady and random_independent iosequencers, not " << iosequencer_type  << "." << std::endl;
+            return std::make_pair(false,o.str());
         }
+
         try
         {
             hot_zone_read_fraction = number_optional_trailing_percent(parameterValue,"");
@@ -204,18 +223,17 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
                 << ", parameter value \"" << parameterValue << "\")"
                 << " - invalid parameter value.  Must be a number optionally followed by a percent sign \'%\'." << std::endl
                 << "Error when trying to parse the value was " << e.what() << std::endl;
-            callers_error_message = o.str();
-			return false;
+            return std::make_pair(false,o.str());
         }
         if (hot_zone_read_fraction > 1.0 || hot_zone_read_fraction < 0.0)
         {
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
                 << ", parameter value \"" << parameterValue << "\") - value must be from 0.0 to 1.0 (from 0% to 100%).";
-            callers_error_message = o.str();
-			return false;
+            return std::make_pair(false,o.str());
         }
-        return true;
+
+        return std::make_pair(true,"");
     }
 
 
@@ -223,10 +241,13 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 	{
         if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
         {
-            callers_error_message = std::string("IosequencerInput::setParameter(\"")+parameterNameEqualsValue
-			+std::string("\",): hot_zone_write_fraction is only valid for random_steady and random_independent iosequencers.\n");
-			return false;
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - hot_zone_write_fraction is only valid for random_steady and random_independent iosequencers, not " << iosequencer_type  << "." << std::endl;
+            return std::make_pair(false,o.str());
         }
+
         try
         {
             hot_zone_write_fraction = number_optional_trailing_percent(parameterValue,"");
@@ -238,19 +259,17 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
                 << ", parameter value \"" << parameterValue << "\")"
                 << " - invalid parameter value.  Must be a number optionally followed by a percent sign \'%\'." << std::endl
                 << "Error when trying to parse the value was " << e.what() << std::endl;
-            callers_error_message = o.str();
-			return false;
+            return std::make_pair(false,o.str());
         }
         if (hot_zone_write_fraction > 1.0 || hot_zone_write_fraction < 0.0)
         {
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
                 << ", parameter value \"" << parameterValue << "\") - value must be from 0.0 to 1.0 (from 0% to 100%).";
-            callers_error_message = o.str();
-			return false;
+            return std::make_pair(false,o.str());
         }
 
-        return true;
+        return std::make_pair(true,"");
     }
 
 
@@ -269,40 +288,45 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 		std::istringstream is(parameterValue);
 		int b;
 		is >> b;
-		if ( is.fail() || (!is.eof()) ) {
-			callers_error_message = std::string("invalid blocksize \"") + parameterValue;
-			if (KiB) callers_error_message += std::string(" KiB");
-			if (MiB) callers_error_message += std::string(" MiB");
-			callers_error_message += std::string("\".");
-			return false;
+		if ( is.fail() || (!is.eof()) )
+		{
+            std::ostringstream o;
+            o << "invalid blocksize \"" << parameterValue;
+			if (KiB) o << " KiB";
+			if (MiB) o << " MiB";
+			o << "\".";
+            return std::make_pair(false,o.str());
 		}
 		if (KiB) b*=1024;
 		if (MiB) b*=(1024*1024);
-		if (0 != b%512) {
-			callers_error_message = std::string("invalid blocksize \"") + parameterValue;
-			if (KiB) callers_error_message += std::string(" KiB");
-			if (MiB) callers_error_message += std::string(" MiB");
-			callers_error_message += std::string("\".  Blocksize must be a multiple of 512.");  /// NEED 4K SECTOR SUPPORT HERE
-			return false;
+		if (0 != b%512)
+		{
+
+            std::ostringstream o;
+            o << "invalid blocksize \"" << parameterValue;
+			if (KiB) o << " KiB";
+			if (MiB) o << " MiB";
+			o << "\".  Blocksize must be a multiple of 512.";  /// NEED 4K SECTOR SUPPORT HERE
+            return std::make_pair(false,o.str());
 		}
 		blocksize_bytes=b;
-		return true;
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("maxTags")) ) {
 		std::istringstream is(parameterValue);
 		int mt;
-		if ( (!(is >> mt)) || (!is.eof()) || (mt<1) || (mt > MAX_MAXTAGS)) {
-			callers_error_message = std::string("invalid maxTags parameter value \"")+parameterValue +std::string("\".");
-			return false;
+		if ( (!(is >> mt)) || (!is.eof()) || (mt<1) || (mt > MAX_MAXTAGS))
+		{
+			return std::make_pair(false, std::string("invalid maxTags parameter value \"")+parameterValue +std::string("\"."));
 		}
 		maxTags=mt;
-		return true;
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("IOPS")) ) {
 
-		if ( 0 == parameterValue.length() ) {callers_error_message = "IOPS may not be set to the null string."; return false;}
+		if ( 0 == parameterValue.length() ) { return std::make_pair(false, "IOPS may not be set to the null string."); }
 
 		if ( stringCaseInsensitiveEquality(parameterValue, std::string("max")) )
 		{
@@ -331,24 +355,23 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 
 			if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) )
 			{
-				callers_error_message = std::string("invalid IOPS parameter value \"")+parameterValue
-					+ std::string("\".  OK: IOPS=max, IOPS=100, iops = + 10 (adds 10 to IOPS), iops = *1.25 (increases IOPS by 25%)");
-
-				return false;
+                std::ostringstream o;
+                o << "invalid IOPS parameter value \"" << parameterValue << "\".  OK: IOPS=max, IOPS=100, iops = + 10 (adds 10 to IOPS), iops = *1.25 (increases IOPS by 25%)";
+                return std::make_pair(false,o.str());
 			}
 
 			if (relativeAdd)           IOPS += ld;
 			else if (relativeMultiply) IOPS *= ld;
 			else                       IOPS  = ld;
 		}
-		return true;
+		return std::make_pair(true,"");
 	}
 
 
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("fractionRead")) ) {
 
-		if (0 == parameterValue.length()) {callers_error_message = "fractionRead may not be set to the empty string."; return false;}
+		if (0 == parameterValue.length()) { return std::make_pair(false,"fractionRead may not be set to the empty string."); }
 
 		bool hadPercent {false};
 		if ('%' == parameterValue[-1 + parameterValue.length()])
@@ -360,28 +383,30 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 
 		std::istringstream is(parameterValue);
 		ivy_float ld;
-		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) ) {
-			callers_error_message = std::string("invalid fractionRead parameter value \"")+parameterValue;
-			if (hadPercent) callers_error_message += " %";
-			callers_error_message += std::string("\".");
+		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) )
+		{
+			std::ostringstream o;
+			o << "invalid fractionRead parameter value \"" << parameterValue;
+			if (hadPercent) o << " %";
+			o << "\".";
 
-			return false;
+			return std::make_pair(false,o.str());
 		}
 		if (0 == iosequencer_type.compare(std::string("sequential")) && ld != 0. && ld != (hadPercent ? 100.0 : 1.0) )
 		{
-			callers_error_message = std::string("The sequential iosequencer only accepts fractionRead = 0% or 100% or 0.0 or 1.0, not \"")+parameterValue
-				+ std::string("\".");
-			return false;
+			std::ostringstream o;
+			o << "The sequential iosequencer only accepts fractionRead = 0% or 100% or 0.0 or 1.0, not \"" << parameterValue << "\".";
+			return std::make_pair(false,o.str());
 		}
 
 		fractionRead=ld;  if (hadPercent) fractionRead = fractionRead / 100.0;
 
-		return true;
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("VolumeCoverageFractionStart")) )
 	{
-		if (0 == parameterValue.length()) {callers_error_message = "VolumeCoverageFractionStart may not be set to the empty string."; return false;}
+		if (0 == parameterValue.length()) { return std::make_pair(false, "VolumeCoverageFractionStart may not be set to the empty string."); }
 
 		bool hadPercent {false};
 		if ('%' == parameterValue[-1 + parameterValue.length()])
@@ -393,26 +418,31 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 
 		std::istringstream is(parameterValue);
 		ivy_float ld;
-		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) ){
-			callers_error_message = std::string("invalid VolumeCoverageFractionStart parameter setting \"")+parameterValue;
-			if (hadPercent) callers_error_message += std::string(" %");
-			callers_error_message += std::string("\".");
-			return false;
+		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) )
+		{
+            std::ostringstream o;
+			o << "invalid VolumeCoverageFractionStart parameter setting \"" << parameterValue;
+			if (hadPercent) o << " %";
+			o << "\".";
+			return std::make_pair(false,o.str());
 		}
 
 		volCoverageFractionStart=ld;  if (hadPercent) volCoverageFractionStart = volCoverageFractionStart / 100.0;
 
-		if (ld>=volCoverageFractionEnd) {
-			callers_error_message = std::string("invalid VolumeCoverageFractionStart parameter setting \"")+parameterValue
-				+ std::string("\".   Volume coverage start must be before volume coverage end.\n");
-			return false;
+		if (ld>=volCoverageFractionEnd)
+		{
+			std::ostringstream o;
+			o << "invalid VolumeCoverageFractionStart parameter setting \"" << parameterValue
+                << "\".   Volume coverage start must be before volume coverage end.";
+			return std::make_pair(false,o.str());
 		}
-		return true;
+
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("VolumeCoverageFractionEnd")) )
 	{
-		if (0 == parameterValue.length()) {callers_error_message = "VolumeCoverageFractionEnd may not be set to the empty string."; return false;}
+		if (0 == parameterValue.length()) { return std::make_pair(false, "VolumeCoverageFractionEnd may not be set to the empty string."); }
 
 		bool hadPercent {false};
 		if ('%' == parameterValue[-1 + parameterValue.length()])
@@ -425,26 +455,29 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 
 		std::istringstream is(parameterValue);
 		ivy_float ld;
-		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) ){
-			callers_error_message = std::string("invalid VolumeCoverageFractionEnd parameter setting \"")+parameterValue;
-			if (hadPercent) callers_error_message += std::string(" %");
-			callers_error_message += std::string("\".");
-			return false;
+		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) )
+		{
+			std::ostringstream o;
+			o << "invalid VolumeCoverageFractionEnd parameter setting \"" << parameterValue;
+			if (hadPercent) o << " %";
+			o << "\".";
+			return std::make_pair(false,o.str());
 		}
-		if (ld<=volCoverageFractionStart) {
-			callers_error_message = std::string("invalid VolumeCoverageFractionEnd parameter setting \"")+parameterValue
-				+ std::string("\".  Volume coverage start must be before volume coverage end.");
-			return false;
+		if (ld<=volCoverageFractionStart)
+		{
+            std::ostringstream o;
+            o << "invalid VolumeCoverageFractionEnd parameter setting \"" << parameterValue << "\".  Volume coverage start must be before volume coverage end.";
+			return std::make_pair(false,o.str());
 		}
 
 		volCoverageFractionEnd=ld;  if (hadPercent) volCoverageFractionEnd = volCoverageFractionEnd / 100.0;
 
-		return true;
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("SeqStartFractionOfCoverage")) ) {
 
-		if (0 == parameterValue.length()) {callers_error_message = "SeqStartFractionOfCoverage may not be set to the empty string."; return false;}
+		if (0 == parameterValue.length()) { return std::make_pair(false, "SeqStartFractionOfCoverage may not be set to the empty string."); }
 
 		bool hadPercent {false};
 		if ('%' == parameterValue[-1 + parameterValue.length()])
@@ -457,20 +490,22 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 
 		std::istringstream is(parameterValue);
 		ivy_float ld;
-		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) ){
-			callers_error_message = std::string("invalid SeqStartFractionOfCoverage parameter setting \"")+parameterValue;
-			if (hadPercent) callers_error_message += std::string(" %");
-			callers_error_message += std::string("\".");
-			return false;
+		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) )
+		{
+			std::ostringstream o;
+			o << "invalid SeqStartFractionOfCoverage parameter setting \"" << parameterValue;
+			if (hadPercent) o << " %";
+			o << "\".";
+			return std::make_pair(false,o.str());
 		}
 		seqStartFractionOfCoverage=ld;  if (hadPercent) seqStartFractionOfCoverage = seqStartFractionOfCoverage / 100.0;
 
-		return true;
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("dedupe")) ) {
 
-		if (0 == parameterValue.length()) {callers_error_message = "dedupe may not be set to the empty string."; return false;}
+		if (0 == parameterValue.length()) { return std::make_pair(false, "dedupe may not be set to the empty string."); }
 
 		bool hadPercent {false};
 		if ('%' == parameterValue[-1 + parameterValue.length()])
@@ -484,26 +519,26 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 		ivy_float ld;
 		if ( (!(is >> ld)) || (!is.eof()) )
 		{
-			callers_error_message = std::string("invalid dedupe parameter value \"")+parameterValue;
-			if (hadPercent) callers_error_message += " %";
-			callers_error_message += std::string("\".  Must be a number greater than or equal to 1.0.");
-
-			return false;
+			std::ostringstream o;
+			o << "invalid dedupe parameter value \"" << parameterValue;
+			if (hadPercent) o << " %";
+			o << "\".  Must be a number greater than or equal to 1.0.";
+			return std::make_pair(false,o.str());
 		}
 
 		if (hadPercent) ld /= 100.0;
 
 		if ( ld < 1.0 )
 		{
-			callers_error_message = std::string("invalid dedupe parameter value \"")+parameterValue;
-			if (hadPercent) callers_error_message += " %";
-			callers_error_message += std::string("\".  Must be a number greater than or equal to 1.0.");
-
-			return false;
+			std::ostringstream o;
+			o << "invalid dedupe parameter value \"" << parameterValue;
+			if (hadPercent) o << " %";
+			o << "\".  Must be a number greater than or equal to 1.0.";
+			return std::make_pair(false,o.str());
 		}
 
         dedupe = ld;
-		return true;
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("pattern")) ) {
@@ -514,16 +549,15 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 		{
             std::ostringstream o;
             o << "invalid pattern parameter value \"" << parameterValue << "\".  " << valid_patterns();
-			callers_error_message = o.str();
-
-			return false;
+			return std::make_pair(false,o.str());
 		}
-		return true;
+
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("compressibility")) ) {
 
-		if (0 == parameterValue.length()) {callers_error_message = "compressibility may not be set to the empty string."; return false;}
+		if (0 == parameterValue.length()) { return std::make_pair(false, "compressibility may not be set to the empty string."); }
 
 		bool hadPercent {false};
 		if ('%' == parameterValue[-1 + parameterValue.length()])
@@ -537,71 +571,79 @@ bool IosequencerInput::setParameter(std::string& callers_error_message, std::str
 		ivy_float ld;
 		if ( (!(is >> ld)) || (!is.eof()) )
 		{
-			callers_error_message = std::string("invalid compressibility parameter value \"")+parameterValue;
-			if (hadPercent) callers_error_message += " %";
-			callers_error_message += std::string("\".  Must be a number greater than or equal to 0.0 (0%), and less than 1.0 (100%).");
+			std::ostringstream o;
+			o << "invalid compressibility parameter value \"" << parameterValue;
+			if (hadPercent) o << " %";
+			o << "\".  Must be a number greater than or equal to 0.0 (0%), and less than 1.0 (100%).";
 
-			return false;
+			return std::make_pair(false,o.str());
 		}
 
 		if (hadPercent) ld /= 100.0;
 
 		if ( ld < 0.0 || ld >= 1.0 )
 		{
-			callers_error_message = std::string("invalid compressibility parameter value \"")+parameterValue;
-			if (hadPercent) callers_error_message += " %";
-			callers_error_message += std::string("\".  Must be a number greater than or equal to 0.0 (0%), and less than 1.0 (100%).");
+			std::ostringstream o;
+			o << "invalid compressibility parameter value \"" << parameterValue;
+			if (hadPercent) o << " %";
+			o << "\".  Must be a number greater than or equal to 0.0 (0%), and less than 1.0 (100%).";
 
-			return false;
+			return std::make_pair(false,o.str());
 		}
 
         compressibility = ld;
-		return true;
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("threads_in_workload_name")) ) {
 		std::istringstream is(parameterValue);
 		unsigned int eye;
-		if ( (!(is >> eye)) || (!is.eof()) || eye==0) {
-			callers_error_message = std::string("invalid threads_in_workload_name parameter value \"")+parameterValue +std::string("\".");
-			return false;
+		if ( (!(is >> eye)) || (!is.eof()) || eye==0)
+		{
+			std::ostringstream o;
+			o << "invalid threads_in_workload_name parameter value \"" << parameterValue << "\".";
+			return std::make_pair(false,o.str());
 		}
 		threads_in_workload_name=eye;
-		return true;
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("this_thread_in_workload")) ) {
 		std::istringstream is(parameterValue);
 		unsigned int eye;
-		if ( (!(is >> eye)) || (!is.eof())) {
-			callers_error_message = std::string("invalid this_thread_in_workload parameter value \"")+parameterValue +std::string("\".");
-			return false;
+		if ( (!(is >> eye)) || (!is.eof()))
+		{
+			std::ostringstream o;
+			o << "invalid this_thread_in_workload parameter value \"" << parameterValue << "\".";
+			return std::make_pair(false,o.str());
 		}
 		this_thread_in_workload=eye;
-		return true;
+		return std::make_pair(true,"");
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("pattern_seed")) ) {
 		std::istringstream is(parameterValue);
 		uint64_t ui64;
-		if ( (!(is >> ui64)) || (!is.eof()) || ui64 == 0) {
-			callers_error_message = std::string("invalid pattern_seed parameter value \"")+parameterValue +std::string("\".");
-			return false;
+		if ( (!(is >> ui64)) || (!is.eof()) || ui64 == 0)
+		{
+			std::ostringstream o;
+			o << "invalid pattern_seed parameter value \"" << parameterValue << "\".";
+			return std::make_pair(false,o.str());
 		}
 		pattern_seed=ui64;
-		return true;
+		return std::make_pair(true,"");
 	}
 
-	callers_error_message = std::string("Invalid parameter name \"") + parameterName + std::string("\".\n");
-
-	return false;
+	{
+        std::ostringstream o;
+        o << "Invalid parameter name \"" << parameterName << "\".";
+        return std::make_pair(false,o.str());
+    }
 }
 
 
-bool IosequencerInput::setMultipleParameters(std::string& callers_error_message, std::string commaSeparatedList)
+std::pair<bool,std::string> IosequencerInput::setMultipleParameters(std::string commaSeparatedList)
 {
-	callers_error_message.clear();
-
 	// non-empty comma-separated list of parameterName=value settings
 
 	unsigned int i=0, start,len;
@@ -609,7 +651,7 @@ bool IosequencerInput::setMultipleParameters(std::string& callers_error_message,
 	bool sawGoodOne=false;
 	bool sawBadOne=false;
 
-	std::string my_error_message;
+	std::string composite_error_message {};
 
 	while (i<commaSeparatedList.length()) {
 		start=i;
@@ -622,18 +664,21 @@ bool IosequencerInput::setMultipleParameters(std::string& callers_error_message,
 			nameEqualsValue=commaSeparatedList.substr(start,len);
 			trim(nameEqualsValue);
 			if (nameEqualsValue.length()>0) {
-				if (setParameter(my_error_message, nameEqualsValue)) {
+                auto rv = setParameter(nameEqualsValue);
+				if (rv.first) {
 					sawGoodOne=true;
 				} else {
+                    if (sawBadOne) composite_error_message.push_back(' ');
 					sawBadOne=true;
-					callers_error_message += std::string(" name=value \"") + nameEqualsValue + std::string("\" - " + my_error_message);
+					composite_error_message += std::string("name=value \"") + nameEqualsValue + std::string("\" - " + rv.second);
 				}
 			}
 		}
 
 		i++;
 	}
-	return (sawGoodOne && (!sawBadOne));
+
+	return std::make_pair(sawGoodOne && (!sawBadOne),composite_error_message);
 }
 
 std::string IosequencerInput::toStringFull() {  // we might need to use this form to make iosequencer input rollups correctly track all instances even of default values
@@ -696,15 +741,15 @@ bool IosequencerInput::fromString(std::string s, std::string logfilename) {
 		return false;
 	}
 
-	std::string my_error_message;
+	auto rc = setMultipleParameters(s.substr(t.length(),s.length()-n.length()));
 
-	if ( setMultipleParameters(my_error_message, s.substr(t.length(),s.length()-n.length())))
+	if (rc.first)
 	{
 		return true;
 	}
 	else
 	{
-		fileappend(logfilename,std::string("IosequencerInput::fromString() - setting parameters failed - ")+ my_error_message);
+		fileappend(logfilename,std::string("IosequencerInput::fromString() - setting parameters failed - ")+ rc.second);
 		return false;
 	}
 

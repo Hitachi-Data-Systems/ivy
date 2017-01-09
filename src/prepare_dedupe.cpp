@@ -154,12 +154,12 @@ void prepare_dedupe()
 
                 // now first set in local iosequencer_input, then set in remote
 
-                std::string emsg;
-                if (!p_WorkloadTracker->wT_IosequencerInput.setMultipleParameters(emsg, parms))
+                auto rv = p_WorkloadTracker->wT_IosequencerInput.setMultipleParameters(parms);
+                if (!rv.first)
 				{
 					std::ostringstream o;
 					o << "Internal programming error - failed setting parameters \"" << parms << "\" into local WorkloadTracker object for WorkloadID = \"" << p_WorkloadTracker->workloadID.workloadID
-                        << "\" saying \"" << emsg << "\" in prepare_dedupe() at line " << __LINE__ << " of " << __FILE__;
+                        << "\" saying \"" << rv.second << "\" in prepare_dedupe() at line " << __LINE__ << " of " << __FILE__;
                     m_s.error(o.str());
 				}
 
