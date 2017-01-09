@@ -95,26 +95,23 @@ void SubintervalOutput::add(const SubintervalOutput& s_o) {
 /*1*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " IOPS";
         if (measurement_columns)
         {
-
-            //o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " IOPS +/- subinterval count";
-            o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " IOPS +/- estimate";
+/*2*/            o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " IOPS +/- estimate";
         }
-/*2*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Decimal MB/s";
-/*3*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Blocksize (KiB)";
-/*4*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Little\'s Law Avg Q";
-/*5*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Service Time (ms)";
+/*3*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Decimal MB/s";
+/*4*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Blocksize (KiB)";
+/*5*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Little\'s Law Avg Q";
+/*6*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Service Time (ms)";
         if (measurement_columns)
         {
-            //o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " service time +/- subinterval count";
-            o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " service time +/- estimate";
+/*7*/           o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " service time +/- estimate";
         }
-/*6*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Service Time (ms)";
-/*7*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Service Time (ms)";
-/*8*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Service Time Standard Deviation (ms)";
-/*9*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Response Time (ms)";
-/*10*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Response Time (ms)";
-/*11*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Response Time (ms)";
-/*12*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Response Time Standard Deviation (ms)";
+/*8*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Service Time (ms)";
+/*9*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Service Time (ms)";
+/*10*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Service Time Standard Deviation (ms)";
+/*11*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Response Time (ms)";
+/*12*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Response Time (ms)";
+/*13*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Response Time (ms)";
+/*14*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Response Time Standard Deviation (ms)";
 	}
 	return o.str();
 }
@@ -122,7 +119,12 @@ void SubintervalOutput::add(const SubintervalOutput& s_o) {
 
 bool lookupDoubleSidedStudentsTMultiplier(std::string& /*callers_error_message*/, ivy_float& /*return_value*/, const int /*sample_count*/, const std::string& /*confidence*/);
 
-std::string SubintervalOutput::csvValues(ivy_float seconds, SubintervalRollup* p_SubintervalRollup, ivy_float non_random_sample_correction_factor)
+std::string SubintervalOutput::csvValues
+(
+    ivy_float seconds
+    , SubintervalRollup* p_SubintervalRollup
+    , ivy_float non_random_sample_correction_factor
+)
 {
 
 	if ( 0 >= seconds)
@@ -148,7 +150,7 @@ std::string SubintervalOutput::csvValues(ivy_float seconds, SubintervalRollup* p
 		{
             unsigned int columns = 12;
 
-            if (nullptr != p_SubintervalRollup) { columns += 4; }
+            if (nullptr != p_SubintervalRollup) { columns += 2; }
 
 			for (unsigned int i=0; i < columns; i++) o << ',';
 		}
@@ -209,7 +211,7 @@ std::string SubintervalOutput::csvValues(ivy_float seconds, SubintervalRollup* p
 				/* Average Service Time (ms) */
 				o << ',' << (service_time.avg() * 1000.0);
 
-				if (nullptr != p_SubintervalRollup)
+//				if (nullptr != p_SubintervalRollup)
 				{
                     RunningStat<ivy_float, ivy_int>& samples = p_SubintervalRollup->service_time_series[i];
 
@@ -219,7 +221,7 @@ std::string SubintervalOutput::csvValues(ivy_float seconds, SubintervalRollup* p
 
                     o << ',';
 
-                    if ( samples.count() >= 2 && samples.avg() != 0.0)
+                    if ( p_SubintervalRollup != nullptr && samples.count() >= 2 && samples.avg() != 0.0)
                     {
                         ivy_float students_t_multiplier;
 

@@ -166,7 +166,6 @@ New iogenerator / DynamicFeedbackController that runs some random offset pattern
 - Measure seek time by seek LBA distance at sampled points across the LUN - plot zone table accordingly.
 - Measure sustained sequential throughput across the drive to plot zone table.
 - Measure drive cache buffer size
-- Measure port IOPS / MB/s throughput capability as a function of blocksize.
 - Show IOPS by host HBA or PCI bus.
 - For SSDs, come up with some way to characterise how their responsiveness varies according to recent history.
 
