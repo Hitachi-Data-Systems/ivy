@@ -1904,15 +1904,6 @@ master_stuff::go(const std::string& parameters)
     {
         std::string measure_parameter_value = go_parameters.retrieve("measure");
 
-        // measure = MB_per_second           is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=bytes_transferred, accessor=sum
-        // measure = IOPS                    is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=bytes_transferred, accessor=count
-        // measure = service_time_seconds    is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=service_time,      accessor=avg
-        // measure = response_time_seconds   is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=response_time,     accessor=avg
-        // measure = MP_core_busy_percent    is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=MP_core, element_metric=busy_percent
-        // measure = PG_busy_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=PG,      element_metric=busy_percent
-        // measure = CLPR_WP_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=CLPR,    element_metric=WP_percent
-
-
         if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("MB_per_second")))
         {
             go_parameters.contents[toLower("measure")] = "on";
@@ -1996,7 +1987,18 @@ master_stuff::go(const std::string& parameters)
             if (!stringCaseInsensitiveEquality(std::string("off"),measure_parameter_value))
             {
                 std::ostringstream o;
-                o << std::endl << "<Error> ivy engine API - go() - \"measure\" may only be set to \"on\" or \"off\"." << std::endl << std::endl
+                o << std::endl << "<Error> ivy engine API - go() - invalid \"measure\" setting value \"" << measure_parameter_value << "\"." << std::endl
+                    << "\"measure\" may only be set to \"on\" or \"off\", or to one of the following shorthand settings:" << std::endl
+                    << R"(
+    measure = MB_per_second           is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=bytes_transferred, accessor=sum
+    measure = IOPS                    is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=bytes_transferred, accessor=count
+    measure = service_time_seconds    is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=service_time,      accessor=avg
+    measure = response_time_seconds   is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=response_time,     accessor=avg
+    measure = MP_core_busy_percent    is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=MP_core, element_metric=busy_percent
+    measure = PG_busy_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=PG,      element_metric=busy_percent
+    measure = CLPR_WP_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=CLPR,    element_metric=WP_percent
+)"
+                << std::endl
                                    << "Go statement specifies parameter values " << go_parameters.toString() << std::endl;
                 std::cout << o.str();
                 log(masterlogfile,o.str());

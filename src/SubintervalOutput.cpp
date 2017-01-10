@@ -211,17 +211,13 @@ std::string SubintervalOutput::csvValues
 				/* Average Service Time (ms) */
 				o << ',' << (service_time.avg() * 1000.0);
 
-//				if (nullptr != p_SubintervalRollup)
+				if (nullptr != p_SubintervalRollup)
 				{
                     RunningStat<ivy_float, ivy_int>& samples = p_SubintervalRollup->service_time_series[i];
 
-//                    o << ',';
-//
-//                    if (samples.count() > 0) { o << samples.count(); }
-
                     o << ',';
 
-                    if ( p_SubintervalRollup != nullptr && samples.count() >= 2 && samples.avg() != 0.0)
+                    if ( samples.count() >= 2 && samples.avg() != 0.0)
                     {
                         ivy_float students_t_multiplier;
 

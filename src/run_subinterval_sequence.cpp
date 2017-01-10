@@ -858,9 +858,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
         {
             std::ostringstream o;
-            o << "Making measurement rollups from subinterval " << first << " to " << last << ".";
-            if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode) { o << ".  (Haven't checked rollup [quantity] and [maxDroop] criteria yet.)"; }
-            o << std::endl;
+            o << "Making measurement rollups from subinterval " << first << " to " << last << "." << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile,o.str());
         }
