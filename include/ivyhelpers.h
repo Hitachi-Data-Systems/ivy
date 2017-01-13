@@ -32,6 +32,7 @@ class Ivy_pgm;
 extern Ivy_pgm* p_Ivy_pgm;
 extern std::regex digits_regex;
 extern std::regex unsigned_int_regex;
+extern std::regex int_regex;
 extern std::regex leading_zero_regex;
 extern std::regex float_number_regex;
 extern std::regex float_number_optional_trailing_percent_regex;
@@ -118,6 +119,7 @@ bool isPlusSignCombo(std::string& callers_error_message, int& callersNumberOfFie
 ivy_float number_optional_trailing_percent(const std::string& s /* e.g. "1.2%" */, std::string name_associated_with_value_for_error_message = std::string("") );  // throws std::invalid_argument
 unsigned int unsigned_int(const std::string&, std::string name_associated_with_value_for_error_message = std::string("") );
 
+std::string quote_wrap(const std::string s);
 std::string quote_wrap_except_number(const std::string s);
 std::string quote_wrap_csvline_except_numbers(const std::string csvline); // This is specifically so that when you double-click on an ivy csv file to launch Excel, it won't think LDEV names are times, etc.
 
@@ -130,3 +132,4 @@ std::string put_in_quotes(const std::string&);
 uint64_t number_optional_trailing_KiB_MiB_GiB_TiB(const std::string& s_parameter);
 
 std::string put_on_KiB_etc_suffix(uint64_t n);
+

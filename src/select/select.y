@@ -52,6 +52,7 @@ bool trace_select_parser {false};
 
 %token <p_str> QUOTED_STRING BARE_JSON_NUMBER
 %token KW_TRUE KW_FALSE KW_NULL
+%token END_OF_FILE
 
 %type <p_JSON_select_value_pointer_list> zero_or_more_values
 %type <not_used> optional_enclosing_braces select_clause_list select_clause
@@ -74,7 +75,7 @@ program:
         if (trace_select_parser) std::cout << "select parser - startup.";
 	}
 
-	optional_enclosing_braces
+	optional_enclosing_braces END_OF_FILE
         {
             if (trace_select_parser) std::cout << "select parser - now going to YYACCEPT." << std::endl;
 

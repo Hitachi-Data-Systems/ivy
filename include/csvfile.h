@@ -52,7 +52,7 @@ class csvfile
         virtual ~csvfile();
         friend std::ostream& operator<<(std::ostream&, const csvfile&);
 
-        void load(const std::string& /*filename*/);
+        std::pair<bool,std::string> load(const std::string& /*filename*/);
 
         int rows();
             // returns the number of rows following the header row.

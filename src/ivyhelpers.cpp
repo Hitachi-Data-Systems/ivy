@@ -54,6 +54,7 @@ std::regex digits_regex(                  "[[:digit:]]+");
 std::regex float_number_regex                          (  R"([+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)"    );
 std::regex float_number_optional_trailing_percent_regex(  R"([+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?%?)"  );
 std::regex unsigned_int_regex                          (  R"(\d+)"                                        );
+std::regex int_regex                                   (  R"((-)?\d+)"                                        );
 std::regex leading_zero_regex                          (  R"(0[0-9].*)"                                   );
 
 std::regex dotted_quad_regex  (  R"ivy((([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5]))\.(([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5]))\.(([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5]))\.(([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])))ivy");
@@ -760,7 +761,6 @@ std::string UnwrapCSVcolumn(std::string s)
 
     // Otherwise, an unwrapped CSV column value first has leading/trailing whitespace removed and then if what remains is a single quoted string,
 	// the quotes are removed and any internal "escaped" quotes have their escaping backslashes removed, i.e. \" -> ".
-
 	trim(s);
 
 	if (s.length()>=3 && s[0] == '=' && s[1] == '\"' && s[s.length()-1] == '\"')
@@ -804,6 +804,31 @@ std::string UnwrapCSVcolumn(std::string s)
 		}
 	}
 	return s;
+}
+
+std::string quote_wrap(const std::string s)
+{
+    std::ostringstream o;
+    o << '\"';
+    for (unsigned int i=0; i<s.size(); i++)
+    {
+        switch (s[i])
+        {
+            case '\'': o << "\\\'"; break;
+            case '\"': o << "\\\""; break;
+            case '\t': o << "\\t";  break;
+            case '\r': o << "\\r";  break;
+            case '\n': o << "\\n";  break;
+            case '\\': o << "\\\\"; break;
+            case '\b': o << "\\b";  break;
+            case '\f': o << "\f";   break;
+            case '\v': o << "\\v";  break;
+            case '\0': o << "\\0";  break;
+            default:   o << s[i];
+        }
+    }
+    o << '\"';
+    return o.str();
 }
 
 

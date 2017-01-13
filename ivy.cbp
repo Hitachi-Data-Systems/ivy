@@ -18,6 +18,9 @@
 					<Add directory="parser/include" />
 					<Add directory="parser/lexyacc" />
 				</Compiler>
+				<Linker>
+					<Add option="-pthread -lrt" />
+				</Linker>
 				<ExtraCommands>
 					<Add before="touch include/ivybuilddate.h" />
 				</ExtraCommands>
@@ -33,6 +36,9 @@
 					<Add directory="parser/include" />
 					<Add directory="../LUN_discovery/include" />
 				</Compiler>
+				<Linker>
+					<Add option="-pthread -lrt" />
+				</Linker>
 				<ExtraCommands>
 					<Add before="touch include/ivybuilddate.h" />
 				</ExtraCommands>
@@ -49,20 +55,83 @@
 				<Option compiler="gcc" />
 				<Option parameters="public_domain_dictionary/pg29765.webster_1913.txt" />
 			</Target>
+			<Target title="csv_rows">
+				<Option platforms="Unix;" />
+				<Option output="bin/csv_rows" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+			</Target>
+			<Target title="csv_header_columns">
+				<Option platforms="Unix;" />
+				<Option output="bin/csv_header_columns" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+			</Target>
+			<Target title="csv_columns_in_row">
+				<Option platforms="Unix;" />
+				<Option output="bin/csv_columns_in_row" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+			</Target>
+			<Target title="csv_column_header">
+				<Option platforms="Unix;" />
+				<Option output="bin/csv_column_header" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+			</Target>
+			<Target title="csv_raw_cell_value">
+				<Option platforms="Unix;" />
+				<Option output="bin/csv_raw_cell_value" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+			</Target>
+			<Target title="csv_cell_value">
+				<Option platforms="Unix;" />
+				<Option output="bin/csv_cell_value" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+			</Target>
+			<Target title="csv_lookup_column">
+				<Option platforms="Unix;" />
+				<Option output="bin/csv_lookup_column" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+			</Target>
+			<Target title="csv_row">
+				<Option platforms="Unix;" />
+				<Option output="bin/csv_row" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+			</Target>
+			<Target title="csv_column">
+				<Option platforms="Unix;" />
+				<Option output="bin/csv_column" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;" />
+			<Add alias="csv_utilities" targets="csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;" />
 		</VirtualTargets>
 		<Compiler>
-			<Add option="-std=c++11" />
 			<Add option="-Wall" />
+			<Add option="-std=c++11" />
 			<Add option="-g" />
-			<Add option="-pthread" />
 			<Add directory="src" />
 			<Add directory="include" />
 		</Compiler>
 		<Linker>
-			<Add option="-pthread -lrt -static-libstdc++" />
+			<Add option="-lrt -static-libstdc++" />
 		</Linker>
 		<Unit filename="../LUN_discovery/include/printableAndHex.h">
 			<Option target="ivymaster" />
@@ -226,6 +295,15 @@
 		</Unit>
 		<Unit filename="include/csvfile.h">
 			<Option target="ivymaster" />
+			<Option target="csv_rows" />
+			<Option target="csv_header_columns" />
+			<Option target="csv_columns_in_row" />
+			<Option target="csv_column_header" />
+			<Option target="csv_raw_cell_value" />
+			<Option target="csv_cell_value" />
+			<Option target="csv_lookup_column" />
+			<Option target="csv_row" />
+			<Option target="csv_column" />
 		</Unit>
 		<Unit filename="include/discover_luns.h">
 			<Option target="ivymaster" />
@@ -249,6 +327,15 @@
 		<Unit filename="include/ivyhelpers.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
+			<Option target="csv_rows" />
+			<Option target="csv_header_columns" />
+			<Option target="csv_columns_in_row" />
+			<Option target="csv_column_header" />
+			<Option target="csv_raw_cell_value" />
+			<Option target="csv_cell_value" />
+			<Option target="csv_lookup_column" />
+			<Option target="csv_row" />
+			<Option target="csv_column" />
 		</Unit>
 		<Unit filename="include/ivylinuxcpubusy.h">
 			<Option target="ivymaster" />
@@ -482,8 +569,55 @@
 		<Unit filename="src/clear_hung_ivy_threads.cpp">
 			<Option target="clear_hung_ivy_threads" />
 		</Unit>
+		<Unit filename="src/csv_cell_value.cpp">
+			<Option target="csv_cell_value" />
+		</Unit>
+		<Unit filename="src/csv_column.cpp">
+			<Option target="csv_column" />
+		</Unit>
+		<Unit filename="src/csv_column_header.cpp">
+			<Option target="csv_column_header" />
+		</Unit>
+		<Unit filename="src/csv_columns_in_row.cpp">
+			<Option target="csv_columns_in_row" />
+		</Unit>
+		<Unit filename="src/csv_header_columns.cpp">
+			<Option target="csv_header_columns" />
+		</Unit>
+		<Unit filename="src/csv_lookup_column.cpp">
+			<Option target="csv_lookup_column" />
+		</Unit>
+		<Unit filename="src/csv_raw_cell_value.cpp">
+			<Option target="csv_raw_cell_value" />
+		</Unit>
+		<Unit filename="src/csv_row.cpp">
+			<Option target="csv_row" />
+		</Unit>
+		<Unit filename="src/csv_rows.cpp">
+			<Option target="csv_rows" />
+		</Unit>
+		<Unit filename="src/csv_usage.cpp">
+			<Option target="csv_rows" />
+			<Option target="csv_header_columns" />
+			<Option target="csv_columns_in_row" />
+			<Option target="csv_column_header" />
+			<Option target="csv_raw_cell_value" />
+			<Option target="csv_cell_value" />
+			<Option target="csv_lookup_column" />
+			<Option target="csv_row" />
+			<Option target="csv_column" />
+		</Unit>
 		<Unit filename="src/csvfile.cpp">
 			<Option target="ivymaster" />
+			<Option target="csv_rows" />
+			<Option target="csv_header_columns" />
+			<Option target="csv_columns_in_row" />
+			<Option target="csv_column_header" />
+			<Option target="csv_raw_cell_value" />
+			<Option target="csv_cell_value" />
+			<Option target="csv_lookup_column" />
+			<Option target="csv_row" />
+			<Option target="csv_column" />
 		</Unit>
 		<Unit filename="src/discover_luns.cpp">
 			<Option target="ivymaster" />
@@ -510,6 +644,15 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 			<Option target="clear_hung_ivy_threads" />
+			<Option target="csv_rows" />
+			<Option target="csv_header_columns" />
+			<Option target="csv_columns_in_row" />
+			<Option target="csv_column_header" />
+			<Option target="csv_raw_cell_value" />
+			<Option target="csv_cell_value" />
+			<Option target="csv_lookup_column" />
+			<Option target="csv_row" />
+			<Option target="csv_column" />
 		</Unit>
 		<Unit filename="src/ivylinuxcpubusy.cpp">
 			<Option target="ivymaster" />
@@ -522,6 +665,15 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 			<Option target="clear_hung_ivy_threads" />
+			<Option target="csv_rows" />
+			<Option target="csv_header_columns" />
+			<Option target="csv_columns_in_row" />
+			<Option target="csv_column_header" />
+			<Option target="csv_raw_cell_value" />
+			<Option target="csv_cell_value" />
+			<Option target="csv_lookup_column" />
+			<Option target="csv_row" />
+			<Option target="csv_column" />
 		</Unit>
 		<Unit filename="src/makedict.cpp">
 			<Option target="makedict" />

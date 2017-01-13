@@ -326,11 +326,13 @@ std::string string_system_of_string(std::string s) {return string_shell_command_
 int int_set_csvfile_of_string(std::string filename)
 {
     csvfile& cf = csvfiles[filename];
-    cf.load(filename);
+    auto rv = cf.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); }
 
     current_csvfile_it = csvfiles.find(filename);
 
-    return (cf.rows() >= 0 );
+    return rv.first;
 }
 
 int int_drop_csvfile_of_string(std::string filename)

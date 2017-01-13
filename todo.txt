@@ -1,10 +1,10 @@
+- go back and do the "measure" +/- math for each individual I/O being a sample for service time.
+
 - in LDEV config data, the path type for a (the default) host group shows type iSCSI instead of Fibre Channel.
 
 - integrate the old catscan SVP configuration file collector into ivy.  Integrate SVP config file attributes into ivy RAID_subsystem object.
 
 - look at flex/bison parser, JSON format for edit_rollup() and for go parameters.
-
-- fix select parser ignoring crap past the accepted expression as in "LDEV : 00:00 }"
 
 // maybe we have a measure_focus_rollup and a pid_focus_rollup and they default to focus_rollup?
 // How hard would it be to have measure and pid each on their own focus_rollup?

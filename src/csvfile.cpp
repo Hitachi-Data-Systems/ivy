@@ -56,7 +56,7 @@ std::ostream& operator<<(std::ostream& os, const csvfile& c)
    return os;
 }
 
-void csvfile::load(const std::string& filename)
+std::pair<bool,std::string> csvfile::load(const std::string& filename)
 {
     raw_values.clear();
     column_by_header_identifier_value.clear();
@@ -65,19 +65,15 @@ void csvfile::load(const std::string& filename)
     if(stat(filename.c_str(),&struct_stat))
     {
         std::ostringstream o;
-        o << "csvfile::load() - csv filename \"" + filename + "\" does not exist." << std::endl;
-        log(masterlogfile(),o.str());
-        std::cout << o.str();
-        return;
+        o << "<Error> csvfile::load() - csv filename \"" + filename + "\" does not exist." << std::endl;
+        return std::make_pair(false,o.str());
     }
 
     if(!S_ISREG(struct_stat.st_mode))
     {
         std::ostringstream o;
         o << "csvfile::load() - csv filename \"" + filename + "\" is not a regular file." << std::endl;
-        log(masterlogfile(),o.str());
-        std::cout << o.str();
-        return;
+        return std::make_pair(false,o.str());
     }
 
     std::ifstream input_stream(filename);
@@ -86,9 +82,7 @@ void csvfile::load(const std::string& filename)
     {
         std::ostringstream o;
         o << "csvfile::load() - csv filename \"" + filename + "\" failed to open for input." << std::endl;
-        log(masterlogfile(),o.str());
-        std::cout << o.str();
-        return;
+        return std::make_pair(false,o.str());
     }
 
     std::string csvline;
@@ -117,6 +111,8 @@ void csvfile::load(const std::string& filename)
     }
 
     // baseline_service_time_secondsstd::cout << "After csvfile::load: " << std::endl << *this << std::endl;
+
+    return std::make_pair(true,"");
 }
 
 int csvfile::lookup_column(const std::string& header_name)
@@ -180,6 +176,10 @@ std::string csvfile::raw_cell_value(int row, const std::string& column_header )
     return raw_cell_value(row,lookup_column(column_header));
 }
 
+std::string csvfile::column_header(int col)
+{
+    return raw_cell_value(-1,col);
+}
 
 std::string csvfile::cell_value(int row, int col)
 {

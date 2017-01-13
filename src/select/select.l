@@ -259,5 +259,7 @@ ldev_range {ldev}-{ldev}
         return c;
     }
 
+<<EOF>> return token::END_OF_FILE;
+
 %%
 

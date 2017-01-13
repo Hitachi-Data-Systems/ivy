@@ -50,6 +50,7 @@ bool trace_hosts_parser {false};
 /* declare tokens */
 
 %token <p_str> IPV4_DOTTED_QUAD IDENTIFIER UNSIGNED_INTEGER
+%token END_OF_FILE
 
 %type <not_used> host_list
 
@@ -70,7 +71,7 @@ program:
         if (trace_hosts_parser) std::cout << "hosts_list parser starting" << std::endl;
 	}
 
-	host_list
+	host_list END_OF_FILE
         {
             if (trace_hosts_parser) std::cout << "hosts_list parser program: statements - now going to YYACCEPT." << std::endl;
 

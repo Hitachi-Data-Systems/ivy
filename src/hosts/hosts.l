@@ -106,5 +106,7 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
         return yytext[0];
     }
 
+<<EOF>> return token::END_OF_FILE;
+
 %%
 
