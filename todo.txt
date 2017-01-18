@@ -1,3 +1,5 @@
+- see if we should add the EOF token for the ivyscript parser as well.
+
 - go back and do the "measure" +/- math for each individual I/O being a sample for service time.
 
 - in LDEV config data, the path type for a (the default) host group shows type iSCSI instead of Fibre Channel.

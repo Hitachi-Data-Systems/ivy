@@ -29,9 +29,11 @@ you the exact original text between the commas in the csv file.
 
 If something goes wrong, each of these executables will say something starting with "<Error>".
 
-csv_lookup_column filename column_header
+csv_lookup_column filename column_header ...
     e.g.    csv_lookup_column x.csv "Overall IOPS"
-    - returns the column number for the specified column title (column header).
+    e.g.    csv_lookup_column x.csv "Overall IOPS" "Overall service time" "maxTags"
+    - returns the column numbers for the specified column titles (column headers).
+    - when more than one column header is provided, output column numbers are separated with commas.
 
 csv_column_header filename column_number
     e.g.    csv_column_header x.csv 0

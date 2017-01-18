@@ -9,8 +9,8 @@ whose,="fleece","was somewhat",white,as
 /home/ivogelesang/ivy/bin/csv_lookup_column /home/ivogelesang/ivy/doc/test_csv.csv Fife_and_Drum
 4
 ------------------------
-/home/ivogelesang/ivy/bin/csv_lookup_column /home/ivogelesang/ivy/doc/test_csv.csv Fore_or_5
-3
+/home/ivogelesang/ivy/bin/csv_lookup_column /home/ivogelesang/ivy/doc/test_csv.csv Fore_or_5 Fife_and_Drum
+3,4
 ------------------------
 /home/ivogelesang/ivy/bin/csv_column_header /home/ivogelesang/ivy/doc/test_csv.csv 2
 Tree

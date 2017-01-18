@@ -746,7 +746,6 @@ void RollupInstance::print_pid_csv_files()
         fileappend(step_level_filename,o.str());
     }
 
-
     return;
 }
 

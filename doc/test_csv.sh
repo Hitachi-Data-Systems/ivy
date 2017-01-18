@@ -11,7 +11,7 @@ cmd="$binfolder/csv_lookup_column $csvfile Fife_and_Drum"
 echo "$cmd"
 $cmd
 echo "------------------------"
-cmd="$binfolder/csv_lookup_column $csvfile Fore_or_5"
+cmd="$binfolder/csv_lookup_column $csvfile Fore_or_5 Fife_and_Drum"
 echo "$cmd"
 $cmd
 echo "------------------------"
