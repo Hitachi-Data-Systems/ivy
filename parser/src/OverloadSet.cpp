@@ -46,7 +46,8 @@ std::ostream& operator<<(std::ostream& os,const OverloadTable& ot)
     bool table_empty{true};
     for (auto& o : ot)
     {
-        if (!table_empty) os << ','; table_empty=false;
+        if (!table_empty) os << ',';
+        table_empty=false;
         os << " \"" << o.first << "\" -> " << o.second;
     }
     os << "}";

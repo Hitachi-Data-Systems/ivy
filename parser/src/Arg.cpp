@@ -37,7 +37,8 @@ std::string mangle(const std::list<Arg>& fl)
     bool need_comma {false};
 	for (arg_it++; arg_it != fl.end(); arg_it++)
 	{
-        if (need_comma) mangled_name+=","; need_comma = true;
+        if (need_comma) mangled_name+=",";
+        need_comma = true;
 		mangled_name += arg_it->arg_type.print();
 	}
 	mangled_name+=")";
@@ -57,7 +58,8 @@ std::string printed_form(const std::list<Arg>& fl)
     bool need_comma {false};
 	for (arg_it++; arg_it != fl.end(); arg_it++)
 	{
-        if (need_comma) mangled_name+=","; need_comma = true;
+        if (need_comma) mangled_name+=",";
+        need_comma = true;
 		mangled_name += arg_it->arg_type.print();
 	}
 	mangled_name+=")";

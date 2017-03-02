@@ -374,7 +374,16 @@ std::pair<bool /*success*/, std::string /* message */>
     {
         if (select.matches(pLUN))
         {
-            availableTestLUNs.LUNpointers.push_back(pLUN);
+            if (     pLUN->attribute_value_matches("ldev",      "FF:FF"         )
+                &&   pLUN->attribute_value_matches("ldev_type", ""              )
+                && ( pLUN->attribute_value_matches("product",   "DISK-SUBSYSTEM") || pLUN->attribute_value_matches("product","OPEN-V") ) )
+            {
+                ; // Ignore "phantom LUNs" that have been deleted on the subsystem but for which a /dev/sdxxx entry still exists.
+            }
+            else
+            {
+                availableTestLUNs.LUNpointers.push_back(pLUN);
+            }
         }
     }
 

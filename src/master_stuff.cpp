@@ -361,9 +361,12 @@ void master_stuff::write_clear_script()
     {
         std::ostringstream o;
         o << method << "Unable to open output file \"" << scriptname << "\"." << std::endl;
+        o << "Failed trying to build " << scriptname << std::endl;
         std::cout << o.str();
         log(masterlogfile, o.str());
-        exit(-1);
+        oaf.close();
+        std::remove(scriptname.c_str());
+        return;
     }
 
     oaf << "#!/bin/bash" << std::endl;
@@ -373,9 +376,12 @@ void master_stuff::write_clear_script()
     {
         std::ostringstream o;
         o << method << "Unable to get my own hostname - gethostname() return code = " << rc << " - " << std::endl;
+        o << "Failed trying to build " << scriptname << std::endl;
         std::cout << o.str();
         log(masterlogfile, o.str());
-        exit(-1);
+        oaf.close();
+        std::remove(scriptname.c_str());
+        return;
     }
 
     hostent* p_hostent = gethostbyname(my_hostname);
@@ -383,9 +389,12 @@ void master_stuff::write_clear_script()
     {
         std::ostringstream o;
         o << method << "Unable to get my own IP address - gethostbyname(\"" << my_hostname << "\" failed." << std::endl;
+        o << "Failed trying to build " << scriptname << std::endl;
         std::cout << o.str();
         log(masterlogfile, o.str());
-        exit(-1);
+        oaf.close();
+        std::remove(scriptname.c_str());
+        return;
     }
 
     oaf << std::endl << "# my canonical name is " << p_hostent->h_name << std::endl;
@@ -394,9 +403,12 @@ void master_stuff::write_clear_script()
     {
         std::ostringstream o;
         o << method << "My own address is not AF_INET, not an internet IP address." << std::endl;
+        o << "Failed trying to build " << scriptname << std::endl;
         std::cout << o.str();
         log(masterlogfile, o.str());
-        exit(-1);
+        oaf.close();
+        std::remove(scriptname.c_str());
+        return;
     }
 
     in_addr * p_in_addr = (in_addr * )p_hostent->h_addr;
@@ -424,18 +436,24 @@ void master_stuff::write_clear_script()
         {
             std::ostringstream o;
             o << method << "Unable to get IP address for ivyslave host (\"" << slavehost << "\"." << std::endl;
+            o << "Failed trying to build " << scriptname << std::endl;
             std::cout << o.str();
             log(masterlogfile, o.str());
-            exit(-1);
+            oaf.close();
+            std::remove(scriptname.c_str());
+            return;
         }
 
         if (p_hostent->h_addrtype != AF_INET)
         {
             std::ostringstream o;
             o << method << "For ivyslave host \"" << slavehost << "\", address is not AF_INET, not an internet IP address." << std::endl;
+            o << "Failed trying to build " << scriptname << std::endl;
             std::cout << o.str();
             log(masterlogfile, o.str());
-            exit(-1);
+            oaf.close();
+            std::remove(scriptname.c_str());
+            return;
         }
 
         in_addr * p_in_addr = (in_addr * )p_hostent->h_addr;
