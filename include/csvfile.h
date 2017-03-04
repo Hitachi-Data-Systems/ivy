@@ -39,7 +39,7 @@ class csvfile
         std::unordered_map<std::string,int> column_by_header_identifier_value {};
             // This map is private because we don't want the user to refer to the map directly.
             // Using the lookup methods provided, we first apply
-            //     toLower(convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(UnwrapCSVcolumn(s)))
+            //     column_header_to_identifier(UnwrapCSVcolumn(s)))
             // both when we load the map, as well as against
             // the column header value the user gives you.
             // So for lookups " 50% busy", 50__busy, or "50% BUSY" are synonymous.

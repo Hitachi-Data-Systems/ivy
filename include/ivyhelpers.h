@@ -133,3 +133,6 @@ uint64_t number_optional_trailing_KiB_MiB_GiB_TiB(const std::string& s_parameter
 
 std::string put_on_KiB_etc_suffix(uint64_t n);
 
+std::string normalize_identifier(const std::string& s); // translate to lower case and remove underscores
+
+bool normalized_identifier_equality(const std::string& s1, const std::string& s2);

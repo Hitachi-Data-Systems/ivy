@@ -145,12 +145,7 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
 			}
 		}
 
-//std::cout << "ParameterValueLookupTable.cpp:lookhear- "
-//	<< "About to store identifier raw = \"" << s.substr(identifier_start,identifier_length) << "\", "
-//	<< "key=\"" << toLower(s.substr(identifier_start,identifier_length)) << "\", "
-//	<< "value = \"" << s.substr(value_start,value_length) << "\"." << std::endl;
-
-		contents[toLower(s.substr(identifier_start,identifier_length))]=s.substr(value_start,value_length);
+		contents[normalize_identifier(s.substr(identifier_start,identifier_length))]=s.substr(value_start,value_length);
 	}
 
     return std::make_pair(true,std::string(""));
@@ -190,14 +185,14 @@ std::string ParameterValueLookupTable::toString()
 
 bool ParameterValueLookupTable::contains(std::string key)
 {
-	auto m = contents.find(toLower(key));
+	auto m = contents.find(normalize_identifier(key));
 	if (contents.end()==m) return false;
 	return true;
 }
 
 std::string ParameterValueLookupTable::retrieve(std::string key)
 {
-	auto m = contents.find(toLower(key));
+	auto m = contents.find(normalize_identifier(key));
 	if (contents.end()==m) return std::string("");
 	return m->second;
 }
@@ -241,7 +236,7 @@ bool ParameterValueLookupTable::containsOnlyValidParameterNames(std::string s) /
 			i++;
 			identifier_length++;
 		}
-		valid_parameter_names.insert(toLower(s.substr(identifier_start,identifier_length)));
+		valid_parameter_names.insert(normalize_identifier(s.substr(identifier_start,identifier_length)));
 
 //*debug*/ os << "/*debug*/ valid_parameter_names contains ";
 //*debug*/	for (auto& s: valid_parameter_names) os << " \"" << s << '\"';
@@ -253,7 +248,7 @@ bool ParameterValueLookupTable::containsOnlyValidParameterNames(std::string s) /
 
 	for (auto& pear : contents)
 	{
-		if (valid_parameter_names.end() == valid_parameter_names.find(toLower(pear.first)))
+		if (valid_parameter_names.end() == valid_parameter_names.find(normalize_identifier(pear.first)))
 		{
 			if(all_valid) o << "ParameterValueLookupTable::containsOnlyValidParameterNames() Invalid parameter names present:" << pear.first;
 			all_valid=false;

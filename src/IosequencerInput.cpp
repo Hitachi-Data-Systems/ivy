@@ -82,8 +82,8 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 	}
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("iosequencer")) ) {
-		if (stringCaseInsensitiveEquality(parameterValue,std::string("random_steady"))) {
-			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("random_steady")))
+		if (normalized_identifier_equality(parameterValue,std::string("random_steady"))) {
+			if (iosequencerIsSet && ! normalized_identifier_equality(iosequencer_type, std::string("random_steady")))
             {
                 std::ostringstream o;
                 o << "when setting \"" << parameterNameEqualsValue
@@ -92,8 +92,8 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
                 return std::make_pair(false,o.str());
             }
 			iosequencer_type=parameterValue;
-		} else if (stringCaseInsensitiveEquality(parameterValue,std::string("random_independent"))) {
-			if (iosequencerIsSet && 0 != iosequencer_type.compare(std::string("random_independent")))
+		} else if (normalized_identifier_equality(parameterValue,std::string("random_independent"))) {
+			if (iosequencerIsSet && ! normalized_identifier_equality(iosequencer_type,std::string("random_independent")))
             {
                 std::ostringstream o;
                 o << "when setting \"" << parameterNameEqualsValue
@@ -139,9 +139,10 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 //        "                  hot_zone_write_fraction - default 0 (zero) fraction of all write I/Os that should go to the hit_area.\n"
 //        "                  If either of hot_zone_read_fraction or hot_zone_write_fraction are non-zero, hot_zone_fraction is ignored.\n\n"
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("hot_zone_size_bytes")) )
+	if ( normalized_identifier_equality(parameterName, std::string("hot_zone_size_bytes")) )
 	{
-        if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
+        if ( (!normalized_identifier_equality(iosequencer_type,std::string("random_steady")))
+          && (!normalized_identifier_equality(iosequencer_type,std::string("random_independent"))) )
         {
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
@@ -166,9 +167,10 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
         return std::make_pair(true,"");
     }
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("hot_zone_IOPS_fraction")) )
+	if ( normalized_identifier_equality(parameterName, std::string("hot_zone_IOPS_fraction")) )
 	{
-        if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
+        if ( (!normalized_identifier_equality(iosequencer_type,std::string("random_steady")))
+          && (!normalized_identifier_equality(iosequencer_type,std::string("random_independent"))) )
         {
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
@@ -201,9 +203,10 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
         return std::make_pair(true,"");
     }
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("hot_zone_read_fraction")) )
+	if ( normalized_identifier_equality(parameterName, std::string("hot_zone_read_fraction")) )
 	{
-        if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
+        if ( (!normalized_identifier_equality(iosequencer_type,std::string("random_steady")))
+          && (!normalized_identifier_equality(iosequencer_type,std::string("random_independent"))) )
         {
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
@@ -237,9 +240,10 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
     }
 
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("hot_zone_write_fraction")) )
+	if ( normalized_identifier_equality(parameterName, std::string("hot_zone_write_fraction")) )
 	{
-        if ( iosequencer_type != "random_steady" && iosequencer_type != "random_independent" )
+        if ( (!normalized_identifier_equality(iosequencer_type,std::string("random_steady")))
+          && (!normalized_identifier_equality(iosequencer_type,std::string("random_independent"))) )
         {
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
@@ -273,7 +277,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
     }
 
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("blocksize")) ) {
+	if ( normalized_identifier_equality(parameterName, std::string("blocksize")) ) {
 
 		bool KiB{false}, MiB{false};
 		if (parameterValue.length()>3 && stringCaseInsensitiveEquality(std::string("KiB"),parameterValue.substr(parameterValue.length()-3,3)) ) {
@@ -313,7 +317,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("maxTags")) ) {
+	if ( normalized_identifier_equality(parameterName, std::string("maxTags")) ) {
 		std::istringstream is(parameterValue);
 		int mt;
 		if ( (!(is >> mt)) || (!is.eof()) || (mt<1) || (mt > MAX_MAXTAGS))
@@ -369,7 +373,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 
 
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("fractionRead")) ) {
+	if ( normalized_identifier_equality(parameterName, std::string("fractionRead")) ) {
 
 		if (0 == parameterValue.length()) { return std::make_pair(false,"fractionRead may not be set to the empty string."); }
 
@@ -392,7 +396,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 
 			return std::make_pair(false,o.str());
 		}
-		if (0 == iosequencer_type.compare(std::string("sequential")) && ld != 0. && ld != (hadPercent ? 100.0 : 1.0) )
+		if (normalized_identifier_equality(iosequencer_type, std::string("sequential")) && ld != 0. && ld != (hadPercent ? 100.0 : 1.0) )
 		{
 			std::ostringstream o;
 			o << "The sequential iosequencer only accepts fractionRead = 0% or 100% or 0.0 or 1.0, not \"" << parameterValue << "\".";
@@ -404,7 +408,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("VolumeCoverageFractionStart")) )
+	if ( normalized_identifier_equality(parameterName, std::string("VolumeCoverageFractionStart")) )
 	{
 		if (0 == parameterValue.length()) { return std::make_pair(false, "VolumeCoverageFractionStart may not be set to the empty string."); }
 
@@ -440,7 +444,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("VolumeCoverageFractionEnd")) )
+	if ( normalized_identifier_equality(parameterName, std::string("VolumeCoverageFractionEnd")) )
 	{
 		if (0 == parameterValue.length()) { return std::make_pair(false, "VolumeCoverageFractionEnd may not be set to the empty string."); }
 
@@ -475,7 +479,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("SeqStartFractionOfCoverage")) ) {
+	if ( normalized_identifier_equality(parameterName, std::string("SeqStartFractionOfCoverage")) ) {
 
 		if (0 == parameterValue.length()) { return std::make_pair(false, "SeqStartFractionOfCoverage may not be set to the empty string."); }
 
@@ -503,7 +507,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("dedupe")) ) {
+	if ( normalized_identifier_equality(parameterName, std::string("dedupe")) ) {
 
 		if (0 == parameterValue.length()) { return std::make_pair(false, "dedupe may not be set to the empty string."); }
 
@@ -595,7 +599,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("threads_in_workload_name")) ) {
+	if ( normalized_identifier_equality(parameterName, std::string("threads_in_workload_name")) ) {
 		std::istringstream is(parameterValue);
 		unsigned int eye;
 		if ( (!(is >> eye)) || (!is.eof()) || eye==0)
@@ -608,7 +612,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("this_thread_in_workload")) ) {
+	if ( normalized_identifier_equality(parameterName, std::string("this_thread_in_workload")) ) {
 		std::istringstream is(parameterValue);
 		unsigned int eye;
 		if ( (!(is >> eye)) || (!is.eof()))
@@ -621,7 +625,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
-	if ( stringCaseInsensitiveEquality(parameterName, std::string("pattern_seed")) ) {
+	if ( normalized_identifier_equality(parameterName, std::string("pattern_seed")) ) {
 		std::istringstream is(parameterValue);
 		uint64_t ui64;
 		if ( (!(is >> ui64)) || (!is.eof()) || ui64 == 0)
@@ -788,7 +792,7 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
 	o << ",fractionRead=" << fractionRead;
 	o << ",VolumeCoverageFractionStart=" <<  volCoverageFractionStart;
 	o << ",VolumeCoverageFractionEnd=" << volCoverageFractionEnd;
-    if(0==iosequencer_type.compare(std::string("sequential")))
+    if(normalized_identifier_equality(iosequencer_type,std::string("sequential")))
     {
 		o << ",seqStartFractionOfCoverage=" << seqStartFractionOfCoverage;
 	}
@@ -800,8 +804,8 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
     o << ",this_thread_in_workload=" << this_thread_in_workload;
     o << ",pattern_seed=" << pattern_seed;
 
-    if( 0 == iosequencer_type.compare(std::string("random_steady"))
-     || 0 == iosequencer_type.compare(std::string("random_independent")) )
+    if( normalized_identifier_equality(iosequencer_type,std::string("random_steady"))
+     || normalized_identifier_equality(iosequencer_type,std::string("random_independent")) )
     {
         o << ",hot_zone_size_bytes=" << put_on_KiB_etc_suffix(hot_zone_size_bytes);
 
@@ -859,8 +863,8 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
     if (!defaultThis_thread_in_workload())  { o << ",this_thread_in_workload=" << this_thread_in_workload;}
     if (!defaultPattern_seed())             { o << ",pattern_seed=" << pattern_seed;}
 
-    if( 0 == iosequencer_type.compare(std::string("random_steady"))
-     || 0 == iosequencer_type.compare(std::string("random_independent")) )
+    if( normalized_identifier_equality(iosequencer_type,std::string("random_steady"))
+     || normalized_identifier_equality(iosequencer_type,std::string("random_independent")) )
     {
         if (hot_zone_size_bytes > 0)
         {

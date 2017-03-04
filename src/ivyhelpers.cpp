@@ -231,7 +231,7 @@ std::string myhostname()
 bool isValidTestNameIdentifier(std::string s) {
 	if (s.length()==0) return false;
 	for (unsigned int i=0; i<s.length(); i++) {
-		if (!(std::isalnum(s[i]) || s[i]=='_' || s[i]=='.')) return false;
+		if (!(  std::isalnum(s[i]) || s[i]=='_' || s[i]=='.'  )) return false;
 		if (s[i]=='.') {
 			if (i==0) return false; // no dot as first character
 			if (i==(s.length()-1)) return false; // no dot as last character
@@ -315,14 +315,14 @@ std::pair<bool,std::string> looksLikeFilename(std::string s)
 
 	for (unsigned int i=0; i<s.length(); i++)
 	{
-		if (i>0 && (s[i-1]=='/') && (s[i]=='/'))
+		if (i>0 && (s[i-1] == '/') && (s[i] == '/'))
 		{
             std::ostringstream o;
             o << "Invalid filename \"" << s << "\".  As a safety precaution, ivy does not accept filenames with consecutive forward slashes /." << std::endl
                 << "ivy filenames must be composed of alphanumerics [a-zA-Z0-9], periods \'.\', under_scores, and single forward slashes." << std::endl;
             return std::make_pair(false,o.str());
 		}
-		if (s[i]=='\\')
+		if (s[i] == '\\')
 		{
             std::ostringstream o;
             o << "Invalid filename \"" << s << "\".  You were probably thinking Windows-style filenames and used a backslash '\\'." << std::endl
@@ -330,7 +330,7 @@ std::pair<bool,std::string> looksLikeFilename(std::string s)
             return std::make_pair(false,o.str());
 		}
 
-		if (!(isalnum(s[i]) || s[i]=='_' || s[i] =='.' || s[i]=='\\' || s[i]=='/'))
+		if (!(   isalnum( s[i] ) || s[i] == '_' || s[i] == '.' || s[i] == '\\' || s[i] == '/'   ))
 		{
             std::ostringstream o;
             o << "Invalid filename \"" << s << "\"." << std::endl
@@ -600,6 +600,29 @@ std::string remove_underscores(std::string s)
     }
 	return r;
 }
+
+std::string normalize_identifier(const std::string& s) // translate to lower case and remove underscores
+{
+    if (!regex_match(s,identifier_regex))
+    {
+        std::ostringstream o;
+        o << "normalize_identifier(\"" << s << "\") - is not an identifier, meaning a string starting with an alphabetic and continuing with alphanumerics and underscores.  "
+            << "  Occurred at " << __FILE__ << " line " << __LINE__;
+        throw std::invalid_argument(o.str());
+    }
+    std::string r;
+    for (auto c : s)
+    {
+        if ('_' != c) r.push_back(tolower(c));
+    }
+    return r;
+}
+
+bool normalized_identifier_equality(const std::string& s1, const std::string& s2)
+{
+    return 0 == normalize_identifier(s1).compare(normalize_identifier(s2));
+}
+
 
 bool advanceToNextUnquotedComma(const string& csvline, unsigned int& cursor_from_zero)
 {
@@ -1012,7 +1035,7 @@ unsigned int unsigned_int(const std::string& s /* e.g. "5" */, std::string name_
 
 std::string column_header_to_identifier(const std::string&s)
 {
-    return toLower(convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(UnwrapCSVcolumn(s)));
+    return normalize_identifier(convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(UnwrapCSVcolumn(s)));
 }
 
 

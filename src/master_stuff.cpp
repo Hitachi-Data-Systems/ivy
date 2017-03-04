@@ -88,9 +88,9 @@ std::string stepFolder()       {return m_s.stepFolder;}
 
 accumulator_type_enum string_to_accumulator_type_enum (const std::string& s)
 {
-    if (stringCaseInsensitiveEquality(s,"bytes_transferred"))  return accumulator_type_enum::bytes_transferred;
-    if (stringCaseInsensitiveEquality(s,"response_time"))      return accumulator_type_enum::response_time;
-    if (stringCaseInsensitiveEquality(s,"service_time"))       return accumulator_type_enum::service_time;
+    if (normalized_identifier_equality(s,"bytes_transferred"))  return accumulator_type_enum::bytes_transferred;
+    if (normalized_identifier_equality(s,"response_time"))      return accumulator_type_enum::response_time;
+    if (normalized_identifier_equality(s,"service_time"))       return accumulator_type_enum::service_time;
     return accumulator_type_enum::error;
 }
 
@@ -196,6 +196,7 @@ bool rewrite_total_IOPS(std::string& parametersText, int instances)
 	if (instances <= 0) throw (std::invalid_argument("rewrite_total_IOPS() command_workload_IDs must be greater than zero."));
 
 	std::string total_IOPS {"total_IOPS"};
+	std::string totalIOPS {"totalIOPS"};
 
 	if (total_IOPS.length() > parametersText.length()) return false;
 
@@ -203,10 +204,21 @@ bool rewrite_total_IOPS(std::string& parametersText, int instances)
 
 	for (unsigned int i=0; i < (parametersText.length()-(total_IOPS.length()-1)); i++)
 	{
-		if (stringCaseInsensitiveEquality(total_IOPS,parametersText.substr(i,total_IOPS.length())))
+        size_t l = 0;
+
+        if (stringCaseInsensitiveEquality(total_IOPS,parametersText.substr(i,total_IOPS.length())))
+        {
+            l = total_IOPS.length();
+        }
+        else if (stringCaseInsensitiveEquality(totalIOPS,parametersText.substr(i,totalIOPS.length())))
+        {
+            l = totalIOPS.length();
+        }
+
+		if ( l > 0 )
 		{
 			start_point=i;
-			i += total_IOPS.length();
+			i += l;
 
 			while (i < parametersText.length()  && isspace(parametersText[i])) i++;
 
@@ -660,7 +672,7 @@ ivy_float master_stuff::get_rollup_metric
 
     for (int i = 0; i <= Accumulators_by_io_type::max_category_index(); i++)
     {
-        if (stringCaseInsensitiveEquality(category_parameter, Accumulators_by_io_type::getRunningStatTitleByCategory(i)))
+        if (normalized_identifier_equality(category_parameter, Accumulators_by_io_type::getRunningStatTitleByCategory(i)))
         {
             RunningStat<ivy_float, ivy_int> rs = p_acc->getRunningStatByCategory(i);
 
@@ -670,7 +682,7 @@ ivy_float master_stuff::get_rollup_metric
             if (stringCaseInsensitiveEquality(metric_parameter,"sum"))               return rs.sum();
             if (stringCaseInsensitiveEquality(metric_parameter,"avg"))               return rs.avg();
             if (stringCaseInsensitiveEquality(metric_parameter,"variance"))          return rs.variance();
-            if (stringCaseInsensitiveEquality(metric_parameter,"standardDeviation")) return rs.standardDeviation();
+            if (normalized_identifier_equality(metric_parameter,"standardDeviation")) return rs.standardDeviation();
 
             {
                 std::ostringstream o;
@@ -1858,23 +1870,23 @@ master_stuff::go(const std::string& parameters)
     if (go_parameters.contains("stepname")) stepName = go_parameters.retrieve("stepname");
     else stepName = stepNNNN;
 
-    if (!go_parameters.contains(std::string("subinterval_seconds")))  go_parameters.contents[toLower(std::string("subinterval_seconds"))]  = subinterval_seconds_default;
-    if (!go_parameters.contains(std::string("warmup_seconds")))      go_parameters.contents[toLower(std::string("warmup_seconds"))]      = warmup_seconds_default;
-    if (!go_parameters.contains(std::string("measure_seconds")))     go_parameters.contents[toLower(std::string("measure_seconds"))]     = measure_seconds_default;
-    if (!go_parameters.contains(std::string("cooldown_by_wp")))      go_parameters.contents[toLower(std::string("cooldown_by_wp"))]      = cooldown_by_wp_default;
+    if (!go_parameters.contains(std::string("subinterval_seconds"))) go_parameters.contents[normalize_identifier(std::string("subinterval_seconds"))] = subinterval_seconds_default;
+    if (!go_parameters.contains(std::string("warmup_seconds")))      go_parameters.contents[normalize_identifier(std::string("warmup_seconds"))]      = warmup_seconds_default;
+    if (!go_parameters.contains(std::string("measure_seconds")))     go_parameters.contents[normalize_identifier(std::string("measure_seconds"))]     = measure_seconds_default;
+    if (!go_parameters.contains(std::string("cooldown_by_wp")))      go_parameters.contents[normalize_identifier(std::string("cooldown_by_wp"))]      = cooldown_by_wp_default;
 
     if (!go_parameters.contains(std::string("catnap_time_seconds")))
     {
         std::ostringstream o;
         o << std::fixed << catnap_time_seconds_default;
-        go_parameters.contents[toLower(std::string("catnap_time_seconds"))] = o.str();
+        go_parameters.contents[normalize_identifier(std::string("catnap_time_seconds"))] = o.str();
     }
 
     if (!go_parameters.contains(std::string("post_time_limit_seconds")))
     {
         std::ostringstream o;
         o << std::fixed << post_time_limit_seconds_default;
-        go_parameters.contents[toLower(std::string("post_time_limit_seconds"))] = o.str();
+        go_parameters.contents[normalize_identifier(std::string("post_time_limit_seconds"))] = o.str();
     }
 
     if (go_parameters.contains(std::string("dfc")))
@@ -1890,9 +1902,9 @@ master_stuff::go(const std::string& parameters)
             if (!go_parameters.contains(std::string("p")))                        go_parameters.contents[toLower(std::string("p"                  ))] = p_default;
             if (!go_parameters.contains(std::string("i")))                        go_parameters.contents[toLower(std::string("i"                  ))] = i_default;
             if (!go_parameters.contains(std::string("d")))                        go_parameters.contents[toLower(std::string("d"                  ))] = d_default;
-            if (!go_parameters.contains(std::string("target_value")))             go_parameters.contents[toLower(std::string("target_value"       ))] = target_value_default;
-            if (!go_parameters.contains(std::string("starting_total_IOPS")))      go_parameters.contents[toLower(std::string("starting_total_IOPS"))] = starting_total_IOPS_default;
-            if (!go_parameters.contains(std::string("min_IOPS")))                 go_parameters.contents[toLower(std::string("min_IOPS"           ))] = min_IOPS_default;
+            if (!go_parameters.contains(std::string("target_value")))             go_parameters.contents[normalize_identifier(std::string("target_value"       ))] = target_value_default;
+            if (!go_parameters.contains(std::string("starting_total_IOPS")))      go_parameters.contents[normalize_identifier(std::string("starting_total_IOPS"))] = starting_total_IOPS_default;
+            if (!go_parameters.contains(std::string("min_IOPS")))                 go_parameters.contents[normalize_identifier(std::string("min_IOPS"           ))] = min_IOPS_default;
         }
         else
         {
@@ -1922,65 +1934,65 @@ master_stuff::go(const std::string& parameters)
     {
         std::string measure_parameter_value = go_parameters.retrieve("measure");
 
-        if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("MB_per_second")))
+        if (normalized_identifier_equality(measure_parameter_value,std::string("MB_per_second")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "workload";
             go_parameters.contents[toLower("category")] = "overall";
-            go_parameters.contents[toLower("accumulator_type")] = "bytes_transferred";
-            go_parameters.contents[toLower("accessor")] = "sum";
+            go_parameters.contents[normalize_identifier("accumulator_type")] = "bytes_transferred";
+            go_parameters.contents[normalize_identifier("accessor")] = "sum";
         }
         else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("IOPS")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[toLower("focus_rollup")] = "all";
-            go_parameters.contents[toLower("source")] = "workload";
+            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
+            go_parameters.contents[normalize_identifier("source")] = "workload";
             go_parameters.contents[toLower("category")] = "overall";
-            go_parameters.contents[toLower("accumulator_type")] = "bytes_transferred";
+            go_parameters.contents[normalize_identifier("accumulator_type")] = "bytes_transferred";
             go_parameters.contents[toLower("accessor")] = "count";
         }
-        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("service_time_seconds")))
+        else if (normalized_identifier_equality(measure_parameter_value,std::string("service_time_seconds")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "workload";
             go_parameters.contents[toLower("category")] = "overall";
-            go_parameters.contents[toLower("accumulator_type")] = "service_time";
+            go_parameters.contents[normalize_identifier("accumulator_type")] = "service_time";
             go_parameters.contents[toLower("accessor")] = "avg";
         }
-        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("response_time_seconds")))
+        else if (normalized_identifier_equality(measure_parameter_value,std::string("response_time_seconds")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "workload";
             go_parameters.contents[toLower("category")] = "overall";
-            go_parameters.contents[toLower("accumulator_type")] = "response_time";
+            go_parameters.contents[normalize_identifier("accumulator_type")] = "response_time";
             go_parameters.contents[toLower("accessor")] = "avg";
         }
-        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("MP_core_busy_percent")))
+        else if (normalized_identifier_equality(measure_parameter_value,std::string("MP_core_busy_percent")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "RAID_subsystem";
-            go_parameters.contents[toLower("subsystem_element")] = "MP_core";
-            go_parameters.contents[toLower("element_metric")] = "busy_percent";
+            go_parameters.contents[normalize_identifier("subsystem_element")] = "MP_core";
+            go_parameters.contents[normalize_identifier("element_metric")] = "busy_percent";
         }
-        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("PG_busy_percent")))
+        else if (normalized_identifier_equality(measure_parameter_value,std::string("PG_busy_percent")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "RAID_subsystem";
-            go_parameters.contents[toLower("subsystem_element")] = "PG";
-            go_parameters.contents[toLower("element_metric")] = "busy_percent";
+            go_parameters.contents[normalize_identifier("subsystem_element")] = "PG";
+            go_parameters.contents[normalize_identifier("element_metric")] = "busy_percent";
         }
-        else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("CLPR_WP_percent")))
+        else if (normalized_identifier_equality(measure_parameter_value,std::string("CLPR_WP_percent")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[toLower("focus_rollup")] = "all";
+            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "RAID_subsystem";
-            go_parameters.contents[toLower("subsystem_element")] = "CLPR";
-            go_parameters.contents[toLower("element_metric")] = "WP_percent";
+            go_parameters.contents[normalize_identifier("subsystem_element")] = "CLPR";
+            go_parameters.contents[normalize_identifier("element_metric")] = "WP_percent";
         }
 
         // maybe we have a measure_focus_rollup and a pid_focus_rollup and they default to focus_rollup which defaults to "all"?
@@ -1993,12 +2005,12 @@ master_stuff::go(const std::string& parameters)
         {
             have_measure = true;
             valid_parameter_names += ", measure, accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds";
-            if (!go_parameters.contains(std::string("accuracy_plus_minus"))) go_parameters.contents[toLower(std::string("accuracy_plus_minus"))] = accuracy_plus_minus_default;
-            if (!go_parameters.contains(std::string("confidence")))          go_parameters.contents[toLower(std::string("confidence"))]          = confidence_default;
-            if (!go_parameters.contains(std::string("min_wp")))              go_parameters.contents[toLower(std::string("min_wp"))]              = min_wp_default;
-            if (!go_parameters.contains(std::string("max_wp")))              go_parameters.contents[toLower(std::string("max_wp"))]              = max_wp_default;
-            if (!go_parameters.contains(std::string("max_wp_change")))       go_parameters.contents[toLower(std::string("max_wp_change"))]       = max_wp_change_default;
-            if (!go_parameters.contains(std::string("timeout_seconds")))     go_parameters.contents[toLower(std::string("timeout_seconds"))]     = timeout_seconds_default;
+            if (!go_parameters.contains(std::string("accuracy_plus_minus"))) go_parameters.contents[normalize_identifier(std::string("accuracy_plus_minus"))] = accuracy_plus_minus_default;
+            if (!go_parameters.contains(std::string("confidence")))          go_parameters.contents[normalize_identifier(std::string("confidence"))]          = confidence_default;
+            if (!go_parameters.contains(std::string("min_wp")))              go_parameters.contents[normalize_identifier(std::string("min_wp"))]              = min_wp_default;
+            if (!go_parameters.contains(std::string("max_wp")))              go_parameters.contents[normalize_identifier(std::string("max_wp"))]              = max_wp_default;
+            if (!go_parameters.contains(std::string("max_wp_change")))       go_parameters.contents[normalize_identifier(std::string("max_wp_change"))]       = max_wp_change_default;
+            if (!go_parameters.contains(std::string("timeout_seconds")))     go_parameters.contents[normalize_identifier(std::string("timeout_seconds"))]     = timeout_seconds_default;
         }
         else
         {
@@ -2030,8 +2042,8 @@ master_stuff::go(const std::string& parameters)
     {
         valid_parameter_names += ", focus_rollup, source";
 
-        if (!go_parameters.contains(std::string("focus_rollup"))) go_parameters.contents[toLower(std::string("focus_rollup"))] = focus_rollup_default;
-        if (!go_parameters.contains(std::string("source")))       go_parameters.contents[toLower(std::string("source"))]       = source_default;
+        if (!go_parameters.contains(std::string("focus_rollup"))) go_parameters.contents[normalize_identifier(std::string("focus_rollup"))] = focus_rollup_default;
+        if (!go_parameters.contains(std::string("source")))       go_parameters.contents[normalize_identifier(std::string("source"))]       = source_default;
 
         source_parameter = go_parameters.retrieve("source");
 
@@ -2040,17 +2052,17 @@ master_stuff::go(const std::string& parameters)
             have_workload = true;
             valid_parameter_names += ", category, accumulator_type, accessor";
 
-            if (!go_parameters.contains(std::string("category")))         go_parameters.contents[toLower(std::string("category"))]         = category_default;
-            if (!go_parameters.contains(std::string("accumulator_type"))) go_parameters.contents[toLower(std::string("accumulator_type"))] = accumulator_type_default;
-            if (!go_parameters.contains(std::string("accessor")))         go_parameters.contents[toLower(std::string("accessor"))]         = accessor_default;
+            if (!go_parameters.contains(std::string("category")))         go_parameters.contents[normalize_identifier(std::string("category"))]         = category_default;
+            if (!go_parameters.contains(std::string("accumulator_type"))) go_parameters.contents[normalize_identifier(std::string("accumulator_type"))] = accumulator_type_default;
+            if (!go_parameters.contains(std::string("accessor")))         go_parameters.contents[normalize_identifier(std::string("accessor"))]         = accessor_default;
         }
         else if (stringCaseInsensitiveEquality(source_parameter,std::string("RAID_subsystem")))
         {
             have_RAID_subsystem = true;
             valid_parameter_names += ", subsystem_element, element_metric";
 
-            if (!go_parameters.contains(std::string("subsystem_element")))  go_parameters.contents[toLower(std::string("subsystem_element"))] = subsystem_element_default;
-            if (!go_parameters.contains(std::string("element_metric")))     go_parameters.contents[toLower(std::string("element_metric"))]    = element_metric_default;
+            if (!go_parameters.contains(std::string("subsystem_element")))  go_parameters.contents[normalize_identifier(std::string("subsystem_element"))] = subsystem_element_default;
+            if (!go_parameters.contains(std::string("element_metric")))     go_parameters.contents[normalize_identifier(std::string("element_metric"))]    = element_metric_default;
         }
         else
         {
@@ -2294,9 +2306,9 @@ master_stuff::go(const std::string& parameters)
             else if (stringCaseInsensitiveEquality(category_parameter,"write")) category = category_enum::write;
             else if (stringCaseInsensitiveEquality(category_parameter,"random")) category = category_enum::random;
             else if (stringCaseInsensitiveEquality(category_parameter,"sequential")) category = category_enum::sequential;
-            else if (stringCaseInsensitiveEquality(category_parameter,"random_read")) category = category_enum::random_read;
-            else if (stringCaseInsensitiveEquality(category_parameter,"sequential_read")) category = category_enum::sequential_read;
-            else if (stringCaseInsensitiveEquality(category_parameter,"sequential_write")) category = category_enum::sequential_write;
+            else if (normalized_identifier_equality(category_parameter,"random_read")) category = category_enum::random_read;
+            else if (normalized_identifier_equality(category_parameter,"sequential_read")) category = category_enum::sequential_read;
+            else if (normalized_identifier_equality(category_parameter,"sequential_write")) category = category_enum::sequential_write;
             else
             {
                 ostringstream o;
@@ -2308,9 +2320,9 @@ master_stuff::go(const std::string& parameters)
             }
 //----------------------------------- accumulator_type
             accumulator_type_parameter = go_parameters.retrieve("accumulator_type");
-            if (stringCaseInsensitiveEquality(accumulator_type_parameter,"bytes_transferred")) accumulator_type = accumulator_type_enum::bytes_transferred;
-            else if (stringCaseInsensitiveEquality(accumulator_type_parameter,"service_time")) accumulator_type = accumulator_type_enum::service_time;
-            else if (stringCaseInsensitiveEquality(accumulator_type_parameter,"response_time")) accumulator_type = accumulator_type_enum::response_time;
+            if (normalized_identifier_equality(accumulator_type_parameter,"bytes_transferred")) accumulator_type = accumulator_type_enum::bytes_transferred;
+            else if (normalized_identifier_equality(accumulator_type_parameter,"service_time")) accumulator_type = accumulator_type_enum::service_time;
+            else if (normalized_identifier_equality(accumulator_type_parameter,"response_time")) accumulator_type = accumulator_type_enum::response_time;
             else
             {
                 ostringstream o;
@@ -2328,7 +2340,7 @@ master_stuff::go(const std::string& parameters)
             else if (stringCaseInsensitiveEquality(accessor_parameter,"max")) accessor = accessor_enum::max;
             else if (stringCaseInsensitiveEquality(accessor_parameter,"sum")) accessor = accessor_enum::sum;
             else if (stringCaseInsensitiveEquality(accessor_parameter,"variance")) accessor = accessor_enum::variance;
-            else if (stringCaseInsensitiveEquality(accessor_parameter,"standardDeviation")) accessor = accessor_enum::standardDeviation;
+            else if (normalized_identifier_equality(accessor_parameter,"standardDeviation")) accessor = accessor_enum::standardDeviation;
             else
             {
                 ostringstream o;

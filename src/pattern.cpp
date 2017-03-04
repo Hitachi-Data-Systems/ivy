@@ -8,11 +8,11 @@ pattern parse_pattern(std::string s)
     trim(s);
     if (stringCaseInsensitiveEquality(s,std::string("random")))         { return pattern::random; }
 
-    if (stringCaseInsensitiveEquality(s,std::string("gobbledegook")))   { return pattern::gobbledegook;}
+    if (normalized_identifier_equality(s,std::string("gobbledegook")))   { return pattern::gobbledegook;}
 
     if (stringCaseInsensitiveEquality(s,std::string("ascii")))          { return pattern::ascii; }
 
-    if (stringCaseInsensitiveEquality(s,std::string("trailing_zeros"))) { return pattern::trailing_zeros; }
+    if (normalized_identifier_equality(s,std::string("trailing_zeros"))) { return pattern::trailing_zeros; }
 
     return pattern::invalid;
 }
