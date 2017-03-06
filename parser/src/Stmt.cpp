@@ -73,7 +73,7 @@ bool Stmt_hosts::execute()
 
     console_msg
         << inter_statement_divider << std::endl
-        << "[Hosts] \"" << hosts_string << "\" [Select] " << put_in_quotes(select_string) << ";" << std::endl << std::endl;
+        << "[Hosts] \"" << hosts_string << "\" [Select] \"" << select_string << "\";" << std::endl << std::endl;
 
     std::cout << console_msg.str();
 
@@ -339,7 +339,7 @@ bool Stmt_delete_rollup::execute()
 
     {
         std::ostringstream o;
-        o << inter_statement_divider << std::endl << "[DeleteRollup] " << put_in_quotes(attributeNameComboText) << ";" << std::endl << std::endl;
+        o << inter_statement_divider << std::endl << "[DeleteRollup] \"" << attributeNameComboText << "\";" << std::endl << std::endl;
         std::cout << o.str();
         log(m_s.masterlogfile,o.str());
     }
@@ -488,7 +488,7 @@ bool Stmt_edit_rollup::execute()
 
     std::ostringstream console_msg;
     console_msg << inter_statement_divider << std::endl
-        << "[EditRollup] " << put_in_quotes(rollupSpecText) << " [Parameters] " << put_in_quotes(parameters) << ";" << std::endl << std::endl;
+        << "[EditRollup] \"" << rollupSpecText << "\" [Parameters] \"" << parameters << "\";" << std::endl << std::endl;
 
     std::cout << console_msg.str();
     log(m_s.masterlogfile, console_msg.str());
@@ -498,7 +498,7 @@ bool Stmt_edit_rollup::execute()
     if (!rc.first )
     {
         std::ostringstream o;
-        o << "<Error> ivy engine API edit_rollup(" << put_in_quotes(rollupSpecText) << ", " << put_in_quotes(parameters) << ") failed - " << rc.second << std::endl;
+        o << "<Error> ivy engine API edit_rollup(\"" << rollupSpecText << "\", \"" << parameters << "\") failed - " << rc.second << std::endl;
         log(m_s.masterlogfile,o.str());
         std::cout << o.str();
         p_Ivy_pgm->error(o.str());
@@ -519,7 +519,7 @@ bool Stmt_go::execute()
     {
         std::ostringstream o;
         o << inter_statement_divider << std::endl
-            << "[Go!] " << put_in_quotes(parameters) << ";" << std::endl << std::endl;
+            << "[Go!] \"" << parameters << "\";" << std::endl << std::endl;
         std::cout << o.str();
         log(m_s.masterlogfile,o.str());
     }

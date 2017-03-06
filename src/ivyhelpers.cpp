@@ -228,17 +228,17 @@ std::string myhostname()
 	return std::string((char*)buf);
 }
 
-bool isValidTestNameIdentifier(std::string s) {
-	if (s.length()==0) return false;
-	for (unsigned int i=0; i<s.length(); i++) {
-		if (!(  std::isalnum(s[i]) || s[i]=='_' || s[i]=='.'  )) return false;
-		if (s[i]=='.') {
-			if (i==0) return false; // no dot as first character
-			if (i==(s.length()-1)) return false; // no dot as last character
-			if ( (i<(s.length()-1)) && (s[i+1]=='.')) return false; // no two consecutive dots
-		}
-	}
-	return true;
+std::pair<bool,std::string> isValidTestNameIdentifier(std::string s) {
+
+    std::regex valid_chars (R"([-一-龯ぁ-んァ-ン[:alnum:]_\. ]+)");  // regex based on https://gist.github.com/terrancesnyder/1345094#file-regex-japanese-txt
+
+    if (!std::regex_match(s,valid_chars))
+    {
+        std::ostringstream o;
+        o << "Invalid ivy test name \"" << s << "\" - must consist of ASCII alphabetics & numerics, Japanese kanji / hiragana / katakana, spaces, underscores, and periods." << std::endl;
+        return std::make_pair(false,o.str());
+    }
+	return std::make_pair(true,"");
 }
 bool endsWithPoundSign(std::string s) {
 	if (0 == s.length()) return false;
@@ -308,39 +308,6 @@ bool endsIn(std::string s, std::string ending) {
 	return s.substr(s.length()-ending.length()) == ending;
 }
 
-std::pair<bool,std::string> looksLikeFilename(std::string s)
-{
-	// returns true if all alphanumerics, underscores, periods (dots), single slashes, or single backslashes
-	if (s.length()==0) return std::make_pair(false,std::string("Filename is the empty string.  Not acceptable as a filename."));
-
-	for (unsigned int i=0; i<s.length(); i++)
-	{
-		if (i>0 && (s[i-1] == '/') && (s[i] == '/'))
-		{
-            std::ostringstream o;
-            o << "Invalid filename \"" << s << "\".  As a safety precaution, ivy does not accept filenames with consecutive forward slashes /." << std::endl
-                << "ivy filenames must be composed of alphanumerics [a-zA-Z0-9], periods \'.\', under_scores, and single forward slashes." << std::endl;
-            return std::make_pair(false,o.str());
-		}
-		if (s[i] == '\\')
-		{
-            std::ostringstream o;
-            o << "Invalid filename \"" << s << "\".  You were probably thinking Windows-style filenames and used a backslash '\\'." << std::endl
-                << "ivy filenames must be composed of alphanumerics [a-zA-Z0-9], periods \'.\', under_scores, and single forward slashes." << std::endl;
-            return std::make_pair(false,o.str());
-		}
-
-		if (!(   isalnum( s[i] ) || s[i] == '_' || s[i] == '.' || s[i] == '\\' || s[i] == '/'   ))
-		{
-            std::ostringstream o;
-            o << "Invalid filename \"" << s << "\"." << std::endl
-                << "Where the first character is at position zero, the character \'" << s[i] << "\' at position " << i << " is not accepted by ivy in a filename as a safety precaution." << std::endl
-                << "ivy filenames must be composed of alphanumerics [a-zA-Z0-9], periods \'.\', under_scores, and single forward slashes /." << std::endl;
-            return std::make_pair(false,o.str());
-		}
-	}
-	return std::make_pair(true,std::string(""));
-}
 
 bool looksLikeHostname(std::string s) {
 	// returns true if starts with alphabetic and remainder is all alphanumerics and underscores
@@ -511,40 +478,38 @@ std::string convert_non_alphameric_or_hyphen_or_period_to_underscore(std::string
 	return result;
 }
 
+std::string convert_invalid_characters_to_underscore(std::string s, std::string valid_characters)
+{
+    std::regex find_a_char_to_convert_to_underscore
+    (
+        std::string( R"ivy(([)ivy" )
+        + valid_characters
+        + std::string( R"ivy(]+)([^)ivy" )
+        + valid_characters
+        + std::string( R"ivy(])(.*))ivy" )
+    );
 
-std::string convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(std::string s){
-	std::string result=s;
-	if (s.length()>0) {
-		for (unsigned int i=0; i<s.length(); i++) {
-			if ((!isalnum(s[i])) && ('=' != s[i]) && ('-' != s[i]) && ('.' != s[i])) {
-				result[i]='_';
-			}
-		}
-	}
-	return result;
+    std::smatch entire_match;
+    std::ssub_match part1, part3;
+
+    while (std::regex_match(s, entire_match, find_a_char_to_convert_to_underscore))
+    {
+        part1 = entire_match[1];
+        part3 = entire_match[3];
+        s = part1.str() + std::string("_") + part3.str();
+    }
+
+	return s;
+}
+
+std::string convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(std::string s)
+{
+    return convert_invalid_characters_to_underscore(s, std::string( R"(一-龯ぁ-んァ-ン[:alnum:]_\.=)"));
 }
 
 std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(std::string s)
 {
-	std::string r{};
-
-	for (unsigned int i =0; i < s.length(); i++ )
-	{
-        unsigned char c = s[i];
-        if (c == ':') continue;
-
-		if ( isalnum(c) || '=' == c || '-' == c )
-		{
-            r.push_back(c);
-        }
-        else
-        {
-            r.push_back('_');
-        }
-
-	}
-
-    return r;
+    return convert_invalid_characters_to_underscore(s, std::string( R"(-一-龯ぁ-んァ-ン[:alnum:]_=)"));
 }
 
 bool stringCaseInsensitiveEquality(std::string s1, std::string s2) {
@@ -1035,7 +1000,7 @@ unsigned int unsigned_int(const std::string& s /* e.g. "5" */, std::string name_
 
 std::string column_header_to_identifier(const std::string&s)
 {
-    return normalize_identifier(convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(UnwrapCSVcolumn(s)));
+    return toLower(convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(UnwrapCSVcolumn(s)));
 }
 
 
@@ -1047,42 +1012,6 @@ void xorshift64star(uint64_t& x)  //https://en.wikipedia.org/wiki/Xorshift
 	x *= UINT64_C(2685821657736338717);
 	return;
 }
-
-std::string put_in_quotes(const std::string& s)
-{
-    std::ostringstream o;
-    o << '\"';
-
-    for (unsigned int i=0; i< s.size(); i++)
-    {
-        char c = s[i];
-
-        switch (c)
-        {
-            case '\r': o << "\\r"; break;
-            case '\n': o << "\\n"; break;
-            case '\v': o << "\\v"; break;
-            case '\t': o << "\\t"; break;
-            case '\"': o << "\\\""; break;
-            case '\'': o << "\\\'"; break;
-            default:
-                {
-                    if (isprint(c))
-                    {
-                        o << c;
-                        break;
-                    }
-                    o << "0x" << std::hex << std::setw(2) << std::setfill('0') << c;
-                }
-        }
-    }
-
-    o << '\"';
-
-    return o.str();
-}
-
-
 
 uint64_t number_optional_trailing_KiB_MiB_GiB_TiB(const std::string& s_parameter)
 {

@@ -56,7 +56,7 @@ std::string format_utterance(std::string speaker, std::string utterance);
 
 // For these functions I was having trouble with c++11 regexs, // at the time - later code uses regexes.
 // so some of these do things the old fashioned way.
-bool isValidTestNameIdentifier(std::string s);
+std::pair<bool,std::string> isValidTestNameIdentifier(std::string s);
 bool endsWithPoundSign(std::string s);
 bool startsWith(std::string s, std::string starter);
 bool startsWith(std::string starter, std::string line, std::string& remainder);  // Sorry didn't notice overloaded function name at the time - originally evolved in different source files
@@ -72,8 +72,6 @@ std::string convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(s
 std::string convert_non_alphameric_or_hyphen_or_equals_to_underscore(std::string s);
 std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(std::string);
 bool stringCaseInsensitiveEquality(std::string s1, std::string s2);
-
-std::pair<bool,std::string> looksLikeFilename(std::string s);
 
 bool looksLikeHostname(std::string s);
 bool looksLikeIPv4Addr(std::string s);
@@ -126,8 +124,6 @@ std::string quote_wrap_csvline_except_numbers(const std::string csvline); // Thi
 std::string column_header_to_identifier(const std::string&s);
 
 void xorshift64star(uint64_t&);
-
-std::string put_in_quotes(const std::string&);
 
 uint64_t number_optional_trailing_KiB_MiB_GiB_TiB(const std::string& s_parameter);
 

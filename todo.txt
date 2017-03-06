@@ -1,3 +1,5 @@
+- switch from "fork" to std::thread for ivymaster subthreads to use platform-independent code (position for Windows port)
+
 - see if we should add the EOF token for the ivyscript parser as well.
 
 - go back and do the "measure" +/- math for each individual I/O being a sample for service time.
@@ -22,9 +24,6 @@
   iterate over the workload trackers and post the results into the rollups.
   This would eliminate get/release global lock for each workload thread.
   
-- put in retry mechanism if upon initial startup of the ssh command to ivyslave, the initial
-  read from the pipe stalls.  (kill ssh thread, harvest.  Then try again.)
-
 - rename parameter service_time to service_time_seconds
 
 - test using LVM and impact LUN discovery / SCSI Inquiry
@@ -110,8 +109,6 @@ at least make sure the ivy main executable terminates if it's hung, and taking o
 
 
 
-- squeeze all underscores out of parameter names in a parameter value lookup table, so maxTags and max_tags are equivalent.
-
 - have executing a statement set the current source file line number, so that error messages could print it;
 
 - look at making "collapse" which would move all files up out of subfolders and delete the subfolders.
@@ -124,8 +121,6 @@ at least make sure the ivy main executable terminates if it's hung, and taking o
   You could pick things you wanted to monitor, and arrange them on the display area.
 
 - automated queue depth vs. response time charts for IOPS = max
-
-- Offer data visualization - look at grafana.org.
 
 - examine whether to remove the timestamps from the metric_value object and
   perhaps have ivy_cmddev provide data with individual I/O timestamps instead ...
@@ -149,15 +144,7 @@ Then when ivyslave reports the results of a subinterval, it reports the wait fla
 
 - catch a "kill" signal and shut down subtasks gently
 
-(James) - run LSPCI and store server details to track I/O generation capability of different kinds of server components.
-
-
-
-Consider how an ivy test run could be filed in a database, so that these tests could be located in a kind of coordinate space when you want to calibrate a model.
-	-ideally you would want to know about the hardware and software versions, the configuration, etc.
-
 Gather config report from SVP and import into ivy subsystem object. (adapt PERL collector).
-
 
 
 

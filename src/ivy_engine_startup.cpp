@@ -46,11 +46,11 @@ std::pair<bool /*success*/, std::string /* message */>
     {
         std::ostringstream o;
         o << "ivy engine API startup("
-            << "output_folder_root = "           << put_in_quotes(output_folder_root)
-            << ", test_name = "                  << put_in_quotes(test_name)
-            << ", ivyscript_filename = "         << put_in_quotes(ivyscript_filename)
-            << ", test_hosts = "                 << put_in_quotes(hosts_string)
-            << ", select = " << put_in_quotes(select_available_test_LUNs)
+            << "output_folder_root = "   << output_folder_root
+            << ", test_name = "          << test_name
+            << ", ivyscript_filename = " << ivyscript_filename
+            << ", test_hosts = "         << hosts_string
+            << ", select = "             << select_available_test_LUNs
             << ")" << std::endl;
         std::cout << o.str();
         api_log_entry = o.str();
@@ -269,13 +269,12 @@ std::pair<bool /*success*/, std::string /* message */>
             std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
 
             std::chrono::system_clock::time_point leftnow {std::chrono::system_clock::now()};
-            int timeout_seconds {10};
             if
             (
                 pear.second->master_slave_cv.wait_until
                 (
                     u_lk,
-                    leftnow + std::chrono::seconds(timeout_seconds),
+                    leftnow + std::chrono::seconds(ivy_ssh_timeout),
                     [&pear]() { return pear.second->startupComplete; }
                 )
             )
@@ -506,14 +505,13 @@ std::pair<bool /*success*/, std::string /* message */>
                     {
                         std::unique_lock<std::mutex> u_lk(p_pipe_driver_subthread->master_slave_lk);
                         std::chrono::system_clock::time_point leftnow {std::chrono::system_clock::now()};
-                        int timeout_seconds {5};
 
                         if
                         (
                             p_pipe_driver_subthread->master_slave_cv.wait_until
                             (
                                 u_lk,
-                                leftnow + std::chrono::seconds(timeout_seconds),
+                                leftnow + std::chrono::seconds(ivy_ssh_timeout),
                                 [&p_pipe_driver_subthread](){return p_pipe_driver_subthread->startupComplete;}
                         )
                     )

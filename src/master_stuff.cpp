@@ -933,8 +933,8 @@ master_stuff::set_iosequencer_template(
         std::ostringstream o;
 
         o << "ivy engine API set_iosequencer_template(";
-        o << "template_name = " << put_in_quotes(template_name);
-        o << ", parameters = " << put_in_quotes(parameters);
+        o << "template_name = \"" << template_name << "\"";
+        o << ", parameters = \"" << parameters << "\"";
         o << ")" << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
@@ -977,10 +977,10 @@ master_stuff::createWorkload(
     {
         std::ostringstream o;
         o << "ivy engine API create_workload("
-            << "workload_name = " << put_in_quotes(workloadName)
-            << ", select = " << put_in_quotes(select_string)
-            << ", iosequencer = " << put_in_quotes(iosequencerName)
-            << ", parameters = " << put_in_quotes(parameters)
+            << "workload_name = \"" << workloadName << "\""
+            << ", select = \"" << select_string << "\""
+            << ", iosequencer = \"" << iosequencerName << "\""
+            << ", parameters = \"" << parameters << "\""
             << ")" << std::endl;
         std::cout << o.str();
         log (m_s.masterlogfile,o.str());
@@ -1231,8 +1231,8 @@ master_stuff::deleteWorkload(
     {
         std::ostringstream o;
         o << "ivy engine API delete_workload("
-            << "workload name = " << put_in_quotes(workloadName)
-            << ", select = " << put_in_quotes(select_string)
+            << "workload name = \"" << workloadName << "\""
+            << ", select = \"" << select_string << "\""
             << ")" << std::endl;
         std::cout << o.str();
         log (m_s.masterlogfile,o.str());
@@ -1429,7 +1429,7 @@ master_stuff::create_rollup(
     {
         std::ostringstream o;
         o << "ivy engine API create_rollup(";
-        o << "rollup_name = " << put_in_quotes(attributeNameComboText);
+        o << "rollup_name = \"" << attributeNameComboText << "\"";
         o << ", nocsv = ";                          if (nocsvSection)                o << true; else o << "false";
         o << ", have_quantity_validation = ";       if (quantitySection)             o << true; else o << "false";
         o << ", have_max_IOPS_droop_validation = "; if (maxDroopMaxtoMinIOPSSection) o << true; else o << "false";
@@ -1475,8 +1475,8 @@ master_stuff::edit_rollup(const std::string& rollupText, const std::string& orig
     {
         std::ostringstream o;
         o << "ivy engine API edit_rollup("
-            << "rollup_name = " << put_in_quotes(rollupText)
-            << ", parameters = " << put_in_quotes(original_parametersText)
+            << "rollup_name = \"" << rollupText << "\""
+            << ", parameters = \"" << original_parametersText << "\""
             << ")" << std::endl;
         std::cout << o.str();
         log (m_s.masterlogfile,o.str());
@@ -1741,7 +1741,7 @@ master_stuff::delete_rollup(const std::string& attributeNameComboText)
     {
         std::ostringstream o;
         o << "ivy engine API delete_rollup("
-            << "rollup_name = " << put_in_quotes(attributeNameComboText)
+            << "rollup_name = \"" << attributeNameComboText << "\""
             << ")" << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
@@ -1762,8 +1762,8 @@ master_stuff::delete_rollup(const std::string& attributeNameComboText)
             if ( !rc.first )
             {
                 std::ostringstream o;
-                o << "<Error> ivy engine API - for \"delete all rollups except the \'all\' rollup\" - failed trying to delete "
-                    << put_in_quotes(pear.first) << " - " << rc.second << std::endl;
+                o << "<Error> ivy engine API - for \"delete all rollups except the \'all\' rollup\" - failed trying to delete \""
+                    << pear.first << "\" - " << rc.second << std::endl;
                 log(m_s.masterlogfile,o.str());
                 std::cout << o.str();
                 return std::make_pair(false,o.str());
@@ -1784,7 +1784,7 @@ master_stuff::delete_rollup(const std::string& attributeNameComboText)
         if ( !rc.first )
         {
             std::ostringstream o;
-            o << "<Error> ivy engine API - delete rollup for " << put_in_quotes(attributeNameComboText) << " failed - " << rc.second << std::endl;
+            o << "<Error> ivy engine API - delete rollup for \"" << attributeNameComboText << "\" failed - " << rc.second << std::endl;
             log(m_s.masterlogfile,o.str());
             std::cout << o.str();
             return std::make_pair(false,o.str());
@@ -1803,7 +1803,7 @@ master_stuff::go(const std::string& parameters)
     {
         std::ostringstream o;
         o << "ivy engine API go("
-            << "parameters = " << put_in_quotes(parameters)
+            << "parameters = \"" << parameters << "\""
             << " )" << std::endl;
         log (masterlogfile,o.str());
         std::cout << o.str();

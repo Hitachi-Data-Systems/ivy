@@ -50,7 +50,7 @@ char trail_pct_buf[MAX_TRAILING_PERCENT_TOKEN_SIZE];
 %}
 
 ws         [ \t]+
-identifier [a-zA-Z]([a-zA-Z0-9]|_)*
+identifier [a-zA-Z一-龯ぁ-んァ-ン]([a-zA-Z0-9一-龯ぁ-んァ-ン]|_)*
 integer_trailing_percent    [0-9]+[ \t]*%
 integer    [0-9]+
 hex_integer 0x[0-9a-fA-F]+

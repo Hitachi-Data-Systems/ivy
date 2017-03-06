@@ -83,21 +83,15 @@ int main(int argc, char* argv[])
         ivyscriptFilename = item;
     }
 
-    auto pear = looksLikeFilename(ivyscriptFilename);
-
-    if (!pear.first) // returns true if all alphanumerics, underscores, periods (dots), single slashes, or single backslashes
-    {
-        std::cout << pear.second;
-        return -1;
-    }
-
     if (!endsIn(ivyscriptFilename, ".ivyscript")) ivyscriptFilename += std::string(".ivyscript");
 
-    std::regex ivyscript_filename_regex(R"ivy((.*[/])?([a-zA-Z][_\.[:alnum:]]*)(\.ivyscript))ivy");
+    std::regex ivyscript_filename_regex(R"ivy((.*[/])?([^/\\]+)(\.ivyscript))ivy");
+
     // Three sub matches
-    // - optional path part,
-    // - root part, which is an identifier, possibly with embedded periods,
+    // - optional path part, which if present ends with a forward slash / or
+    // - test name part
     // - and the .ivyscript suffix, which was added if the user left it off
+
     std::smatch entire_match; // we will pick out the test name part - submatch 2, the identifier, possibly with embedded periods.
     std::ssub_match test_name_sub_match;
 
@@ -117,12 +111,10 @@ int main(int argc, char* argv[])
 
     std::string test_name = test_name_sub_match.str();
 
-    if (!isValidTestNameIdentifier(test_name))
+    auto isValid = isValidTestNameIdentifier(test_name);
+    if (!isValid.first)
     {
-        std::cout << "The ivy \"test name\" is the part of the filename before the optional .ivyscript." << std::endl
-                  << "The test name must consist of entirely alphanumerics, underscores, and periods (dots)." << std::endl
-                  << "Periods (dots) may not be used as first or last characters, and sequences of " << std::endl
-                  << "two consecutive periods are not permitted." << std::endl;
+        std::cout << isValid.second;
         return -1;
     }
 

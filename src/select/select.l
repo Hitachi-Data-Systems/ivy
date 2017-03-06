@@ -74,6 +74,8 @@ pg        {one256}-{one256}
 ldev      [0-9a-fA-F][0-9a-fA-F](:)?[0-9a-fA-F][0-9a-fA-F]
 ldev_range {ldev}-{ldev}
 
+port    [0-9][a-zA-Z]
+
 %x	STRING STRING_ESCAPE
 
 %%
@@ -250,6 +252,16 @@ ldev_range {ldev}-{ldev}
 			exit(1);
 		}
 		if (trace_select_lexer) std::cout << "select lexer returning QUOTED_STRING for LDEV range = " << *(yylval->p_str) << std::endl;
+		return token::QUOTED_STRING;
+    }
+
+{port} {
+		yylval->p_str = new std::string(yytext);
+		if (!yylval->p_str) {
+			context_ref.error("out of memory in lexer");
+			exit(1);
+		}
+		if (trace_select_lexer) std::cout << "select lexer returning QUOTED_STRING for port = " << *(yylval->p_str) << std::endl;
 		return token::QUOTED_STRING;
     }
 

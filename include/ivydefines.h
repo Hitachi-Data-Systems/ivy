@@ -156,3 +156,5 @@ extern std::string indent_increment;
 extern char* unique_words[];
 
 #define non_random_sample_correction_factor_default (2.0) /* Applied to accuracy +/- to adjust for subintervals being consecutive rather than taking samples (subintervals) at random from a large populatyion */
+
+#define ivy_ssh_timeout (180) /* ssh can sometimes take a long time to fire up due to DNS timeouts */
