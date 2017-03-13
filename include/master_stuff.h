@@ -362,7 +362,8 @@ public:
 
     ivy_float non_random_sample_correction_factor {non_random_sample_correction_factor_default /*in ivydefines.h */};
 
-//    bool have_best_of_wurst {false};
+//    bool have_best_of_wurst {false};  That would be leverworst, natuurlijk.
+
     unsigned int best_of_wurst_first, best_of_wurst_last;
     bool have_timeout_rollup {false};
 

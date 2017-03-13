@@ -39,12 +39,16 @@ std::string inter_statement_divider {"==========================================
 
 bool routine_logging {false};
 
+bool hostname_hyphen {false};
+
 void usage_message(char* argv_0)
 {
     std::cout << std::endl << "Usage: " << argv_0 << " [options] <ivyscript file name to open>" << std::endl << std::endl
         << "where \"[options]\" means zero or more of:" << std::endl << std::endl
         << "-log" << std::endl
         << "     Turns on logging of routine events." << std::endl << std::endl
+        << "-hostname-hyphen" << std::endl
+        << "     Recognize \"aardvark10-12\" as a single host named \"aardvark10-12\" rather than \"aardvark10, aardvark11, aardvark12\"." << std::endl
         << "-trace_lexer" << std::endl
         << "     Log routine events and trace the \"lexer\" which breaks down the .ivyscript program into \"tokens\"." << std::endl << std::endl
         << "-trace_parser" << std::endl
@@ -77,6 +81,8 @@ int main(int argc, char* argv[])
         if (item == "-trace_lexer")    { routine_logging = trace_lexer = true; continue; }
         if (item == "-trace_parser")   { routine_logging = trace_parser = true; continue; }
         if (item == "-trace_evaluate") { routine_logging = trace_evaluate = true; continue; }
+
+        if (item == "-hostname-hyphen") { hostname_hyphen = true; continue; }
 
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }
 

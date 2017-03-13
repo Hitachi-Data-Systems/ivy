@@ -37,7 +37,7 @@
 #define BUF_ALIGNMENT_BOUNDARY_SIZE 4096
 #define MAX_IOS_LAUNCH_AT_ONCE 8
 #define MAX_IOEVENTS_REAP_AT_ONCE 16
-#define MAXWAITFORINITALPROMPT 10
+#define MAXWAITFORINITALPROMPT 120
 
 // When ivyslave runs on a test host, it temporarily writes its log files to the following
 // folder location.  Then once ivyslave has exited, the ivy master thread copies the log files

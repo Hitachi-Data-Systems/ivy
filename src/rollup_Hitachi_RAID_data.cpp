@@ -208,13 +208,13 @@ void rollup_Hitachi_RAID_data(const std::string& logfilename, Hitachi_RAID_subsy
                             pg="PG";
                             break;
                         case 1:
-                            pg="PG+1";
+                            pg="PG_concat2";
                             break;
                         case 2:
-                            pg="PG+2";
+                            pg="PG_concat3";
                             break;
                         case 3:
-                            pg="PG+3";
+                            pg="PG_concat4";
                             break;
                         }
                         auto& x = currentGD.data["PG"][this_metrics[pg].string_value()];

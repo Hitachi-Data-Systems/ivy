@@ -47,7 +47,6 @@ bool trace_parser {false};
 std::string indent_increment {"   "};
 
 std::regex identifier_regex(                "[[:alpha:]][[:alnum:]_]*");
-    // There was a name collision with something deep in the bowels of the apparatus called identifier_regex.
 std::regex identifier_trailing_digits_regex("[[:alpha:]][[:alnum:]_]*[[:digit:]]");
 std::regex digits_regex(                  "[[:digit:]]+");
 
@@ -235,7 +234,7 @@ std::pair<bool,std::string> isValidTestNameIdentifier(std::string s) {
     if (!std::regex_match(s,valid_chars))
     {
         std::ostringstream o;
-        o << "Invalid ivy test name \"" << s << "\" - must consist of ASCII alphabetics & numerics, Japanese kanji / hiragana / katakana, spaces, underscores, and periods." << std::endl;
+        o << "Invalid ivy test name \"" << s << "\" - must consist of ASCII alphabetics & numerics, Japanese kanji / hiragana / katakana, spaces, underscores, hyphens, and periods." << std::endl;
         return std::make_pair(false,o.str());
     }
 	return std::make_pair(true,"");

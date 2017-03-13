@@ -38,6 +38,8 @@ using namespace std;
 
 bool trace_hosts_parser {false};
 
+extern bool hostname_hyphen;
+
 %}
 
 %parse-param { hosts_list&  context_ref }
@@ -93,42 +95,62 @@ host_list:
         {
             if (trace_hosts_parser) std::cout<<"hosts_list parser host_list IDENTIFIER=" << (*($2)) << " \'-\' UNSIGNED_INTEGER=" << (*($4)) << std::endl;
 
-            std::string& id = *($2);
-            std::string& ui = *($4);
+            if (hostname_hyphen)
+            {
+                context_ref.hosts.push_back
+                (
+                    (*($2))
+                      +
+                    std::string("-")
+                      +
+                    (*($4))
+                );
 
-            unsigned int suffix_length {0};
-            for (unsigned int i = id.size()-1; i>0; i--)
-            {
-                if (!isdigit(id[i])) break;
-                suffix_length++;
+                delete $2;
+                delete $4;
             }
-            std::string id_base = id.substr(0,id.size()-suffix_length);
-            std::string suffix = id.substr(id.size()-suffix_length,suffix_length);
-            unsigned int first, last;
+            else
             {
-                std::istringstream i(suffix);
-                i >> first;
-            }
-            {
-                std::istringstream i(ui);
-                i >> last;
-            }
-            if (first >= last)
-            {
-                context_ref.unsuccessful_compile=true;
-                std::ostringstream o;
-                o << "<Error> Invalid numbered hostname range - in \"" << id << "-" << ui << "\", the starting host number is must be smaller than the ending number." << std::endl;
-                context_ref.message += o.str();
-            }
 
-            for (unsigned int i=first; i<=last; i++)
-            {
-                std::ostringstream o;
-                o << id_base << i;
-                context_ref.hosts.push_back(o.str());
-            }
-            context_ref.has_hostname_range = true;
+                {
+                    std::string& id = *($2);  // we delete the strings after the life of these references
+                    std::string& ui = *($4);
 
+                    unsigned int suffix_length {0};
+                    for (unsigned int i = id.size()-1; i>0; i--)
+                    {
+                        if (!isdigit(id[i])) break;
+                        suffix_length++;
+                    }
+                    std::string id_base = id.substr(0,id.size()-suffix_length);
+                    std::string suffix = id.substr(id.size()-suffix_length,suffix_length);
+                    unsigned int first, last;
+                    {
+                        std::istringstream i(suffix);
+                        i >> first;
+                    }
+                    {
+                        std::istringstream i(ui);
+                        i >> last;
+                    }
+                    if (first >= last)
+                    {
+                        context_ref.unsuccessful_compile=true;
+                        std::ostringstream o;
+                        o << "<Error> Invalid numbered hostname range - in \"" << id << "-" << ui << "\", the starting host number is must be smaller than the ending number." << std::endl;
+                        context_ref.message += o.str();
+                    }
+
+                    for (unsigned int i=first; i<=last; i++)
+                    {
+                        std::ostringstream o;
+                        o << id_base << i;
+                        context_ref.hosts.push_back(o.str());
+                    }
+                }
+                context_ref.has_hostname_range = true;
+                delete $2; delete $4;
+            }
         }
     | host_list IDENTIFIER
         {

@@ -262,7 +262,7 @@ bool JSON_select_clause::default_matches(LUN* pLUN)
 
     std::string lun_attribute_value = pLUN->attribute_value(attribute_name);
 
-    for (auto& p : value_pointer_list)
+    for (auto& p : value_pointer_list) // return true if it matches one of the target values
     {
         if (p == nullptr)
         {
@@ -272,10 +272,13 @@ bool JSON_select_clause::default_matches(LUN* pLUN)
             throw std::runtime_error(o.str());
         }
 
-        if (!stringCaseInsensitiveEquality(p->bare_value(),lun_attribute_value)) return false;
+        if (stringCaseInsensitiveEquality(p->bare_value(),lun_attribute_value))
+        {
+            return true;
+        };
     }
 
-    return true;
+    return false;
 }
 
 

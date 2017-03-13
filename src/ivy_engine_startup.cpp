@@ -246,8 +246,9 @@ std::pair<bool /*success*/, std::string /* message */>
 
     for ( auto& host : hosts )
     {
+        if (routine_logging) { std::cout << "Starting thread for " << host << std::endl; }
         log( masterlogfile, std::string("Starting thread for ") + host + std::string("\n") );
-        std::cout << "Starting thread for " << host << std::endl;
+
         pipe_driver_subthread* p_pipe_driver_subthread = new pipe_driver_subthread
             (
                 host,
@@ -260,6 +261,15 @@ std::pair<bool /*success*/, std::string /* message */>
     }
     ofstream ahl(testFolder+std::string("/all_discovered_LUNs.txt"));
     ofstream ahl_csv(testFolder+std::string("/all_discovered_LUNs.csv"));
+
+    {
+        std::ostringstream o;
+        o << std::endl << "Note:" << std::endl
+            << "Sometimes the ssh command to start up ivyslave on a test host can take a long time when waiting for DNS timeouts.  "
+            << "This can be speeded up by editing resolv.conf to use /etc/hosts first, or options for the sshd daemon can be edited; search for \"ssh login timeout\"." << std::endl << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+    }
 
     bool first_host {true};
 
