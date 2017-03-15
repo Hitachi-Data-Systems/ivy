@@ -512,5 +512,7 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 
 .	/*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning \'" << yytext[0] << "\'." << std::endl; return yytext[0];
 
+<<EOF>> return token::END_OF_FILE;
+
 %%
 

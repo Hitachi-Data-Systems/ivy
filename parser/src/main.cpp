@@ -48,7 +48,7 @@ void usage_message(char* argv_0)
         << "-log" << std::endl
         << "     Turns on logging of routine events." << std::endl << std::endl
         << "-hostname-hyphen" << std::endl
-        << "     Recognize \"aardvark10-12\" as a single host named \"aardvark10-12\" rather than \"aardvark10, aardvark11, aardvark12\"." << std::endl
+        << "     Recognize \"aardvark10-12\" as a single host named \"aardvark10-12\" rather than \"aardvark10, aardvark11, aardvark12\"." << std::endl << std::endl
         << "-trace_lexer" << std::endl
         << "     Log routine events and trace the \"lexer\" which breaks down the .ivyscript program into \"tokens\"." << std::endl << std::endl
         << "-trace_parser" << std::endl

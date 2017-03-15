@@ -1,7 +1,5 @@
 - switch from "fork" to std::thread for ivymaster subthreads to use platform-independent code (position for Windows port)
 
-- see if we should add the EOF token for the ivyscript parser as well.
-
 - go back and do the "measure" +/- math for each individual I/O being a sample for service time.
 
 - in LDEV config data, the path type for a (the default) host group shows type iSCSI instead of Fibre Channel.
@@ -24,7 +22,6 @@
   iterate over the workload trackers and post the results into the rollups.
   This would eliminate get/release global lock for each workload thread.
   
-- rename parameter service_time to service_time_seconds
 
 - test using LVM and impact LUN discovery / SCSI Inquiry
 - test with multipath software (HDLM / MPIO)

@@ -77,6 +77,7 @@ using namespace std;
 %token KW_INT KW_DOUBLE KW_STRING KW_IF KW_THEN KW_ELSE KW_FOR KW_WHILE KW_RETURN KW_STATIC KW_CONST KW_DO
 %token KW_TO KW_HOSTS KW_OUTPUT_FOLDER_ROOT KW_SET_IOSEQUENCER_TEMPLATE KW_CREATE_WORKLOAD KW_DELETE_WORKLOAD KW_SELECT
 %token KW_IOSEQUENCER KW_PARAMETERS KW_CREATE_ROLLUP KW_NOCSV KW_QUANTITY KW_MAX_DROOP_MAX_TO_MIN_IOPS KW_DELETE_ROLLUP KW_EDIT_ROLLUP KW_GO
+%token END_OF_FILE
 
 %nonassoc NOT_ELSE
 %nonassoc ELSE
@@ -127,7 +128,7 @@ program:
         if (trace_parser) trace_ostream << "parser: (null)" << std::endl;
 	}
 
-	statements
+	statements END_OF_FILE
         {
             if (trace_parser) trace_ostream << "program: statements - now going to YYACCEPT." << std::endl;
 
