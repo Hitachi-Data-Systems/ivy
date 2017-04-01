@@ -59,7 +59,7 @@ float      (([0-9]+\.[0-9]*)|([0-9]*\.[0-9]+)([eE][+-]?[0-9]{1,3})?)|([0-9]+[eE]
 zero255    ([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])
 dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 
-%x	STRING STRING_ESCAPE
+%x	STRING STRING_ESCAPE inklude
 
 %%
 
@@ -69,6 +69,18 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 	yylloc->step();
 %}
 
+include	BEGIN(inklude);
+
+<inklude>[ \t]*	/*ignore whitespace before filename */
+<inklude>[^ \t\n\r]+	{
+		yyin = fopen(yytext, "r");
+		if (!yyin) {
+			context_ref.error( std::string("Failed trying to open include file \"") + yytext + std::string("\".\n") );
+			return 0;
+		}
+		yypush_buffer_state(yy_create_buffer( yyin, YY_BUF_SIZE));
+		BEGIN(INITIAL);
+	}
 
 <STRING,STRING_ESCAPE><<EOF>>	{
 		context_ref.error("unexpected end-of-file looking for end of quoted string.");
@@ -512,7 +524,15 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 
 .	/*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning \'" << yytext[0] << "\'." << std::endl; return yytext[0];
 
-<<EOF>> return token::END_OF_FILE;
+<<EOF>> {
+            yypop_buffer_state();
+
+            if ( !YY_CURRENT_BUFFER )
+            {
+                return token::END_OF_FILE;
+            }
+
+        }
 
 %%
 
