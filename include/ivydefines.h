@@ -76,7 +76,7 @@
 
 #define sector_size_bytes (512)
 
-#define catnap_time_seconds_default (1.2)
+#define catnap_time_seconds_default (1.0)
     // The amount of time after the end of the subinterval that the ivyslave main thread waits
     // before looking to see if the workload threads posted their subintervals complete.
 #define post_time_limit_seconds_default (2.5)
@@ -87,14 +87,6 @@
 #define warmup_seconds_default     std::string("5")
 #define measure_seconds_default    std::string("60")
 #define cooldown_by_wp_default     std::string("on")
-
-// dfc = pid parameters
-#define p_default               std::string("1.0")
-#define i_default               std::string("1.0")
-#define d_default               std::string("0.0")
-#define target_value_default    std::string("50%")
-#define starting_total_IOPS_default std::string("10")
-#define min_IOPS_default            std::string("10")
 
 // measure = on parameters
 #define accuracy_plus_minus_default std::string("5%")

@@ -61,6 +61,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
     // First we clean out the existing subinterval sequences in the rollups in case it was still full of stuff from a previous test step.
     m_s.running_subinterval = -1;
+    m_s.last_gain_adjustment_subinterval = -1;
     m_s.rollups.resetSubintervalSequence();
     m_s.cpu_by_subinterval.clear();
 
@@ -255,7 +256,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 << " from " << m_s.subintervalStart.format_as_datetime_with_ns()
                 <<  " to  " << m_s.subintervalEnd.format_as_datetime_with_ns() << std::endl;
             std::cout << o.str();
-            log(m_s.masterlogfile,o.str());
+            if (routine_logging) log(m_s.masterlogfile,o.str());
         }
 
         m_s.rollups.startNewSubinterval(m_s.subintervalStart,m_s.subintervalEnd);
@@ -392,7 +393,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                   << "\"all=all\" rollup\'s subsystem_summary_data.thumbnail(): "
                         << m_s.rollups.get_all_equals_all_instance()->subsystem_data_by_subinterval.back().thumbnail()
                   << std::endl;
-                log(m_s.masterlogfile,o.str());
+                if (routine_logging) log(m_s.masterlogfile,o.str());
                 std::cout << o.str();
             }
         }
@@ -438,6 +439,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             std::system("clear");
         }
 
+        if (routine_logging)
         {
             std::ostringstream o;
             o << "Received notification of delivery to all workload threads of \"" << m_s.host_subthread_pointers.begin()->second->commandString << "\" command from ivyslave instances "
@@ -448,6 +450,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             log(m_s.masterlogfile, o.str());
         }
 
+        if (routine_logging)
         {
             std::ostringstream o;
             o << "All host subthreads posted subinterval complete."
@@ -459,6 +462,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             log(m_s.masterlogfile,o.str());
             std::cout << o.str() << std::endl;
         }
+
         auto allTypeIterator = m_s.rollups.rollups.find(std::string("all"));
 
         if ( m_s.rollups.rollups.end() == allTypeIterator )
@@ -499,7 +503,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 o << allAllSubintervalOutput.thumbnail(allAllSubintervalRollup.durationSeconds()) << std::endl;
 
                 std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
+                if (routine_logging) log(m_s.masterlogfile,o.str());
             }
         }
 
@@ -672,7 +676,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
             std::string s = m_s.focus_caption();
             std::cout << s;
-            if (s.size()>0) log(m_s.masterlogfile, s);
+            if (s.size()>0 && routine_logging) log(m_s.masterlogfile, s);
         }
 
         if (m_s.in_cooldown_mode)
@@ -720,7 +724,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
                 o << std::endl;
                 std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
+                if (routine_logging) log(m_s.masterlogfile,o.str());
             }
 
             if (

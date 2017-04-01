@@ -277,7 +277,6 @@ void RollupSet::resetSubintervalSequence()
         for (auto& instance_pair : type_pear.second->instances)
         {
             instance_pair.second->focus_metric_vector.clear();
-            instance_pair.second->error_integral = 0.0;
         }
     }
 }

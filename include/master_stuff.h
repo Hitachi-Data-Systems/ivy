@@ -210,11 +210,11 @@ public:
     bool have_RAID_subsystem {false};         // where we screen for valid parameter name combinations and set default values if not specified.
     bool have_pid            {false};
     bool have_measure        {false};         // Then later we will use these flags to control which parameter names to parse.
-    bool have_within         {false};
-    bool have_max_above_or_below{false};
 
-    ivy_float within {-1};
-    unsigned int max_above_or_below;
+//    bool have_within         {false};
+//    bool have_max_above_or_below{false};
+//    ivy_float within {-1};
+//    unsigned int max_above_or_below;
 
     // universal
 	std::string stepName;
@@ -241,11 +241,17 @@ public:
     // dfc = pid
     std::string target_value_parameter; /* ==> */ ivy_float target_value {-1.};
         // number with optional trailing % sign.
-    std::string p_parameter; /* ==> */ ivy_float p_multiplier {-1.};
-    std::string i_parameter; /* ==> */ ivy_float i_multiplier {-1.};
-    std::string d_parameter; /* ==> */ ivy_float d_multiplier {-1.};
-    std::string starting_total_IOPS_parameter; /* ==> */ ivy_float starting_total_IOPS {-1.};
-    std::string min_IOPS_parameter;            /* ==> */ ivy_float min_IOPS {-1.};
+    std::string min_IOPS_parameter;    /* ==> */ ivy_float min_IOPS   {-1.};
+    std::string low_IOPS_parameter;    /* ==> */ ivy_float low_IOPS    {0.};
+    std::string low_target_parameter;  /* ==> */ ivy_float low_target  {0.};
+    std::string high_IOPS_parameter;   /* ==> */ ivy_float high_IOPS   {0.};
+    std::string high_target_parameter; /* ==> */ ivy_float high_target {0.};
+//    std::string p_parameter; /* ==> */ ivy_float p_multiplier {-1.};
+//    std::string i_parameter; /* ==> */ ivy_float i_multiplier {-1.};
+//    std::string d_parameter; /* ==> */ ivy_float d_multiplier {-1.};
+//    std::string starting_total_IOPS_parameter; /* ==> */ ivy_float starting_total_IOPS {-1.};
+//    std::string initial_cumulative_error_parameter; /* ==> */ ivy_float initial_cumulative_error {-1.};
+
 
     MeasureDFC the_dfc;
 
@@ -366,6 +372,14 @@ public:
 
     unsigned int best_of_wurst_first, best_of_wurst_last;
     bool have_timeout_rollup {false};
+
+    ivy_float gain_step { 2.0 };           // The amount to increase / decrease gain in the adaptive PID approach.  2.0 works exactly same as 0.5
+    ivy_float max_ripple { 1.5 / 100.0 };  // The max amount that in a PID loop IOPS can bounce up and down before reducing I gain.
+    unsigned int max_monotone { 5 };          // The max number of initial subintervals without IOPS ever changing direction before increasing the gain.
+    ivy_float ballpark_seconds { 60. };    // A measure of the gain.  Smaller values represent higher gain.
+
+    int last_gain_adjustment_subinterval {-1};  // One central value in master_stuff with the latest gain adjustment made in any focus rollup instance.
+
 
 // methods
 	void kill_subthreads_and_exit();

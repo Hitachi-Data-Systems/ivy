@@ -27,6 +27,7 @@
 #include "master_stuff.h"
 #include "RollupInstance.h"
 
+extern bool routine_logging;
 
 void MeasureDFC::reset()
 {
@@ -39,39 +40,57 @@ int MeasureDFC::evaluateSubinterval()
 {
 	current++;
 
-	{
-		if (current < ( m_s.min_warmup_count + m_s.min_measure_count - 1)) /* if we say success at subinterval min_warmup_subintervals + min_sample_size, there's one more running that will be a cooldown subinterval */
-		{
-			std::ostringstream o;
-			o << "This is subinterval number " << current << " (numbered from zero) of at least " << ( m_s.min_warmup_count + m_s.min_measure_count )
-                << " subintervals to accommodate " << m_s.warmup_seconds << " warmup_seconds and " << m_s.measure_seconds << " measure_seconds with subintervals " << m_s.subinterval_seconds << " seconds long." << std::endl << std::endl;
-			std::cout << o.str();
-			log(m_s.masterlogfile, o.str());
-			m_s.have_timeout_rollup = false;
-			return  EVALUATE_SUBINTERVAL_CONTINUE;
-		}
+    if (m_s.have_pid && m_s.last_gain_adjustment_subinterval > 0 && current < ( m_s.last_gain_adjustment_subinterval + m_s.min_measure_count - 1))
+    {
+        std::ostringstream o;
+        o << "Last PID loop gain adjustment was at subinterval " << m_s.last_gain_adjustment_subinterval
+            << " and we need run for " <<  (( m_s.last_gain_adjustment_subinterval + m_s.min_measure_count - 1) - current)
+            << " more subintervals from now to have at least " << m_s.measure_seconds
+            << " seconds worth of measurement data. " << std::endl << std::endl;
+        std::cout << o.str();
+        if (routine_logging) log(m_s.masterlogfile, o.str());
+        m_s.have_timeout_rollup = false;
+        return  EVALUATE_SUBINTERVAL_CONTINUE;
+    }
 
-		if (!m_s.have_measure)  // fixed number of subintervals
-		{
+    if (current < ( m_s.min_warmup_count + m_s.min_measure_count - 1)) /* if we say success at subinterval min_warmup_subintervals + min_sample_size, there's one more running that will be a cooldown subinterval */
+    {
+        std::ostringstream o;
+        o << "This is subinterval number " << current << " (numbered from zero) of at least " << ( m_s.min_warmup_count + m_s.min_measure_count )
+            << " subintervals to accommodate " << m_s.warmup_seconds << " warmup_seconds and " << m_s.measure_seconds << " measure_seconds with subintervals " << m_s.subinterval_seconds << " seconds long." << std::endl << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile, o.str());
+        m_s.have_timeout_rollup = false;
+        return  EVALUATE_SUBINTERVAL_CONTINUE;
+    }
+
+    if (!m_s.have_measure)  // fixed number of subintervals
+    {
+        if (m_s.have_pid && (m_s.last_gain_adjustment_subinterval > 0) )
+        {
+            measureFirstIndex = m_s.last_gain_adjustment_subinterval + 1;
+        }
+        else
+        {
             measureFirstIndex = m_s.min_warmup_count;
-            measureLastIndex = m_s.min_warmup_count + m_s.min_measure_count - 1;
-            return EVALUATE_SUBINTERVAL_SUCCESS;
-		}
+        }
+        measureLastIndex = m_s.min_warmup_count + m_s.min_measure_count - 1;
+        return EVALUATE_SUBINTERVAL_SUCCESS;
+    }
 
-		if (current > (m_s.timeout_seconds / m_s.subinterval_seconds))
-		{
-            std::ostringstream o;
-			o << "<Error> Timed out - timeout_seconds = " << m_s.timeout_seconds << ".  Failed to get a valid measurement with accuracy_plus_minus = \"" << m_s.accuracy_plus_minus_parameter
-                << "\" and confidence = \"" << m_s.confidence_parameter << "\"." <<  std::endl;
-			o << std::endl << "====================================================" << std::endl << std::endl;
-			log (m_s.masterlogfile,o.str());
-			std::cout << o.str();
+    if (current > (m_s.timeout_seconds / m_s.subinterval_seconds))
+    {
+        std::ostringstream o;
+        o << "<Error> Timed out - timeout_seconds = " << m_s.timeout_seconds << ".  Failed to get a valid measurement with accuracy_plus_minus = \"" << m_s.accuracy_plus_minus_parameter
+            << "\" and confidence = \"" << m_s.confidence_parameter << "\"." <<  std::endl;
+        o << std::endl << "====================================================" << std::endl << std::endl;
+        log (m_s.masterlogfile,o.str());
+        std::cout << o.str();
 
-			m_s.measureDFC_failure_point = current;
+        m_s.measureDFC_failure_point = current;
 
-			return EVALUATE_SUBINTERVAL_FAILURE;
-		}
-	}
+        return EVALUATE_SUBINTERVAL_FAILURE;
+    }
 
     bool first_pass {true};
         // This first pass refers to times through when evaluating candidates for "measure".
@@ -107,7 +126,7 @@ int MeasureDFC::evaluateSubinterval()
 //*debug*/ {std::ostringstream o; o << ""<< std::endl;std::cout<<o.str();log(m_s.masterlogfile,o.str());}
 	std::map<std::pair<std::string, Subsystem*>, RunningStat<ivy_float, ivy_int>> wp_by_CLPR;
 
-	for (int fromLast=0; fromLast <= (current - m_s.min_warmup_count) /* drop at least one subinterval */; fromLast++)
+	for (int fromLast=0; fromLast <= (current - max(m_s.last_gain_adjustment_subinterval,m_s.min_warmup_count)) /* drop at least one subinterval */; fromLast++)
 	{
 		unsigned int now_processing;
 		now_processing = current - fromLast;
@@ -223,29 +242,29 @@ int MeasureDFC::evaluateSubinterval()
         {
             RollupInstance* pRollupInstance = pear.second;
 
-            if (m_s.have_max_above_or_below)
-            {
-                if ( m_s.max_above_or_below < pRollupInstance->most_subintervals_without_a_zero_crossing_starting(now_processing) )
-                {
-                    std::ostringstream o;
-                    o << "At subinterval " << now_processing << " " << (m_s.subinterval_seconds * (current-now_processing))  << " seconds back from the most recent subinterval, for rollup instance " << m_s.p_focus_rollup->attributeNameCombo.attributeNameComboID
-                        << "=" << pRollupInstance->rollupInstanceID << "," << std::endl
-                        << "Number of consecutive subintervals without an error signal zero crossing " << pRollupInstance->most_subintervals_without_a_zero_crossing_starting(now_processing)
-                        << " exceeds have_max_above_or_below = " << m_s.max_above_or_below << "." << std::endl << std::endl;
-
-                    if (!first_pass) o << wurst_of_the_best() << std::endl;
-
-                    log (m_s.masterlogfile,o.str());
-                    std::cout << o.str();
-
-                    return EVALUATE_SUBINTERVAL_CONTINUE;
-                }
-            }
+//            if (m_s.have_max_above_or_below)
+//            {
+//                if ( m_s.max_above_or_below < pRollupInstance->most_subintervals_without_a_zero_crossing_starting(now_processing) )
+//                {
+//                    std::ostringstream o;
+//                    o << "At subinterval " << now_processing << " " << (m_s.subinterval_seconds * (current-now_processing))  << " seconds back from the most recent subinterval, for rollup instance " << m_s.p_focus_rollup->attributeNameCombo.attributeNameComboID
+//                        << "=" << pRollupInstance->rollupInstanceID << "," << std::endl
+//                        << "Number of consecutive subintervals without an error signal zero crossing " << pRollupInstance->most_subintervals_without_a_zero_crossing_starting(now_processing)
+//                        << " exceeds have_max_above_or_below = " << m_s.max_above_or_below << "." << std::endl << std::endl;
+//
+//                    if (!first_pass) o << wurst_of_the_best() << std::endl;
+//
+//                    log (m_s.masterlogfile,o.str());
+//                    std::cout << o.str();
+//
+//                    return EVALUATE_SUBINTERVAL_CONTINUE;
+//                }
+//            }
 
             std::pair<bool,ivy_float> m = pRollupInstance -> isValidMeasurementStartingFrom(now_processing);
 
             const bool& matched = m.first;
-            const ivy_float& measured_value = m.second;
+//            const ivy_float& measured_value = m.second;
 
             ivy_float x = pRollupInstance -> plusminusfraction_percent_above_below_target;
 
@@ -264,24 +283,24 @@ int MeasureDFC::evaluateSubinterval()
                 break;
             }
 
-            if ( m_s.have_within && abs((measured_value-m_s.target_value)/m_s.target_value) > m_s.within )
-            {
-                std::ostringstream o;
-                o << "For rollup instance " << pRollupInstance->attributeNameComboID << "=" << pRollupInstance->rollupInstanceID
-                    << " an otherwise valid subsequence average measured value "  << measured_value
-                    << " was more than within = " << std::fixed <<std::setprecision(2) << (100.*m_s.within) << "%"
-                    << " away from the target_value = " << m_s.target_value << "." << std::endl;
-                o << "Otherwise valid means meeting accuracy_plus_minus=" << m_s.accuracy_plus_minus_parameter
-                    << ", confidence=" << m_s.confidence_parameter
-                    << ", warmup_seconds=" << std::fixed << std::setprecision(0) << m_s.warmup_seconds
-                    << ", measure_seconds=" << std::fixed << std::setprecision(0) << m_s.measure_seconds
-                    << "." << std::endl;
-
-                std::cout << o.str();
-                log(m_s.masterlogfile, o.str());
-
-                return EVALUATE_SUBINTERVAL_CONTINUE;
-            }
+//            if ( m_s.have_within && abs((measured_value-m_s.target_value)/m_s.target_value) > m_s.within )
+//            {
+//                std::ostringstream o;
+//                o << "For rollup instance " << pRollupInstance->attributeNameComboID << "=" << pRollupInstance->rollupInstanceID
+//                    << " an otherwise valid subsequence average measured value "  << measured_value
+//                    << " was more than within = " << std::fixed <<std::setprecision(2) << (100.*m_s.within) << "%"
+//                    << " away from the target_value = " << m_s.target_value << "." << std::endl;
+//                o << "Otherwise valid means meeting accuracy_plus_minus=" << m_s.accuracy_plus_minus_parameter
+//                    << ", confidence=" << m_s.confidence_parameter
+//                    << ", warmup_seconds=" << std::fixed << std::setprecision(0) << m_s.warmup_seconds
+//                    << ", measure_seconds=" << std::fixed << std::setprecision(0) << m_s.measure_seconds
+//                    << "." << std::endl;
+//
+//                std::cout << o.str();
+//                log(m_s.masterlogfile, o.str());
+//
+//                return EVALUATE_SUBINTERVAL_CONTINUE;
+//            }
 
         }
 

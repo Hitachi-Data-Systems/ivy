@@ -75,6 +75,8 @@ using namespace std;
 #include "ListOfNameEqualsValueList.h"
 #include "Ivy_pgm.h"
 
+extern bool routine_logging;
+
 master_stuff m_s;
 
 std::string outputFolderRoot() {return m_s.outputFolderRoot;}
@@ -726,44 +728,170 @@ std::string master_stuff::focus_caption()
 
     o << "focus_rollup=" << p_focus_rollup->attributeNameCombo.attributeNameComboID;
 
-    o << ", source=" << source_enum_to_string(source);
-
-    switch (source)
+    if (have_measure
+        && source == source_enum::workload
+        && category == category_enum::overall
+        && accumulator_type == accumulator_type_enum::bytes_transferred
+        && accessor == accessor_enum::sum)
     {
-        case source_enum::workload:
-            {
-                o << ", category="         << category_enum_to_string   (category);
-                o << ", accumulator_type=" << accumulator_type_to_string(accumulator_type);
-                o << ", accessor="         << accessor_enum_to_string   (accessor);
-            }
-            break;
-
-        case source_enum::RAID_subsystem:
-            {
-                 o << ", subsystem_element=" << subsystem_element;
-                 o << ", element_metric="    << element_metric;
-            }
-            break;
-
-        default:
-            {
-                std::string m {"<Error> internal programming error. in master_stuff::focus_rollup_metric_caption(), unknown source_enum value.\n"};
-                std::cout << m;
-                log(masterlogfile,m);
-                kill_subthreads_and_exit();
-            }
+        o << ", "; // measure = MB_per_second
     }
+    else if (have_measure
+        && source == source_enum::workload
+        && category == category_enum::overall
+        && accumulator_type == accumulator_type_enum::bytes_transferred
+        && accessor == accessor_enum::count)
+    {
+        o << ", "; // measure = IOPS
+    }
+    else if (have_measure
+        && source == source_enum::workload
+        && category == category_enum::overall
+        && accumulator_type == accumulator_type_enum::service_time
+        && accessor == accessor_enum::avg)
+    {
+        o << ", "; // measure = service_time_seconds
+    }
+    else if (have_measure
+        && source == source_enum::workload
+        && category == category_enum::overall
+        && accumulator_type == accumulator_type_enum::response_time
+        && accessor == accessor_enum::avg)
+    {
+        o << ", "; // measure = response_time_seconds
+    }
+    else if (have_measure
+        && source == source_enum::RAID_subsystem
+        && subsystem_element == "MP_core"
+        && element_metric == "busy_percent")
+    {
+        o << ", "; // measure = MP_core_busy_percent
+    }
+    else if (have_measure
+        && source == source_enum::RAID_subsystem
+        && subsystem_element == "PG"
+        && element_metric == "busy_percent")
+    {
+        o << ", "; // measure = PG_busy_percent
+    }
+    else if (have_measure
+        && source == source_enum::RAID_subsystem
+        && subsystem_element == "CLPR"
+        && element_metric == "WP_percent")
+    {
+        o << ", "; // measure = CLPR_WP_percent
+    }
+    else
+    {
+        o << ", source=" << source_enum_to_string(source);
 
-    o << std::endl << std::endl;
+        switch (source)
+        {
+            case source_enum::workload:
+                {
+                    o << ", category="         << category_enum_to_string   (category);
+                    o << ", accumulator_type=" << accumulator_type_to_string(accumulator_type);
+                    o << ", accessor="         << accessor_enum_to_string   (accessor);
+                }
+                break;
+
+            case source_enum::RAID_subsystem:
+                {
+                     o << ", subsystem_element=" << subsystem_element;
+                     o << ", element_metric="    << element_metric;
+                }
+                break;
+
+            default:
+                {
+                    std::string m {"<Error> internal programming error. in master_stuff::focus_rollup_metric_caption(), unknown source_enum value.\n"};
+                    std::cout << m;
+                    log(masterlogfile,m);
+                    kill_subthreads_and_exit();
+                }
+        }
+
+        o << std::endl << std::endl;
+    }
 
     if (have_pid)
     {
-        o << "dfc=pid, target_value=" << target_value;
-        o << ", p=" << std::fixed << std::setprecision(2) << p_multiplier;
-        o << ", i=" << std::fixed << std::setprecision(2) << i_multiplier;
-        o << ", d=" << std::fixed << std::setprecision(2) << d_multiplier;
+        o << "dfc = pid, ";
 
-        if (m_s.have_within) { o << ", within = " << (100*m_s.within) << "%"; }
+        if (have_measure
+            && source == source_enum::workload
+            && category == category_enum::overall
+            && accumulator_type == accumulator_type_enum::service_time
+            && accessor == accessor_enum::avg)
+        {
+            // measure = service_time_seconds
+            o << "target service time = " << std::fixed << std::setprecision(2) << (1000.0 * target_value) << " ms";
+            o << ", operating range = { (" << low_IOPS << " IOPS, "
+                << std::fixed << std::setprecision(2) << (1000.0*low_target)
+                << " ms), (" << high_IOPS << " IOPS, "
+                << std::fixed << std::setprecision(2) << (1000.0*high_target) << " ms) }";
+        }
+        else if (have_measure
+            && source == source_enum::workload
+            && category == category_enum::overall
+            && accumulator_type == accumulator_type_enum::response_time
+            && accessor == accessor_enum::avg)
+        {
+            // measure = response_time_seconds
+            o << "target response time = " << std::fixed << std::setprecision(2) << (1000.0 * target_value) << " ms";
+            o << ", operating range = { (" << low_IOPS << " IOPS, "
+                << std::fixed << std::setprecision(2) << (1000.0*low_target)
+                << " ms), (" << high_IOPS << " IOPS, "
+                << std::fixed << std::setprecision(2) << (1000.0*high_target) << " ms) }";
+        }
+        else if (have_measure
+            && source == source_enum::RAID_subsystem
+            && subsystem_element == "MP_core"
+            && element_metric == "busy_percent")
+        {
+            // measure = MP_core_busy_percent
+            o << "target MP_core busy = " << std::fixed << std::setprecision(2) << (100.0 * target_value) << "%";
+            o << ", operating range = { (" << low_IOPS << " IOPS, "
+                << std::fixed << std::setprecision(2) << (100.0*low_target)
+                << "%), (" << high_IOPS << " IOPS, "
+                << std::fixed << std::setprecision(2) << (100.0*high_target) << "%) }";
+        }
+        else if (have_measure
+            && source == source_enum::RAID_subsystem
+            && subsystem_element == "PG"
+            && element_metric == "busy_percent")
+        {
+            // measure = PG_busy_percent
+            o << "target PG busy = " << std::fixed << std::setprecision(2) << (100.0 * target_value) << "%";
+            o << ", operating range = { (" << low_IOPS << " IOPS, "
+                << std::fixed << std::setprecision(2) << (100.0*low_target)
+                << "%), (" << high_IOPS << " IOPS, "
+                << std::fixed << std::setprecision(2) << (100.0*high_target) << "%) }";
+        }
+        else if (have_measure
+            && source == source_enum::RAID_subsystem
+            && subsystem_element == "CLPR"
+            && element_metric == "WP_percent")
+        {
+            // measure = CLPR_WP_percent
+            o << "target CLPR Write Pending = " << std::fixed << std::setprecision(2) << (100.0 * target_value) << "%";
+            o << ", operating range = { (" << low_IOPS << " IOPS, "
+                << std::fixed << std::setprecision(2) << (100.0*low_target)
+                << "%), (" << high_IOPS << " IOPS, "
+                << std::fixed << std::setprecision(2) << (100.0*high_target) << "%) }";
+        }
+        else
+        {
+            o << "target = " << target_value;
+            o << ", operating range = { (" << low_IOPS << " IOPS, " << low_target << "), (" << high_IOPS << " IOPS, " << high_target << ") }";
+        }
+
+
+//        o << ", p = " << std::fixed << std::setprecision(2) << p_multiplier;
+//        o << ", i = " << std::fixed << std::setprecision(2) << i_multiplier;
+//        o << ", d = " << std::fixed << std::setprecision(2) << d_multiplier;
+
+//        if (m_s.have_within) { o << ", within = " << (100*m_s.within) << "%"; }
 
         RunningStat<ivy_float,ivy_int> avg_error;
         RunningStat<ivy_float,ivy_int> avg_error_integral;
@@ -776,38 +904,103 @@ std::string master_stuff::focus_caption()
             avg_error_integral  .push(pRollupInstance->error_integral);
             avg_error_derivative.push(pRollupInstance->error_derivative);
         }
-        o << ", avg over " << avg_error.count() << " focus rollup instances:";
-        if (m_s.target_value != 0)
-        {
-            if (avg_error.avg() >= 0.0)
-            {
-                o << (100.*( avg_error.avg() / m_s.target_value )) << "% above target_value";
-            }
-            else
-            {
-                o << (-100.*( avg_error.avg() / m_s.target_value )) << "% below target_value";
-            }
-        }
-        o << " err. = " << std::fixed << std::setprecision(6) << avg_error.avg();
-        o << ", err. int. = "   << std::fixed << std::setprecision(6) << avg_error_integral.avg();
-        o << ", err. deriv. = " << std::fixed << std::setprecision(6) << avg_error_derivative.avg();
+//        o << ", over " << avg_error.count() << " instances of the focus rollup, for only the most recent subinterval the average error was ";
+//        if (m_s.target_value != 0)
+//        {
+//            if (avg_error.avg() >= 0.0)
+//            {
+//                o << (100.*( avg_error.avg() / m_s.target_value )) << "% above target_value";
+//            }
+//            else
+//            {
+//                o << (-100.*( avg_error.avg() / m_s.target_value )) << "% below target_value";
+//            }
+//        }
+//        o << " err. = " << std::fixed << std::setprecision(6) << avg_error.avg();
+//        o << ", err. int. = "   << std::fixed << std::setprecision(6) << avg_error_integral.avg();
+//        o << ", err. deriv. = " << std::fixed << std::setprecision(6) << avg_error_derivative.avg();
 
         o << std::endl << std::endl;
     }
 
     if (have_measure)
     {
-        o << "measure=on";
+        if (source == source_enum::workload
+            && category == category_enum::overall
+            && accumulator_type == accumulator_type_enum::bytes_transferred
+            && accessor == accessor_enum::sum)
+        {
+            o << "measure = MB_per_second";
+        }
+        else if (source == source_enum::workload
+            && category == category_enum::overall
+            && accumulator_type == accumulator_type_enum::bytes_transferred
+            && accessor == accessor_enum::count)
+        {
+            o << "measure = IOPS";
+        }
+        else if (source == source_enum::workload
+            && category == category_enum::overall
+            && accumulator_type == accumulator_type_enum::service_time
+            && accessor == accessor_enum::avg)
+        {
+            o << "measure = service_time_seconds";
+        }
+        else if (source == source_enum::workload
+            && category == category_enum::overall
+            && accumulator_type == accumulator_type_enum::response_time
+            && accessor == accessor_enum::avg)
+        {
+            o << "measure = response_time_seconds";
+        }
+        else if (source == source_enum::RAID_subsystem
+            && subsystem_element == "MP_core"
+            && element_metric == "busy_percent")
+        {
+            o << "measure = MP_core_busy_percent";
+        }
+        else if (source == source_enum::RAID_subsystem
+            && subsystem_element == "PG"
+            && element_metric == "busy_percent")
+        {
+            o << "measure = PG_busy_percent";
+        }
+        else if (source == source_enum::RAID_subsystem
+            && subsystem_element == "CLPR"
+            && element_metric == "WP_percent")
+        {
+            o << "measure = CLPR_WP_percent";
+        }
+        else
+        {
+            o << "measure = on";
+        }
+
         o << ", accuracy_plus_minus=" << std::fixed << std::setprecision(2) << (100.*accuracy_plus_minus_fraction) << "%";
         o << ", confidence="          << std::fixed << std::setprecision(2) << (100.*confidence                  ) << "%";
         o << ", warmup_seconds=" << std::fixed << std::setprecision(0) << warmup_seconds;
         o << ", measure_seconds=" << std::fixed << std::setprecision(0)<< measure_seconds;
-        o << ", timeout_seconds=" << std::fixed << std::setprecision(0)<< timeout_seconds;
 
-        if (m_s.have_max_above_or_below)
         {
-            o << ", max_above_or_below=" << m_s.max_above_or_below;
+            int seconds = (int) timeout_seconds;
+            int minutes = seconds / 60;
+                seconds = seconds % 60;
+            int hours   = minutes / 60;
+                minutes = minutes % 60;
+            int days  = hours / 24;
+                hours = hours % 24;
+
+            o << ", timeout_seconds = ";
+            if (days > 0) o << days << " days and ";
+            o          << std::setw(2) << std::setfill('0') << hours
+                << ":" << std::setw(2) << std::setfill('0') << minutes
+                << ":" << std::setw(2) << std::setfill('0') << seconds;
         }
+
+//        if (m_s.have_max_above_or_below)
+//        {
+//            o << ", max_above_or_below=" << m_s.max_above_or_below;
+//        }
 
         if (m_s.haveCmdDev)
         {
@@ -1727,7 +1920,7 @@ master_stuff::edit_rollup(const std::string& rollupText, const std::string& orig
 				<< " - max " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.max()) << " ms"
 				<< std::endl;
 
-			log(masterlogfile,o.str());
+			if (routine_logging) log(masterlogfile,o.str());
 			std::cout<< o.str();
             return std::make_pair(true,o.str());
 		}
@@ -1826,8 +2019,8 @@ master_stuff::go(const std::string& parameters)
     have_measure = false;
     have_workload = false;
     have_RAID_subsystem = false;
-    have_within = false;
-    have_max_above_or_below = false;
+//    have_within = false;
+//    have_max_above_or_below = false;
 
     goStatementsSeen++;
 
@@ -1897,14 +2090,12 @@ master_stuff::go(const std::string& parameters)
         if (stringCaseInsensitiveEquality("pid", controllerName))
         {
             have_pid = true;
-            valid_parameter_names += ", dfc, p, i, d, target_value, starting_total_IOPS, min_IOPS";
-
-            if (!go_parameters.contains(std::string("p")))                        go_parameters.contents[toLower(std::string("p"                  ))] = p_default;
-            if (!go_parameters.contains(std::string("i")))                        go_parameters.contents[toLower(std::string("i"                  ))] = i_default;
-            if (!go_parameters.contains(std::string("d")))                        go_parameters.contents[toLower(std::string("d"                  ))] = d_default;
-            if (!go_parameters.contains(std::string("target_value")))             go_parameters.contents[normalize_identifier(std::string("target_value"       ))] = target_value_default;
-            if (!go_parameters.contains(std::string("starting_total_IOPS")))      go_parameters.contents[normalize_identifier(std::string("starting_total_IOPS"))] = starting_total_IOPS_default;
-            if (!go_parameters.contains(std::string("min_IOPS")))                 go_parameters.contents[normalize_identifier(std::string("min_IOPS"           ))] = min_IOPS_default;
+            valid_parameter_names += ", dfc, target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone";
+            if (!go_parameters.contains(std::string("min_IOPS")))         go_parameters.contents[normalize_identifier(std::string("min_IOPS"))]         = std::string("10");
+            if (!go_parameters.contains(std::string("max_ripple")))       go_parameters.contents[normalize_identifier(std::string("max_ripple"))]       = std::string("1%");
+            if (!go_parameters.contains(std::string("gain_step")))        go_parameters.contents[normalize_identifier(std::string("gain_step"))]        = std::string("2");
+            if (!go_parameters.contains(std::string("ballpark_seconds"))) go_parameters.contents[normalize_identifier(std::string("ballpark_seconds"))] = std::string("60");
+            if (!go_parameters.contains(std::string("max_monotone")))     go_parameters.contents[normalize_identifier(std::string("max_monotone"))]     = std::string("5");
         }
         else
         {
@@ -1937,7 +2128,7 @@ master_stuff::go(const std::string& parameters)
         if (normalized_identifier_equality(measure_parameter_value,std::string("MB_per_second")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
+            if (!go_parameters.contains("focus_rollup")) go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "workload";
             go_parameters.contents[toLower("category")] = "overall";
             go_parameters.contents[normalize_identifier("accumulator_type")] = "bytes_transferred";
@@ -1946,7 +2137,7 @@ master_stuff::go(const std::string& parameters)
         else if (stringCaseInsensitiveEquality(measure_parameter_value,std::string("IOPS")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
+            if (!go_parameters.contains("focus_rollup")) go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[normalize_identifier("source")] = "workload";
             go_parameters.contents[toLower("category")] = "overall";
             go_parameters.contents[normalize_identifier("accumulator_type")] = "bytes_transferred";
@@ -1955,7 +2146,7 @@ master_stuff::go(const std::string& parameters)
         else if (normalized_identifier_equality(measure_parameter_value,std::string("service_time_seconds")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
+            if (!go_parameters.contains("focus_rollup")) go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "workload";
             go_parameters.contents[toLower("category")] = "overall";
             go_parameters.contents[normalize_identifier("accumulator_type")] = "service_time";
@@ -1964,7 +2155,7 @@ master_stuff::go(const std::string& parameters)
         else if (normalized_identifier_equality(measure_parameter_value,std::string("response_time_seconds")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
+            if (!go_parameters.contains("focus_rollup")) go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "workload";
             go_parameters.contents[toLower("category")] = "overall";
             go_parameters.contents[normalize_identifier("accumulator_type")] = "response_time";
@@ -1973,7 +2164,7 @@ master_stuff::go(const std::string& parameters)
         else if (normalized_identifier_equality(measure_parameter_value,std::string("MP_core_busy_percent")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
+            if (!go_parameters.contains("focus_rollup")) go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "RAID_subsystem";
             go_parameters.contents[normalize_identifier("subsystem_element")] = "MP_core";
             go_parameters.contents[normalize_identifier("element_metric")] = "busy_percent";
@@ -1981,7 +2172,7 @@ master_stuff::go(const std::string& parameters)
         else if (normalized_identifier_equality(measure_parameter_value,std::string("PG_busy_percent")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
+            if (!go_parameters.contains("focus_rollup")) go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "RAID_subsystem";
             go_parameters.contents[normalize_identifier("subsystem_element")] = "PG";
             go_parameters.contents[normalize_identifier("element_metric")] = "busy_percent";
@@ -1989,7 +2180,7 @@ master_stuff::go(const std::string& parameters)
         else if (normalized_identifier_equality(measure_parameter_value,std::string("CLPR_WP_percent")))
         {
             go_parameters.contents[toLower("measure")] = "on";
-            go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
+            if (!go_parameters.contains("focus_rollup")) go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "RAID_subsystem";
             go_parameters.contents[normalize_identifier("subsystem_element")] = "CLPR";
             go_parameters.contents[normalize_identifier("element_metric")] = "WP_percent";
@@ -2027,6 +2218,9 @@ master_stuff::go(const std::string& parameters)
     measure = MP_core_busy_percent    is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=MP_core, element_metric=busy_percent
     measure = PG_busy_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=PG,      element_metric=busy_percent
     measure = CLPR_WP_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=CLPR,    element_metric=WP_percent
+
+    Note: In the above shorthand settings, the "focus_rollup" is only set to "all" if the user did not specify "focus_rollup".
+          That is, you can override focus_rollup even if you use one of the shorthand settings.
 )"
                 << std::endl
                                    << "Go statement specifies parameter values " << go_parameters.toString() << std::endl;
@@ -2072,67 +2266,6 @@ master_stuff::go(const std::string& parameters)
             std::cout << o.str();
             log(masterlogfile,o.str());
             kill_subthreads_and_exit();
-        }
-    }
-
-    if (have_pid && have_measure)
-    {
-        valid_parameter_names += ", within";
-        if (go_parameters.contains(std::string("within")))
-        {
-            // within="1%"
-            // must be greater than zero, less than or equal to one.
-
-            have_within = true;
-
-            try
-            {
-                within = number_optional_trailing_percent(go_parameters.retrieve("within"));
-            }
-            catch(std::invalid_argument& iaex)
-            {
-                std::ostringstream o;
-                o << "<Error> ivy engine API - go() - Invalid \"within\" parameter value \"" << go_parameters.retrieve("within") << "\"." << std::endl;
-                o << "Must be a number greater than zero and less than or equal to 1." << std::endl;
-                std::cout << o.str();
-                log(masterlogfile,o.str());
-                kill_subthreads_and_exit();
-            }
-            if (within <= 0.0 || within >1)
-            {
-                std::ostringstream o;
-                o << "<Error> ivy engine API - go() - Invalid \"within\" parameter value \"" << go_parameters.retrieve("within") << "\".";
-                o << "  Must be a number greater than zero and less than or equal to 1." << std::endl;
-                std::cout << o.str();
-                log(masterlogfile,o.str());
-                kill_subthreads_and_exit();
-            }
-        }
-
-        valid_parameter_names += ", max_above_or_below";
-        if (go_parameters.contains(std::string("max_above_or_below")))
-        {
-            // must be a positive integer
-
-            // max number of consecutive intervals where the error signal stays the same sign
-
-            // "within" may be what you want to use most of the time, but I'm leaving this here for now.
-
-            have_max_above_or_below = true;
-
-            std::string maob_parm = go_parameters.retrieve("max_above_or_below");
-
-            trim(maob_parm);  // by reference
-
-            if ( (!isalldigits(maob_parm))  || (0==( max_above_or_below = (unsigned int) atoi(maob_parm.c_str()) )) )
-            {
-                std::ostringstream o;
-                o << "<Error> ivy engine API - go() - Invalid \"max_above_or_below\" parameter value \"" << go_parameters.retrieve("max_above_or_below") << "\"." << std::endl;
-                o << "Must be all digits representing a positive integer." << std::endl;
-                std::cout << o.str();
-                log(masterlogfile,o.str());
-                kill_subthreads_and_exit();
-            }
         }
     }
 
@@ -2460,86 +2593,181 @@ master_stuff::go(const std::string& parameters)
 
     if (have_pid)
     {
-        // valid_parameter_names += ", dfc, p, i, d, target_value, starting_total_IOPS, min_IOPS";
+        // valid_parameter_names += ", dfc, target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone";
 
-            // If a parameter is not present, "retrieve" returns a null string.
+        if ( (!go_parameters.contains("target_value"))
+          || (!go_parameters.contains("low_IOPS"))
+          || (!go_parameters.contains("low_target"))
+          || (!go_parameters.contains("high_IOPS"))
+          || (!go_parameters.contains("high_target"))
+        )
+        {
+            ostringstream o;
+            o << std::endl << "<Error> ivy engine API - go() - [Go] statement - when DFC = PID is used, the user must specify positive values for \n"
+                              "the parameters target_value, low_IOPS, low_target, high_IOPS, and high_target.  Furthermore, high_IOPS must be\n"
+                              "greater than low_IOPS and high_target must be greater than low_larget, and the target_value must be greater than\n"
+                              "low_target and less than high_target." << std::endl << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
 
-//----------------------------------- element_metric
-            target_value_parameter = go_parameters.retrieve("target_value");
-            {
-                std::ostringstream where_the;
-                where_the << "go_statement(), DFCcategory::PID - when setting \"target_value\" parameter to value \""
-                    << target_value_parameter << "\": ";
+//----------------------------------- target_value
+        target_value_parameter = go_parameters.retrieve("target_value");
+        {
+            std::ostringstream where_the;
+            where_the << "go_statement(), DFCcategory::PID - when setting \"target_value\" parameter to value \""
+                << target_value_parameter << "\": ";
 
-                target_value = number_optional_trailing_percent(target_value_parameter,where_the.str());
-            }
+            target_value = number_optional_trailing_percent(target_value_parameter,where_the.str());
+        }
 
-//----------------------------------- p
-            p_parameter               = go_parameters.retrieve("p");
-            {
-                std::ostringstream where_the;
-                where_the << "go_statement(), DFCcategory::PID - when setting \"p\" parameter to value \""
-                    << p_parameter << "\": ";
+//----------------------------------- low_IOPS
+        low_IOPS_parameter = go_parameters.retrieve("low_IOPS");
+        {
+            std::ostringstream where_the;
+            where_the << "go_statement(), DFCcategory::PID - when setting \"low_IOPS\" parameter to value \""
+                << low_IOPS_parameter << "\": ";
 
-                p_multiplier = number_optional_trailing_percent(p_parameter,where_the.str());
-            }
+            low_IOPS = number_optional_trailing_percent(low_IOPS_parameter,where_the.str());
+        }
 
-//----------------------------------- i
-            i_parameter               = go_parameters.retrieve("i");
-            {
-                std::ostringstream where_the;
-                where_the << "go_statement(), DFCcategory::PID - when setting \"i\" parameter  to value \""
-                    << i_parameter << "\": ";
+//----------------------------------- low_target
+        low_target_parameter = go_parameters.retrieve("low_target");
+        {
+            std::ostringstream where_the;
+            where_the << "go_statement(), DFCcategory::PID - when setting \"low_target\" parameter to value \""
+                << low_target_parameter << "\": ";
 
-                i_multiplier = number_optional_trailing_percent(i_parameter,where_the.str());
-            }
+            low_target = number_optional_trailing_percent(low_target_parameter,where_the.str());
+        }
+//----------------------------------- high_IOPS
+        high_IOPS_parameter = go_parameters.retrieve("high_IOPS");
+        {
+            std::ostringstream where_the;
+            where_the << "go_statement(), DFCcategory::PID - when setting \"high_IOPS\" parameter to value \""
+                << high_IOPS_parameter << "\": ";
 
-//----------------------------------- d
-            d_parameter               = go_parameters.retrieve("d");
-            {
-                std::ostringstream where_the;
-                where_the << "go_statement(), DFCcategory::PID - when setting \"d\" parameter  to value \""
-                    << d_parameter << "\": ";
+            high_IOPS = number_optional_trailing_percent(high_IOPS_parameter,where_the.str());
+        }
 
-                d_multiplier = number_optional_trailing_percent(d_parameter,where_the.str());
-            }
+//----------------------------------- high_target
+        high_target_parameter = go_parameters.retrieve("high_target");
+        {
+            std::ostringstream where_the;
+            where_the << "go_statement(), DFCcategory::PID - when setting \"high_target\" parameter to value \""
+                << high_target_parameter << "\": ";
 
-//----------------------------------- starting_total_IOPS
-            starting_total_IOPS_parameter = go_parameters.retrieve("starting_total_IOPS");
-            {
-                std::ostringstream where_the;
-                where_the << "go_statement(), DFCcategory::PID - when setting \"starting_total_IOPS\" parameter to value \""
-                    << starting_total_IOPS << "\": ";
+            high_target = number_optional_trailing_percent(high_target_parameter,where_the.str());
+        }
 
-                starting_total_IOPS = number_optional_trailing_percent(starting_total_IOPS_parameter,where_the.str());
-                if (starting_total_IOPS < 0.0)
-                {
-                    ostringstream o;
-                    o << std::endl << "<Error> [Go] statement - invalid starting_total_IOPS parameter \"" << starting_total_IOPS_parameter << "\".  May not be negative." << std::endl << std::endl;
-                    log(masterlogfile,o.str());
-                    std::cout << o.str();
-                    kill_subthreads_and_exit();
-                }
-            }
+
+        if ( low_IOPS     <= 0.0        || low_target   <= 0.0          || high_IOPS <= 0.0 || high_target <= 0.0
+          || low_IOPS     >= high_IOPS  || low_target   >= high_target
+          || target_value <= low_target || target_value >= high_target
+        )
+        {
+            ostringstream o;
+            o << std::endl << "<Error> ivy engine API - go() - [Go] statement - when DFC = PID is used, the user must specify positive values for \n"
+                              "the parameters target_value, low_IOPS, low_target, high_IOPS, and high_target.  Furthermore, high_IOPS must be\n"
+                              "greater than low_IOPS and high_target must be greater than low_larget, and the target_value must be greater than\n"
+                              "low_target and less than high_target." << std::endl << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+
+
 
 //----------------------------------- min_IOPS
-            min_IOPS_parameter = go_parameters.retrieve("min_IOPS");
+        min_IOPS_parameter = go_parameters.retrieve("min_IOPS");
+        {
+            std::ostringstream where_the;
+            where_the << "go_statement(), DFCcategory::PID - when setting \"min_IOPS\" parameter to value \""
+                << min_IOPS_parameter << "\": ";
+
+            min_IOPS = number_optional_trailing_percent(min_IOPS_parameter,where_the.str());
+            if (min_IOPS < 0.0)
             {
-                std::ostringstream where_the;
-                where_the << "go_statement(), DFCcategory::PID - when setting \"min_IOPS\" parameter to value \""
-                    << min_IOPS_parameter << "\": ";
-
-                min_IOPS = number_optional_trailing_percent(min_IOPS_parameter,where_the.str());
-                if (min_IOPS < 0.0)
-                {
-                    ostringstream o;
-                    o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid min_IOPS parameter \"" << min_IOPS_parameter << "\".  May not be negative." << std::endl << std::endl;
-                    log(masterlogfile,o.str());
-                    std::cout << o.str();
-                    kill_subthreads_and_exit();
-                }
+                ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid min_IOPS parameter \"" << min_IOPS_parameter << "\".  May not be negative." << std::endl << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
             }
+        }
 
+//----------------------------------- gain_step
+        {
+            std::string parameter = go_parameters.retrieve("gain_step");
+
+            std::ostringstream where_the; where_the << "go_statement(), DFC = PID - when setting \"gain_step\" parameter to value \"" << parameter << "\": ";
+
+            m_s.gain_step = number_optional_trailing_percent(parameter,where_the.str());
+
+            if (m_s.gain_step <= 0.0)
+            {
+                ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid gain_step parameter \"" << parameter << "\".  Must be greater than zero." << std::endl << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+        }
+
+//----------------------------------- max_ripple
+        {
+            std::string parameter = go_parameters.retrieve("max_ripple");
+
+            std::ostringstream where_the; where_the << "go_statement(), DFC = PID - when setting \"max_ripple\" parameter to value \"" << parameter << "\": ";
+
+            m_s.max_ripple = number_optional_trailing_percent(parameter,where_the.str());
+
+            if (m_s.max_ripple <= 0.0)
+            {
+                ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid max_ripple parameter \"" << parameter << "\".  Must be greater than zero." << std::endl << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+        }
+
+//----------------------------------- max_monotone
+        {
+            std::string parameter = go_parameters.retrieve("max_monotone");
+
+            std::ostringstream where_the; where_the << "go_statement(), DFC = PID - when setting \"max_monotone\" parameter to value \"" << parameter << "\": ";
+
+            m_s.max_monotone = unsigned_int(parameter,where_the.str());
+
+            if (m_s.max_monotone <= 4)
+            {
+                ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid max_monotone parameter \"" << parameter << "\".  Must be greater than or equal to 4." << std::endl << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+        }
+
+//----------------------------------- ballpark_seconds
+        {
+            std::string parameter = go_parameters.retrieve("ballpark_seconds");
+
+            std::ostringstream where_the; where_the << "go_statement(), DFC = PID - when setting \"ballpark_seconds\" parameter to value \"" << parameter << "\": ";
+
+            m_s.ballpark_seconds = number_optional_trailing_percent(parameter,where_the.str());
+
+            if (m_s.ballpark_seconds <= 0.0)
+            {
+                ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid ballpark_seconds parameter \"" << parameter << "\".  Must be greater than zero." << std::endl << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+        }
     }
 
 

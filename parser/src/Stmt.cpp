@@ -26,6 +26,7 @@
 
 extern std::string inter_statement_divider;
 
+extern bool routine_logging;
 
 bool Stmt_hosts::execute()
 {
@@ -491,7 +492,7 @@ bool Stmt_edit_rollup::execute()
         << "[EditRollup] \"" << rollupSpecText << "\" [Parameters] \"" << parameters << "\";" << std::endl << std::endl;
 
     std::cout << console_msg.str();
-    log(m_s.masterlogfile, console_msg.str());
+    if (routine_logging) log(m_s.masterlogfile, console_msg.str());
 
     std::pair<bool,std::string>
     rc = m_s.edit_rollup(rollupSpecText, parameters);

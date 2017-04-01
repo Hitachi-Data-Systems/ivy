@@ -138,6 +138,19 @@ public:
    	unsigned int best_first, best_last;
    	bool best_first_last_valid {false};
 
+
+
+   	ivy_float P {0.}, I {0.}, D {0.};
+   	bool on_way_down {false};
+   	bool on_way_up {false};
+   	unsigned int adaptive_PID_subinterval_count {0};
+   	bool have_previous_inflection {false};
+   	ivy_float previous_inflection {-1.};
+
+   	bool have_reduced_gain {false};
+
+
+
 // methods
 	RollupInstance(RollupType* pRT, RollupSet* pRS, std::string nameCombo, std::string valueCombo)
 		: attributeNameComboID(nameCombo), rollupInstanceID(valueCombo), pRollupType(pRT), pRollupSet(pRS)
@@ -163,7 +176,7 @@ public:
     void collect_and_push_focus_metric();  // must be called exactly once after each subinterval, if focus metric being used.
     void reset(); // must be called once before starting a subinterval sequence, if the focus metric is being used.
     void perform_PID();
-    unsigned int most_subintervals_without_a_zero_crossing_starting(unsigned int);
+//    unsigned int most_subintervals_without_a_zero_crossing_starting(unsigned int);
     void print_console_info_line();
     void print_subinterval_column();
     void print_common_columns(std::ostream&);

@@ -57,7 +57,16 @@ extern std::regex identifier_regex;
 std::string string_to_string_with_decimal_places_of_double_int(double d, int i)
 {
     std::ostringstream o;
-    o << std::fixed << std::setprecision(i) << d;
+
+    if (i < 0)
+    {
+        std::ostringstream o;
+        o << "string_to_string_with_decimal_places_of_double_int(double d = " << d << ", int i = " << i << ") - invalid argument, must be called with i >= 0.";
+        throw std::invalid_argument("o.str()");
+    }
+
+    if (i == 0)  o << ((int) d);
+    else         o << std::fixed << std::setprecision(i) << d;
 
     return o.str();
 
