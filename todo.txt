@@ -34,19 +34,6 @@
 
 - validate with "top" to see if linux CPU is being reported correctly
 
-- new metric that you can select, "pid_haircut_service time" 
-- new parameter pid_haircut="5%" where those entire histogram buckets that fit within the lowest 5%
-  of the service time 
-
-- add feature to pid loop to filter out "anomalous" I/Os for the purposes of pid loop lock / control.
-       - have a separate csv line / csv file way of reporting classification as "anomalous" or "normal".
-       - workload thread itself would classify the I/O service time as normal or anomalous.
-
-- add "max_above_or_below" - during a measurement the maximum consecutive subintervals 
-  that the focus metric value can remain below or remain above the target_value. to the documentation.
-  
-- add to_string_with_decimal_places() to documentation.
-
 - in Excel ivy csv file loader spreadsheet - make column titles frozen when you scroll down in long csv files.
 
 - take a look at the csv code and see if it would now be easy to add a third parameter of the file name, and to hide "set csvfile", but keep "drop csvfile".
