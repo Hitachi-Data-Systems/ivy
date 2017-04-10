@@ -97,7 +97,8 @@ void SubintervalOutput::add(const SubintervalOutput& s_o) {
         {
 /*2*/            o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " IOPS +/- estimate";
         }
-/*3*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Decimal MB/s";
+/*3*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " MB/s";
+/*3a*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " MiB/s";
 /*4*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Blocksize (KiB)";
 /*5*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Little\'s Law Avg Q";
 /*6*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Service Time (ms)";
@@ -148,7 +149,7 @@ std::string SubintervalOutput::csvValues
 
 		if (0 == bytes_transferred.count())
 		{
-            unsigned int columns = 12;
+            unsigned int columns = 13;
 
             if (nullptr != p_SubintervalRollup) { columns += 2; }
 
@@ -199,8 +200,11 @@ std::string SubintervalOutput::csvValues
                     }
 				}
 
-				/* Decimal MB/s */
+				/* MB/s */
 				o << ',' << ( (bytes_transferred.sum() / 1000000.0) / seconds );
+
+				/* MiB/s */
+				o << ',' << ( (bytes_transferred.sum() / (1024.0 * 1024.0) ) / seconds );
 
 				/* Average Blocksize (KiB) */
 				o << ',' << ( bytes_transferred.avg() / 1024.0      );
@@ -324,7 +328,8 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 
 	o << ", write IOPS = " << ( ((ivy_float) write_bytes_transferred.count()) / seconds ) ;
 
-	o << ", decimal MB/s = " << ( (bytes_transferred.sum() / 1000000.0) / seconds ) ;
+	o << ", MB/s = " << ( (bytes_transferred.sum() / 1000000.0) / seconds ) ;
+	o << ", MiB/s = " << ( (bytes_transferred.sum() / (1024.0*1024.0)) / seconds ) ;
 
 	o << ", avg Blk (KiB) = " << ( bytes_transferred.avg() / 1024.0      );
 

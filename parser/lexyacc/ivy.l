@@ -69,7 +69,7 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 	yylloc->step();
 %}
 
-include	BEGIN(inklude);
+inklude	BEGIN(inklude);
 
 <inklude>[ \t]*	/*ignore whitespace before filename */
 <inklude>[^ \t\n\r]+	{

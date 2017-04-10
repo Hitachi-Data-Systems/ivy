@@ -1,3 +1,7 @@
+- add get/set parameter calls to ivy engine API and create corresponding ivyscript ivy engine calls.
+	- non_random_sample_correction_factor
+	- stepNNNN() etc. acces
+
 - permit periods in test names, so folder name same as test name if test name contains periods.
 
 - fix bug where declaring a string variable in a for loop body.
@@ -37,10 +41,6 @@
 - in Excel ivy csv file loader spreadsheet - make column titles frozen when you scroll down in long csv files.
 
 - take a look at the csv code and see if it would now be easy to add a third parameter of the file name, and to hide "set csvfile", but keep "drop csvfile".
-
-
-- fix so it shows the script file location 
-<Error> [CreateWorkload] - [select] clause did not select any LUNs to create the workload on.
 
 - go through all inter-thread interlocks and ensure that they have a timeout and where possible a recovery mechanism from hiccups, or 
 at least make sure the ivy main executable terminates if it's hung, and taking out the subthreads as gracefully as possible. 
