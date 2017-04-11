@@ -439,6 +439,141 @@ std::string string_csvfile_column_of_string(std::string column_header)
 }
 
 
+
+int int_csv_lookup_column_of_string_string(std::string filename, std::string header)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return -1; }
+
+    return c.lookup_column(header);
+}
+
+std::string string_csv_column_header_of_string_int(std::string filename, int col)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+
+    return c.column_header(col);
+}
+
+int int_csv_rows_of_string(std::string filename)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return -1; }
+
+    return c.rows();
+}
+
+int int_csv_header_columns_of_string(std::string filename)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return -1; }
+
+    return c.header_columns();
+}
+
+int int_csv_columns_in_row_of_string_int(std::string filename, int row)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return -1; }
+
+    return c.columns_in_row(row);
+}
+
+std::string string_csv_raw_cell_value_of_string_int_int(std::string filename, int row, int col)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+
+    return c.raw_cell_value(row,col);
+}
+
+std::string string_csv_raw_cell_value_of_string_int_string(std::string filename, int row, std::string col)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+
+    return c.raw_cell_value(row,col);
+}
+
+
+std::string string_csv_cell_value_of_string_int_int(std::string filename, int row, int col)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+
+    return c.cell_value(row,col);
+}
+
+std::string string_csv_cell_value_of_string_int_string(std::string filename, int row, std::string col)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+
+    return c.cell_value(row,col);
+}
+
+std::string string_csv_row_of_string_int(std::string filename, int row)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+
+    return c.row(row);
+}
+
+std::string string_csv_column_of_string_int(std::string filename, int column)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+
+    return c.column(column);
+}
+
+std::string string_csv_column_of_string_string(std::string filename, std::string column)
+{
+    csvfile c;
+
+    auto rv = c.load(filename);
+
+    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+
+    return c.column(column);
+}
+
+
 BuiltinTable builtin_table;
 
 std::unordered_map<std::string, csvfile> csvfiles;
@@ -717,6 +852,9 @@ void init_builtin_table()
 
     unaryfunc(int_to_ldev,int_to_ldev,string,int)
 
+    unaryfunc(csv_rows,csv_rows,int,string)
+    unaryfunc(csv_header_columns,csv_header_columns,int,string)
+
     #undef unaryfunc
 
     #undef prefixopfunc
@@ -779,6 +917,13 @@ void init_builtin_table()
 
     binopfunc(to_string_with_decimal_places,to_string_with_decimal_places,string,double,int)
 
+    binopfunc(csv_lookup_column,csv_lookup_column,int,string,string)
+    binopfunc(csv_column_header,csv_column_header,string,string,int)
+    binopfunc(csv_columns_in_row,csv_columns_in_row,int,string,int)
+    binopfunc(csv_row,csv_row,string,string,int)
+    binopfunc(csv_column,csv_row,string,string,int)
+    binopfunc(csv_column,csv_row,string,string,string)
+
 
     #if defined(_DEBUG)
         // trace << builtin_table; trace.flush();
@@ -799,5 +944,9 @@ void init_builtin_table()
 
     triopfunc(substring,substring,string,string,int,int)
     triopfunc(regex_sub_match,regex_sub_match,string,string,string,int)
+    triopfunc(csv_raw_cell_value,csv_raw_cell_value,string,string,int,int)
+    triopfunc(csv_raw_cell_value,csv_raw_cell_value,string,string,int,string)
+    triopfunc(csv_cell_value,csv_cell_value,string,string,int,int)
+    triopfunc(csv_cell_value,csv_cell_value,string,string,int,string)
 }
 
