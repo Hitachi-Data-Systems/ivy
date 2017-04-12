@@ -39,6 +39,8 @@ extern std::regex float_number_optional_trailing_percent_regex;
 extern std::regex identifier_regex;
 extern std::regex identifier_trailing_digits_regex;
 extern std::regex dotted_quad_regex;
+extern std::regex MMSS_regex;
+extern std::regex HHMMSS_regex;
 
 extern std::string indent_increment;
 
@@ -64,6 +66,8 @@ bool endsWith(std::string s, std::string ending);
 bool isalldigits(std::string s);
 bool isDigitsWithOptionalDecimalPoint(std::string s);
 bool endsIn(std::string s, std::string ending);
+
+std::string rewrite_HHMMSS_to_seconds(std::string);
 
 std::string remove_non_alphameric(std::string s);
 std::string convert_non_alphameric_to_underscore(std::string s);
@@ -132,3 +136,5 @@ std::string put_on_KiB_etc_suffix(uint64_t n);
 std::string normalize_identifier(const std::string& s); // translate to lower case and remove underscores
 
 bool normalized_identifier_equality(const std::string& s1, const std::string& s2);
+
+std::string rewrite_HHMMSS_to_seconds( std::string s );

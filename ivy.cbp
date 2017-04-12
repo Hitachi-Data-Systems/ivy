@@ -118,6 +118,11 @@
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
 			</Target>
+			<Target title="testRegex">
+				<Option output="bin/testRegex" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;" />
@@ -713,7 +718,7 @@
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/testRegex.cpp">
-			<Option target="&lt;{~None~}&gt;" />
+			<Option target="testRegex" />
 		</Unit>
 		<Unit filename="src/test_subinterval.cpp">
 			<Option target="&lt;{~None~}&gt;" />

@@ -23,10 +23,70 @@
 #include "ivytime.h"
 #include "ivyhelpers.h"
 
+std::regex MMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]))ivy" ) ); // any number of minutes followed by ':' followed by 00-59 or 0-59.
+std::regex HHMMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]):(([012345])?[[:digit:]]))ivy" ) ); // any number of hours followed by ':' followed by 00-59 or 0-59 followed by ':' followed by 00-59 or 0-59.
+
+std::string rewrite_HHMMSS_to_seconds( std::string s )
+{
+        std::smatch entire_match;
+        std::ssub_match hh, mm, ss;
+
+
+
+        if (std::regex_match(s, entire_match, MMSS_regex))
+        {
+            mm = entire_match[1];
+            ss = entire_match[2];
+            std::istringstream imm(mm.str());
+            std::istringstream iss(ss.str());
+            unsigned int m, s;
+            imm >> m;
+            iss >> s;
+            std::ostringstream o;
+            o << (s+(60*m));
+            return o.str();
+        }
+
+        if (std::regex_match(s, entire_match, HHMMSS_regex))
+        {
+            hh = entire_match[1];
+            mm = entire_match[2];
+            ss = entire_match[4];
+            std::istringstream ihh(hh.str());
+            std::istringstream imm(mm.str());
+            std::istringstream iss(ss.str());
+            unsigned int h, m, s;
+            ihh >> h;
+            iss >> s;
+            imm >> m;
+            std::ostringstream o;
+            o << (s+(60*(m+(60*h))));
+            return o.str();
+        }
+
+        return s;
+}
 
 int main(int argc, char* argv[])
 {
     std::cout << "Hello, whirrled!" << std::endl;
+
+    std::vector<std::string> ssss
+    {
+        "0", "0:0", "0:00", "0:000", "0:59", "0:60", "30", "30:0", "30:00", "30:000", "30:59", "30:60"
+        , "0:0:0", "1:0:0", "1:00:00", "1:1:1", "0:00:59", "0:59:00"
+    };
+
+    for (auto& s : ssss)
+    {
+        std::cout << "Rewrite of \"" << s << "\" is \"" << rewrite_HHMMSS_to_seconds(s) << "\".\n\n";
+
+    }
+
+
+
+
+
 
 //	std::regex identifier_regex( R"([a-zA-Z]\w*)" );
 //	std::regex number_regex( R"((([0-9]+(\.[0-9]*)?)|(\.[0-9]+))%?)" );
@@ -65,37 +125,42 @@ int main(int argc, char* argv[])
 //		}
 //	}
 //
-    std::regex host_range_regex(   R"((([[:alpha:]][[:alpha:]_]*)|([[:alpha:]][[:alnum:]_]*[[:alpha:]_]))([[:digit:]]+)-([[:digit:]]+))"    );   // e.g. "cb32-47" or even "host2a_32-47"
-    std::smatch smash;
-    std::ssub_match sub;
 
-    for (std::string s : {"cb56-345", "cbkk3aaa32-47"})
-    {
-        std::cout << "For string \"" << s << "\", ";
 
-        std::string hostname_base, hostname_range_start, hostname_range_end;
 
-        if (std::regex_match(s,smash,host_range_regex))
-        {
-            sub = smash[1]; hostname_base = sub.str();
-            sub = smash[4]; hostname_range_start = sub.str();
-            sub = smash[5]; hostname_range_end = sub.str();
 
-            std::cout << "hostname_base = \"" << hostname_base <<"\", hostname_range_start = \"" << hostname_range_start << "\". hostname_range_end = \"" << hostname_range_end << "\"." << std::endl;
-            std::cout << "matched on host name range regex with " << smash.size() << " submatches." << std::endl;
-            for (unsigned int i = 0; i < smash.size(); i++)
-            {
-                sub = smash[i];
-                std::string s = sub.str();
-                std::cout << "submatch " << i << " is \"" << s << "\" (" << s.size() << ")" << std::endl;
-            }
-        }
-        else
-        {
-            std::cout << "did not match on host name range regex." << std::endl;
-        }
 
-    }
+//    std::regex host_range_regex(   R"((([[:alpha:]][[:alpha:]_]*)|([[:alpha:]][[:alnum:]_]*[[:alpha:]_]))([[:digit:]]+)-([[:digit:]]+))"    );   // e.g. "cb32-47" or even "host2a_32-47"
+//    std::smatch smash;
+//    std::ssub_match sub;
+//
+//    for (std::string s : {"cb56-345", "cbkk3aaa32-47"})
+//    {
+//        std::cout << "For string \"" << s << "\", ";
+//
+//        std::string hostname_base, hostname_range_start, hostname_range_end;
+//
+//        if (std::regex_match(s,smash,host_range_regex))
+//        {
+//            sub = smash[1]; hostname_base = sub.str();
+//            sub = smash[4]; hostname_range_start = sub.str();
+//            sub = smash[5]; hostname_range_end = sub.str();
+//
+//            std::cout << "hostname_base = \"" << hostname_base <<"\", hostname_range_start = \"" << hostname_range_start << "\". hostname_range_end = \"" << hostname_range_end << "\"." << std::endl;
+//            std::cout << "matched on host name range regex with " << smash.size() << " submatches." << std::endl;
+//            for (unsigned int i = 0; i < smash.size(); i++)
+//            {
+//                sub = smash[i];
+//                std::string s = sub.str();
+//                std::cout << "submatch " << i << " is \"" << s << "\" (" << s.size() << ")" << std::endl;
+//            }
+//        }
+//        else
+//        {
+//            std::cout << "did not match on host name range regex." << std::endl;
+//        }
+//
+//    }
 
 
 

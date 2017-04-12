@@ -58,6 +58,9 @@ std::regex leading_zero_regex                          (  R"(0[0-9].*)"         
 
 std::regex dotted_quad_regex  (  R"ivy((([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5]))\.(([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5]))\.(([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5]))\.(([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])))ivy");
 
+std::regex MMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]))ivy" ) ); // any number of minutes followed by ':' followed by 00-59 or 0-59.
+std::regex HHMMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]):(([012345])?[[:digit:]]))ivy" ) ); // any number of hours followed by ':' followed by 00-59 or 0-59 followed by ':' followed by 00-59 or 0-59.
+
 void format_for_log_trailing_slashr_slashn(std::string s)
 {
 	for (int i = -1 + s.length(); i >= 0 && ('\r' == s[i] || '\n' == s[i]); i--)
@@ -1081,12 +1084,46 @@ std::string put_on_KiB_etc_suffix(uint64_t n)
     return o.str();
 }
 
+std::string rewrite_HHMMSS_to_seconds( std::string s )
+{
+        std::smatch entire_match;
+        std::ssub_match hh, mm, ss;
 
 
 
+        if (std::regex_match(s, entire_match, MMSS_regex))
+        {
+            mm = entire_match[1];
+            ss = entire_match[2];
+            std::istringstream imm(mm.str());
+            std::istringstream iss(ss.str());
+            unsigned int m, s;
+            imm >> m;
+            iss >> s;
+            std::ostringstream o;
+            o << (s+(60*m));
+            return o.str();
+        }
 
+        if (std::regex_match(s, entire_match, HHMMSS_regex))
+        {
+            hh = entire_match[1];
+            mm = entire_match[2];
+            ss = entire_match[4];
+            std::istringstream ihh(hh.str());
+            std::istringstream imm(mm.str());
+            std::istringstream iss(ss.str());
+            unsigned int h, m, s;
+            ihh >> h;
+            iss >> s;
+            imm >> m;
+            std::ostringstream o;
+            o << (s+(60*(m+(60*h))));
+            return o.str();
+        }
 
-
+        return s;
+}
 
 
 

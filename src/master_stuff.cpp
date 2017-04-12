@@ -1918,7 +1918,7 @@ master_stuff::edit_rollup(const std::string& rollupText, const std::string& orig
 				<< " - average " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.avg()) << " ms"
 				<< " - min " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.min()) << " ms"
 				<< " - max " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.max()) << " ms"
-				<< std::endl;
+				<< std::endl << std::endl;
 
 			if (routine_logging) log(masterlogfile,o.str());
 			std::cout<< o.str();
@@ -2054,7 +2054,7 @@ master_stuff::go(const std::string& parameters)
     std::string valid_parameters_message =
         "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
         "                                                   catnap_time_seconds, post_time_limit_seconds.\n\n"
-        "For dfc = pid, additional valid parameters are:    p, i, d, target_value, starting_total_IOPS, min_IOPS.\n\n"
+        "For dfc = pid, additional valid parameters are:    target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone.\n\n"
         "For measure = on, additional valid parameters are: accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
         "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n\n"
         "For source = workload, additional valid parameters are: category, accumulator_type, accessor.\n\n"
@@ -2352,7 +2352,9 @@ master_stuff::go(const std::string& parameters)
 //----------------------------------- warmup_seconds
     try
     {
-        warmup_seconds = number_optional_trailing_percent(go_parameters.retrieve("warmup_seconds"));
+        std::string ws = go_parameters.retrieve("warmup_seconds");
+        trim(ws);
+        warmup_seconds = number_optional_trailing_percent(rewrite_HHMMSS_to_seconds(ws));
     }
     catch(std::invalid_argument& iae)
     {
@@ -2376,7 +2378,10 @@ master_stuff::go(const std::string& parameters)
 //----------------------------------- measure_seconds
     try
     {
-        measure_seconds = number_optional_trailing_percent(go_parameters.retrieve("measure_seconds"));
+        std::string ms = go_parameters.retrieve("measure_seconds");
+        trim(ms);
+        measure_seconds = number_optional_trailing_percent(rewrite_HHMMSS_to_seconds(ms));
+
     }
     catch(std::invalid_argument& iae)
     {
@@ -2811,7 +2816,9 @@ master_stuff::go(const std::string& parameters)
         timeout_seconds_parameter = go_parameters.retrieve("timeout_seconds");
         try
         {
-            timeout_seconds = number_optional_trailing_percent(timeout_seconds_parameter);
+            std::string ts = go_parameters.retrieve("timeout_seconds");
+            trim(ts);
+            timeout_seconds = number_optional_trailing_percent(rewrite_HHMMSS_to_seconds(ts));
         }
         catch(std::invalid_argument& iae)
         {
