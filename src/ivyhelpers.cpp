@@ -58,8 +58,10 @@ std::regex leading_zero_regex                          (  R"(0[0-9].*)"         
 
 std::regex dotted_quad_regex  (  R"ivy((([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5]))\.(([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5]))\.(([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5]))\.(([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])))ivy");
 
-std::regex MMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]))ivy" ) ); // any number of minutes followed by ':' followed by 00-59 or 0-59.
-std::regex HHMMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]):(([012345])?[[:digit:]]))ivy" ) ); // any number of hours followed by ':' followed by 00-59 or 0-59 followed by ':' followed by 00-59 or 0-59.
+std::regex has_trailing_fractional_zeros_regex( R"((([[:digit:]]+)\.([[:digit:]]*[1-9])?)0+)" );
+
+std::regex MMSS_regex( std::string( R"ivy(([[:digit:]]+):((([012345])?[[:digit:]])(\.([[:digit:]])*)?))ivy" ) ); // any number of minutes followed by ':' followed by 00-59 or 0-59.
+std::regex HHMMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]):((([012345])?[[:digit:]])(\.([[:digit:]])*)?))ivy" ) ); // any number of hours followed by ':' followed by 00-59 or 0-59 followed by ':' followed by 00-59 or 0-59.
 
 void format_for_log_trailing_slashr_slashn(std::string s)
 {
@@ -1084,12 +1086,37 @@ std::string put_on_KiB_etc_suffix(uint64_t n)
     return o.str();
 }
 
+std::string remove_trailing_fractional_zeros(std::string s)
+{
+    std::smatch entire_match;
+    std::ssub_match before, after, before_point_after;
+
+    if (std::regex_match(s, entire_match, has_trailing_fractional_zeros_regex))
+    {
+        before_point_after = entire_match[1];
+        before = entire_match[2];
+        after = entire_match[3];
+
+        if (0 == after.str().size())
+        {
+            return before.str();  // We remove the decimal point if there are only zeros after it.
+                                  // This does change it from a floating point literal to an unsigned int literal.
+        }
+        else
+        {
+            return before_point_after.str();
+        }
+    }
+    else
+    {
+        return s;
+    }
+}
+
 std::string rewrite_HHMMSS_to_seconds( std::string s )
 {
         std::smatch entire_match;
-        std::ssub_match hh, mm, ss;
-
-
+        std::ssub_match hh, mm, ss, fractional_part;
 
         if (std::regex_match(s, entire_match, MMSS_regex))
         {
@@ -1097,12 +1124,12 @@ std::string rewrite_HHMMSS_to_seconds( std::string s )
             ss = entire_match[2];
             std::istringstream imm(mm.str());
             std::istringstream iss(ss.str());
-            unsigned int m, s;
+            double m, s;
             imm >> m;
             iss >> s;
             std::ostringstream o;
-            o << (s+(60*m));
-            return o.str();
+            o << std::fixed << (s+(60*m));
+            return remove_trailing_fractional_zeros(o.str());
         }
 
         if (std::regex_match(s, entire_match, HHMMSS_regex))
@@ -1113,13 +1140,13 @@ std::string rewrite_HHMMSS_to_seconds( std::string s )
             std::istringstream ihh(hh.str());
             std::istringstream imm(mm.str());
             std::istringstream iss(ss.str());
-            unsigned int h, m, s;
+            double h, m, s;
             ihh >> h;
             iss >> s;
             imm >> m;
             std::ostringstream o;
-            o << (s+(60*(m+(60*h))));
-            return o.str();
+            o << std::fixed << (s+(60*(m+(60*h))));
+            return remove_trailing_fractional_zeros(o.str());
         }
 
         return s;

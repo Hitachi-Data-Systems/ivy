@@ -2054,7 +2054,7 @@ master_stuff::go(const std::string& parameters)
     std::string valid_parameters_message =
         "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
         "                                                   catnap_time_seconds, post_time_limit_seconds.\n\n"
-        "For dfc = pid, additional valid parameters are:    target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone.\n\n"
+        "For dfc = pid, additional valid parameters are:    target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
         "For measure = on, additional valid parameters are: accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
         "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n\n"
         "For source = workload, additional valid parameters are: category, accumulator_type, accessor.\n\n"
@@ -2090,12 +2090,13 @@ master_stuff::go(const std::string& parameters)
         if (stringCaseInsensitiveEquality("pid", controllerName))
         {
             have_pid = true;
-            valid_parameter_names += ", dfc, target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone";
-            if (!go_parameters.contains(std::string("min_IOPS")))         go_parameters.contents[normalize_identifier(std::string("min_IOPS"))]         = std::string("10");
-            if (!go_parameters.contains(std::string("max_ripple")))       go_parameters.contents[normalize_identifier(std::string("max_ripple"))]       = std::string("1%");
-            if (!go_parameters.contains(std::string("gain_step")))        go_parameters.contents[normalize_identifier(std::string("gain_step"))]        = std::string("2");
-            if (!go_parameters.contains(std::string("ballpark_seconds"))) go_parameters.contents[normalize_identifier(std::string("ballpark_seconds"))] = std::string("60");
-            if (!go_parameters.contains(std::string("max_monotone")))     go_parameters.contents[normalize_identifier(std::string("max_monotone"))]     = std::string("5");
+            valid_parameter_names += ", dfc, target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
+            if (!go_parameters.contains(std::string("min_IOPS")))                   go_parameters.contents[normalize_identifier(std::string("min_IOPS"))]         = std::string("10");
+            if (!go_parameters.contains(std::string("max_ripple")))                 go_parameters.contents[normalize_identifier(std::string("max_ripple"))]       = std::string("1%");
+            if (!go_parameters.contains(std::string("gain_step")))                  go_parameters.contents[normalize_identifier(std::string("gain_step"))]        = std::string("2");
+            if (!go_parameters.contains(std::string("ballpark_seconds")))           go_parameters.contents[normalize_identifier(std::string("ballpark_seconds"))] = std::string("60");
+            if (!go_parameters.contains(std::string("balanced_step_direction_by"))) go_parameters.contents[normalize_identifier(std::string("balanced_step_direction_by"))] = std::string("12");
+            if (!go_parameters.contains(std::string("max_monotone")))               go_parameters.contents[normalize_identifier(std::string("max_monotone"))]     = std::string("5");
         }
         else
         {
@@ -2598,7 +2599,7 @@ master_stuff::go(const std::string& parameters)
 
     if (have_pid)
     {
-        // valid_parameter_names += ", dfc, target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone";
+        // valid_parameter_names += ", dfc, target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
 
         if ( (!go_parameters.contains("target_value"))
           || (!go_parameters.contains("low_IOPS"))
@@ -2750,6 +2751,24 @@ master_stuff::go(const std::string& parameters)
             {
                 ostringstream o;
                 o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid max_monotone parameter \"" << parameter << "\".  Must be greater than or equal to 4." << std::endl << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+        }
+
+//----------------------------------- balanced_step_direction_by
+        {
+            std::string parameter = go_parameters.retrieve("balanced_step_direction_by");
+
+            std::ostringstream where_the; where_the << "go_statement(), DFC = PID - when setting \"balanced_step_direction_by\" parameter to value \"" << parameter << "\": ";
+
+            m_s.balanced_step_direction_by = unsigned_int(parameter,where_the.str());
+
+            if (m_s.balanced_step_direction_by <= 4)
+            {
+                ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid balanced_step_direction_by parameter \"" << parameter << "\".  Must be greater than or equal to 6." << std::endl << std::endl;
                 log(masterlogfile,o.str());
                 std::cout << o.str();
                 kill_subthreads_and_exit();

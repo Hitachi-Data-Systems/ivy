@@ -373,10 +373,14 @@ public:
     unsigned int best_of_wurst_first, best_of_wurst_last;
     bool have_timeout_rollup {false};
 
-    ivy_float gain_step { 2.0 };           // The amount to increase / decrease gain in the adaptive PID approach.  2.0 works exactly same as 0.5
-    ivy_float max_ripple { 1.5 / 100.0 };  // The max amount that in a PID loop IOPS can bounce up and down before reducing I gain.
-    unsigned int max_monotone { 5 };          // The max number of initial subintervals without IOPS ever changing direction before increasing the gain.
-    ivy_float ballpark_seconds { 60. };    // A measure of the gain.  Smaller values represent higher gain.
+    // for the following, see initialization to default values in master_stuff
+    ivy_float gain_step;                      // The amount to increase / decrease gain in the adaptive PID approach.  2.0 works exactly same as 0.5
+    ivy_float max_ripple;                     // The max amount that in a PID loop IOPS can bounce up and down before reducing I gain.
+
+    unsigned int max_monotone;                // See extensive comment section in RollupInstance.cpp
+    unsigned int balanced_step_direction_by;  // See extensive comment section in RollupInstance.cpp
+
+    ivy_float ballpark_seconds;               // A measure of the gain.  Smaller values represent higher gain.
 
     int last_gain_adjustment_subinterval {-1};  // One central value in master_stuff with the latest gain adjustment made in any focus rollup instance.
 

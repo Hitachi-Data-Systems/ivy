@@ -22,14 +22,43 @@
 
 #include "ivytime.h"
 #include "ivyhelpers.h"
+#include "ivydefines.h"
 
-std::regex MMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]))ivy" ) ); // any number of minutes followed by ':' followed by 00-59 or 0-59.
-std::regex HHMMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]):(([012345])?[[:digit:]]))ivy" ) ); // any number of hours followed by ':' followed by 00-59 or 0-59 followed by ':' followed by 00-59 or 0-59.
+std::regex MMSS_regex( std::string( R"ivy(([[:digit:]]+):((([012345])?[[:digit:]])(\.([[:digit:]])*)?))ivy" ) ); // any number of minutes followed by ':' followed by 00-59 or 0-59.
+std::regex HHMMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]):((([012345])?[[:digit:]])(\.([[:digit:]])*)?))ivy" ) ); // any number of hours followed by ':' followed by 00-59 or 0-59 followed by ':' followed by 00-59 or 0-59.
+std::regex has_trailing_fractional_zeros_regex( R"((([[:digit:]]+)\.([[:digit:]]*[1-9])?)0+)" );
+
+std::string remove_trailing_fractional_zeros(std::string s)
+{
+    std::smatch entire_match;
+    std::ssub_match before, after, before_point_after;
+
+    if (std::regex_match(s, entire_match, has_trailing_fractional_zeros_regex))
+    {
+        before_point_after = entire_match[1];
+        before = entire_match[2];
+        after = entire_match[3];
+
+        if (0 == after.str().size())
+        {
+            return before.str();  // We remove the decimal point if there are only zeros after it.
+                                  // This does change it from a floating point literal to an unsigned int literal.
+        }
+        else
+        {
+            return before_point_after.str();
+        }
+    }
+    else
+    {
+        return s;
+    }
+}
 
 std::string rewrite_HHMMSS_to_seconds( std::string s )
 {
         std::smatch entire_match;
-        std::ssub_match hh, mm, ss;
+        std::ssub_match hh, mm, ss, fractional_part;
 
 
 
@@ -39,11 +68,11 @@ std::string rewrite_HHMMSS_to_seconds( std::string s )
             ss = entire_match[2];
             std::istringstream imm(mm.str());
             std::istringstream iss(ss.str());
-            unsigned int m, s;
+            double m, s;
             imm >> m;
             iss >> s;
             std::ostringstream o;
-            o << (s+(60*m));
+            o << std::fixed << (s+(60*m));
             return o.str();
         }
 
@@ -55,12 +84,12 @@ std::string rewrite_HHMMSS_to_seconds( std::string s )
             std::istringstream ihh(hh.str());
             std::istringstream imm(mm.str());
             std::istringstream iss(ss.str());
-            unsigned int h, m, s;
+            double h, m, s;
             ihh >> h;
             iss >> s;
             imm >> m;
             std::ostringstream o;
-            o << (s+(60*(m+(60*h))));
+            o << std::fixed << (s+(60*(m+(60*h))));
             return o.str();
         }
 
@@ -75,11 +104,15 @@ int main(int argc, char* argv[])
     {
         "0", "0:0", "0:00", "0:000", "0:59", "0:60", "30", "30:0", "30:00", "30:000", "30:59", "30:60"
         , "0:0:0", "1:0:0", "1:00:00", "1:1:1", "0:00:59", "0:59:00"
+        , "0.", "0:0.", "0:00.", "0:000.", "0:59.", "0:60.", "30.", "30:0.", "30:00.", "30:000.", "30:59.", "30:60."
+        , "0:0:0.", "1:0:0.", "1:00:00.", "1:1:1.", "0:00:59.", "0:59:00."
+        , "0.1", "0:0.1", "0:00.1", "0:000.1", "0:59.1", "0:60.1", "30.1", "30:0.1", "30:00.1", "30:000.1", "30:59.1", "30:60.1"
+        , "0:0:0.1", "1:0:0.1", "1:00:00.1", "1:1:1.1", "0:00:59.1", "0:59:00.1"
     };
 
     for (auto& s : ssss)
     {
-        std::cout << "Rewrite of \"" << s << "\" is \"" << rewrite_HHMMSS_to_seconds(s) << "\".\n\n";
+        std::cout << "Rewrite of \"" << s << "\" is \"" << rewrite_HHMMSS_to_seconds(s) << "\", which strips trailing zeros to \"" << remove_trailing_fractional_zeros(rewrite_HHMMSS_to_seconds(s)) << "\".\n\n";
 
     }
 

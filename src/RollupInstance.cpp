@@ -385,8 +385,6 @@ void RollupInstance::perform_PID()
     if ( subinterval_count < 3)
     {
         // RollupInstance::reset() already prepares most things.
-
-        have_reduced_gain = false;
         m_s.last_gain_adjustment_subinterval = -1;
     }
     else
@@ -402,30 +400,6 @@ void RollupInstance::perform_PID()
         error_integral += error_signal;
         error_derivative = (this_measurement - prev_measurement) / m_s.subinterval_seconds;
 
-        if (subinterval_count == 3)
-        {
-            if ( error_signal >= 0. ) error_positive_last_time = true;
-            else                      error_positive_last_time = false;
-            error_zero_crossing_subinterval.push_back(false);
-        }
-        else
-        {
-            if      (   error_positive_last_time  && error_signal < 0)
-            {
-                error_zero_crossing_subinterval.push_back(true);
-                error_positive_last_time = false;
-            }
-            else if ( (!error_positive_last_time) && error_signal > 0)
-            {
-                error_zero_crossing_subinterval.push_back(true);
-                error_positive_last_time = true;
-            }
-            else
-            {
-                error_zero_crossing_subinterval.push_back(false);
-            }
-        }
-
         p_times_error = P * error_signal;
         i_times_integral = I * error_integral;
         d_times_derivative = D * error_derivative;
@@ -433,35 +407,82 @@ void RollupInstance::perform_PID()
         total_IOPS = p_times_error + i_times_integral + d_times_derivative;
     }
 
-    if (total_IOPS < m_s.min_IOPS) total_IOPS = m_s.min_IOPS;
-
-    //*debug*/ print_console_info_line();
-
+    if (total_IOPS < m_s.min_IOPS)
+    {
+        total_IOPS = m_s.min_IOPS;
+        error_integral = total_IOPS/I;
+    }
 
     // The next bit is how we run an adaptive algorithm to reduce the "I" gain if we are seeing
-    // excessive swings in IOPS.
+    // excessive swings in IOPS, or to increase the gain if we haven't reached the target yet.
 
     // The mechanism works on the basis of successive "adaptive PID subinterval cycles" where
-    // every time we make a gain adjustment (reduction), we start a new subinterval cycle.
-
-    // Maybe later the same adaptive PID cycle could be used for gain increases too ...
+    // every time we make a gain adjustment (up or down), we start a new subinterval cycle.
 
     // A "swing" is the cumulative distance that IOPS moves in one or more steps
-    // in the same direction up or down ("monotonically") before changing direction.
+    // in the same direction up or down ("monotonically") before changing direction
+    // at an "inflection point".
 
-    // If you see large IOPS swings (oscillations), then the gain is too high.
+    // If we see IOPS swinging up and down repeatedly (at least two up-swings and two down-swings
+    // within the current adaptive PID cycle) and the average swing size in each direction
+    // both up and down is "excessive ", then we reduce the gain and start a new adaptive PID cycle.
 
-    // However, there is always some noise in the PID control metric signal for a fixed IOPS setting,
-    // and thus the PID loop will always be adjusting the IOPS somewhat in response to noise, even if
-    // the gain is set to an optimal value to reduce test time with a stable response.
+    // "Excessive" means that the average up swing expressed as a fraction of the midpoint of
+    // the swing is bigger than "max_ripple" (default 1% at time of writing), and likewise
+    // the average down swing is also bigger than max_ripple.
 
-    // The "max_ripple" parameter (e.g. 2.5%) describes the OK limit for the size of an IOPS swing as a fraction of
-    // the base IOPS value.  (The base IOPS value is computed as the midpoint between the ends of the swing.)
+    // Looking for excessive swings in both directions to identify instability is used to reject
+    // noise in the measurement value from subinterval to subinterval that might cause small swings
+    // in the opposite direction while we are making big movements in one direction because
+    // we haven't reached the target value yet and we are steering IOPS up or down.
 
-    // If we see a ripple that is too big, we reduce the "I" gain by "gain_step", e.g. 2.0.
+    // If we see average size of swing over multiple swings in both directions is too high
+    // we reduce the "I" gain by "gain_step", e.g. 2.0.
 
-    // The gain reduction multiplicative factor we use is min( gain_step, 1 / gain_step).
+    // The gain reduction multiplicative factor we use is min( gain_step, 1 / gain_step ).
     // In other words, you can either say 4.0 or 0.25, it works exactly the same either way.
+
+    // When for the first time we see these excessive swings both up and down,
+    // this is taken as evidence that we have "arrived on station".
+
+        // (At time of writing this, donn't know if this will be sufficient
+        //  and maybe we'll need to do something else to know that we have arrived
+        //  at the target either by further analysis of the changes in IOPS
+        //  or by actually looking at the error signal.)
+
+    // Before we have arrived on station as evidenced by repeated excessive IOPS
+    // swings in both directions during at least one adaptive PID cycle,
+    // we keep increasing the gain and starting new adaptive PID cycles triggered
+    // two ways:
+
+    // 1) Within the same adaptive PID subinterval cycle, if the IOPS is either flat
+    //    or moves exclusively in one direction up or down for more than "max_monotone" subintervals,
+    //    this triggers a gain increase and the start of a new adaptive PID cycle.
+
+    // 2) Within the same adaptive PID subinterval cycle, if the number of subintervals
+    //    where IOPS is adjusted "up" is less than 1/3 of the number of subintervals where an IOPS
+    //    change was made, or if the number of "down" steps is less than 1/3 the total steps
+    //    over a period of "balanced_step_direction_by" (at time of writing defaulting to 12)
+    //    total either flat or moves exclusively in one direction up or down for more
+    //    than "max_monotone" subintervals, this triggers a gain increase and
+    //    the start of a new adaptive PID cycle.
+
+    //    The reason we have this as well as max_monotone is that there may be enough
+    //    noise in the measurement from subinterval to subinterval to cause some
+    //    erratic movement of IOPS over and above the drift towards the target as
+    //    we are actively steering in one direction most of the time.
+
+    //    So the idea is that if we are on target, we will be making roughly the
+    //    same number of "up" individual IOPS adjustments as individual "down" adjustments
+    //    regardless of their packaging into "swings" which are the monotonic
+    //    subsequences joined by "inflection points" where the IOPS adjustment
+    //    changes direction.  Thus if over two thirds of the adjustments are
+    //    the same direction we increase the gain.
+
+    // The default value of "balanced_step_direction_by" (12) is longer than
+    // the default value of "max_monotone" (5) and this is consistent with it taking
+    // longer in the presence of noise to decode the signal.
+
 
     if (subinterval_count > 3)
     {
@@ -474,13 +495,38 @@ void RollupInstance::perform_PID()
             on_way_down = false;
             on_way_up =  false;
             have_previous_inflection = false;
+
+            up_movement.clear();
+            down_movement.clear();
+            fractional_up_swings.clear();
+            fractional_down_swings.clear();
+
+            monotone_count = 0;
+
             {std::ostringstream o; o << "Starting new adaptive PID cycle at overall subinterval " << subinterval_count << "." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
         }
         else
         {
+            {
+                std::ostringstream o;
+                o << "Entering adaptive PID mechanism for " << attributeNameComboID << " = " << rollupInstanceID
+                    << "  in " << (have_reduced_gain ? "settling " : "initial gain increase" ) << " mode with "
+                    << "\"max_monotone\" gain increases = " << m_count
+                    << ", \"balanced_step_direction_by\" gain increases = " << b_count
+                    << ", \"max_ripple\" gain decreases = " << d_count
+                    << "\n\n";
+                std::cout << o.str();
+                if (routine_logging) { log(m_s.masterlogfile, o.str()); }
+            }
+
             // This is at least the second time we have set an IOPS value in this adaptive PID cycle.
 
-            ivy_float delta_percent = 100 * abs(total_IOPS - total_IOPS_last_time) / total_IOPS_last_time;
+            ivy_float delta = total_IOPS - total_IOPS_last_time;
+
+            if      ( delta > 0.0 ) { up_movement.push(abs(delta)); }
+            else if ( delta < 0.0 ) { down_movement.push(abs(delta)); }
+
+            ivy_float delta_percent = 100 * abs(delta) / total_IOPS_last_time;
 
             if ( (!on_way_down) && (!on_way_up) )
             {
@@ -489,89 +535,130 @@ void RollupInstance::perform_PID()
                 if (total_IOPS > total_IOPS_last_time)
                 {
                     on_way_up = true;
-                    {std::ostringstream o; o << "PID loop - initial IOPS movement is upwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    monotone_count = 1;
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - initial IOPS movement is upwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                 }
                 else if (total_IOPS < total_IOPS_last_time)
                 {
                     on_way_down = true;
-                    {std::ostringstream o; o << "PID loop - initial IOPS movement is downwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    monotone_count = 1;
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - initial IOPS movement is downwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                 }
                 else
                 {
-                    {std::ostringstream o; o << "PID loop - always calculated exactly same IOPS this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - always calculated exactly same IOPS this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                 }
             }
             else
             {
-                // We had a previously recorded direction of motion up or down before seeing this new IOPS setting.
+                // We already had a direction of motion up or down before seeing this new IOPS setting.
 
-                // If we have changed direction, we are seeing a new inflection point.
-                if (     (   (on_way_up)   && (total_IOPS < total_IOPS_last_time)  )
-                     ||  (   (on_way_down) && (total_IOPS > total_IOPS_last_time)  ))
+                unsigned int total_steps = up_movement.count() + down_movement.count();
+
+                if (  !have_reduced_gain
+                    && total_steps > m_s.balanced_step_direction_by
+                    && (
+                         ( up_movement.count()   < (total_steps/3) )
+                      || ( down_movement.count() < (total_steps/3) )
+                       )
+                   )
                 {
-                    // we see an inflection point where we changed direction.
-
-                    on_way_up = !on_way_up;
-                    on_way_down = !on_way_down;
-
-                    ivy_float this_inflection = total_IOPS_last_time;  // This was the farthest point reached.
-
-                    if (have_previous_inflection) // is this the ending point of a swing?
-                    {
-                        ivy_float swing = abs(previous_inflection - this_inflection);
-
-                        ivy_float base_IOPS = 0.5 * (previous_inflection + this_inflection); // average of the swing endpoint IOPS values
-
-                        ivy_float ripple_fraction = swing / base_IOPS;
-
-                        if (ripple_fraction > m_s.max_ripple)
-                        {
-                            // we need to reduce the gain and start a new adaptive PID cycle
-
-                            I *= min(m_s.gain_step, 1.0/m_s.gain_step);
-                            total_IOPS = base_IOPS;              // set new starting IOPS to be at midpoint of swing.
-                            error_integral = total_IOPS / I;     // adjusts the cumulative error total to according to new I, new IOPS.
-                            have_reduced_gain = true;
-                            m_s.last_gain_adjustment_subinterval = m_s.running_subinterval; // warmup extends until at least the last gain adjustmenty
-                            {std::ostringstream o; o << "PID loop - saw inflection " << (on_way_up? "upwards" : "downwards") << ", IOPS swing ("
-                                << std::fixed << std::setprecision(2) << (100.*ripple_fraction)
-                                << "%) too big, ended this adaptive PID cycle by reducing gain at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
-                            adaptive_PID_subinterval_count = 0;  // other things get reset from this
-                        }
-                        else
-                        {
-                            // The size of the swing was OK, keep going in the same adaptive PID cycle.
-
-                            // This becomes the starting point for a new swing in the other direction.
-                            previous_inflection = this_inflection;
-                            {std::ostringstream o; o << "PID loop - saw inflection " << (on_way_up ? "upwards" : "downwards") << ", size of swing is OK (" << std::fixed << std::setprecision(2) << (100.*ripple_fraction) << "%), starting new swing at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
-                        }
-                    }
-                    else // this is the first inflection point this adaptive PID cycle, start the first swing.
-                    {
-                        previous_inflection = this_inflection;
-                        have_previous_inflection = true;
-                        {std::ostringstream o; o << "PID loop - saw first inflection (" << (on_way_up ? "upwards" : "downwards") << ") this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
-                    }
+                    // need to increase gain due to balanced_step_direction_by
+                    I *= max(m_s.gain_step, 1.0/m_s.gain_step);
+                    error_integral = total_IOPS / I;       // adjusts the cumulative error total to according to new I, new IOPS.
+                    adaptive_PID_subinterval_count = 0;    // other things get reset from this
+                    m_s.last_gain_adjustment_subinterval = m_s.running_subinterval; // warmup extends until at least the last gain adjustmenty
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID
+                        << " - increasing gain because over at least  " << m_s.balanced_step_direction_by
+                        << " IOPS adjustments, over two thirds of the adjustments were in the same direction"
+                        << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    b_count++;
                 }
                 else
                 {
-                    // we have kept going in the same direction.
-
-                    if ( (!have_reduced_gain) && (!have_previous_inflection) && (adaptive_PID_subinterval_count > m_s.max_monotone) )
+                    // If we have changed direction, we are seeing a new inflection point.
+                    if (     (   (on_way_up)   && (total_IOPS < total_IOPS_last_time)  )
+                         ||  (   (on_way_down) && (total_IOPS > total_IOPS_last_time)  ))
                     {
-                        // The idea is to keep increasing the gain if we haven't reached / crossed the target this adaptive PID cycle
+                        // we see an inflection point where we changed direction.
 
-                        I *= max(m_s.gain_step, 1.0/m_s.gain_step);
-                        error_integral = total_IOPS / I;       // adjusts the cumulative error total to according to new I, new IOPS.
-                        adaptive_PID_subinterval_count = 0;    // other things get reset from this
-                        m_s.last_gain_adjustment_subinterval = m_s.running_subinterval; // warmup extends until at least the last gain adjustmenty
-                        {std::ostringstream o; o << "PID loop - kept going same direction for too many subintervals this adaptive PID cycle and have never reduced gain so increasing gain at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                        on_way_up = !on_way_up;
+                        on_way_down = !on_way_down;
+                        monotone_count = 1;
+
+                        ivy_float this_inflection = total_IOPS_last_time;  // This was the farthest point reached.
+
+                        if (have_previous_inflection)
+                        {
+                            // This is the ending point of a swing
+
+
+                            ivy_float swing =  this_inflection - previous_inflection;
+
+                            ivy_float base_IOPS = 0.5 * (previous_inflection + this_inflection); // average of the swing endpoint IOPS values
+
+                            ivy_float swing_fraction_of_IOPS = abs(swing) / base_IOPS;
+
+                            if (swing > 0.0) { fractional_up_swings.push(swing_fraction_of_IOPS); }
+                            else             { fractional_down_swings.push(swing_fraction_of_IOPS); }
+
+                            if ( (fractional_up_swings.count() >=2 && fractional_up_swings.avg() > m_s.max_ripple)
+                              && (fractional_down_swings.count() >=2 && fractional_down_swings.avg() > m_s.max_ripple) )
+                            {
+                                // the average swing size in both directions is too big and we need to reduce the gain and start a new adaptive PID cycle
+                                have_reduced_gain = true;
+                                I *= min(m_s.gain_step, 1.0/m_s.gain_step);
+                                total_IOPS = base_IOPS;              // set new starting IOPS to be at midpoint of swing.
+                                error_integral = total_IOPS / I;     // adjusts the cumulative error total to according to new I, new IOPS.
+                                m_s.last_gain_adjustment_subinterval = m_s.running_subinterval; // warmup extends until at least the last gain adjustmenty
+                                {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw inflection " << (on_way_up ? "upwards" : "downwards")
+                                    << ", size of swing is " << std::fixed << std::setprecision(2) << (100.*swing_fraction_of_IOPS) << "% of its midpoint IOPS.  "
+                                    << "Due to excessive swing size in both directions reducing gain at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                                adaptive_PID_subinterval_count = 0;  // other things get reset from this
+                                d_count++;
+                            }
+                            else
+                            {
+                                // The swing was OK, keep going in the same adaptive PID cycle.
+
+                                // This becomes the starting point for a new swing in the other direction.
+                                previous_inflection = this_inflection;
+                                {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw inflection " << (on_way_up ? "upwards" : "downwards")
+                                    << ", size of swing is " << std::fixed << std::setprecision(2) << (100.*swing_fraction_of_IOPS) << "% of its midpoint IOPS"
+                                    << ", starting new swing at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                            }
+                        }
+                        else // this is the first inflection point this adaptive PID cycle, start the first swing.
+                        {
+                            previous_inflection = this_inflection;
+                            have_previous_inflection = true;
+                            {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw first inflection (" << (on_way_up ? "upwards" : "downwards") << ") this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                        }
                     }
                     else
                     {
-                        std::ostringstream o;
-                        o << "PID loop - IOPS kept going " << (on_way_up ? "upwards" : "downwards") << " (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str());
+                        // we have kept going in the same direction.
+
+                        monotone_count++;
+
+                        if ( (!have_reduced_gain) && (monotone_count > m_s.max_monotone))
+                        {
+                            // need to increase gain due to max_monotone
+                            I *= max(m_s.gain_step, 1.0/m_s.gain_step);
+                            error_integral = total_IOPS / I;       // adjusts the cumulative error total to according to new I, new IOPS.
+                            adaptive_PID_subinterval_count = 0;    // other things get reset from this
+                            m_s.last_gain_adjustment_subinterval = m_s.running_subinterval; // warmup extends until at least the last gain adjustmenty
+                            {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID
+                                << " - increasing gain because over at least " << m_s.max_monotone
+                                << " consecutive subintervals, all IOPS adjustments were in the same direction"
+                                << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                            m_count++;
+                        }
+                        else
+                        {
+                            std::ostringstream o;
+                            o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - IOPS kept going " << (on_way_up ? "upwards" : "downwards") << " (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str());
+                        }
                     }
                 }
             }
@@ -601,38 +688,6 @@ void RollupInstance::perform_PID()
     print_subinterval_column();
 
 }
-
-//unsigned int RollupInstance::most_subintervals_without_a_zero_crossing_starting(unsigned int starting)
-//{
-//    unsigned int ending = error_zero_crossing_subinterval.size()-1;
-//
-//    if (starting > ending)
-//    {
-//        std::ostringstream o;
-//        o << "<Error> internal programming error RollupInstance::most_subintervals_without_a_zero_crossing_starting(unsigned int starting = "
-//        << starting << ") - unfortunately the ending subinterval number is " << ending << std::endl;
-//        std::cout << o.str();
-//        log(m_s.masterlogfile, o.str());
-//        m_s.kill_subthreads_and_exit();
-//    }
-//
-//    unsigned int max_consecutive=0;
-//    unsigned int consecutive=0;
-//    for (unsigned int i = starting; i <= ending; i++)
-//    {
-//        if (error_zero_crossing_subinterval[i])
-//        {
-//            consecutive = 0;
-//        }
-//        else
-//        {
-//            consecutive++;
-//            if (consecutive > max_consecutive) max_consecutive = consecutive;
-//        }
-//    }
-//
-//    return max_consecutive;
-//}
 
 std::pair<bool,ivy_float> RollupInstance::isValidMeasurementStartingFrom(unsigned int n)
 {
@@ -723,8 +778,6 @@ void RollupInstance::print_console_info_line()
 void RollupInstance::reset() // gets called by go statement, when it assigns the DFC
 {
     focus_metric_vector.clear();
-    error_zero_crossing_subinterval.clear();
-
 
     if (m_s.have_pid)
     {
@@ -751,6 +804,49 @@ void RollupInstance::reset() // gets called by go statement, when it assigns the
         D = 0;
 
         adaptive_PID_subinterval_count = 0;
+        m_count = b_count = d_count = 0;
+        have_reduced_gain = false;
+
+        subinterval_number_sstream.str("");
+        subinterval_number_sstream.clear();
+        target_metric_value_sstream.str("");
+        target_metric_value_sstream.clear();
+        metric_value_sstream.str("");
+        metric_value_sstream.clear();
+        error_sstream.str("");
+        error_sstream.clear();
+        error_integral_sstream.str("");
+        error_integral_sstream.clear();
+        error_derivative_sstream.str("");
+        error_derivative_sstream.clear();
+        p_times_error_sstream.str("");
+        p_times_error_sstream.clear();
+        i_times_integral_sstream.str("");
+        i_times_integral_sstream.clear();
+        d_times_derivative_sstream.str("");
+        d_times_derivative_sstream.clear();
+        total_IOPS_sstream.str("");
+        total_IOPS_sstream.clear();
+        p_sstream.str("");
+        p_sstream.clear();
+        i_sstream.str("");
+        i_sstream.clear();
+        d_sstream.str("");
+        d_sstream.clear();
+
+        subinterval_number_sstream << "subinterval number";print_common_columns(subinterval_number_sstream);
+        target_metric_value_sstream<< "target value";      print_common_columns(target_metric_value_sstream);
+        metric_value_sstream       << "measurement";       print_common_columns(metric_value_sstream);
+        error_sstream              << "error signal";      print_common_columns(error_sstream);
+        error_integral_sstream     << "error integral";    print_common_columns(error_integral_sstream);
+        error_derivative_sstream   << "error derivative";  print_common_columns(error_derivative_sstream);
+        p_times_error_sstream      << "p times error";     print_common_columns(p_times_error_sstream);
+        i_times_integral_sstream   << "i times integral";  print_common_columns(i_times_integral_sstream);
+        d_times_derivative_sstream << "d times derivative";print_common_columns(d_times_derivative_sstream);
+        total_IOPS_sstream         << "total IOPS setting";print_common_columns(total_IOPS_sstream);
+        p_sstream                  << "P";                 print_common_columns(p_sstream);
+        i_sstream                  << "I";                 print_common_columns(i_sstream);
+        d_sstream                  << "D";                 print_common_columns(d_sstream);
     }
     else
     {
@@ -761,43 +857,12 @@ void RollupInstance::reset() // gets called by go statement, when it assigns the
     this_measurement = 0.0;
     prev_measurement = 0.0;
 
-    subinterval_number_sstream.str("");
-    subinterval_number_sstream.clear();
-    target_metric_value_sstream.str("");
-    target_metric_value_sstream.clear();
-    metric_value_sstream.str("");
-    metric_value_sstream.clear();
-    error_sstream.str("");
-    error_sstream.clear();
-    error_integral_sstream.str("");
-    error_integral_sstream.clear();
-    error_derivative_sstream.str("");
-    error_derivative_sstream.clear();
-    p_times_error_sstream.str("");
-    p_times_error_sstream.clear();
-    i_times_integral_sstream.str("");
-    i_times_integral_sstream.clear();
-    d_times_derivative_sstream.str("");
-    d_times_derivative_sstream.clear();
-    total_IOPS_sstream.str("");
-    total_IOPS_sstream.clear();
 
     ivytime t; t.setToNow();
     timestamp = t.format_as_datetime_with_ns();
 
-    subinterval_number_sstream << "subinterval number";print_common_columns(subinterval_number_sstream);
-    target_metric_value_sstream<< "target value";      print_common_columns(target_metric_value_sstream);
-    metric_value_sstream       << "measurement";       print_common_columns(metric_value_sstream);
-    error_sstream              << "error signal";      print_common_columns(error_sstream);
-    error_integral_sstream     << "error integral";    print_common_columns(error_integral_sstream);
-    error_derivative_sstream   << "error derivative";  print_common_columns(error_derivative_sstream);
-    p_times_error_sstream      << "p times error";     print_common_columns(p_times_error_sstream);
-    i_times_integral_sstream   << "i times integral";  print_common_columns(i_times_integral_sstream);
-    d_times_derivative_sstream << "d times derivative";print_common_columns(d_times_derivative_sstream);
-    total_IOPS_sstream         << "total IOPS setting";print_common_columns(total_IOPS_sstream);
 
     best_first_last_valid = false;
-
 }
 
 void RollupInstance::print_common_columns(std::ostream& os)
@@ -833,6 +898,9 @@ void RollupInstance::print_subinterval_column()
     i_times_integral_sstream    << ',' << i_times_integral;
     d_times_derivative_sstream  << ',' << d_times_derivative;
     total_IOPS_sstream          << ',' << total_IOPS_last_time;
+    p_sstream                   << ',' << P;
+    i_sstream                   << ',' << I;
+    d_sstream                   << ',' << D;
 }
 
 void RollupInstance::print_pid_csv_files()
@@ -845,10 +913,29 @@ void RollupInstance::print_pid_csv_files()
 
     const std::string headers {"item,timestamp,focus metric,target value,pid combo token,p,i,d,rollup type,rollup instance,test name,step name,measurements ...\n"};
 
-    std::string test_level_filename, step_level_filename;
+    std::string test_level_filename, step_level_filename, adaptive_gain_test_filename, adaptive_gain_step_filename;
 
     test_level_filename = m_s.testFolder + "/" + m_s.testName + ".PID.csv";
+    adaptive_gain_test_filename = m_s.testFolder + "/" + m_s.testName + ".adaptive_gain.txt";
+
     step_level_filename = m_s.stepFolder + "/" + m_s.testName + "." + m_s.stepNNNN + "." + m_s.stepName + "." + attributeNameComboID + "." + rollupInstanceID + ".PID.csv";
+    adaptive_gain_step_filename = m_s.stepFolder + "/" + m_s.testName + "." + m_s.stepNNNN + "." + m_s.stepName + "." + attributeNameComboID + "." + rollupInstanceID + ".adaptive_gain.txt";
+
+    {
+        std::ostringstream o;
+        o << m_s.stepNNNN << " " << m_s.stepName
+            << " adaptive PID for " << attributeNameComboID << " = " << rollupInstanceID
+            << "\"max_monotone\" gain increase cycles = " << m_count
+            << ", \"balanced_step_direction_by\" gain increase cycles = " << b_count
+            << ", \"max_ripple\" gain decreases = " << d_count
+            << ", total step subintervals = " << ( 1 + m_s.running_subinterval )
+            << "\n";
+        std::cout << o.str();
+
+        log(adaptive_gain_test_filename, o.str());
+        log(adaptive_gain_step_filename, o.str());
+        log(m_s.masterlogfile, o.str());
+    }
 
     struct stat struct_stat;
     if ( 0 != stat(test_level_filename.c_str(),&struct_stat))
@@ -876,6 +963,9 @@ void RollupInstance::print_pid_csv_files()
         o << p_times_error_sstream.str() << std::endl;
         o << i_times_integral_sstream.str() << std::endl;
         o << d_times_derivative_sstream.str() << std::endl;
+        o << p_sstream.str() << std::endl;
+        o << i_sstream.str() << std::endl;
+        o << d_sstream.str() << std::endl;
 
         fileappend(step_level_filename,headers);
         fileappend(step_level_filename,o.str());

@@ -41,6 +41,7 @@ extern std::regex identifier_trailing_digits_regex;
 extern std::regex dotted_quad_regex;
 extern std::regex MMSS_regex;
 extern std::regex HHMMSS_regex;
+extern std::regex has_trailing_fractional_zeros_regex;
 
 extern std::string indent_increment;
 
@@ -137,4 +138,6 @@ std::string normalize_identifier(const std::string& s); // translate to lower ca
 
 bool normalized_identifier_equality(const std::string& s1, const std::string& s2);
 
-std::string rewrite_HHMMSS_to_seconds( std::string s );
+std::string remove_trailing_fractional_zeros(std::string s);
+
+std::string rewrite_HHMMSS_to_seconds(std::string s);

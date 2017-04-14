@@ -103,7 +103,6 @@ public:
     Test_config_thumbnail test_config_thumbnail;
 
     std::vector<ivy_float> focus_metric_vector;  // used only for the focus rollup type.
-    std::vector<bool> error_zero_crossing_subinterval{};
 
     std::string timestamp; // set by RollupInstance::reset() - gets printed in csv files.
 
@@ -111,8 +110,6 @@ public:
     ivy_float error_signal         {0.0};
     ivy_float error_derivative     {0.0};
     ivy_float error_integral       {0.0};
-
-    bool error_positive_last_time;
 
     ivy_float this_measurement {0.};
     ivy_float prev_measurement {0.};
@@ -129,7 +126,8 @@ public:
             p_times_error_sstream,
             i_times_integral_sstream,
             d_times_derivative_sstream,
-            total_IOPS_sstream;
+            total_IOPS_sstream,
+            p_sstream, i_sstream, d_sstream;
 
     ivy_float plusminusfraction_percent_above_below_target;
         // set by isValidMeasurementStartingFrom()
@@ -146,9 +144,17 @@ public:
    	unsigned int adaptive_PID_subinterval_count {0};
    	bool have_previous_inflection {false};
    	ivy_float previous_inflection {-1.};
-
    	bool have_reduced_gain {false};
+   	unsigned int monotone_count {0};
 
+   	RunningStat<ivy_float,ivy_int> up_movement {};
+   	RunningStat<ivy_float,ivy_int> down_movement {};
+   	RunningStat<ivy_float,ivy_int> fractional_up_swings {};
+   	RunningStat<ivy_float,ivy_int> fractional_down_swings {};
+
+    unsigned int m_count {0}; // monotone triggered gain increases
+    unsigned int b_count {0}; // 2/3 in one direction triggered gain increases
+    unsigned int d_count {0}; // decreases
 
 
 // methods
