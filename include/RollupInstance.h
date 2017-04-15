@@ -156,6 +156,11 @@ public:
     unsigned int b_count {0}; // 2/3 in one direction triggered gain increases
     unsigned int d_count {0}; // decreases
 
+    std::ostringstream gain_history {};
+
+    ivy_float per_instance_low_IOPS;
+    ivy_float per_instance_high_IOPS;
+
 
 // methods
 	RollupInstance(RollupType* pRT, RollupSet* pRS, std::string nameCombo, std::string valueCombo)

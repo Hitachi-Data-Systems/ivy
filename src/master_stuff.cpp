@@ -2054,11 +2054,26 @@ master_stuff::go(const std::string& parameters)
     std::string valid_parameters_message =
         "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
         "                                                   catnap_time_seconds, post_time_limit_seconds.\n\n"
-        "For dfc = pid, additional valid parameters are:    target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
+        "For dfc = PID, additional valid parameters are:    target_value, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
         "For measure = on, additional valid parameters are: accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
         "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n\n"
         "For source = workload, additional valid parameters are: category, accumulator_type, accessor.\n\n"
-        "For source = RAID_subsystem, additional valid parameters are: subsystem_element, element_metric.\n\n";
+        "For source = RAID_subsystem, additional valid parameters are: subsystem_element, element_metric.\n\n"
+
+R"("measure" may be set to "on" or "off", or to one of the following shorthand settings:
+
+    measure = MB_per_second           is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=bytes_transferred, accessor=sum
+    measure = IOPS                    is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=bytes_transferred, accessor=count
+    measure = service_time_seconds    is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=service_time,      accessor=avg
+    measure = response_time_seconds   is short for    measure=on, focus_rollup=all, source=workload, category=overall, accumulator_type=response_time,     accessor=avg
+    measure = MP_core_busy_percent    is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=MP_core, element_metric=busy_percent
+    measure = PG_busy_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=PG,      element_metric=busy_percent
+    measure = CLPR_WP_percent         is short for    measure=on, focus_rollup=all, source=RAID_subsystem, subsystem_element=CLPR,    element_metric=WP_percent
+
+    Note: In the above shorthand settings, the "focus_rollup" is only set to "all" if the user did not specify "focus_rollup".
+          That is, you can override focus_rollup even if you use one of the shorthand settings.
+)"
+    ;
 
     if (go_parameters.contains("stepname")) stepName = go_parameters.retrieve("stepname");
     else stepName = stepNNNN;
@@ -2090,8 +2105,7 @@ master_stuff::go(const std::string& parameters)
         if (stringCaseInsensitiveEquality("pid", controllerName))
         {
             have_pid = true;
-            valid_parameter_names += ", dfc, target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
-            if (!go_parameters.contains(std::string("min_IOPS")))                   go_parameters.contents[normalize_identifier(std::string("min_IOPS"))]         = std::string("10");
+            valid_parameter_names += ", dfc, target_value, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
             if (!go_parameters.contains(std::string("max_ripple")))                 go_parameters.contents[normalize_identifier(std::string("max_ripple"))]       = std::string("1%");
             if (!go_parameters.contains(std::string("gain_step")))                  go_parameters.contents[normalize_identifier(std::string("gain_step"))]        = std::string("2");
             if (!go_parameters.contains(std::string("ballpark_seconds")))           go_parameters.contents[normalize_identifier(std::string("ballpark_seconds"))] = std::string("60");
@@ -2599,7 +2613,7 @@ master_stuff::go(const std::string& parameters)
 
     if (have_pid)
     {
-        // valid_parameter_names += ", dfc, target_value, min_IOPS, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
+        // valid_parameter_names += ", dfc, target_value, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
 
         if ( (!go_parameters.contains("target_value"))
           || (!go_parameters.contains("low_IOPS"))
@@ -2683,26 +2697,6 @@ master_stuff::go(const std::string& parameters)
             kill_subthreads_and_exit();
         }
 
-
-
-//----------------------------------- min_IOPS
-        min_IOPS_parameter = go_parameters.retrieve("min_IOPS");
-        {
-            std::ostringstream where_the;
-            where_the << "go_statement(), DFCcategory::PID - when setting \"min_IOPS\" parameter to value \""
-                << min_IOPS_parameter << "\": ";
-
-            min_IOPS = number_optional_trailing_percent(min_IOPS_parameter,where_the.str());
-            if (min_IOPS < 0.0)
-            {
-                ostringstream o;
-                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid min_IOPS parameter \"" << min_IOPS_parameter << "\".  May not be negative." << std::endl << std::endl;
-                log(masterlogfile,o.str());
-                std::cout << o.str();
-                kill_subthreads_and_exit();
-            }
-        }
-
 //----------------------------------- gain_step
         {
             std::string parameter = go_parameters.retrieve("gain_step");
@@ -2747,7 +2741,7 @@ master_stuff::go(const std::string& parameters)
 
             m_s.max_monotone = unsigned_int(parameter,where_the.str());
 
-            if (m_s.max_monotone <= 4)
+            if (m_s.max_monotone < 4)
             {
                 ostringstream o;
                 o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid max_monotone parameter \"" << parameter << "\".  Must be greater than or equal to 4." << std::endl << std::endl;
@@ -2765,7 +2759,7 @@ master_stuff::go(const std::string& parameters)
 
             m_s.balanced_step_direction_by = unsigned_int(parameter,where_the.str());
 
-            if (m_s.balanced_step_direction_by <= 4)
+            if (m_s.balanced_step_direction_by < 6)
             {
                 ostringstream o;
                 o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid balanced_step_direction_by parameter \"" << parameter << "\".  Must be greater than or equal to 6." << std::endl << std::endl;

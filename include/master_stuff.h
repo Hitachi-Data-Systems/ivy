@@ -180,12 +180,12 @@ public:
 //    cooldown_by_wp = on
 
 //    dfc = pid
-//       p = 0
-//       i = 0
-//       d = 0
-//       target_value=0
-//       starting_total_IOPS=100
-//       min_IOPS = 10   - this is so that if your pid loop is on service time, there will be a service time measurement.
+//       target_value=0.5
+//       low_IOPS = 50, low_target = 0.1
+//       high_IOPS = 50000, low_target = 0.9
+
+//       (These low and high IOPS values are total IOPS over all instances of the focus rollup.
+//        This then gets proportioned out
 
 //    measure = on
 //       accuracy_plus_minus = "2%"
@@ -241,17 +241,10 @@ public:
     // dfc = pid
     std::string target_value_parameter; /* ==> */ ivy_float target_value {-1.};
         // number with optional trailing % sign.
-    std::string min_IOPS_parameter;    /* ==> */ ivy_float min_IOPS   {-1.};
     std::string low_IOPS_parameter;    /* ==> */ ivy_float low_IOPS    {0.};
     std::string low_target_parameter;  /* ==> */ ivy_float low_target  {0.};
     std::string high_IOPS_parameter;   /* ==> */ ivy_float high_IOPS   {0.};
     std::string high_target_parameter; /* ==> */ ivy_float high_target {0.};
-//    std::string p_parameter; /* ==> */ ivy_float p_multiplier {-1.};
-//    std::string i_parameter; /* ==> */ ivy_float i_multiplier {-1.};
-//    std::string d_parameter; /* ==> */ ivy_float d_multiplier {-1.};
-//    std::string starting_total_IOPS_parameter; /* ==> */ ivy_float starting_total_IOPS {-1.};
-//    std::string initial_cumulative_error_parameter; /* ==> */ ivy_float initial_cumulative_error {-1.};
-
 
     MeasureDFC the_dfc;
 

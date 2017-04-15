@@ -407,9 +407,14 @@ void RollupInstance::perform_PID()
         total_IOPS = p_times_error + i_times_integral + d_times_derivative;
     }
 
-    if (total_IOPS < m_s.min_IOPS)
+    if (total_IOPS < per_instance_low_IOPS)
     {
-        total_IOPS = m_s.min_IOPS;
+        total_IOPS = per_instance_low_IOPS;
+        error_integral = total_IOPS/I;
+    }
+    else if (total_IOPS > per_instance_high_IOPS)
+    {
+        total_IOPS = per_instance_high_IOPS;
         error_integral = total_IOPS/I;
     }
 
@@ -472,6 +477,19 @@ void RollupInstance::perform_PID()
     //    erratic movement of IOPS over and above the drift towards the target as
     //    we are actively steering in one direction most of the time.
 
+    //    Also as you get closer to the target, the smaller the correction the PID
+    //    loop is going to make, and thus the louder the inherent noise in the measurement.
+
+    //    So if you are way far away, then max_monotone should trigger in a short
+    //    number of subintervals, making initial gain increases frequently as
+    //    long as IOPS keeps rising monotonically.
+
+    //    And then when you get close to the target, but you're not actually on
+    //    target yet, IOPS is going to bobble around a bit due to the inherent noise
+    //    in the measurement signal, but we decide we are still steering towards
+    //    the target if over 2/3 of the individual IOPS changes we make are in one direction
+    //    over a longer period "balanced_step_direction_by" (default 12) .
+
     //    So the idea is that if we are on target, we will be making roughly the
     //    same number of "up" individual IOPS adjustments as individual "down" adjustments
     //    regardless of their packaging into "swings" which are the monotonic
@@ -482,6 +500,15 @@ void RollupInstance::perform_PID()
     // The default value of "balanced_step_direction_by" (12) is longer than
     // the default value of "max_monotone" (5) and this is consistent with it taking
     // longer in the presence of noise to decode the signal.
+
+
+    // The output IOPS value that is set by the PID loop mechanism is contrained (limited)
+    // to range from "low_IOPS" to "high_IOPS".  A calculated IOPS value that is outside
+    // this range must be as a result of some noise or transient by definition,
+    // so to promote PID loop stability and to ensure that we will always be
+    // running enough I/O so we always get things like service time.
+    // The [Go] statement low_IOPS and high_IOPS values are divided by the number
+    // of instances of the focus_rollup to arrive at per RollupInstance low and high IOPS numbers.
 
 
     if (subinterval_count > 3)
@@ -573,6 +600,17 @@ void RollupInstance::perform_PID()
                         << " IOPS adjustments, over two thirds of the adjustments were in the same direction"
                         << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                     b_count++;
+
+                    gain_history
+                        << attributeNameComboID << " = " << rollupInstanceID
+                        << " \"balanced_step_direction_by\" increase at subinterval " << m_s.running_subinterval
+                        << ", adaptive PID cycle subinterval " << adaptive_PID_subinterval_count
+                        << ", I = " << I
+                        << ", \"max_monotone\" increases = " << m_count
+                        << ", \"balanced_step_direction_by\" increases = " << b_count
+                        << ", \"max_ripple\" decreases = " << d_count
+                        << std::endl;
+
                 }
                 else
                 {
@@ -616,6 +654,17 @@ void RollupInstance::perform_PID()
                                     << "Due to excessive swing size in both directions reducing gain at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                                 adaptive_PID_subinterval_count = 0;  // other things get reset from this
                                 d_count++;
+
+                                gain_history
+                                    << attributeNameComboID << " = " << rollupInstanceID
+                                    << " \"max_ripple\" decrease at subinterval " << m_s.running_subinterval
+                                    << ", adaptive PID cycle subinterval " << adaptive_PID_subinterval_count
+                                    << ", I = " << I
+                                    << ", \"max_monotone\" increases = " << m_count
+                                    << ", \"balanced_step_direction_by\" increases = " << b_count
+                                    << ", \"max_ripple\" decreases = " << d_count
+                                    << std::endl;
+
                             }
                             else
                             {
@@ -653,6 +702,17 @@ void RollupInstance::perform_PID()
                                 << " consecutive subintervals, all IOPS adjustments were in the same direction"
                                 << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                             m_count++;
+
+                            gain_history
+                                << attributeNameComboID << " = " << rollupInstanceID
+                                << " \"max_monotone\" increase at subinterval " << m_s.running_subinterval
+                                << ", adaptive PID cycle subinterval " << adaptive_PID_subinterval_count
+                                << ", I = " << I
+                                << ", \"max_monotone\" increases = " << m_count
+                                << ", \"balanced_step_direction_by\" increases = " << b_count
+                                << ", \"max_ripple\" decreases = " << d_count
+                                << std::endl;
+
                         }
                         else
                         {
@@ -791,7 +851,12 @@ void RollupInstance::reset() // gets called by go statement, when it assigns the
 
         ivy_float fraction_through_range = (m_s.target_value - m_s.low_target)/(m_s.high_target - m_s.low_target);
 
-        total_IOPS = m_s.low_IOPS + fraction_through_range * (m_s.high_IOPS - m_s.low_IOPS);  // straight line is just a rough approximation
+        per_instance_low_IOPS = m_s.low_IOPS / ( (ivy_float) pRollupType->instances.size());
+        per_instance_high_IOPS = m_s.high_IOPS / ( (ivy_float) pRollupType->instances.size());
+            // We are making the assumption that the various instances contribute for practical purposes in a balanced way.
+
+
+        total_IOPS = per_instance_low_IOPS + fraction_through_range * (per_instance_high_IOPS - per_instance_low_IOPS);  // straight line is just a rough approximation
 
         auto n = pRollupType->instances.size(); // The calibration IOPS values are for the all=all rollup, so we divide by the number of instances in the focus rollup.
 
@@ -833,6 +898,8 @@ void RollupInstance::reset() // gets called by go statement, when it assigns the
         i_sstream.clear();
         d_sstream.str("");
         d_sstream.clear();
+        gain_history.str("");
+        gain_history.clear();
 
         subinterval_number_sstream << "subinterval number";print_common_columns(subinterval_number_sstream);
         target_metric_value_sstream<< "target value";      print_common_columns(target_metric_value_sstream);
@@ -915,26 +982,30 @@ void RollupInstance::print_pid_csv_files()
 
     std::string test_level_filename, step_level_filename, adaptive_gain_test_filename, adaptive_gain_step_filename;
 
-    test_level_filename = m_s.testFolder + "/" + m_s.testName + ".PID.csv";
+    test_level_filename         = m_s.testFolder + "/" + m_s.testName + ".PID.csv";
     adaptive_gain_test_filename = m_s.testFolder + "/" + m_s.testName + ".adaptive_gain.txt";
 
-    step_level_filename = m_s.stepFolder + "/" + m_s.testName + "." + m_s.stepNNNN + "." + m_s.stepName + "." + attributeNameComboID + "." + rollupInstanceID + ".PID.csv";
+    step_level_filename         = m_s.stepFolder + "/" + m_s.testName + "." + m_s.stepNNNN + "." + m_s.stepName + "." + attributeNameComboID + "." + rollupInstanceID + ".PID.csv";
     adaptive_gain_step_filename = m_s.stepFolder + "/" + m_s.testName + "." + m_s.stepNNNN + "." + m_s.stepName + "." + attributeNameComboID + "." + rollupInstanceID + ".adaptive_gain.txt";
 
     {
         std::ostringstream o;
         o << m_s.stepNNNN << " " << m_s.stepName
             << " adaptive PID for " << attributeNameComboID << " = " << rollupInstanceID
-            << "\"max_monotone\" gain increase cycles = " << m_count
+            << " \"max_monotone\" gain increase cycles = " << m_count
             << ", \"balanced_step_direction_by\" gain increase cycles = " << b_count
             << ", \"max_ripple\" gain decreases = " << d_count
+            << ", gain adjustment stopped at subinterval " << m_s.last_gain_adjustment_subinterval
+            << ", followed by " << (m_s.running_subinterval - m_s.last_gain_adjustment_subinterval) << " subintervals available for measurement"
             << ", total step subintervals = " << ( 1 + m_s.running_subinterval )
             << "\n";
-        std::cout << o.str();
+
+        log(m_s.masterlogfile, o.str());
+
+        o << gain_history.str();
 
         log(adaptive_gain_test_filename, o.str());
         log(adaptive_gain_step_filename, o.str());
-        log(m_s.masterlogfile, o.str());
     }
 
     struct stat struct_stat;

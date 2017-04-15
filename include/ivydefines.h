@@ -112,8 +112,6 @@
 #define subsystem_element_default std::string("")
 #define element_metric_default    std::string("")
 
-// pid_min_iops is the min IOPS setting so that there will always be some I/Os so that you always get an overall service time.
-
 const ivy_float min_subinterval_seconds {3.0};
 const ivy_float max_subinterval_seconds {60.0};
 
