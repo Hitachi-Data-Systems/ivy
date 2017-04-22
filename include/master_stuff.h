@@ -378,6 +378,13 @@ public:
     int last_gain_adjustment_subinterval {-1};  // One central value in master_stuff with the latest gain adjustment made in any focus rollup instance.
 
 
+    // The next bit is for the "sequential_fill = on" go parameter
+
+    bool            sequential_fill {false};  // value is set when interpreting "go" parameters.  Only set to true when "sequential_fill = on". See IosequencerSequential.
+    ivy_float   min_sequential_fill_progress { 1.0 };
+    bool        keep_filling {false};
+
+
 // methods
 	void kill_subthreads_and_exit();
 	void error(std::string);

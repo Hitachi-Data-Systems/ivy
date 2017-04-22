@@ -1852,11 +1852,68 @@ void pipe_driver_subthread::threadRun()
                             master_slave_cv.notify_all();
                             return;
                         }
+
+                        std::string seq_fill_progress_line      {};
+                        std::string seq_fill_progress_prefix    {"min_seq_fill_fraction = "};
+                        std::string seq_fill_progress_remainder {};
+
+                        try
+                        {
+                            seq_fill_progress_line = get_line_from_pipe(ivytime(2), seq_fill_progress_prefix);
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            std::ostringstream o;
+                            o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for subsystem detail line failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
+                            return;
+                        }
+
+                        if (!startsWith(seq_fill_progress_prefix, seq_fill_progress_line, seq_fill_progress_remainder))
+                        {
+                            std::ostringstream o;
+                            o << "For host " << ivyscript_hostname << ", was expecting a line starting with \"" << seq_fill_progress_prefix
+                                << "\" instead got the line \"" << seq_fill_progress_line << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
+                            return;
+                        }
+
+                        trim (seq_fill_progress_remainder);
+
+                        ivy_float seq_fill_progress;
+                        try
+                        {
+                            seq_fill_progress = number_optional_trailing_percent(seq_fill_progress_remainder, seq_fill_progress_prefix );  // throws std::invalid_argument
+                        }
+                        catch (std::invalid_argument& iaex)
+                        {
+                            std::ostringstream o;
+                            o << "For host " << ivyscript_hostname << ", bad numeric value \"" << seq_fill_progress_remainder << "\" after equals sign in \"" << seq_fill_progress_line << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
+                            return;
+                        }
+
+
                         {
                             std::unique_lock<std::mutex> s_lk(m_s.master_mutex);
 
                             m_s.cpu_by_subinterval[m_s.rollups.current_index()].add(toLower(ivyscript_hostname),cpudata);
+
+                            if (seq_fill_progress < m_s.min_sequential_fill_progress) { m_s.min_sequential_fill_progress = seq_fill_progress;}
                         }
+
                         std::string detail_line="";
                         while (true)
                         {

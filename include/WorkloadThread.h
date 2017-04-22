@@ -159,8 +159,9 @@ public:
 
     bool cooldown {false};
 
-
-
+    ivy_float sequential_fill_fraction {1.0};
+        // IogeneratorSequential for writes sets this to a value expressing the progress from 0.0 to 1.0
+        // of what fraction of all blocks in the coverage range within the LUN have been written to so far.
 
 //methods
 	WorkloadThread(std::string /*workloadID*/, LUN*, long long int /*lastLBA*/, std::string /*parms*/, std::mutex*);

@@ -32,6 +32,7 @@ extern bool routine_logging;
 void MeasureDFC::reset()
 {
 	current = -1;
+	seq_fill_extending = false;
 }
 
 std::string wurst_of_the_best();
@@ -74,11 +75,51 @@ int MeasureDFC::evaluateSubinterval()
         {
             measureFirstIndex = m_s.min_warmup_count;
         }
-        measureLastIndex = m_s.min_warmup_count + m_s.min_measure_count - 1;
-        return EVALUATE_SUBINTERVAL_SUCCESS;
+        measureLastIndex = current;
+        if (m_s.keep_filling)
+        {
+            std::ostringstream o;
+            o   << "Fixed duration measurement being extended until all sequential write workloads have completely wrapped around to where they started and have written to all blocks."
+                << std::endl << std::endl;
+            std::cout << o.str();
+            log(m_s.masterlogfile, o.str());
+            return  EVALUATE_SUBINTERVAL_CONTINUE;
+        }
+        else
+        {
+            return EVALUATE_SUBINTERVAL_SUCCESS;
+        }
     }
 
-    if (current > (m_s.timeout_seconds / m_s.subinterval_seconds))
+    // "measure" is on from here
+
+    if (seq_fill_extending)
+    {
+        measureLastIndex = current;
+
+        if (m_s.keep_filling)
+        {
+            std::ostringstream o;
+            o   << "Successful measurement from subinterval " << measureFirstIndex << " to " << measurement_end
+                << " is being extended from now at subinterval " << current << " until sequential fill is complete." << std::endl << std::endl;
+            std::cout << o.str();
+            log(m_s.masterlogfile, o.str());
+
+            return EVALUATE_SUBINTERVAL_CONTINUE;
+        }
+        else
+        {
+            std::ostringstream o;
+            o   << "Successful measurement from subinterval " << measureFirstIndex << " to " << measurement_end
+                << " has been extended until sequential fill was complete at " << current << "." << std::endl << std::endl;
+            std::cout << o.str();
+            log(m_s.masterlogfile, o.str());
+
+            return EVALUATE_SUBINTERVAL_SUCCESS;
+        }
+    }
+
+    if (current > (m_s.timeout_seconds / m_s.subinterval_seconds) && (!m_s.keep_filling))
     {
         std::ostringstream o;
         o << "<Error> Timed out - timeout_seconds = " << m_s.timeout_seconds << ".  Failed to get a valid measurement with accuracy_plus_minus = \"" << m_s.accuracy_plus_minus_parameter
@@ -311,7 +352,21 @@ int MeasureDFC::evaluateSubinterval()
             measureFirstIndex = now_processing;
             measureLastIndex = current;
 
-            std::ostringstream o; o << "Successful measurement with " << wurst_of_the_best() << endl;
+            if (m_s.keep_filling)
+            {
+                seq_fill_extending = true;
+
+                measurement_end = measureLastIndex;  // saving this for use in a status message
+
+                std::ostringstream o; o << "Successful measurement from subinterval " << measureFirstIndex << " to " << measurement_end
+                    << " will be extended until sequential fill is complete." << std::endl << std::endl;
+                std::cout << o.str();
+                log(m_s.masterlogfile, o.str());
+
+                return EVALUATE_SUBINTERVAL_CONTINUE;
+            }
+
+            std::ostringstream o; o << "Successful measurement from subinterval " << measureFirstIndex << " to " << measureLastIndex << "." << std::endl;
 
             std::cout << o.str();
             log(m_s.masterlogfile, o.str());

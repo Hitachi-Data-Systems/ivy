@@ -71,6 +71,9 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     m_s.have_timeout_rollup = false;
 
 
+    m_s.min_sequential_fill_progress = 1.0;
+    m_s.keep_filling = false;
+
     // Clear out Subsystem data from a possible earlier subinterval sequence,
     // and then make the first gather for t=0, recording how long it takes.
 
@@ -463,6 +466,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             std::cout << o.str() << std::endl;
         }
 
+
         auto allTypeIterator = m_s.rollups.rollups.find(std::string("all"));
 
         if ( m_s.rollups.rollups.end() == allTypeIterator )
@@ -506,6 +510,49 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 if (routine_logging) log(m_s.masterlogfile,o.str());
             }
         }
+
+        if ( m_s.min_sequential_fill_progress < 1.0  && m_s.sequential_fill)
+        {
+            m_s.keep_filling = true;
+        }
+        else
+        {
+            m_s.keep_filling = false;
+        }
+
+        if ( m_s.min_sequential_fill_progress < 1.0 )
+        {
+            std::ostringstream o;
+
+            o << "Sequential fill progress is "
+                << std::fixed << std::setprecision(2)
+                << (100*m_s.min_sequential_fill_progress) << "%";
+
+            ivytime now;
+            now.setToNow();
+
+            ivytime duration = now - m_s.get_go;
+            o << " after " << duration.format_as_duration_HMMSS() << ".";
+
+            auto duration_seconds = duration.getlongdoubleseconds();
+
+            ivytime estimated_total_duration( duration_seconds / m_s.min_sequential_fill_progress);
+
+            ivytime estimated_completion(m_s.get_go + estimated_total_duration);
+
+            ivytime remaining = estimated_completion - now;
+
+            o << "  Estimated remaining " << remaining.format_as_duration_HMMSS()
+                << " to complete fill at " << estimated_completion.format_as_datetime() << "."
+                << std::endl
+                << std::endl;
+
+            std::cout << o.str();
+            log(m_s.masterlogfile,o.str());
+        }
+
+        m_s.min_sequential_fill_progress = 1.0; // reset for next subinterval
+
 
         if (!(EVALUATE_SUBINTERVAL_CONTINUE==m_s.lastEvaluateSubintervalReturnCode)) break;
 

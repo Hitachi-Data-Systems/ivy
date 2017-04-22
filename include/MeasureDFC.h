@@ -25,9 +25,11 @@ class MeasureDFC : public DynamicFeedbackController
 {
 public:
 // variables
-	unsigned int measureFirstIndex {UINT_MAX}, measureLastIndex {UINT_MAX};
+	unsigned int measureFirstIndex {UINT_MAX}, measureLastIndex {UINT_MAX}, measurement_end {UINT_MAX};
 
 	int current {-1};
+
+	bool seq_fill_extending {false};
 
 //methods
 	MeasureDFC() : DynamicFeedbackController() {}

@@ -47,14 +47,29 @@ using namespace std;
 #include "WorkloadThread.h"
 
 extern std::string printable_ascii;
+extern bool ivyslave_wrapping;
 
 bool IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
-//*debug*/ log(logfilename,std::string("IosequencerSequential::setFrom_IosequencerInput() - entry.\n"));
 	if (!Iosequencer::setFrom_IosequencerInput(p_i_i)) return false;
 
-	lastIOblockNumber = coverageStartBlock + (long long int) (p_IosequencerInput->seqStartFractionOfCoverage * (ivy_float) numberOfCoverageBlocks);
-//*debug*/{ostringstream o; o << "IosequencerSequential::setFrom_IosequencerInput() - lastIOblocknumber has been set to " << lastIOblockNumber; log(logfilename,o.str());}
+	lastIOblockNumber = -1 + coverageStartBlock + (long long int) (p_IosequencerInput->seqStartFractionOfCoverage * (ivy_float) numberOfCoverageBlocks);
+        // The reason we are subtracting one is that this will be incremented before the first use.
+
+    blocks_generated = 0;
+
+    if (0.0 == p_IosequencerInput->fractionRead)
+    {
+        // we are writing
+        p_WorkloadThread->sequential_fill_fraction = 0.0;
+        wrapping = true;
+    }
+    else
+    {
+        // we are reading
+        p_WorkloadThread->sequential_fill_fraction = 1.0;
+        wrapping = false;
+    }
 	return true;
 }
 
@@ -69,7 +84,25 @@ bool IosequencerSequential::generate(Eyeo& slang) {
 	slang.eyeocb.aio_fildes = p_iosequencer_stuff->fd;
 
 	lastIOblockNumber++;
-	if (lastIOblockNumber >= coverageEndBlock) lastIOblockNumber = coverageStartBlock;
+
+    if (wrapping)
+    {
+        blocks_generated++;
+        if (blocks_generated >= numberOfCoverageBlocks)
+        {
+            wrapping = false;
+            p_WorkloadThread -> sequential_fill_fraction = 1.0;
+        }
+        else
+        {
+            p_WorkloadThread -> sequential_fill_fraction = ( (ivy_float) blocks_generated ) / ( (ivy_float) numberOfCoverageBlocks );
+        }
+    }
+
+	if (lastIOblockNumber >= coverageEndBlock)
+	{
+        lastIOblockNumber = coverageStartBlock;   // this doesn't mean we have necessarily written to all blocks, as we may have started part way through.
+	}
 	slang.eyeocb.aio_offset = p_IosequencerInput->blocksize_bytes * lastIOblockNumber;
 
 	slang.eyeocb.aio_nbytes = p_IosequencerInput->blocksize_bytes;

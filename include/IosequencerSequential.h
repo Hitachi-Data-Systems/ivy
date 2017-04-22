@@ -28,6 +28,34 @@ public:
 	bool isRandom() { return false; }
 	std::string instanceType() { return std::string("sequential"); }
 	long long int lastIOblockNumber=0;  // default of zero means block 1 will be the first one read or written.
+
+	// blocks_generated & wrapping used by sequential I/O sequencer to detect wraparound for sequential_fill=on
+    long long int blocks_generated {-1};
+    bool wrapping {true};
 };
 
 
+// The [Go!] parameter "sequential_fill=on" keeps running another subinterval no matter what else
+// including either satisfying the criteria for a successful measurement or else timing out.
+//
+// From an implementation point of view, the problem is that it is only individual
+// iosequencer threads that know if they have wrapped around yet, but the decision to
+// "continue" and run another subinterval is a global thing, and the setting of the
+// "sequential_fill = on" is itself as a [Go!] statement parameter is a global setting.
+
+// So the way this works is a two part system, one part is a "from the ground up"
+// rollup of whether there are any sequential I/O sequencers that have not yet wrapped around,
+// and the other part is an intervention if "sequential_fill = on" at the point where
+// we would otherwise either declare "success" or "timeout", and instead  say "continue",
+// if there are any sequential I/O sequencers running that have not wrapped around yet.
+
+// The reason this overrides the "timeout" setting is that it makes sequential_fill=on
+// easier / more reliable to use.
+
+// When ivyslave gets "go", it resets to false "wrapping".
+//
+// Each IosequencerSequential instance keeps separate boolean flags to track
+// whether they have wrapped around yet separately for wrapping around max_LBA
+// and wrapping around the starting LBA for the first I/O in subinterval zero.
+//
+// Each

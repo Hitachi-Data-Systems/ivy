@@ -2049,11 +2049,11 @@ master_stuff::go(const std::string& parameters)
         kill_subthreads_and_exit();
     }
 
-    std::string valid_parameter_names = "stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, catnap_time_seconds, post_time_limit_seconds";
+    std::string valid_parameter_names = "stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, catnap_time_seconds, post_time_limit_seconds, sequential_fill";
 
     std::string valid_parameters_message =
         "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
-        "                                                   catnap_time_seconds, post_time_limit_seconds.\n\n"
+        "                                                   catnap_time_seconds, post_time_limit_seconds, sequential_fill.\n\n"
         "For dfc = PID, additional valid parameters are:    target_value, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
         "For measure = on, additional valid parameters are: accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
         "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n\n"
@@ -2301,6 +2301,32 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         o << std::endl << "Effective [Go!] statement parameters including defaulted parameters:" << go_parameters.toString() << std::endl << std::endl;
         std::cout << o.str();
         log(masterlogfile, o.str());
+    }
+
+
+
+//----------------------------------- sequential_fill = on
+    if (go_parameters.contains("sequential_fill"))
+    {
+        std::string w = go_parameters.retrieve("sequential_fill");
+
+        if ( stringCaseInsensitiveEquality(w,std::string("on")) || stringCaseInsensitiveEquality(w,std::string("true")) )
+        {
+            sequential_fill = true;
+        }
+        else
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine API - go() - Invalid \"sequential_fill\" parameter value \""
+            << w << "\".  \"sequential_fill\", if specified, may only be set to \"on\"."  << std::endl;
+            std::cout << o.str();
+            log(masterlogfile,o.str());
+            kill_subthreads_and_exit();
+        }
+    }
+    else
+    {
+        sequential_fill = false;
     }
 
 

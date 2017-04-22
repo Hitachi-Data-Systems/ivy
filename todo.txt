@@ -1,3 +1,5 @@
+- fix so if RAID (OPEN-V) don't create subsystem config folder until validated license key and successful opening of command device.
+
 - add get/set parameter calls to ivy engine API and create corresponding ivyscript ivy engine calls.
 	- non_random_sample_correction_factor
 	- stepNNNN() etc. acces

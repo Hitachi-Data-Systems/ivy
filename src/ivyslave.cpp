@@ -102,6 +102,7 @@ std::string printable_ascii;
 bool waitForSubintervalEndThenHarvest();
 
 
+
 // code
 
 void invokeThread(WorkloadThread* T) {
@@ -1087,6 +1088,20 @@ bool waitForSubintervalEndThenHarvest()
         // After the catnap, ivyslave iterates over the WorkloadThreads, and getting the lock for WorkloadThread to transition to its next state.
 
     ivytime max_seen_post_delay = ivytime(0.0);
+
+    ivy_float min_seq_fill_fraction = 1.0;
+    for (auto& pear : iosequencer_threads)
+    {
+        if (pear.second->sequential_fill_fraction < min_seq_fill_fraction)
+        {
+            min_seq_fill_fraction = pear.second->sequential_fill_fraction;
+        }
+    }
+    {
+        std::ostringstream o;
+        o << "min_seq_fill_fraction = " << min_seq_fill_fraction;
+        say(o.str());
+    }
 
 
     unsigned int thread_number = 0;
