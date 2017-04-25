@@ -52,20 +52,23 @@ csv_columns_in_row filename row_number
     e.g.    csv_columns_in_row x.csv 3
     - prints the number of columns (number of commas plus one) in the specified row
 
-csv_raw_cell_value filename row_number column_number
-csv_raw_cell_value filename row_number column_header
+csv_raw_cell_value filename row_number column1 column2 ...
+where a column is specified by either a column number from 0, or a column title (column header)
     e.g.    csv_raw_cell_value x.csv 4 5
     e.g.    csv_raw_cell_value x.csv 4 "Overall IOPS"
     - prints the exact characters found between commas in the csv file
+    - when more than one column is specified, output cell values are separated with commas.
 
-csv_cell_value filename row_number column_number
-csv_cell_value filename row_number column_header
+csv_cell_value filename row_number column1 column2 ...
+where a column is specified by either a column number from 0, or a column title (column header)
     e.g.    csv_cell_value x.csv 4 5
     e.g.    csv_cell_value x.csv 4 "Overall IOPS"
+    e.g.    csv_cell_value x.csv 4 5 "Overall IOPS"
     - This "unwraps" the raw cell value.
         - First if it starts with =" and ends with ", we just clip those off and return the rest.
         - Otherwise, an unwrapped CSV column value first has leading/trailing whitespace removed and then if what remains is a single quoted string,
           the quotes are removed and any internal "escaped" quotes have their escaping backslashes removed, i.e. \" -> ".
+    - when more than one column is specified, output cell values are separated with commas.
 
 csv_row filename row_number
     e.g     csv_row x.csv 2

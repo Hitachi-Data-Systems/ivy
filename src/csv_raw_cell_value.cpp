@@ -9,20 +9,21 @@ int main(int argc,char* argv[])
 {
     std::string executable_name {argv[0]};
 
-    if (4 != argc)
+    if (argc < 4)
     {
         std::ostringstream o;
         o << "<Error> " << executable_name << " was called with " << (argc-1) << " arguments, namely";
         for (int i=1; i < argc; i++) { if (i>1) o << ","; o << " arg " << i << " = " << quote_wrap(std::string(argv[i])); }
         o << std::endl;
-        o << executable_name << " must be called with three arguments, the name of the csv file, the row number, and either the column number or the column header (column title)." << std::endl;
+        o << executable_name << " must be called with at least three arguments, the name of the csv file, the row number, and one or more columns (either a column number or a column header/column title)." << std::endl;
+        o << "If more than one column is specified, the cell values are returned separated by commas." << std::endl;
         std::cout << o.str() << csv_usage << o.str();
         return -1;
     }
 
     std::string csv_filename    {argv[1]};
     std::string row             {argv[2]};
-    std::string column          {argv[3]};
+    std::string column{};     // argv[3] argv[4] ...
 
     csvfile seesv {};
 
@@ -62,30 +63,43 @@ int main(int argc,char* argv[])
         return -1;
     }
 
-    trim (column);
+    bool need_comma {false};
 
-    int c;
-
-    if (std::regex_match(column,int_regex))
+    for (int i = 3; i < argc; i++)
     {
-        std::istringstream is {column};
-        is >> c;
-        std::cout << seesv.raw_cell_value(r,c) << std::endl;
-        return 0;
+        if (need_comma) { std::cout << ","; }
+
+        need_comma=true;
+
+        column = std::string(argv[i]);
+
+        trim (column);
+
+        int c;
+
+        if (std::regex_match(column,int_regex))
+        {
+            std::istringstream is {column};
+            is >> c;
+            std::cout << seesv.raw_cell_value(r,c);
+            continue;
+        }
+
+        c = seesv.lookup_column(column);
+
+        if (-1 == c)
+        {
+            std::ostringstream o;
+            o << "<Error> In \""; for (int i=0; i < argc; i++) { if (i>0) o << " "; o << argv[i]; } o << "\", "
+                << " the column \"" << column << "\" is neither an unsigned integer column number (one or more digits), nor is it a valid column title (column header)." << std::endl;
+            std::cout << o.str() << csv_usage << o.str();
+            return -1;
+        }
+
+        std::cout << seesv.raw_cell_value(r,c);
     }
 
-    c = seesv.lookup_column(column);
-
-    if (-1 == c)
-    {
-        std::ostringstream o;
-        o << "<Error> In \""; for (int i=0; i < argc; i++) { if (i>0) o << " "; o << argv[i]; } o << "\", "
-            << " the column \"" << column << "\" is neither an unsigned integer column number (one or more digits), nor is it a valid column title (column header)." << std::endl;
-        std::cout << o.str() << csv_usage << o.str();
-        return -1;
-    }
-
-    std::cout << seesv.raw_cell_value(r,c) << std::endl;
+    std::cout << std::endl;
 
     return 0;
 }
