@@ -27,7 +27,7 @@
 
 #include "pattern.h"
 
-#define SHOWLUNS_CMD "showluns.sh"
+#define SHOWLUNS_CMD std::string("showluns.sh")
 #define IVYSLAVE_EXECUTABLE std::string("ivyslave")
 #define IVY_CMDDEV_EXECUTABLE std::string("ivy_cmddev")
 #define default_outputFolderRoot "."

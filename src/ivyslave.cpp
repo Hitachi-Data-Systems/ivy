@@ -148,6 +148,7 @@ void say(std::string s) {
 
 void initialize_io_time_clip_levels(); // Accumulators_by_io_type.cpp
 
+
 int main(int argc, char* argv[])
 {
 //*debug*/{std::ostringstream o; o << "fireup - argc = " << argc; for (int i=0;i<argc; i++){o << " argv[" << i << "]=\"" << argv[i] << "\"  ";} o << std::endl; fileappend("/home/ivogelesang/Desktop/eraseme.txt",o.str());}

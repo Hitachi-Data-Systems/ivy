@@ -23,6 +23,7 @@
 #include <list>
 #include <algorithm>    // std::find_if  for ivyhelpers.h
 #include <regex>
+#include <unistd.h>
 
 #include "ivyhelpers.h"
 #include "ivydefines.h"
@@ -38,9 +39,41 @@ discovered_LUNs::discovered_LUNs() {
 	//showluns_output="";
 }
 
+std::string get_ivyslave_path_part()
+{
+#define MAX_FULLY_QUALIFIED_PATHNAME 511
+    const size_t pathname_max_length_with_null = MAX_FULLY_QUALIFIED_PATHNAME + 1;
+    char pathname_char[pathname_max_length_with_null];
+
+    // Read the symbolic link '/proc/self/exe'.
+    const char *proc_self_exe = "/proc/self/exe";
+    const int readlink_rc = int(readlink(proc_self_exe, pathname_char, MAX_FULLY_QUALIFIED_PATHNAME));
+
+    std::string fully_qualified {};
+
+    if (readlink_rc <= 0) { return ""; }
+
+    fully_qualified = pathname_char;
+
+    std::string path_part_regex_string { R"ivy((.*/)([^/]+))ivy" };
+    std::regex path_part_regex( path_part_regex_string );
+
+    std::smatch entire_match;
+    std::ssub_match path_part;
+
+    if (std::regex_match(fully_qualified, entire_match, path_part_regex))
+    {
+        path_part = entire_match[1];
+        return path_part.str();
+    }
+
+    return "";
+}
+
+
 void discovered_LUNs::discover() {
 //	showluns_output=GetStdoutFromCommand(SHOW_HITACHI_LUNS_CMD);
-	showluns_output=GetStdoutFromCommand(SHOWLUNS_CMD);
+	showluns_output=GetStdoutFromCommand(get_ivyslave_path_part() + SHOWLUNS_CMD);
 }
 
 discovered_LUNs::discovered_LUNs(std::string showluns_output) {
