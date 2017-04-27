@@ -96,6 +96,7 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<Option parameters='csv_cell_value /home/ivogelesang/Desktop/eraseme/a.csv 0 1 2 3 &quot;step name&quot;' />
 			</Target>
 			<Target title="csv_lookup_column">
 				<Option platforms="Unix;" />

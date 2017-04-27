@@ -715,7 +715,7 @@ void pipe_driver_subthread::threadRun()
 
         if (pCmdDevLUN)
         {
-            cmd = IVY_CMDDEV_EXECUTABLE;
+            cmd = m_s.path_to_ivy_executable+ IVY_CMDDEV_EXECUTABLE;
             arg = pCmdDevLUN->attribute_value("LUN_name");
             serial = pCmdDevLUN->attribute_value("serial_number");
             {
@@ -734,7 +734,7 @@ void pipe_driver_subthread::threadRun()
         }
         else
         {
-            cmd = IVYSLAVE_EXECUTABLE;
+            cmd = m_s.path_to_ivy_executable + IVYSLAVE_EXECUTABLE;
             arg = ivyscript_hostname;
             {
                 ostringstream execl_cmd;

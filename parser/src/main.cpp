@@ -66,8 +66,43 @@ void usage_message(char* argv_0)
         ;
 }
 
+
+std::string get_my_path_part()
+{
+#define MAX_FULLY_QUALIFIED_PATHNAME 511
+    const size_t pathname_max_length_with_null = MAX_FULLY_QUALIFIED_PATHNAME + 1;
+    char pathname_char[pathname_max_length_with_null];
+
+    // Read the symbolic link '/proc/self/exe'.
+    const char *proc_self_exe = "/proc/self/exe";
+    const int readlink_rc = int(readlink(proc_self_exe, pathname_char, MAX_FULLY_QUALIFIED_PATHNAME));
+
+    std::string fully_qualified {};
+
+    if (readlink_rc <= 0) { return ""; }
+
+    fully_qualified = pathname_char;
+
+    std::string path_part_regex_string { R"ivy((.*/)([^/]+))ivy" };
+    std::regex path_part_regex( path_part_regex_string );
+
+    std::smatch entire_match;
+    std::ssub_match path_part;
+
+    if (std::regex_match(fully_qualified, entire_match, path_part_regex))
+    {
+        path_part = entire_match[1];
+        return path_part.str();
+    }
+
+    return "";
+}
+
+
 int main(int argc, char* argv[])
 {
+    m_s.path_to_ivy_executable = get_my_path_part();
+
 	std::string ivyscriptFilename {};
 
     if (argc==1) { usage_message(argv[0]); return -1; }

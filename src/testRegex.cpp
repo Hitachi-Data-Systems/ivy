@@ -19,7 +19,7 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #include <regex>
 #include <iostream>
-
+#include <unistd.h> // for readlink()
 #include "ivytime.h"
 #include "ivyhelpers.h"
 #include "ivydefines.h"
@@ -96,26 +96,63 @@ std::string rewrite_HHMMSS_to_seconds( std::string s )
         return s;
 }
 
-int main(int argc, char* argv[])
+std::string get_my_path_part()
 {
-    std::cout << "Hello, whirrled!" << std::endl;
+#define MAX_FULLY_QUALIFIED_PATHNAME 511
+    const size_t pathname_max_length_with_null = MAX_FULLY_QUALIFIED_PATHNAME + 1;
+    char pathname_char[pathname_max_length_with_null];
 
-    std::vector<std::string> ssss
+    // Read the symbolic link '/proc/self/exe'.
+    const char *proc_self_exe = "/proc/self/exe";
+    const int readlink_rc = int(readlink(proc_self_exe, pathname_char, MAX_FULLY_QUALIFIED_PATHNAME));
+
+    std::string fully_qualified {};
+
+    if (readlink_rc <= 0) { return ""; }
+
+    fully_qualified = pathname_char;
+
+    std::string path_part_regex_string { R"ivy((.*/)([^/]+))ivy" };
+    std::regex path_part_regex( path_part_regex_string );
+
+    std::smatch entire_match;
+    std::ssub_match path_part;
+
+    if (std::regex_match(fully_qualified, entire_match, path_part_regex))
     {
-        "0", "0:0", "0:00", "0:000", "0:59", "0:60", "30", "30:0", "30:00", "30:000", "30:59", "30:60"
-        , "0:0:0", "1:0:0", "1:00:00", "1:1:1", "0:00:59", "0:59:00"
-        , "0.", "0:0.", "0:00.", "0:000.", "0:59.", "0:60.", "30.", "30:0.", "30:00.", "30:000.", "30:59.", "30:60."
-        , "0:0:0.", "1:0:0.", "1:00:00.", "1:1:1.", "0:00:59.", "0:59:00."
-        , "0.1", "0:0.1", "0:00.1", "0:000.1", "0:59.1", "0:60.1", "30.1", "30:0.1", "30:00.1", "30:000.1", "30:59.1", "30:60.1"
-        , "0:0:0.1", "1:0:0.1", "1:00:00.1", "1:1:1.1", "0:00:59.1", "0:59:00.1"
-    };
-
-    for (auto& s : ssss)
-    {
-        std::cout << "Rewrite of \"" << s << "\" is \"" << rewrite_HHMMSS_to_seconds(s) << "\", which strips trailing zeros to \"" << remove_trailing_fractional_zeros(rewrite_HHMMSS_to_seconds(s)) << "\".\n\n";
-
+        path_part = entire_match[1];
+        return path_part.str();
     }
 
+    return "";
+}
+
+
+int main(int argc, char* argv[])
+{
+
+  std::cout << "Hello world! my name is \"" << argv[0] << "\" and the path to my executable is \"" << get_my_path_part() << "\"" << std::endl;
+
+
+//    std::cout << "Hello, whirrled!" << std::endl;
+
+
+//    std::vector<std::string> ssss
+//    {
+//        "0", "0:0", "0:00", "0:000", "0:59", "0:60", "30", "30:0", "30:00", "30:000", "30:59", "30:60"
+//        , "0:0:0", "1:0:0", "1:00:00", "1:1:1", "0:00:59", "0:59:00"
+//        , "0.", "0:0.", "0:00.", "0:000.", "0:59.", "0:60.", "30.", "30:0.", "30:00.", "30:000.", "30:59.", "30:60."
+//        , "0:0:0.", "1:0:0.", "1:00:00.", "1:1:1.", "0:00:59.", "0:59:00."
+//        , "0.1", "0:0.1", "0:00.1", "0:000.1", "0:59.1", "0:60.1", "30.1", "30:0.1", "30:00.1", "30:000.1", "30:59.1", "30:60.1"
+//        , "0:0:0.1", "1:0:0.1", "1:00:00.1", "1:1:1.1", "0:00:59.1", "0:59:00.1"
+//    };
+//
+//    for (auto& s : ssss)
+//    {
+//        std::cout << "Rewrite of \"" << s << "\" is \"" << rewrite_HHMMSS_to_seconds(s) << "\", which strips trailing zeros to \"" << remove_trailing_fractional_zeros(rewrite_HHMMSS_to_seconds(s)) << "\".\n\n";
+//
+//    }
+//
 
 
 

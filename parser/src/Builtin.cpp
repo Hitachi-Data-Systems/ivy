@@ -315,6 +315,13 @@ int int_fileappend_of_string_string(std::string filename, std::string s)
 std::string string_shell_command_of_string(std::string cmd) {  // DOES NOT CHECK IF COMMAND TO BE EXECUTED IS SAFE
 	// this function was scraped and pasted from an internet forum
 
+    {
+        std::ostringstream o;
+        o << "About to issue system shell command \"" << cmd << "\"." << std::endl;
+        std::cout << o.str();
+        ivy_log(masterlogfile(),o.str());
+	}
+
     std::string data;
     FILE * stream;
     const int max_buffer = 4096;
@@ -328,6 +335,14 @@ std::string string_shell_command_of_string(std::string cmd) {  // DOES NOT CHECK
 		data.append(buffer);
     	pclose(stream);
     }
+
+    {
+        std::ostringstream o;
+        o << "System shell command \"" << cmd << "\" was executed returning \"" << data << "\"." << std::endl;
+        std::cout << o.str();
+        ivy_log(masterlogfile(),o.str());
+	}
+
     return data;
 }
 std::string string_system_of_string(std::string s) {return string_shell_command_of_string(s);}

@@ -53,7 +53,7 @@ int select_string_start_line;
 
 ws         [ \t]+
 
-bare_JSON_number    ((-)?[1-9][0-9]*)|((-)?[1-9][0-9]*\.[0-9]+)|((-)?[1-9][0-9]*e[0-9]+)|((-)?[1-9][0-9]*\.[0-9]+e[0-9]+)
+bare_JSON_number    (0)|((-)?[1-9][0-9]*)|((-)?[1-9][0-9]*\.[0-9]+)|((-)?[1-9][0-9]*e[0-9]+)|((-)?[1-9][0-9]*\.[0-9]+e[0-9]+)
 
 true    [tT][rR][uU][eE]
 false   [fF][aA][lL][sS][eE]
@@ -180,7 +180,7 @@ port    [0-9][a-zA-Z]
 			context_ref.error("out of memory in lexer");
 			exit(1);
 		}
-		if (trace_select_lexer) std::cout << "select lexer returning BARE_JSON_NUMBER = " << *(yylval->p_str) << std::endl;
+        if (trace_select_lexer) std::cout << "select lexer returning BARE_JSON_NUMBER = " << *(yylval->p_str) << std::endl;
 		return token::BARE_JSON_NUMBER;
     }
 
@@ -190,7 +190,7 @@ port    [0-9][a-zA-Z]
 			context_ref.error("out of memory in lexer");
 			exit(1);
 		}
-		if (trace_select_lexer) std::cout << "select lexer returning QUOTED_STRING for bare identifier = " << *(yylval->p_str) << std::endl;
+        if (trace_select_lexer)	std::cout << "select lexer returning QUOTED_STRING for bare identifier = " << *(yylval->p_str) << std::endl;
 		return token::QUOTED_STRING;
     }
 

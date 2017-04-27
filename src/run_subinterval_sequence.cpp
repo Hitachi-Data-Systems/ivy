@@ -256,8 +256,9 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 << ", step number = \"" << m_s.stepNNNN << "\""
                 << ", step name = \"" << m_s.stepName << "\""
                 << " - Top of subinterval " << (m_s.rollups.current_index()+1)
-                << " from " << m_s.subintervalStart.format_as_datetime_with_ns()
-                <<  " to  " << m_s.subintervalEnd.format_as_datetime_with_ns() << std::endl;
+//                << " from " << m_s.subintervalStart.format_as_datetime_with_ns()
+//                <<  " to  " << m_s.subintervalEnd.format_as_datetime_with_ns()
+                << std::endl;
             std::cout << o.str();
             if (routine_logging) log(m_s.masterlogfile,o.str());
         }
@@ -396,8 +397,11 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                   << "\"all=all\" rollup\'s subsystem_summary_data.thumbnail(): "
                         << m_s.rollups.get_all_equals_all_instance()->subsystem_data_by_subinterval.back().thumbnail()
                   << std::endl;
-                if (routine_logging) log(m_s.masterlogfile,o.str());
-                std::cout << o.str();
+                if (routine_logging)
+                {
+                    log(m_s.masterlogfile,o.str());
+                    std::cout << o.str();
+                }
             }
         }
         // end of code for gathering real-time data from subsystems.
@@ -494,10 +498,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 ivytime step_duration = n - m_s.get_go;
 
                 std::ostringstream o;
-                o << "At " << test_duration.format_as_duration_HMMSS() << " into test \"" << m_s.testName << "\" and "
-                  << "at " << step_duration.format_as_duration_HMMSS() << " into " << m_s.stepNNNN
-                  << " \"" << m_s.stepName << "\" "
-                  << " rollups complete at " << rollup_time.format_as_duration_HMMSSns() << " after subinterval end." << std::endl;
+//                o << "At " << test_duration.format_as_duration_HMMSS() << " into test \"" << m_s.testName << "\" and "
+//                  << "at " << step_duration.format_as_duration_HMMSS() << " into " << m_s.stepNNNN
+//                  << " \"" << m_s.stepName << "\" "
+//                  << " rollups complete at " << rollup_time.format_as_duration_HMMSSns() << " after subinterval end." << std::endl;
 
                 if (m_s.haveCmdDev)
                 {
@@ -761,11 +765,11 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 o << "For subinterval " << m_s.rollups.current_index() << " evaluateSubinterval() returned ";
 
                 if (EVALUATE_SUBINTERVAL_CONTINUE==m_s.lastEvaluateSubintervalReturnCode)
-                    o << "EVALUATE_SUBINTERVAL_CONTINUE";
+                    o << "CONTINUE";
                 else if (EVALUATE_SUBINTERVAL_FAILURE==m_s.lastEvaluateSubintervalReturnCode)
-                    o << "EVALUATE_SUBINTERVAL_FAILURE";
+                    o << "FAILURE";
                 else if (EVALUATE_SUBINTERVAL_SUCCESS==m_s.lastEvaluateSubintervalReturnCode)
-                    o << "EVALUATE_SUBINTERVAL_SUCCESS";
+                    o << "SUCCESS";
                 else
                     o << "unexpected return code " << m_s.lastEvaluateSubintervalReturnCode;
 

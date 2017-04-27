@@ -28,8 +28,8 @@
 #include "pattern.h"
 
 #define SHOWLUNS_CMD "showluns.sh"
-#define IVYSLAVE_EXECUTABLE "ivyslave"
-#define IVY_CMDDEV_EXECUTABLE "ivy_cmddev"
+#define IVYSLAVE_EXECUTABLE std::string("ivyslave")
+#define IVY_CMDDEV_EXECUTABLE std::string("ivy_cmddev")
 #define default_outputFolderRoot "."
 #define SLAVEUSERID "root"
 #define MINBUFSIZE 4096
