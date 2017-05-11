@@ -242,9 +242,15 @@ int main(int argc, char* argv[])
 	std::string erase_earlier_log_files( std::string("rm -f ") + std::string(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.") + hostname + std::string("*") );
 	system(erase_earlier_log_files.c_str());
 
-        slavelogfile = std::string(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.") + hostname + std::string(".txt");
+    slavelogfile = std::string(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.") + hostname + std::string(".txt");
 
-        if (!routine_logging) log(slavelogfile,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
+    {
+        std::ostringstream o;
+        o << "ivyslave version " << ivy_version << " build date " << IVYBUILDDATE << " starting." << std::endl;
+        log(slavelogfile,o.str());
+    }
+
+    if (!routine_logging) log(slavelogfile,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
 
 	//int maxTags;
 	std::vector<std::string> luns;

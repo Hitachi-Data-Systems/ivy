@@ -833,6 +833,22 @@ void pipe_driver_subthread::threadRun()
 
         trim(prompt); // removes leading / trailing whitespace
 
+        std::regex whirrled_regex( R"((.+)=\+\+=(.+))");
+
+        std::smatch entire_whirrled;
+        std::ssub_match whirrled_first, whirrled_last;
+
+        std::string whirrled_version {};
+
+        if (std::regex_match(prompt, entire_whirrled, whirrled_regex))
+        {
+            whirrled_first = entire_whirrled[1];
+            whirrled_last = entire_whirrled[2];
+
+            prompt = whirrled_first.str();
+            whirrled_version = whirrled_last.str();
+        }
+
         std::string hellowhirrled("Hello, whirrled! from ");
 
         log(logfilename, std::string("initial prompt from remote was \"")+prompt+std::string("\"."));
@@ -934,6 +950,7 @@ void pipe_driver_subthread::threadRun()
             std::lock_guard<std::mutex> lk_guard(master_slave_lk);
             startupComplete=true;
             startupSuccessful=true;
+            if (pCmdDevLUN) m_s.command_device_etc_version += whirrled_version;
         }
         master_slave_cv.notify_all();
 
@@ -1762,14 +1779,20 @@ void pipe_driver_subthread::threadRun()
                         // host's workload threads.  This is so that we can print a message showing how much time
                         // we had in hand, i.e. how much margin we have in terms of the length of the subinterval in seconds.
 
+                        ivytime before_sending_command;
+                        before_sending_command.setToNow();
+
                         try
                         {
                             send_and_get_OK(commandString);
                         }
                         catch (std::runtime_error& reex)
                         {
+                            ivytime now;
+                            now.setToNow();
+                            ivytime latency = now - before_sending_command;
                             std::ostringstream o;
-                            o << "Sending \"" << commandString << "\" to ivyslave failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "At "<< latency.format_as_duration_HMMSSns() << " after sending \"" << commandString << "\" to ivyslave - did not get OK - failed failed saying \"" << reex.what() << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1778,13 +1801,20 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
-                        ivytime allworkloadthreadsposted;
-                        allworkloadthreadsposted.setToNow();
+                        ivytime ivyslave_said_OK;
+                        ivyslave_said_OK.setToNow();
 
-                        if (allworkloadthreadsposted > m_s.subintervalEnd)
+                        if (ivyslave_said_OK > m_s.subintervalEnd)
                         {
+                            ivytime latency = ivyslave_said_OK - before_sending_command;
                             std::ostringstream o;
-                            o << "For host " << ivyscript_hostname << ", ivyslave failed to confirm that the \"" << commandString << "\" command was posted to all workload threads before the end of the subinterval." << std::endl;
+                            o
+                                << " for host " << ivyscript_hostname
+                                << " the response \"OK\" was received with a latency of " << latency.format_as_duration_HMMSSns()
+                                << " after sending \"" << commandString << "\" to ivyslave"
+                                << "at " << before_sending_command.format_as_duration_HMMSSns()
+                                << ".  The OK response was received after the end of the subinterval which was at " << m_s.subintervalEnd.format_as_datetime_with_ns()
+                                << std::endl;
                             log(logfilename,o.str());
                             std::cout << o.str();
                             kill_ssh_and_harvest();
@@ -1797,7 +1827,7 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
-                        time_in_hand_before_subinterval_end = m_s.subintervalEnd - allworkloadthreadsposted;
+                        time_in_hand_before_subinterval_end = m_s.subintervalEnd - ivyslave_said_OK;
 
                         try
                         {

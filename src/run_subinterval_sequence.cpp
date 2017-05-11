@@ -197,6 +197,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     // commands that may follow.
 
     // post "Go!" command to start the iosequencer threads running
+
+    m_s.subintervalStart.setToNow();
+    m_s.subintervalEnd = m_s.subintervalStart + m_s.subintervalLength;
+
     for (auto& pear : m_s.host_subthread_pointers)
     {
         {
@@ -235,11 +239,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
 
 
-        if ( -1 == m_s.rollups.current_index() )
-        {
-            m_s.subintervalStart.setToNow();
-        }
-        else
+        if ( -1 != m_s.rollups.current_index() )
         {
             m_s.subintervalStart = m_s.rollups.starting_ending_times[m_s.rollups.current_index() ].second;  // ending time from previous subinterval
         }
@@ -1098,6 +1098,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                     {
                         std::ostringstream o;
 
+                        o << "ivy version,";
+
+                        if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
+
                         o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,valid or invalid,invalid reason,Rollup Type,Rollup Instance";
 
                         if (m_s.ivymaster_RMLIB_threads.size()>0) { o << pRollupInstance->test_config_thumbnail.csv_headers(); }
@@ -1148,6 +1152,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode || m_s.have_timeout_rollup)
                 {
                     std::ostringstream csvline;
+
+                    csvline << ivy_version << ",";
+
+                    if (m_s.command_device_etc_version.size() > 0 ) csvline << m_s.command_device_etc_version << ',';
 
                     csvline << m_s.testName << ',' << m_s.stepNNNN << ',' << m_s.stepName;
 
@@ -1429,6 +1437,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
                     std::ostringstream csvline;
 
+                    csvline << ivy_version << ',';
+
+                    if (m_s.command_device_etc_version.size() > 0 ) csvline << m_s.command_device_etc_version << ',';
+
                     csvline << m_s.testName << ',' << m_s.stepNNNN << ',' << m_s.stepName;
                     csvline << ',' ; // << start.format_as_datetime();
 
@@ -1533,6 +1545,8 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                     // print the header line.
                     {
                         std::ostringstream o;
+                        o << "ivy version,";
+                        if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
                         o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
                         if (m_s.ivymaster_RMLIB_threads.size()>0) { o << Test_config_thumbnail::csv_headers(); }
                         o << IosequencerInputRollup::CSVcolumnTitles();
@@ -1582,6 +1596,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                         }
                         {
                             std::ostringstream csvline;
+
+                            csvline << ivy_version << ',';
+
+                            if (m_s.command_device_etc_version.size() > 0 ) csvline << m_s.command_device_etc_version << ',';
 
                             csvline << m_s.testName << ',' << m_s.stepNNNN << ',' << m_s.stepName;
 

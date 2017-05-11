@@ -133,12 +133,16 @@ std::pair<bool /*success*/, std::string /* message */>
 
     {
         std::ostringstream o;
-        o << "ivymaster build date date " << IVYBUILDDATE << " - fireup." << std::endl;
+        o << "ivy version " << ivy_version << " build date " << IVYBUILDDATE << " starting." << std::endl << std::endl;
         log(masterlogfile,o.str());
     }
 
-    if (!routine_logging) log(masterlogfile,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
-
+    if (!routine_logging)
+    {
+        std::ostringstream o;
+        o << "For logging of routine (non-error) events, and to record the conversation with each ivyslave/ivy_cmddev, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n";
+        log(masterlogfile,o.str());
+    }
 
     if (ivyscript_filename.size() > 0)
     {

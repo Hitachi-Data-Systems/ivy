@@ -30,6 +30,7 @@
 #include "ivyhelpers.h"
 #include "master_stuff.h"
 #include "MeasureDFC.h"
+#include "ivybuilddate.h"
 
 std::string startup_log_file {"~/ivy_startup.txt"};
 
@@ -101,6 +102,13 @@ std::string get_my_path_part()
 
 int main(int argc, char* argv[])
 {
+
+    {
+        std::ostringstream o;
+        o << "ivy version " << ivy_version << " build date " << IVYBUILDDATE << " starting." << std::endl << std::endl;
+        std::cout << o.str();
+    }
+
     m_s.path_to_ivy_executable = get_my_path_part();
 
 	std::string ivyscriptFilename {};
