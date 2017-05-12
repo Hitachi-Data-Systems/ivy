@@ -833,25 +833,30 @@ void pipe_driver_subthread::threadRun()
 
         trim(prompt); // removes leading / trailing whitespace
 
-        std::regex whirrled_regex( R"((.+)=\+\+=(.+))");
+        std::string copy_of_prompt = prompt;
+
+        std::regex whirrled_regex( R"((.+)<=\|=>(.+))");
 
         std::smatch entire_whirrled;
         std::ssub_match whirrled_first, whirrled_last;
 
         std::string whirrled_version {};
 
-        if (std::regex_match(prompt, entire_whirrled, whirrled_regex))
+        if (std::regex_match(copy_of_prompt, entire_whirrled, whirrled_regex))
         {
             whirrled_first = entire_whirrled[1];
-            whirrled_last = entire_whirrled[2];
+            whirrled_last  = entire_whirrled[2];
 
-            prompt = whirrled_first.str();
+            prompt           = whirrled_first.str();
             whirrled_version = whirrled_last.str();
+
+            trim(prompt);
+            trim(whirrled_version);
         }
 
         std::string hellowhirrled("Hello, whirrled! from ");
 
-        log(logfilename, std::string("initial prompt from remote was \"")+prompt+std::string("\"."));
+        log(logfilename, std::string("initial prompt from remote was \"")+copy_of_prompt+std::string("\"."));
 
         unsigned int i;
         for (i=0; i<=(prompt.size()-hellowhirrled.size()); i++)
@@ -950,7 +955,15 @@ void pipe_driver_subthread::threadRun()
             std::lock_guard<std::mutex> lk_guard(master_slave_lk);
             startupComplete=true;
             startupSuccessful=true;
-            if (pCmdDevLUN) m_s.command_device_etc_version += whirrled_version;
+            if (pCmdDevLUN)
+            {
+                std::ostringstream o;
+                o << "Have the lock - adding whirrled_version \"" << whirrled_version << "\" to  m_s.command_device_etc_version which initially was \"" << m_s.command_device_etc_version << "\"." << std::endl;
+                m_s.command_device_etc_version += whirrled_version;
+                o << "Then m_s.command_device_etc_version became \"" << m_s.command_device_etc_version << "\"." << std::endl;
+                log(logfilename, o.str());
+            }
+
         }
         master_slave_cv.notify_all();
 

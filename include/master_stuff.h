@@ -385,7 +385,7 @@ public:
     ivy_float   min_sequential_fill_progress { 1.0 };
     bool        keep_filling {false};
 
-    std::string command_device_etc_version;
+    std::string command_device_etc_version {};
 
 
 // methods

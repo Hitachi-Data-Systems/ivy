@@ -24,114 +24,144 @@
 #include "ivyhelpers.h"
 #include "ivydefines.h"
 
-std::regex MMSS_regex( std::string( R"ivy(([[:digit:]]+):((([012345])?[[:digit:]])(\.([[:digit:]])*)?))ivy" ) ); // any number of minutes followed by ':' followed by 00-59 or 0-59.
-std::regex HHMMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]):((([012345])?[[:digit:]])(\.([[:digit:]])*)?))ivy" ) ); // any number of hours followed by ':' followed by 00-59 or 0-59 followed by ':' followed by 00-59 or 0-59.
-std::regex has_trailing_fractional_zeros_regex( R"((([[:digit:]]+)\.([[:digit:]]*[1-9])?)0+)" );
+//std::regex MMSS_regex( std::string( R"ivy(([[:digit:]]+):((([012345])?[[:digit:]])(\.([[:digit:]])*)?))ivy" ) ); // any number of minutes followed by ':' followed by 00-59 or 0-59.
+//std::regex HHMMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]):((([012345])?[[:digit:]])(\.([[:digit:]])*)?))ivy" ) ); // any number of hours followed by ':' followed by 00-59 or 0-59 followed by ':' followed by 00-59 or 0-59.
+//std::regex has_trailing_fractional_zeros_regex( R"((([[:digit:]]+)\.([[:digit:]]*[1-9])?)0+)" );
+//
+//std::string remove_trailing_fractional_zeros(std::string s)
+//{
+//    std::smatch entire_match;
+//    std::ssub_match before, after, before_point_after;
+//
+//    if (std::regex_match(s, entire_match, has_trailing_fractional_zeros_regex))
+//    {
+//        before_point_after = entire_match[1];
+//        before = entire_match[2];
+//        after = entire_match[3];
+//
+//        if (0 == after.str().size())
+//        {
+//            return before.str();  // We remove the decimal point if there are only zeros after it.
+//                                  // This does change it from a floating point literal to an unsigned int literal.
+//        }
+//        else
+//        {
+//            return before_point_after.str();
+//        }
+//    }
+//    else
+//    {
+//        return s;
+//    }
+//}
+//
+//std::string rewrite_HHMMSS_to_seconds( std::string s )
+//{
+//        std::smatch entire_match;
+//        std::ssub_match hh, mm, ss, fractional_part;
+//
+//
+//
+//        if (std::regex_match(s, entire_match, MMSS_regex))
+//        {
+//            mm = entire_match[1];
+//            ss = entire_match[2];
+//            std::istringstream imm(mm.str());
+//            std::istringstream iss(ss.str());
+//            double m, s;
+//            imm >> m;
+//            iss >> s;
+//            std::ostringstream o;
+//            o << std::fixed << (s+(60*m));
+//            return o.str();
+//        }
+//
+//        if (std::regex_match(s, entire_match, HHMMSS_regex))
+//        {
+//            hh = entire_match[1];
+//            mm = entire_match[2];
+//            ss = entire_match[4];
+//            std::istringstream ihh(hh.str());
+//            std::istringstream imm(mm.str());
+//            std::istringstream iss(ss.str());
+//            double h, m, s;
+//            ihh >> h;
+//            iss >> s;
+//            imm >> m;
+//            std::ostringstream o;
+//            o << std::fixed << (s+(60*(m+(60*h))));
+//            return o.str();
+//        }
+//
+//        return s;
+//}
+//
+//std::string get_my_path_part()
+//{
+//#define MAX_FULLY_QUALIFIED_PATHNAME 511
+//    const size_t pathname_max_length_with_null = MAX_FULLY_QUALIFIED_PATHNAME + 1;
+//    char pathname_char[pathname_max_length_with_null];
+//
+//    // Read the symbolic link '/proc/self/exe'.
+//    const char *proc_self_exe = "/proc/self/exe";
+//    const int readlink_rc = int(readlink(proc_self_exe, pathname_char, MAX_FULLY_QUALIFIED_PATHNAME));
+//
+//    std::string fully_qualified {};
+//
+//    if (readlink_rc <= 0) { return ""; }
+//
+//    fully_qualified = pathname_char;
+//
+//    std::string path_part_regex_string { R"ivy((.*/)([^/]+))ivy" };
+//    std::regex path_part_regex( path_part_regex_string );
+//
+//    std::smatch entire_match;
+//    std::ssub_match path_part;
+//
+//    if (std::regex_match(fully_qualified, entire_match, path_part_regex))
+//    {
+//        path_part = entire_match[1];
+//        return path_part.str();
+//    }
+//
+//    return "";
+//}
 
-std::string remove_trailing_fractional_zeros(std::string s)
-{
-    std::smatch entire_match;
-    std::ssub_match before, after, before_point_after;
-
-    if (std::regex_match(s, entire_match, has_trailing_fractional_zeros_regex))
-    {
-        before_point_after = entire_match[1];
-        before = entire_match[2];
-        after = entire_match[3];
-
-        if (0 == after.str().size())
-        {
-            return before.str();  // We remove the decimal point if there are only zeros after it.
-                                  // This does change it from a floating point literal to an unsigned int literal.
-        }
-        else
-        {
-            return before_point_after.str();
-        }
-    }
-    else
-    {
-        return s;
-    }
-}
-
-std::string rewrite_HHMMSS_to_seconds( std::string s )
-{
-        std::smatch entire_match;
-        std::ssub_match hh, mm, ss, fractional_part;
-
-
-
-        if (std::regex_match(s, entire_match, MMSS_regex))
-        {
-            mm = entire_match[1];
-            ss = entire_match[2];
-            std::istringstream imm(mm.str());
-            std::istringstream iss(ss.str());
-            double m, s;
-            imm >> m;
-            iss >> s;
-            std::ostringstream o;
-            o << std::fixed << (s+(60*m));
-            return o.str();
-        }
-
-        if (std::regex_match(s, entire_match, HHMMSS_regex))
-        {
-            hh = entire_match[1];
-            mm = entire_match[2];
-            ss = entire_match[4];
-            std::istringstream ihh(hh.str());
-            std::istringstream imm(mm.str());
-            std::istringstream iss(ss.str());
-            double h, m, s;
-            ihh >> h;
-            iss >> s;
-            imm >> m;
-            std::ostringstream o;
-            o << std::fixed << (s+(60*(m+(60*h))));
-            return o.str();
-        }
-
-        return s;
-}
-
-std::string get_my_path_part()
-{
-#define MAX_FULLY_QUALIFIED_PATHNAME 511
-    const size_t pathname_max_length_with_null = MAX_FULLY_QUALIFIED_PATHNAME + 1;
-    char pathname_char[pathname_max_length_with_null];
-
-    // Read the symbolic link '/proc/self/exe'.
-    const char *proc_self_exe = "/proc/self/exe";
-    const int readlink_rc = int(readlink(proc_self_exe, pathname_char, MAX_FULLY_QUALIFIED_PATHNAME));
-
-    std::string fully_qualified {};
-
-    if (readlink_rc <= 0) { return ""; }
-
-    fully_qualified = pathname_char;
-
-    std::string path_part_regex_string { R"ivy((.*/)([^/]+))ivy" };
-    std::regex path_part_regex( path_part_regex_string );
-
-    std::smatch entire_match;
-    std::ssub_match path_part;
-
-    if (std::regex_match(fully_qualified, entire_match, path_part_regex))
-    {
-        path_part = entire_match[1];
-        return path_part.str();
-    }
-
-    return "";
-}
 
 
 int main(int argc, char* argv[])
 {
 
-  std::cout << "Hello world! my name is \"" << argv[0] << "\" and the path to my executable is \"" << get_my_path_part() << "\"" << std::endl;
+//    std::cout << "Hello world! my name is \"" << argv[0] << "\" and the path to my executable is \"" << get_my_path_part() << "\"" << std::endl << std::endl;
+
+
+    std::string prompt {}, prompt1{R"(Hello, whirrled! from cb38<=|=>[serial number = 460064; unit identifier = HM800; microcode version = 83-04-01/00; RMLIB version = 01-23-03/00; ivy_cmddev version = 1.00.00])"};
+    std::cout << format_utterance ("original prompt ", prompt1) << std::endl;
+
+    std::regex whirrled_regex( R"((.+)<=\|=>(.+))");
+
+    std::smatch entire_whirrled;
+    std::ssub_match whirrled_first, whirrled_last;
+
+    std::string whirrled_version {};
+
+    if (std::regex_match(prompt1, entire_whirrled, whirrled_regex))
+    {
+        whirrled_first = entire_whirrled[1];
+        whirrled_last  = entire_whirrled[2];
+
+        prompt           = whirrled_first.str();
+        whirrled_version = whirrled_last.str();
+        trim(whirrled_version);
+
+        std::cout << format_utterance("trimmed prompt ", prompt) << std::endl;
+        std::cout << format_utterance("whirrled_version ", whirrled_version) << std::endl;
+
+
+    }
+
+
+
 
 
 //    std::cout << "Hello, whirrled!" << std::endl;
