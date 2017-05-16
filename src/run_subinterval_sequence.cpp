@@ -1198,7 +1198,8 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
                     if (m_s.ivymaster_RMLIB_threads.size()>0) { csvline << pRollupInstance->test_config_thumbnail.csv_columns(); }
 
-                    csvline << pRollupInstance->measurementRollup.inputRollup.CSVcolumnValues(true); // true shows how many occurences of each value, false shows "multiple"
+                    csvline << pRollupInstance->measurementRollup.inputRollup.CSVcolumnValues(true);
+                        // true shows how many occurences of each value, false shows "multiple"
 
                     csvline << ','; // CPU - 2 columns
                     if (stringCaseInsensitiveEquality(std::string("host"),pRollupType->attributeNameCombo.attributeNameComboID))

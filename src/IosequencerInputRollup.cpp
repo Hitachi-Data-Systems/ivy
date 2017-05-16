@@ -174,7 +174,7 @@ std::string IosequencerInputRollup::CSVcolumnValues(bool detail)
 	<< ',' << '\"' << getParameterTextValueByName("iosequencer",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("blocksize",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("maxTags",detail) << '\"'
-	<< ',' << '\"' << getParameterTextValueByName("IOPS",detail) << '\"'
+	<< ',' << '\"' << getParameterTextValueByName("IOPS",false) << '\"'   // for DFC=PID, as IOPS changes every subinterval.
 	<< ',' << '\"' << getParameterTextValueByName("fractionRead",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("VolumeCoverageFractionStart",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("VolumeCoverageFractionEnd",detail) << '\"'

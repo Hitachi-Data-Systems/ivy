@@ -1817,16 +1817,18 @@ void pipe_driver_subthread::threadRun()
                         ivytime ivyslave_said_OK;
                         ivyslave_said_OK.setToNow();
 
-                        if (ivyslave_said_OK > m_s.subintervalEnd)
+                        ivytime latency = ivyslave_said_OK - before_sending_command;
+
+                        if (latency.getlongdoubleseconds() > m_s.catnap_time_seconds)
                         {
-                            ivytime latency = ivyslave_said_OK - before_sending_command;
+
                             std::ostringstream o;
                             o
                                 << " for host " << ivyscript_hostname
                                 << " the response \"OK\" was received with a latency of " << latency.format_as_duration_HMMSSns()
                                 << " after sending \"" << commandString << "\" to ivyslave"
-                                << "at " << before_sending_command.format_as_duration_HMMSSns()
-                                << ".  The OK response was received after the end of the subinterval which was at " << m_s.subintervalEnd.format_as_datetime_with_ns()
+                                << " at " << before_sending_command.format_as_datetime_with_ns() << "."
+                                << "  The OK response was received after more than catnap_time_seconds = " << m_s.catnap_time_seconds << " seconds."
                                 << std::endl;
                             log(logfilename,o.str());
                             std::cout << o.str();

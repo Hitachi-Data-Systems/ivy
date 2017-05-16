@@ -55,7 +55,7 @@ std::string get_ivyslave_path_part()
 
     fully_qualified = pathname_char;
 
-    std::string path_part_regex_string { R"ivy((.*/)([^/]+))ivy" };
+    std::string path_part_regex_string { R"ivy((.*/)(ivyslave[^/]*))ivy" };
     std::regex path_part_regex( path_part_regex_string );
 
     std::smatch entire_match;

@@ -24,6 +24,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pwd.h>
 
 #include "Ivy_pgm.h"
 #include "ivy.parser.hh"
@@ -99,6 +100,20 @@ std::string get_my_path_part()
     return "";
 }
 
+std::string get_running_user()
+{
+    uid_t u;
+    struct passwd *p;
+
+    u = geteuid ();
+    p = getpwuid (u);
+
+    if (nullptr != p)
+    {
+         return std::string(p->pw_name);
+    }
+    return std::string("");
+}
 
 int main(int argc, char* argv[])
 {
@@ -108,6 +123,15 @@ int main(int argc, char* argv[])
         o << "ivy version " << ivy_version << " build date " << IVYBUILDDATE << " starting." << std::endl << std::endl;
         std::cout << o.str();
     }
+
+    std::string u = get_running_user();
+
+    if (0 != u.compare(std::string("root")))
+    {
+        std::cout << "ivy is running as user " << u << ".  Sorry, ivy must be running as root." << std::endl;
+        return -1;
+    }
+
 
     m_s.path_to_ivy_executable = get_my_path_part();
 
