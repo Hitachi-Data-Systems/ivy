@@ -387,6 +387,8 @@ public:
 
     std::string command_device_etc_version {};
 
+    std::string thing {};  // something you can set a value into to test ivy_engine_set and ivy_engine_get
+
 
 // methods
 	void kill_subthreads_and_exit();
@@ -463,6 +465,13 @@ public:
         std::pair<bool /*true = success*/, std::string /* message */>
     go(
         const std::string& parameters);        //   measure_seconds = 300
+
+        std::pair<bool, std::string>  // <true,value> or <false,error message>
+    get(const std::string& thing);
+
+        std::pair<bool, std::string>  // <true,possibly in future some additional info if needed> or <false,error message>
+    set(const std::string& thing,
+        const std::string& value);
 
         std::pair<bool,std::string>
     shutdown_subthreads();

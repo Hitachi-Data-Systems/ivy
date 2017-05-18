@@ -1115,7 +1115,28 @@ std::string master_stuff::focus_metric_ID()
     return o.str();
 }
 
+std::string ivy_engine_get(std::string thing)   //
+{
+    auto r = m_s.get(thing);
+    return r.second;
+}
+
+int ivy_engine_set(std::string thing, std::string value)
+{
+    auto r = m_s.set(thing,value);
+    if (!r.first)
+    {
+        std::ostringstream o;
+        o << "For ivyscript builtin function ivy_engine_set(thing=\"" << thing << "\", value=\"" << value << "\") "
+            << "the corresponding ivy engine API call failed saying \"" << r.second << "\".";
+        log(m_s.masterlogfile,o.str());
+        return 0;
+    }
+    return 1;
+}
+
 // =============  ivy engine API calls:
+
 
 std::pair<bool /*success*/, std::string /* message */>
 master_stuff::set_iosequencer_template(
@@ -3160,4 +3181,127 @@ master_stuff::shutdown_subthreads()
     return std::make_pair((!something_bad_happened) && (!need_harakiri),std::string(""));
 
 }
+
+    std::pair<bool, std::string>  // <true,value> or <false,error message>
+master_stuff::get(const std::string& thingee)
+{
+    std::string t {};
+
+    try
+    {
+        t = normalize_identifier(thingee);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine get(thing=\"" << thing << "\") - thing must be an identifier, that is, starts with an alphabetic character and continues with alphabetics, numerics, and underscores." << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+
+    if (0 == t.compare(normalize_identifier("output_folder_root")))
+    {
+        return std::make_pair(true,outputFolderRoot);
+    }
+
+
+    if (0 == t.compare(normalize_identifier("test_name")))
+    {
+        return std::make_pair(true,testName);
+    }
+
+
+    if (0 == t.compare(normalize_identifier("last_result")))
+    {
+        return std::make_pair(true,last_result());
+    }
+
+
+    if (0 == t.compare(normalize_identifier("step_NNNN")))
+    {
+        return std::make_pair(true,stepNNNN);
+    }
+
+
+    if (0 == t.compare(normalize_identifier("step_name")))
+    {
+        return std::make_pair(true,stepName);
+    }
+
+
+    if (0 == t.compare(normalize_identifier("step_folder")))
+    {
+        return std::make_pair(true,stepFolder);
+    }
+
+
+    if (0 == t.compare(normalize_identifier("thing")))
+    {
+        return std::make_pair(true,thing);
+    }
+
+
+    {
+        std::ostringstream o;
+        o << "<Error> Unknown ivy engine get parameter \"" << thing << "\".";
+        return std::make_pair(false,o.str());
+    }
+}
+
+    std::pair<bool, std::string>  // <true,possibly in future some additional info if needed> or <false,error message>
+master_stuff::set(const std::string& thingee,
+    const std::string& value)
+{
+    std::string t {};
+
+    try
+    {
+        t = normalize_identifier(thingee);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine get(thing=\"" << thing << "\") - thing must be an identifier, that is, starts with an alphabetic character and continues with alphabetics, numerics, and underscores." << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+
+    if (0 == t.compare(normalize_identifier("thing")))
+    {
+        thing = value;
+        return std::make_pair(true,"");
+    }
+
+    {
+        std::ostringstream o;
+        o << "<Error> Unknown ivy engine set parameter \"" << thing << "\".";
+        return std::make_pair(false,o.str());
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

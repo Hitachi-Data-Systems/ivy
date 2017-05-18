@@ -89,5 +89,17 @@ ivy_DeleteWorkload(
     std::string,                // workload_name, e.g. "cat"
     std::string);               // optional test LUN select clause, e.g. ] "{ \"LDEV\" : \"00:04\" }"
 
+    std::pair<bool,std::string> // <true,value> or <false,error message>
+ivy_get(
+    const std::string&          // thing to be gotten
+    );
+
+    std::pair<bool,std::string> // <true,"" or possibly at some point a success string value if some information is required more than just success> or <false,error message>
+ivy_put(
+    const std::string&,         // thing to update
+    const std::string&          // value to set in the thing
+    );
+
+
     std::pair<bool,std::string> // true=success, output or error message
 ivy_shutdown();

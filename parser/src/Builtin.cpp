@@ -25,6 +25,7 @@
 #include "OverloadSet.h"
 #include "Ivy_pgm.h"
 
+
 // Note "shell_command" alias "system" is a built-in function.
 
 // ivy runs as root, which means that the shell commands that you run are executed as root.
@@ -737,6 +738,10 @@ extern std::string stepFolder();
 extern std::string last_result();
 extern std::string show_rollup_structure();
 
+extern std::string ivy_engine_get(std::string thing);
+
+extern int         ivy_engine_set(std::string thing, std::string value);
+
 extern int exit_statement();  // doesn't actually return, but had to declare a return type of some kind.
 
 void init_builtin_table()
@@ -782,7 +787,8 @@ void init_builtin_table()
     nullarybuiltin(csvfile_rows,int)
     nullarybuiltin(csvfile_header_columns,int)
 
-
+    unarybuiltin(ivy_engine_get,string,string)
+    binarybuiltin(ivy_engine_set,int,string,string)
 
     nullarybuiltin(snapshot,int);
 
