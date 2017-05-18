@@ -3261,7 +3261,7 @@ master_stuff::set(const std::string& thingee,
     catch (const std::invalid_argument& ia)
     {
         std::ostringstream o;
-        o << "<Error> ivy engine get(thing=\"" << thingee << "\") - thing must be an identifier, that is, starts with an alphabetic character and continues with alphabetics, numerics, and underscores." << std::endl;
+        o << "<Error> ivy engine get(thing=\"" << thingee << "\") - thing must be an identifier, that is, starts with an alphabetic character and continues with alphabetics, numerics, and underscores.";
         return std::make_pair(false,o.str());
     }
 
