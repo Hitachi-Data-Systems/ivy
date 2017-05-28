@@ -409,12 +409,32 @@ void RollupInstance::perform_PID()
 
     if (total_IOPS < per_instance_low_IOPS)
     {
+        std::ostringstream o;
+        o << "<Warning>"
+            << " For rollup \"" << attributeNameComboID << "\", instance \"" << rollupInstanceID << "\""
+            << " could not apply newly calculated PID loop IOPS value " << std::fixed << std::setprecision(2) << total_IOPS
+            << ", instead PID new IOPS clamped at the minimum " << std::fixed << std::setprecision(2) << per_instance_low_IOPS
+            << " calculated as the PID \"min_IOPS\" setting divided by the number of instances in the rollup we are performing PID on."
+            << std::endl << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+
         total_IOPS = per_instance_low_IOPS;
         error_integral = total_IOPS/I;
     }
-    else if (total_IOPS > per_instance_high_IOPS)
+    else if (total_IOPS > per_instance_max_IOPS)
     {
-        total_IOPS = per_instance_high_IOPS;
+        std::ostringstream o;
+        o << "<Warning>"
+            << " For rollup \"" << attributeNameComboID << "\", instance \"" << rollupInstanceID << "\""
+            << " could not apply newly calculated PID loop IOPS value " << std::fixed << std::setprecision(2) << total_IOPS
+            << ", instead new PID new IOPS clamped at the maximum " << std::fixed << std::setprecision(2) << per_instance_max_IOPS
+            << " calculated as the optional PID \"max_IOPS\" setting if present, otherwise the high_IOPS setting, divided by the number of instances in the rollup we are performing PID on."
+            << std::endl << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+
+        total_IOPS = per_instance_max_IOPS;
         error_integral = total_IOPS/I;
     }
 
@@ -534,17 +554,17 @@ void RollupInstance::perform_PID()
         }
         else
         {
-            {
-                std::ostringstream o;
-                o << "Entering adaptive PID mechanism for " << attributeNameComboID << " = " << rollupInstanceID
-                    << "  in " << (have_reduced_gain ? "settling " : "initial gain increase" ) << " mode with "
-                    << "\"max_monotone\" gain increases = " << m_count
-                    << ", \"balanced_step_direction_by\" gain increases = " << b_count
-                    << ", \"max_ripple\" gain decreases = " << d_count
-                    << "\n\n";
-                std::cout << o.str();
-                if (routine_logging) { log(m_s.masterlogfile, o.str()); }
-            }
+//            {
+//                std::ostringstream o;
+//                o << "Entering adaptive PID mechanism for " << attributeNameComboID << " = " << rollupInstanceID
+//                    << "  in " << (have_reduced_gain ? "settling " : "initial gain increase" ) << " mode with "
+//                    << "\"max_monotone\" gain increases = " << m_count
+//                    << ", \"balanced_step_direction_by\" gain increases = " << b_count
+//                    << ", \"max_ripple\" gain decreases = " << d_count
+//                    << "\n\n";
+//                std::cout << o.str();
+//                if (routine_logging) { log(m_s.masterlogfile, o.str()); }
+//            }
 
             // This is at least the second time we have set an IOPS value in this adaptive PID cycle.
 
@@ -853,6 +873,7 @@ void RollupInstance::reset() // gets called by go statement, when it assigns the
 
         per_instance_low_IOPS = m_s.low_IOPS / ( (ivy_float) pRollupType->instances.size());
         per_instance_high_IOPS = m_s.high_IOPS / ( (ivy_float) pRollupType->instances.size());
+        per_instance_max_IOPS = m_s.max_IOPS / ( (ivy_float) pRollupType->instances.size());
             // We are making the assumption that the various instances contribute for practical purposes in a balanced way.
 
 

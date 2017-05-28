@@ -247,6 +247,10 @@ public:
     std::string high_IOPS_parameter;   /* ==> */ ivy_float high_IOPS   {0.};
     std::string high_target_parameter; /* ==> */ ivy_float high_target {0.};
 
+    std::string max_IOPS_parameter;   /* ==> */ ivy_float max_IOPS {0.};
+
+
+
     MeasureDFC the_dfc;
 
     // measure = on

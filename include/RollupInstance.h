@@ -160,6 +160,7 @@ public:
 
     ivy_float per_instance_low_IOPS;
     ivy_float per_instance_high_IOPS;
+    ivy_float per_instance_max_IOPS;
 
 
 // methods

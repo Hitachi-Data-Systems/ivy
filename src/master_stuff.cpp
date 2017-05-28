@@ -1118,6 +1118,15 @@ std::string master_stuff::focus_metric_ID()
 std::string ivy_engine_get(std::string thing)   //
 {
     auto r = m_s.get(thing);
+    if (!r.first)
+    {
+        std::ostringstream o;
+        o << "For ivyscript builtin function ivy_engine_get(thing=\"" << thing << "\") "
+            << "the corresponding ivy engine API call failed saying:" << std::endl
+            << r.second;
+        log(m_s.masterlogfile,o.str());
+        std::cout << o.str();
+    }
     return r.second;
 }
 
@@ -1128,8 +1137,10 @@ int ivy_engine_set(std::string thing, std::string value)
     {
         std::ostringstream o;
         o << "For ivyscript builtin function ivy_engine_set(thing=\"" << thing << "\", value=\"" << value << "\") "
-            << "the corresponding ivy engine API call failed saying \"" << r.second << "\".";
+            << "the corresponding ivy engine API call failed saying:" << std::endl
+            << r.second;
         log(m_s.masterlogfile,o.str());
+        std::cout << o.str();
         return 0;
     }
     return 1;
@@ -2075,7 +2086,7 @@ master_stuff::go(const std::string& parameters)
     std::string valid_parameters_message =
         "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
         "                                                   catnap_time_seconds, post_time_limit_seconds, sequential_fill.\n\n"
-        "For dfc = PID, additional valid parameters are:    target_value, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
+        "For dfc = PID, additional valid parameters are:    target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
         "For measure = on, additional valid parameters are: accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
         "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n\n"
         "For source = workload, additional valid parameters are: category, accumulator_type, accessor.\n\n"
@@ -2126,7 +2137,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         if (stringCaseInsensitiveEquality("pid", controllerName))
         {
             have_pid = true;
-            valid_parameter_names += ", dfc, target_value, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
+            valid_parameter_names += ", dfc, target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
             if (!go_parameters.contains(std::string("max_ripple")))                 go_parameters.contents[normalize_identifier(std::string("max_ripple"))]       = std::string("1%");
             if (!go_parameters.contains(std::string("gain_step")))                  go_parameters.contents[normalize_identifier(std::string("gain_step"))]        = std::string("2");
             if (!go_parameters.contains(std::string("ballpark_seconds")))           go_parameters.contents[normalize_identifier(std::string("ballpark_seconds"))] = std::string("60");
@@ -2660,7 +2671,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
     if (have_pid)
     {
-        // valid_parameter_names += ", dfc, target_value, low_IOPS, low_target, high_IOPS, high_target, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
+        // valid_parameter_names += ", dfc, target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
 
         if ( (!go_parameters.contains("target_value"))
           || (!go_parameters.contains("low_IOPS"))
@@ -2743,6 +2754,36 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
             std::cout << o.str();
             kill_subthreads_and_exit();
         }
+
+
+//----------------------------------- max_IOPS
+        if (go_parameters.contains("max_IOPS"))
+        {
+            max_IOPS_parameter = go_parameters.retrieve("max_IOPS");
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFCcategory::PID - when setting \"max_IOPS\" parameter to value \""
+                    << max_IOPS_parameter << "\": ";
+
+                max_IOPS = number_optional_trailing_percent(max_IOPS_parameter,where_the.str());
+            }
+
+            if (max_IOPS < high_IOPS)
+            {
+                ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid max_IOPS parameter \"" << max_IOPS_parameter << "\".  "
+                    << "max_IOPS, where optionally specified, may not be below the specified high_IOPS value " << high_IOPS_parameter << "."
+                    << std::endl << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+        }
+        else
+        {
+            max_IOPS = high_IOPS;
+        }
+
 
 //----------------------------------- gain_step
         {
@@ -3182,6 +3223,22 @@ master_stuff::shutdown_subthreads()
 
 }
 
+std::string valid_get_parameters()
+{
+    std::ostringstream o;
+    o << "Valid ivy engine get parameters are:"
+            << " output_folder_root"
+            << ", test_name"
+            << ", last_result"
+            << ", step_NNNN"
+            << ", step_name"
+            << ", and step_folder."
+                << std::endl
+            << "(Parameter names are not case sensitive and underscores are ignored in parameter names, and thus OutputFolderRoot is equivalent to output_folder_root.)"
+                << std::endl << std::endl;
+    return o.str();
+}
+
     std::pair<bool, std::string>  // <true,value> or <false,error message>
 master_stuff::get(const std::string& thingee)
 {
@@ -3194,7 +3251,9 @@ master_stuff::get(const std::string& thingee)
     catch (const std::invalid_argument& ia)
     {
         std::ostringstream o;
-        o << "<Error> ivy engine get(thing=\"" << thingee << "\") - thing must be an identifier, that is, starts with an alphabetic character and continues with alphabetics, numerics, and underscores." << std::endl;
+        o << "<Error> ivy engine get(thing=\"" << thingee << "\") - thing must be an identifier, that is, starts with an alphabetic character and continues with alphabetics, numerics, and underscores."
+            << std::endl << std::endl
+            << valid_get_parameters();
         return std::make_pair(false,o.str());
     }
 
@@ -3235,6 +3294,12 @@ master_stuff::get(const std::string& thingee)
     }
 
 
+    if (0 == t.compare(normalize_identifier("rollup_structure")))
+    {
+        return std::make_pair(true,show_rollup_structure());
+    }
+
+
     if (0 == t.compare(normalize_identifier("thing")))
     {
         return std::make_pair(true,thing);
@@ -3243,7 +3308,8 @@ master_stuff::get(const std::string& thingee)
 
     {
         std::ostringstream o;
-        o << "<Error> Unknown ivy engine get parameter \"" << thingee << "\".";
+        o << "<Error> Unknown ivy engine get parameter \"" << thingee << "\"." << std::endl << std::endl
+            << valid_get_parameters();
         return std::make_pair(false,o.str());
     }
 }
@@ -3261,8 +3327,17 @@ master_stuff::set(const std::string& thingee,
     catch (const std::invalid_argument& ia)
     {
         std::ostringstream o;
-        o << "<Error> ivy engine get(thing=\"" << thingee << "\") - thing must be an identifier, that is, starts with an alphabetic character and continues with alphabetics, numerics, and underscores.";
+        o << "<Error> ivy engine set(thing=\"" << thingee << "\", value = \"" << value
+            << "\") - thing must be an identifier, that is, starts with an alphabetic character and continues with alphabetics, numerics, and underscores."
+            << std::endl << std::endl;
         return std::make_pair(false,o.str());
+    }
+
+
+    if (0 == t.compare(normalize_identifier("masterlogfile")))
+    {
+        log(m_s.masterlogfile, value);
+        return std::make_pair(true,"");
     }
 
 
@@ -3272,9 +3347,10 @@ master_stuff::set(const std::string& thingee,
         return std::make_pair(true,"");
     }
 
+
     {
         std::ostringstream o;
-        o << "<Error> Unknown ivy engine set parameter \"" << thingee << "\".";
+        o << "<Error> Unknown ivy engine set parameter \"" << thingee << "\"." << std::endl << std::endl;
         return std::make_pair(false,o.str());
     }
 }
