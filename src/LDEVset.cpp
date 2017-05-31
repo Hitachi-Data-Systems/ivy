@@ -99,9 +99,10 @@ bool LDEVset::add(std::string ldev_set, std::string logfilename) {
 	// 01:00-01:1F 03:45
 	// returns false on malformed input and complains to log file
 
-	// Sadly, "regex" although in the C++11 standard, had not yet been implemented in the linux libstdc++ at the time.
+	// Sadly, std::regex although in the C++11 standard, had not yet been implemented in the linux libstdc++ at the time.
 
 	// We use a hand-built parser.  Good thing I'm an old fart so I can do this in my sleep.
+
 	int cursor=0;
 	int bytes_remaining=ldev_set.length();
 
@@ -155,62 +156,91 @@ bool LDEVset::add(std::string ldev_set, std::string logfilename) {
         	l >> std::hex >> low;
 			bytes_remaining-=4; cursor+=4;
 		}
-        	first = (high << 8) + low;
-		if (0==bytes_remaining || ldev_set[cursor]!='-') {
+        first = (high << 8) + low;
+
+		if (0 == bytes_remaining) {
 			// singleton LDEV
 			seen.insert(first);
-		} else {
-			// hyphenated range
-			cursor++; bytes_remaining--;
-			if (0==bytes_remaining) {
-				ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - missing second LDEV after hyphen (\'-\')." << std::endl;
-				fileappend(logfilename,o.str());
-				return false;
-			}
+        }
+        else
+        {
+            while (bytes_remaining > 0 && ' ' == ldev_set[cursor])  // step over spaces before either hyphen or next (singleton or range)
+            {
+                bytes_remaining--;
+                cursor++;
+            }
 
-			// read in ending LDEV ID in the form 001a or 00:1A
-			if (bytes_remaining<4) {
-				ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - 2nd ldev too short" << std::endl;
-				fileappend(logfilename,o.str());
-				return false;
-			} // ldev must be at least 4 hex digits long
-			if ((!isxdigit(ldev_set[cursor])) || (!isxdigit(ldev_set[cursor+1]))) {
-				ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - LDEV must have 4 hex digits not including colon if present." << std::endl;
-				fileappend(logfilename,o.str());
-				return false;
-			}
-			if (':'==ldev_set[cursor+2]) {
-				if ((bytes_remaining<5) || (!isxdigit(ldev_set[cursor+3])) || (!isxdigit(ldev_set[cursor+4]))){
-					ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - did not find 2 hex digits after \':\' in 2nd LDEV in range" << std::endl;
-					fileappend(logfilename,o.str());
-					return false;
-				}
-	        	std::istringstream h(ldev_set.substr(cursor,2));
-	       	 	std::istringstream l(ldev_set.substr(cursor+3,2));
-	        	h >> std::hex >> high;
-	        	l >> std::hex >> low;
-				bytes_remaining-=5; cursor+=5;
-			} else {
-				if ((!isxdigit(ldev_set[cursor+2])) || (!isxdigit(ldev_set[cursor+3]))) {
-					ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - last 2 chars of ldev not hex digits in 2nd LDEV in range" << std::endl;
-					fileappend(logfilename,o.str());
-					return false;
-				}
-	        	std::istringstream h(ldev_set.substr(cursor,2));
-	       	 	std::istringstream l(ldev_set.substr(cursor+2,2));
-	        	h >> std::hex >> high;
-	        	l >> std::hex >> low;
-				bytes_remaining-=4; cursor+=4;
-			}
-	        last = (high << 8) + low;
-			if  (last<first) {
-				ostringstream o; o << "LDEVset.add(): ldev range is backwards, lowest LDEV ID must come first." << std::endl;
-				fileappend(logfilename,o.str());
-				return false;
-			}
-			// insert range
-			for (unsigned int i=first;i<=last;i++) seen.insert(i);
-		}
+            if (0 == bytes_remaining)
+            {
+                seen.insert(first);
+            }
+
+            if ('-' != ldev_set[cursor]) // if next non-blank is not a hyphen, this must have been a single LDEV
+            {
+                // singleton LDEV
+                seen.insert(first);
+            }
+            else
+            {
+                // hyphenated range
+                cursor++; bytes_remaining--; // step over hyphen
+
+                while (bytes_remaining > 0 && ' ' == ldev_set[cursor]) // step over spaces after hyphen
+                {
+                    bytes_remaining--;
+                    cursor++;
+                }
+
+                if (0==bytes_remaining) {
+                    ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - missing second LDEV after hyphen (\'-\')." << std::endl;
+                    fileappend(logfilename,o.str());
+                    return false;
+                }
+
+                // read in ending LDEV ID in the form 001a or 00:1A
+                if (bytes_remaining<4) {
+                    ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - 2nd ldev too short" << std::endl;
+                    fileappend(logfilename,o.str());
+                    return false;
+                } // ldev must be at least 4 hex digits long
+                if ((!isxdigit(ldev_set[cursor])) || (!isxdigit(ldev_set[cursor+1]))) {
+                    ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - LDEV must have 4 hex digits not including colon if present." << std::endl;
+                    fileappend(logfilename,o.str());
+                    return false;
+                }
+                if (':'==ldev_set[cursor+2]) {
+                    if ((bytes_remaining<5) || (!isxdigit(ldev_set[cursor+3])) || (!isxdigit(ldev_set[cursor+4]))){
+                        ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - did not find 2 hex digits after \':\' in 2nd LDEV in range" << std::endl;
+                        fileappend(logfilename,o.str());
+                        return false;
+                    }
+                    std::istringstream h(ldev_set.substr(cursor,2));
+                    std::istringstream l(ldev_set.substr(cursor+3,2));
+                    h >> std::hex >> high;
+                    l >> std::hex >> low;
+                    bytes_remaining-=5; cursor+=5;
+                } else {
+                    if ((!isxdigit(ldev_set[cursor+2])) || (!isxdigit(ldev_set[cursor+3]))) {
+                        ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - last 2 chars of ldev not hex digits in 2nd LDEV in range" << std::endl;
+                        fileappend(logfilename,o.str());
+                        return false;
+                    }
+                    std::istringstream h(ldev_set.substr(cursor,2));
+                    std::istringstream l(ldev_set.substr(cursor+2,2));
+                    h >> std::hex >> high;
+                    l >> std::hex >> low;
+                    bytes_remaining-=4; cursor+=4;
+                }
+                last = (high << 8) + low;
+                if  (last<first) {
+                    ostringstream o; o << "LDEVset.add(): ldev range is backwards, lowest LDEV ID must come first." << std::endl;
+                    fileappend(logfilename,o.str());
+                    return false;
+                }
+                // insert range
+                for (unsigned int i=first;i<=last;i++) seen.insert(i);
+            }
+        }
 	}
 	// now that we have parsed the input string and added the values into the set THEN we test to see if the set is already "all LDEVs"
 	if (allLDEVs) seen.clear();

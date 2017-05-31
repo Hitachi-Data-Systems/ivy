@@ -19,6 +19,7 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
+#include <string>
 #include <set>
 
 using namespace std;
@@ -35,7 +36,11 @@ public:
 
 		// An LDEV set could be a single LDEV "0F40" or "0f:40"
 		// or a string representation of a set of LDEVs
-		// such as "0f:40-0f:4f 10:00 EF:00-EF:FF"
+		// such as "0f:40-0f:4f 10:00, EF:00 - EF:FF".
+
+		// Note that spaces are optional around the hypen in a consecutive range,
+		// and that either spaces or commas or semicolons can be used to separate either single LDEVs (singletons) or
+		// consecutive hyphenated LDEV ranges.
 
 		// add("all") sets the allLDEVs flag on and empties the set.
 

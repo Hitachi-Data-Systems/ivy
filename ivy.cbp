@@ -124,6 +124,11 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 			</Target>
+			<Target title="test_LDEVset">
+				<Option output="bin/testRegex" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;" />
@@ -199,6 +204,7 @@
 		<Unit filename="include/LDEVset.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
+			<Option target="test_LDEVset" />
 		</Unit>
 		<Unit filename="include/LUN.h">
 			<Option target="ivymaster" />
@@ -508,6 +514,7 @@
 		<Unit filename="src/LDEVset.cpp">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
+			<Option target="test_LDEVset" />
 		</Unit>
 		<Unit filename="src/LUN.cpp">
 			<Option target="ivymaster" />
@@ -660,6 +667,7 @@
 			<Option target="csv_row" />
 			<Option target="csv_column" />
 			<Option target="testRegex" />
+			<Option target="test_LDEVset" />
 		</Unit>
 		<Unit filename="src/ivylinuxcpubusy.cpp">
 			<Option target="ivymaster" />
@@ -682,6 +690,7 @@
 			<Option target="csv_row" />
 			<Option target="csv_column" />
 			<Option target="testRegex" />
+			<Option target="test_LDEVset" />
 		</Unit>
 		<Unit filename="src/makedict.cpp">
 			<Option target="makedict" />
@@ -722,6 +731,9 @@
 		</Unit>
 		<Unit filename="src/testRegex.cpp">
 			<Option target="testRegex" />
+		</Unit>
+		<Unit filename="src/test_LDEVset.cpp">
+			<Option target="test_LDEVset" />
 		</Unit>
 		<Unit filename="src/test_subinterval.cpp">
 			<Option target="&lt;{~None~}&gt;" />
