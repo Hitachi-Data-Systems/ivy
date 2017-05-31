@@ -99,7 +99,7 @@ bool LDEVset::add(std::string ldev_set, std::string logfilename) {
 	// 01:00-01:1F 03:45
 	// returns false on malformed input and complains to log file
 
-	// Sadly, "regex" has not yet been implemented with c++std11.
+	// Sadly, "regex" although in the C++11 standard, had not yet been implemented in the linux libstdc++ at the time.
 
 	// We use a hand-built parser.  Good thing I'm an old fart so I can do this in my sleep.
 	int cursor=0;
@@ -113,7 +113,7 @@ bool LDEVset::add(std::string ldev_set, std::string logfilename) {
 		// at start of subexpression
 
 		// step over leading whitespace
-		while (bytes_remaining && isspace(ldev_set[cursor])) {
+		while (bytes_remaining && ( isspace(ldev_set[cursor]) || ',' == ldev_set[cursor] || ';' == ldev_set[cursor]) ){
 			cursor++; bytes_remaining--;
 		}
 		if (0==bytes_remaining) return false; // empty string or at end of expression

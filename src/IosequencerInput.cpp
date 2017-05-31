@@ -431,13 +431,16 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 			return std::make_pair(false,o.str());
 		}
 
-		volCoverageFractionStart=ld;  if (hadPercent) volCoverageFractionStart = volCoverageFractionStart / 100.0;
+		volCoverageFractionStart=ld;
 
-		if (ld>=volCoverageFractionEnd)
+		if (hadPercent) volCoverageFractionStart = volCoverageFractionStart / 100.0;
+
+		if (volCoverageFractionStart >= volCoverageFractionEnd)
 		{
 			std::ostringstream o;
-			o << "invalid VolumeCoverageFractionStart parameter setting \"" << parameterValue
-                << "\".   Volume coverage start must be before volume coverage end.";
+			o << "invalid VolumeCoverageFractionStart parameter setting \"" << parameterValue;
+			if (hadPercent) o << "%";
+            o << "\".   Volume coverage start must be before volume coverage end.";
 			return std::make_pair(false,o.str());
 		}
 
@@ -467,14 +470,20 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 			o << "\".";
 			return std::make_pair(false,o.str());
 		}
-		if (ld<=volCoverageFractionStart)
+
+		if (hadPercent) ld /= 100.0;
+
+		volCoverageFractionEnd=ld;
+
+		if (volCoverageFractionEnd<=volCoverageFractionStart)
 		{
             std::ostringstream o;
-            o << "invalid VolumeCoverageFractionEnd parameter setting \"" << parameterValue << "\".  Volume coverage start must be before volume coverage end.";
+            o << "invalid VolumeCoverageFractionEnd parameter setting \"" << parameterValue;
+            if (hadPercent) o << "%";
+            o << "\".  Volume coverage start must be before volume coverage end.";
 			return std::make_pair(false,o.str());
 		}
 
-		volCoverageFractionEnd=ld;  if (hadPercent) volCoverageFractionEnd = volCoverageFractionEnd / 100.0;
 
 		return std::make_pair(true,"");
 	}
@@ -502,7 +511,8 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 			o << "\".";
 			return std::make_pair(false,o.str());
 		}
-		seqStartFractionOfCoverage=ld;  if (hadPercent) seqStartFractionOfCoverage = seqStartFractionOfCoverage / 100.0;
+		seqStartFractionOfCoverage=ld;
+		if (hadPercent) seqStartFractionOfCoverage = seqStartFractionOfCoverage / 100.0;
 
 		return std::make_pair(true,"");
 	}
