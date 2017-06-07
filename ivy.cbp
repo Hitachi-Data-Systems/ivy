@@ -9,9 +9,10 @@
 		<Build>
 			<Target title="ivymaster">
 				<Option output="bin/ivy" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="/home/ivogelesang/Desktop/eraseme" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-log /home/ivogelesang/Desktop/y" />
+				<Option parameters="-log /home/ivogelesang/Desktop/eraseme/segv.ivyscript" />
 				<Compiler>
 					<Add option="-pthread" />
 					<Add directory="include" />

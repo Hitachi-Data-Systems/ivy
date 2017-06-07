@@ -22,7 +22,7 @@
 #include <array>
 #include <string>
 
-const std::string ivy_version {"1.05.15"};
+const std::string ivy_version {"1.05.17"};
 
 
 //using ivy_int = long long int; using ivy_float = long double;
@@ -116,7 +116,7 @@ const std::string ivy_version {"1.05.15"};
 #define element_metric_default    std::string("")
 
 const ivy_float min_subinterval_seconds {3.0};
-const ivy_float max_subinterval_seconds {60.0};
+const ivy_float max_subinterval_seconds {3600.0};
 
 const int blocksize_bytes_default {4096};
 const int maxTags_default{1};   // make sure someone is going to notice if they haven't set this.

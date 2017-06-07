@@ -58,26 +58,51 @@ size_t Type::maatvan() const {
     return 0;
 }
 
-bool Type::needs_constructor() const {
-    // un-comment out later if we get more types
-    // that need constructors / destructors
-    return value_type == type_string;
-    //switch (value_type) {
-    //case type_string:
-    //	return 1;
-    //default:
-    //	return 0;
-    //};
+bool Type::needs_constructor() const
+{
+    switch (value_type)
+    {
+        case type_int:    return true;
+        case type_double: return true; // had a bad experience with a double that wasn't constructed
+        case type_string: return true;
+        case type_void:
+            {
+                std::ostringstream o;
+                o << "<Error> in method Type::needs_constructor() at line " << __LINE__ << " of source file " << __FILE__
+                    << " - \"needs_constructor()\" may not be called for a \"void\" type.";
+                throw std::runtime_error(o.str());
+            }
+        default:
+            {
+                std::ostringstream o;
+                o << "<Error> in method Type::needs_constructor() at line " << __LINE__ << " of source file " << __FILE__
+                    << " - \"needs_constructor()\" was called for an unknown type.";
+                throw std::runtime_error(o.str());
+            }
+    }
 }
 
 bool Type::needs_destructor() const {
-    return value_type == type_string;
-    //switch (value_type) {
-    //case type_string:
-    //	return 1;
-    //default:
-    //	return 0;
-    //}
+    switch (value_type)
+    {
+        case type_int:    return false;
+        case type_double: return false;
+        case type_string: return true;
+        case type_void:
+            {
+                std::ostringstream o;
+                o << "<Error> in method Type::needs_desstructor() at line " << __LINE__ << " of source file " << __FILE__
+                    << " - \"needs_constructor()\" may not be called for a \"void\" type.";
+                throw std::runtime_error(o.str());
+            }
+        default:
+            {
+                std::ostringstream o;
+                o << "<Error> in method Type::needs_desstructor() at line " << __LINE__ << " of source file " << __FILE__
+                    << " - \"needs_constructor()\" was called for an unknown type.";
+                throw std::runtime_error(o.str());
+            }
+    }
 }
 
 void Type::construct_at(void* p) const {

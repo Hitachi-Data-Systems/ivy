@@ -1,3 +1,7 @@
+- restore -t tracing
+
+- when creating output folders and files, make them deletable by anyone
+
 - fix so if RAID (OPEN-V) don't create subsystem config folder until validated license key and successful opening of command device.
 
 - permit periods in test names, so folder name same as test name if test name contains periods.
@@ -105,8 +109,6 @@ at least make sure the ivy main executable terminates if it's hung, and taking o
 - run ivymaster as a GUI application, and show some sort of visual representation subinterval by subinteral.
   Maybe you could offer a tree on the left that shows rollups that you pick from.
   You could pick things you wanted to monitor, and arrange them on the display area.
-
-- automated queue depth vs. response time charts for IOPS = max
 
 - examine whether to remove the timestamps from the metric_value object and
   perhaps have ivy_cmddev provide data with individual I/O timestamps instead ...

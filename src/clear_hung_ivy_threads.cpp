@@ -27,12 +27,12 @@
 
 int main(int argc, char* argv[])
 {
-	std::regex ps_ef_ssh_ivyslave_regex  ( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d ssh .+ ivyslave .+)" );
-	std::regex ps_ef_ssh_ivy_cmddev_regex( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d ssh .+ ivy_cmddev .+)" );
+	std::regex ps_ef_ssh_ivyslave_regex  ( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d ssh .+ (/[^ \t]+/)?ivyslave .+)" );
+	std::regex ps_ef_ssh_ivy_cmddev_regex( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d ssh .+ (/[^ \t]+/)?ivy_cmddev .+)" );
 
-	std::regex ps_ef_ivymaster_regex     ( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d ivy .+)" );
-	std::regex ps_ef_ivyslave_regex      ( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d ivyslave .+)" );
-	std::regex ps_ef_ivy_cmddev_regex    ( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d ivy_cmddev .+)" );
+	std::regex ps_ef_ivymaster_regex     ( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d (/[^ \t]+/)?ivy .+)" );
+	std::regex ps_ef_ivyslave_regex      ( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d (/[^ \t]+/)?ivyslave .+)" );
+	std::regex ps_ef_ivy_cmddev_regex    ( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d (/[^ \t]+/)?ivy_cmddev .+)" );
 
 //#define development
 
@@ -52,6 +52,19 @@ root     20698 20576  0 16:12 pts/1    00:00:00 ssh -t -t root@172.17.19.159 ivy
 root     20703 20699  0 16:12 pts/4    00:00:00 ivy_cmddev /dev/sdf 410034 /scripts/ivyoutput/ivyslave_logs/log.ivyslave.172.17.19.159.ivy_cmddev.410034.txt
 501      20735  5499  0 16:13 pts/0    00:00:00 grep ivy
 root     10791 10789  0 18:52 pts/1    00:00:00 ivy_cmddev /dev/sdf 410115 /scripts/ivy/ivyoutput/ivyslave_logs/log.ivyslave.172.17.62.15.ivy_cmddev.410115.txt
+
+and now later with fully qualified ivyslave name:
+root     11534     1  0 Jun02 pts/0    00:00:00 ssh -t -t root@sun159 /usr/local/bin/ivyslave -log sun159
+root     11539 11535  0 Jun02 pts/3    00:00:00 /usr/local/bin/ivyslave -log sun159
+root     11673     1  0 Jun02 pts/0    00:00:00 ssh -t -t root@sun159 /usr/local/bin/ivyslave -log sun159
+root     11678 11674  0 Jun02 pts/4    00:00:00 /usr/local/bin/ivyslave -log sun159
+root     11777     1  0 Jun02 pts/0    00:00:00 ssh -t -t root@sun159 /usr/local/bin/ivyslave -log sun159
+root     11782 11778  0 Jun02 pts/5    00:01:39 /usr/local/bin/ivyslave -log sun159
+root     28457     1  0 Jun01 ?        00:00:00 ssh -t -t root@sun159 /usr/local/bin/ivyslave sun159
+root     28462 28458  0 Jun01 pts/1    00:01:40 /usr/local/bin/ivyslave sun159
+root     32464     1  0 Jun01 ?        00:00:00 ssh -t -t root@sun159 /usr/local/bin/ivyslave sun159
+root     32469 32465  0 Jun01 pts/2    00:01:40 /usr/local/bin/ivyslave sun159
+
 )");
 #else
 	std::string ps_ef_output = GetStdoutFromCommand(std::string("ps -ef | grep ivy"));

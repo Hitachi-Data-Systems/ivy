@@ -524,7 +524,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             m_s.keep_filling = false;
         }
 
-        if ( m_s.min_sequential_fill_progress < 1.0 )
+        if ( m_s.min_sequential_fill_progress > 0.0 && m_s.min_sequential_fill_progress < 1.0 )
         {
             std::ostringstream o;
 
