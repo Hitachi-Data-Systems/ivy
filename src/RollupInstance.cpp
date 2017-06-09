@@ -26,6 +26,7 @@
 #include <sstream>
 #include <sys/stat.h>
 #include <cmath> // for abs()
+#include <cstdio>
 
 #include "ivytime.h"
 #include "ivydefines.h"
@@ -49,6 +50,7 @@
 extern std::string masterlogfile();
 
 extern bool routine_logging;
+extern void say_and_log(const std::string&);
 
 void RollupInstance::printMe(std::ostream& o)
 {
@@ -1066,16 +1068,766 @@ void RollupInstance::print_pid_csv_files()
     return;
 }
 
+void RollupInstance::set_by_subinterval_filename()
+{
+    std::string instanceFilename = rollupInstanceID;
+    std::replace(instanceFilename.begin(),instanceFilename.end(),'/','_');
+    std::replace(instanceFilename.begin(),instanceFilename.end(),'\\','_');
+
+    std::ostringstream filename_prefix;
+    filename_prefix << pRollupType->step_subfolder_name << "/"
+                    << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName)
+                    << '.'
+                    << m_s.stepNNNN
+                    << '.'
+                    << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.stepName)
+                    << '.'
+                    << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(attributeNameComboID)
+                    << '='
+                    << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(rollupInstanceID)
+                    << '.';
+
+    csv_filename_prefix = filename_prefix.str();
+
+    by_subinterval_csv_filename = csv_filename_prefix + std::string("csv");
+}
+
+void RollupInstance::print_by_subinterval_header()
+{
+    std::ostringstream o;
+    o << "ivy version,";
+    if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
+    o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
+    if (m_s.ivymaster_RMLIB_threads.size()>0) { o << Test_config_thumbnail::csv_headers(); }
+    o << IosequencerInputRollup::CSVcolumnTitles();
+    o << avgcpubusypercent::csvTitles();
+
+    if (m_s.ivymaster_RMLIB_threads.size()>0)
+    {
+        o << subsystem_summary_data::csvHeadersPartOne();
+        o << ",host IOPS per drive,host decimal MB/s per drive,application service time Littles law q depth per drive";
+        o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
+    }
+
+    o << SubintervalOutput::csvTitles();
+
+    if (m_s.ivymaster_RMLIB_threads.size()>0)
+    {
+        o << subsystem_summary_data::csvHeadersPartTwo();
+        o << subsystem_summary_data::csvHeadersPartOne( "non-participating ");
+        o << subsystem_summary_data::csvHeadersPartTwo( "non-participating ");
+    }
+
+    o << ",IOPS histogram by service time (ms):";
+    for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+    o << ",IOPS histogram by random read service time (ms):";
+    for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+    o << ",IOPS histogram by random write service time (ms):";
+    for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+    o << ",IOPS histogram by sequential read service time (ms):";
+    for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+    o << ",IOPS histogram by sequential write service time (ms):";
+    for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+
+    o << std::endl;
+    fileappend( by_subinterval_csv_filename, o.str() );
+}
+
+void RollupInstance::print_config_thumbnail() //
+{
+    std::ostringstream o;
+    o << test_config_thumbnail; // The thumbnail is an object that knows how to print itself.
+    ofstream ofs(csv_filename_prefix + std::string("config_thumbnail.txt"));
+    ofs << o.str();
+    ofs.close();
+}
+
+void RollupInstance::print_subinterval_csv_line(
+    unsigned int i,     // subinterval_number from zero
+    bool is_provisional // if provisional, don't try to print "warmup" / "measurement" / "cooldown"
+)
+{
+    std::ostringstream csvline;
+
+    csvline << ivy_version << ',';
+
+    if (m_s.command_device_etc_version.size() > 0 ) csvline << m_s.command_device_etc_version << ',';
+
+    csvline << m_s.testName << ',' << m_s.stepNNNN << ',' << m_s.stepName;
+
+    ivytime start, duration;
+    start = m_s.rollups.starting_ending_times[i].first;
+    duration = m_s.rollups.starting_ending_times[i].second - start;
+
+    csvline << ',' << start.format_as_datetime()
+            << ',' // warmup duration
+            << ',' << duration.format_as_duration_HMMSSns()
+            << ',' // cooldown duration
+            << ',' ; // beginning of the Write Pending field
+
+    if (m_s.cooldown_WP_watch_set.size())
+    {
+        try
+        {
+            csvline << m_s.getWPthumbnail(i);
+        }
+        catch (std::invalid_argument& iae)
+        {
+            std::ostringstream o;
+            o << std::endl << "writhe and fail, gasping that when printing csv line, when getting Write Pending thumbnail, failed saying - " << iae.what() << std::endl;
+            std::cout << o.str();
+            log(m_s.masterlogfile,o.str());
+            m_s.kill_subthreads_and_exit();
+            exit(-1);
+        }
+    }
+
+    csvline << ',' << i;
+
+    csvline << ',';
+    if (!is_provisional)
+    {
+        if ( EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode )
+        {
+            if ( i < m_s.the_dfc.firstMeasurementSubintervalIndex() )
+                csvline << "warmup";
+            else if (i > m_s.the_dfc.lastMeasurementSubintervalIndex() )
+                csvline << "cooldown";
+            else
+                csvline << "measure";
+        }
+        else
+        {
+            if (-1 == m_s.measureDFC_failure_point || ((int)i) <= m_s.measureDFC_failure_point) csvline << "warmup"
+                        ;
+            else csvline << "cooldown";
+        }
+    }
+
+    csvline << ',' << pRollupType->attributeNameCombo.attributeNameComboID;
+
+    csvline << ',' << rollupInstanceID;
+
+    if (m_s.ivymaster_RMLIB_threads.size()>0) { csvline << test_config_thumbnail.csv_columns(); }
+
+    csvline << subintervals.sequence[i].inputRollup.CSVcolumnValues(true); // true shows how many occurences of each value, false shows "multiple"
+
+    {
+        csvline << ','; // host CPU % busy - cols
+
+        if (stringCaseInsensitiveEquality(std::string("host"),pRollupType->attributeNameCombo.attributeNameComboID))
+        {
+            csvline << m_s.cpu_by_subinterval[i].csvValues(toLower(rollupInstanceID));
+        }
+        else
+        {
+            csvline << m_s.cpu_by_subinterval[i].csvValuesAvgOverHosts();
+        }
+    }
+
+    ivy_float seconds = subintervals.sequence[m_s.rollups.current_index()].durationSeconds();
+
+    if (m_s.ivymaster_RMLIB_threads.size() > 0)
+    {
+        csvline << subsystem_data_by_subinterval[i].csvValuesPartOne(1);
 
 
+        unsigned int overall_drive_count = test_config_thumbnail.total_drives();
+
+        if (overall_drive_count == 0)
+        {
+            csvline << ",,,";
+        }
+        else
+        {
+            RunningStat<ivy_float,ivy_int> st = subintervals.sequence[i].outputRollup.overall_service_time_RS();
+            RunningStat<ivy_float,ivy_int> bt = subintervals.sequence[i].outputRollup.overall_bytes_transferred_RS();
+            ivy_float iops_per_drive = (st.count()/seconds) /  ((ivy_float) overall_drive_count);
+            csvline << "," <<  iops_per_drive;
+            csvline << "," <<  (   1e-6 /* decimal MB/s */ * (bt.sum()/seconds)   /   ((ivy_float) overall_drive_count)     );
+
+            //, host service time Littles law q depth per drive
+            csvline << "," << std::fixed << std::setprecision(1) << (st.avg()*iops_per_drive);
+        }
+
+        {
+            // print the comparisions between application & subsystem IOPS, MB/s, service time
+
+            ivy_float subsystem_IOPS = subsystem_data_by_subinterval[i].IOPS();
+            ivy_float subsystem_decimal_MB_per_second = subsystem_data_by_subinterval[i].decimal_MB_per_second();
+            ivy_float subsystem_service_time_ms = subsystem_data_by_subinterval[i].service_time_ms();
+
+            // ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
+
+            csvline << ','; // subsystem IOPS as % of application IOPS
+            if (subsystem_IOPS > 0.0)
+            {
+                RunningStat<ivy_float,ivy_int> st = subintervals.sequence[i].outputRollup.overall_service_time_RS();
+                ivy_float application_IOPS = st.count() / seconds;
+                if (application_IOPS > 0.0)
+                {
+                    csvline << std::fixed << std::setprecision(2) << (subsystem_IOPS / application_IOPS) * 100.0 << '%';
+                }
+            }
+
+            csvline << ','; // Subsystem MB/s as % of application MB/s
+            if (subsystem_decimal_MB_per_second > 0.0)
+            {
+                RunningStat<ivy_float,ivy_int> bt = subintervals.sequence[i].outputRollup.overall_bytes_transferred_RS();
+                ivy_float application_decimal_MB_per_second = 1E-6 * bt.sum() / seconds;
+                if (application_decimal_MB_per_second > 0.0)
+                {
+                    csvline << std::fixed << std::setprecision(2) << (subsystem_decimal_MB_per_second / application_decimal_MB_per_second) * 100.0 << '%';
+                }
+            }
+
+            csvline << ','; // Subsystem service time as % of application service time
+            if (subsystem_service_time_ms > 0.0)
+            {
+                RunningStat<ivy_float,ivy_int> st = subintervals.sequence[i].outputRollup.overall_service_time_RS();
+                ivy_float application_service_time_ms = 1000.* st.avg();
+                if (application_service_time_ms > 0.0)
+                {
+                    csvline << std::fixed << std::setprecision(2) << (subsystem_service_time_ms / application_service_time_ms) * 100.0 << '%';
+                }
+            }
+
+            csvline << ','; // Path latency = application minus subsystem service time (ms)
+            if (subsystem_service_time_ms > 0.0)
+            {
+                RunningStat<ivy_float,ivy_int> st = subintervals.sequence[i].outputRollup.overall_service_time_RS();
+                ivy_float application_service_time_ms = 1000. * st.avg();
+                if (application_service_time_ms > 0.0)
+                {
+                    csvline << std::fixed << std::setprecision(2) << (application_service_time_ms - subsystem_service_time_ms);
+                }
+            }
+        }
+    }
+
+    csvline << subintervals.sequence[i].outputRollup.csvValues( seconds );
+
+    if (m_s.ivymaster_RMLIB_threads.size() > 0)
+    {
+        csvline << subsystem_data_by_subinterval[i].csvValuesPartTwo();
+        csvline << m_s.rollups.not_participating[i].csvValuesPartOne();
+        csvline << m_s.rollups.not_participating[i].csvValuesPartTwo();
+    }
+
+    csvline << ",subinterval " << i;
+    for (int bucket=0; bucket < io_time_buckets; bucket++)
+    {
+        csvline << ',';
+        RunningStat<ivy_float,ivy_int>
+        rs  = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[0][0][bucket];
+        rs += subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[0][1][bucket];
+        rs += subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[1][0][bucket];
+        rs += subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[1][1][bucket];
+        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(bucket) * (ivy_float) rs.count() / seconds);
+    }
+
+    csvline << ",subinterval " << i;
+    for (int bucket=0; bucket < io_time_buckets; bucket++)
+    {
+        csvline << ',';
+        RunningStat<ivy_float,ivy_int> rs = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[0][0][bucket];
+        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(bucket) * (ivy_float) rs.count() / seconds);
+    }
+
+    csvline << ",subinterval " << i;
+    for (int bucket=0; bucket < io_time_buckets; bucket++)
+    {
+        csvline << ',';
+        RunningStat<ivy_float,ivy_int> rs = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[0][1][bucket];
+        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(bucket) * (ivy_float) rs.count() / seconds);
+    }
+
+    csvline << ",subinterval " << i;
+    for (int bucket=0; bucket < io_time_buckets; bucket++)
+    {
+        csvline << ',';
+        RunningStat<ivy_float,ivy_int> rs = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[1][0][bucket];
+        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(bucket) * (ivy_float) rs.count() / seconds);
+    }
+
+    csvline << ",subinterval " << i;
+    for (int bucket=0; bucket < io_time_buckets; bucket++)
+    {
+        csvline << ',';
+        RunningStat<ivy_float,ivy_int> rs = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[1][1][bucket];
+        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(bucket) * (ivy_float) rs.count() / seconds);
+    }
+
+    {
+        std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str()) << std::endl;
+        fileappend(by_subinterval_csv_filename,o.str());
+    }
+}
 
 
+void RollupInstance::print_measurement_summary_csv_line()
+{
+    const std::string& rollupTypeName = pRollupType->attributeNameCombo.attributeNameComboID;
+    struct stat struct_stat;
+
+    if (routine_logging)
+    {
+        std::ostringstream o;
+        o << std::endl << "Making csv files for " << attributeNameComboID << "=" << rollupInstanceID << "." << std::endl;
+        log(m_s.masterlogfile,o.str());
+    }
+
+    // First print the by-test_step measurement period csv file lines in the appropriate RollupType subfolder of output folder
+    // Write the csv header line if necessary
+    // Write the csv data line for the measurement rollup
+    {
+        std::string instanceFilename = rollupInstanceID;
+        std::replace(instanceFilename.begin(),instanceFilename.end(),'/','_');
+        std::replace(instanceFilename.begin(),instanceFilename.end(),'\\','_');
+
+        std::ostringstream filename_prefix;
+        filename_prefix << pRollupType->measurementRollupFolder << "/"
+                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName )
+                        << '.'
+                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(rollupTypeName)
+                        << '='
+                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(instanceFilename)
+                        << '.';
+
+        std::ostringstream type_filename_prefix;
+        type_filename_prefix << pRollupType->measurementRollupFolder << "/"
+                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName )
+                        << '.'
+                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(rollupTypeName)
+                        << '.';
+
+        measurement_rollup_by_test_step_csv_filename      =      filename_prefix.str() + std::string("summary.csv");
+        measurement_rollup_by_test_step_csv_type_filename = type_filename_prefix.str() + std::string("summary.csv");
+
+        bool need_header      = (0 != stat(measurement_rollup_by_test_step_csv_filename.c_str(),&struct_stat));
+        bool need_type_header = (0 != stat(measurement_rollup_by_test_step_csv_type_filename.c_str(),&struct_stat));
+
+        if ( need_header || need_type_header)
+        {
+            // we need to print the header line.
+            {
+                std::ostringstream o;
+
+                o << "ivy version,";
+
+                if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
+
+                o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,valid or invalid,invalid reason,Rollup Type,Rollup Instance";
+
+                if (m_s.ivymaster_RMLIB_threads.size()>0) { o << test_config_thumbnail.csv_headers(); }
+                o << IosequencerInputRollup::CSVcolumnTitles();
+                o << m_s.measurement_rollup_CPU.csvTitles();
+
+                if (m_s.ivymaster_RMLIB_threads.size()>0)
+                {
+                    o << subsystem_summary_data::csvHeadersPartOne();
+                    o << ",host IOPS per drive,host decimal MB/s per drive, application service time Littles law q depth per drive";
+                    o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
+                }
+
+                o << ",non random sample correction factor";
+                o << ",plus minus series statistical confidence";
+
+                o << SubintervalOutput::csvTitles(true);
+                if (m_s.ivymaster_RMLIB_threads.size()>0)
+                {
+                    o << subsystem_summary_data::csvHeadersPartTwo();
+                    o << subsystem_summary_data::csvHeadersPartOne("non-participating ");
+                    o << subsystem_summary_data::csvHeadersPartTwo("non-participating ");
+                }
+                o << ",service time true IOPS histogram:";
+                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+                o << ",service time histogram normalized by step total IOPS:";
+                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+                o << ",service time histogram scaled by bucket width:";
+                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+                o << ",service time histogram scaled by bucket width and normalized by step total IOPS:";
+                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+
+                o << ",random read service time true IOPS histogram:";
+                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+                o << ",random write service time true IOPS histogram:";
+                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+                o << ",sequential read service time true IOPS histogram:";
+                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+                o << ",sequential write service time true IOPS histogram:";
+                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+                o << std::endl;
+
+                if (need_header)      fileappend( measurement_rollup_by_test_step_csv_filename, o.str() );
+                if (need_type_header) fileappend( measurement_rollup_by_test_step_csv_type_filename, o.str() );
+            }
+        }
+
+        if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode || m_s.have_timeout_rollup)
+        {
+            std::ostringstream csvline;
+
+            csvline << ivy_version << ",";
+
+            if (m_s.command_device_etc_version.size() > 0 ) csvline << m_s.command_device_etc_version << ',';
+
+            csvline << m_s.testName << ',' << m_s.stepNNNN << ',' << m_s.stepName;
+
+            ivytime warmup_start    = m_s.rollups.starting_ending_times[0].first;
+            ivytime warmup_complete = m_s.rollups.starting_ending_times[m_s.firstMeasurementIndex-1].second;
+            ivytime warmup_duration = warmup_complete - warmup_start;
+
+            ivytime start    = m_s.rollups.starting_ending_times[m_s.firstMeasurementIndex].first;
+            ivytime duration = m_s.rollups.starting_ending_times[m_s.lastMeasurementIndex].second - start;
+
+            ivytime cooldown_start = m_s.rollups.starting_ending_times[m_s.lastMeasurementIndex+1].first;
+            ivytime cooldown_complete = m_s.rollups.starting_ending_times[ m_s.rollups.starting_ending_times.size() - 1 ].second;
+            ivytime cooldown_duration = cooldown_complete - cooldown_start;
+
+            csvline << ',' << start.format_as_datetime();
+            csvline << ',' << warmup_duration.format_as_duration_HMMSS();
+            csvline << ',' << duration.format_as_duration_HMMSS();
+            csvline << ',' << cooldown_duration.format_as_duration_HMMSS();
+            csvline << ','; // Write Pending only shows in by-subinterval csv lines
+            csvline << ',';
+            if ( m_s.have_timeout_rollup || !m_s.rollups.passesDataVariationValidation().first)
+            {
+                csvline << "invalid"; // subintervalIndex;
+            }
+            else
+            {
+                csvline << "valid"; // subintervalIndex;
+            }
+
+            std::string validation_errors {};
+
+            if (m_s.have_timeout_rollup) validation_errors = "[measurement timeout]";
+
+            validation_errors += m_s.rollups.passesDataVariationValidation().second;
+
+            csvline << ',' << validation_errors;
+
+            csvline << ',' << pRollupType->attributeNameCombo.attributeNameComboID;
+            csvline << ',' << rollupInstanceID ; // rollupInstanceID;
+
+            if (m_s.ivymaster_RMLIB_threads.size()>0) { csvline << test_config_thumbnail.csv_columns(); }
+
+            csvline << measurementRollup.inputRollup.CSVcolumnValues(true);
+                // true shows how many occurences of each value, false shows "multiple"
+
+            csvline << ','; // CPU - 2 columns
+            if (stringCaseInsensitiveEquality(std::string("host"),pRollupType->attributeNameCombo.attributeNameComboID))
+            {
+                csvline << m_s.measurement_rollup_CPU.csvValues(toLower(rollupInstanceID));
+            }
+            else
+            {
+                csvline << m_s.measurement_rollup_CPU.csvValuesAvgOverHosts();
+            }
+
+            if (m_s.ivymaster_RMLIB_threads.size()>0)
+            {
+                csvline << measurement_subsystem_data.csvValuesPartOne( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
+
+                unsigned int overall_drive_count = test_config_thumbnail.total_drives();
+
+                if (overall_drive_count == 0)
+                {
+                    csvline << ",,,";
+                }
+                else
+                {
+                    RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
+                    RunningStat<ivy_float,ivy_int> bt = measurementRollup.outputRollup.overall_bytes_transferred_RS();
+
+                    ivy_float secs=measurementRollup.durationSeconds();
+                    ivy_float iops_per_drive, decMBps_per_drive;
+
+                    iops_per_drive = (((ivy_float) st.count()) / secs ) / ((ivy_float) overall_drive_count);
+                    decMBps_per_drive = 1e-6 * (bt.sum()/secs)/((ivy_float) overall_drive_count);
+                    csvline << "," << std::fixed << std::setprecision(1) <<  iops_per_drive;
+                    csvline << "," << std::fixed << std::setprecision(1) <<  decMBps_per_drive;
+
+                    //, application service time Littles law q depth per drive
+                    csvline << "," << std::fixed << std::setprecision(1) << (st.avg()*iops_per_drive);
+                }
+            }
+
+                {
+                    ivy_float seconds = measurementRollup.durationSeconds();
+
+                    if (m_s.ivymaster_RMLIB_threads.size()>0)
+                    {
+                        // print the comparisions between application & subsystem IOPS, MB/s, service time
+
+                        ivy_float subsystem_IOPS = measurement_subsystem_data.IOPS();
+                        ivy_float subsystem_decimal_MB_per_second = measurement_subsystem_data.decimal_MB_per_second();
+                        ivy_float subsystem_service_time_ms = measurement_subsystem_data.service_time_ms();
+
+                        // ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
+
+                        csvline << ','; // subsystem IOPS as % of application IOPS
+                        if (subsystem_IOPS > 0.0)
+                        {
+                            RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
+                            ivy_float application_IOPS = st.count() / seconds;
+                            if (application_IOPS > 0.0)
+                            {
+                                csvline << std::fixed << std::setprecision(3) << (subsystem_IOPS / application_IOPS) * 100.0 << '%';
+                            }
+                        }
+
+                        csvline << ','; // Subsystem MB/s as % of application MB/s
+                        if (subsystem_decimal_MB_per_second > 0.0)
+                        {
+                            RunningStat<ivy_float,ivy_int> bt = measurementRollup.outputRollup.overall_bytes_transferred_RS();
+                            ivy_float application_decimal_MB_per_second = 1E-6 * bt.sum() / seconds;
+                            if (application_decimal_MB_per_second > 0.0)
+                            {
+                                csvline << std::fixed << std::setprecision(3) << (subsystem_decimal_MB_per_second / application_decimal_MB_per_second) * 100.0 << '%';
+                            }
+                        }
+
+                        csvline << ','; // Subsystem service time as % of application service time
+                        if (subsystem_service_time_ms > 0.0)
+                        {
+                            RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
+                            ivy_float application_service_time_ms = 1000.* st.avg();
+                            if (application_service_time_ms > 0.0)
+                            {
+                                csvline << std::fixed << std::setprecision(3) << (subsystem_service_time_ms / application_service_time_ms) * 100.0 << '%';
+                            }
+                        }
+
+                        csvline << ','; // Path latency = application minus subsystem service time (ms)
+                        if (subsystem_service_time_ms > 0.0)
+                        {
+                            RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
+                            ivy_float application_service_time_ms = 1000. * st.avg();
+                            if (application_service_time_ms > 0.0)
+                            {
+                                csvline << std::fixed << std::setprecision(3) << (application_service_time_ms - subsystem_service_time_ms);
+                            }
+                        }
+                    }
+
+                    csvline << "," << m_s.non_random_sample_correction_factor;
+                    csvline << "," << plus_minus_series_confidence_default;
+
+                    csvline << measurementRollup.outputRollup.csvValues(seconds,&(measurementRollup),m_s.non_random_sample_correction_factor);
+
+                    if (m_s.ivymaster_RMLIB_threads.size() > 0)
+                    {
+                        csvline << measurement_subsystem_data.csvValuesPartTwo( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
+                        csvline << m_s.rollups.not_participating_measurement.csvValuesPartOne(   m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
+                        csvline << m_s.rollups.not_participating_measurement.csvValuesPartTwo();
+                    }
+
+                    // histogram_s
+                    {
+                        RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
+                        ivy_float total_IOPS = st.count() / seconds;
+
+                        // ",service time true IOPS histogram:";
+                        csvline << "," << m_s.stepName;
+                        for (int i=0; i < io_time_buckets; i++)
+                        {
+                            csvline << ',';
+                            RunningStat<ivy_float,ivy_int>
+                            rs  = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
+                            rs += measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
+                            rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
+                            rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
+                            if (rs.count()>0) csvline << ((ivy_float) rs.count() / seconds);
+                        }
+
+                        // ",service time histogram normalized by step total IOPS:";
+                        csvline << "," << m_s.stepName;
+                        for (int i=0; i < io_time_buckets; i++)
+                        {
+                            csvline << ',';
+
+                            if (total_IOPS > 0.)
+                            {
+                                RunningStat<ivy_float,ivy_int>
+                                rs  = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
+                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
+                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
+                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
+                                if (rs.count()>0) csvline << ( ((ivy_float) rs.count() / seconds) / total_IOPS);
+                            }
+                        }
+                        // ",service time histogram scaled by bucket width:";
+
+                        csvline << "," << m_s.stepName;
+                        for (int i=0; i < io_time_buckets; i++)
+                        {
+                            csvline << ',';
+                            RunningStat<ivy_float,ivy_int>
+                            rs  = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
+                            rs += measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
+                            rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
+                            rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
+                            if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                        }
+
+                        // ",service time histogram scaled by bucket width and normalized by step total IOPS:";
+                        csvline << "," << m_s.stepName;
+                        for (int i=0; i < io_time_buckets; i++)
+                        {
+                            csvline << ',';
+
+                            if (total_IOPS > 0.)
+                            {
+                                RunningStat<ivy_float,ivy_int>
+                                rs  = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
+                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
+                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
+                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
+                                if (rs.count()>0) csvline << ( (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds) / total_IOPS);
+                            }
+                        }
+                    }
 
 
+                    // ",random read service time true IOPS histogram:";
+                    csvline << "," << m_s.stepName;
+                    for (int i=0; i < io_time_buckets; i++)
+                    {
+                        csvline << ',';
+                        RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
+                        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                    }
+
+                    // ",random write service time true IOPS histogram:";
+                    csvline << "," << m_s.stepName;
+                    for (int i=0; i < io_time_buckets; i++)
+                    {
+                        csvline << ',';
+                        RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
+                        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                    }
+
+                    // ",sequential read service time true IOPS histogram:";
+                    csvline << "," << m_s.stepName;
+                    for (int i=0; i < io_time_buckets; i++)
+                    {
+                        csvline << ',';
+                        RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
+                        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                    }
+
+                    // ",sequential write service time true IOPS histogram:";
+                    csvline << "," << m_s.stepName;
+                    for (int i=0; i < io_time_buckets; i++)
+                    {
+                        csvline << ',';
+                        RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
+                        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                    }
+
+                }
 
 
+            {
+                std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str()) << std::endl;
+                fileappend(measurement_rollup_by_test_step_csv_filename,o.str());
+                fileappend(measurement_rollup_by_test_step_csv_type_filename,o.str());
+            }
 
+            if (0 == std::string("all").compare(attributeNameComboID)
+                    && 0 == std::string("all").compare(rollupInstanceID)    )
+            {
+                std::ostringstream o;
 
+                o << "Measurement summary for \"all=all\" rollup: " << measurementRollup.outputRollup.thumbnail(measurementRollup.durationSeconds()) << std::endl;
 
+                std::cout << o.str();
+                log(m_s.masterlogfile,o.str());
+            }
+        }
+        else
+        {
+            // failed  to declare success with a measurement
+
+            std::ostringstream csvline;
+
+            csvline << ivy_version << ',';
+
+            if (m_s.command_device_etc_version.size() > 0 ) csvline << m_s.command_device_etc_version << ',';
+
+            csvline << m_s.testName << ',' << m_s.stepNNNN << ',' << m_s.stepName;
+            csvline << ',' ; // << start.format_as_datetime();
+
+            ivytime warmup_start, warmup_complete, warmup_duration, cooldown_start, cooldown_complete, cooldown_duration;
+            if (-1 == m_s.measureDFC_failure_point)
+            {
+                warmup_start = m_s.rollups.starting_ending_times[0].first;
+                warmup_complete = m_s.rollups.starting_ending_times[m_s.rollups.starting_ending_times.size() - 1 ].second;
+                warmup_duration = warmup_complete - warmup_start;
+                cooldown_duration = ivytime(0);
+            }
+            else
+            {
+                warmup_start = m_s.rollups.starting_ending_times[0].first;
+                warmup_complete = m_s.rollups.starting_ending_times[m_s.measureDFC_failure_point].second;
+                warmup_duration = warmup_complete - warmup_start;
+                if (warmup_complete == m_s.rollups.starting_ending_times[m_s.rollups.starting_ending_times.size()-1].second)
+                {
+                    cooldown_duration = ivytime(0);
+                }
+                else
+                {
+                    cooldown_start = m_s.rollups.starting_ending_times[m_s.measureDFC_failure_point].second;
+                    cooldown_complete = m_s.rollups.starting_ending_times[m_s.rollups.starting_ending_times.size()-1].second;
+                    cooldown_duration = cooldown_complete - cooldown_start;
+                }
+            }
+
+            csvline << ',' << warmup_duration.format_as_duration_HMMSSns();
+            csvline << ',' ; // << duration.format_as_duration_HMMSSns();
+            csvline << ',' << cooldown_duration.format_as_duration_HMMSSns();
+            csvline << ',' ; // Write Pending only shows in by-subinterval csv lines
+            csvline << ',' << "failed - timed out"; // subintervalIndex;
+            csvline << ',' << "no measurement"; // phase
+            csvline << ',' << pRollupType->attributeNameCombo.attributeNameComboID;
+            csvline << ',' << rollupInstanceID ; // rollupInstanceID;
+
+            {
+                std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str()) << std::endl;
+                fileappend(measurement_rollup_by_test_step_csv_filename,o.str());
+            }
+        }
+    }
+
+    {
+        struct stat struct_stat;
+        if(0 == stat(by_subinterval_csv_filename.c_str(),&struct_stat))
+        {
+            // if the file already exists, delete it
+            std::remove(by_subinterval_csv_filename.c_str());
+        }
+        else
+        {
+            std::ostringstream o;
+            o << "<Error> Did not find provisional copy of \"" << by_subinterval_csv_filename << "\" "
+                << "for " << attributeNameComboID << "=" << rollupInstanceID
+                << " when about to replace it with the final version with the \"warmup\" / \"measurement\" / \"cooldown\" column filled in.\n";
+            std::cout << o.str();
+            log(m_s.masterlogfile,o.str());
+            m_s.kill_subthreads_and_exit();
+            exit(-1);
+        }
+    }
+
+    print_by_subinterval_header();
+
+    // print the detail lines for each subinterval
+    for (unsigned int i = 0; i < (subintervals.sequence).size(); i++)
+    {
+        print_subinterval_csv_line(i, false /* is not provisional */);
+    }
+}
 
 

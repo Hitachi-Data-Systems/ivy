@@ -87,6 +87,11 @@ std::string stepNNNN()         {return m_s.stepNNNN;}
 std::string stepName()         {return m_s.stepName;}
 std::string stepFolder()       {return m_s.stepFolder;}
 
+void say_and_log(const std::string& s)
+{
+    std::cout << s;
+    log(m_s.masterlogfile,s);
+}
 
 accumulator_type_enum string_to_accumulator_type_enum (const std::string& s)
 {

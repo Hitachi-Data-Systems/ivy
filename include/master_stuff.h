@@ -151,16 +151,6 @@ public:
 	std::string stepNNNN;
 	std::string stepFolder;
 
-	std::string measurementRollupFolder; // e.g. "Port+PG" subfolder of testFolder
-		std::string measurement_rollup_IOPS_MBpS_service_response_blocksize_csv_filename;  // goes in measurementRollupFolder
-		std::string measurement_rollup_by_test_step_csv_filename;  // goes in measurementRollupFolder
-		std::string measurement_rollup_by_test_step_csv_type_filename;  // goes in measurementRollupFolder
-		std::string measurement_rollup_data_validation_csv_filename;  // goes in measurementRollupFolder
-
-	std::string stepRollupFolder;  // e.g. "step0000.Fluffy/Port+PG" subfolder of stepFolder
-		std::string step_rollup_IOPS_MBpS_service_response_blocksize_filename;  // goes in stepDetailFolder
-		std::string step_detail_by_subinterval_filename;  // goes in stepDetailFolder
-
 	int lastEvaluateSubintervalReturnCode = -1; // EVALUATE_SUBINTERVAL_FAILURE
 	int eventualEvaluateSubintervalReturnCode = -1; // delayed presenting until after cooldown, that is.
 
@@ -393,6 +383,7 @@ public:
 
     std::string thing {};  // something you can set a value into to test ivy_engine_set and ivy_engine_get
 
+    unsigned int firstMeasurementIndex, lastMeasurementIndex;
 
 // methods
 	void kill_subthreads_and_exit();

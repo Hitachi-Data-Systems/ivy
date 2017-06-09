@@ -124,9 +124,9 @@ int main(int argc, char* argv[])
         std::cout << o.str();
     }
 
-    std::cout << "argc = " << argc << " ";
-    for (int i=0;i<argc;i++) {std::cout << "argv["<<i<<"] = \"" << argv[i] << "\" ";}
-    std::cout << std::endl;
+//    std::cout << "argc = " << argc << " ";
+//    for (int i=0;i<argc;i++) {std::cout << "argv["<<i<<"] = \"" << argv[i] << "\" ";}
+//    std::cout << std::endl;
 
     std::string u = get_running_user();
 

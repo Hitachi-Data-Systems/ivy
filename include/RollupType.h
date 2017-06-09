@@ -60,6 +60,13 @@ public:
 
     RollupInstance* p_wurst_RollupInstance {nullptr};
 
+    std::string step_subfolder_name {};
+
+	std::string measurementRollupFolder; // e.g. "Port+PG" subfolder of testFolder
+
+    std::string measurement_rollup_data_validation_csv_filename;   // goes in measurementRollupFolder
+
+
 // methods
 	RollupType
 	(
@@ -89,6 +96,10 @@ public:
 	std::string getDataValidationCsvValues();
 
 	void printMe(std::ostream&);
+
+	void make_step_subfolder(); // and print config thumbnail etc.
+
+    void print_measurement_summary_csv_line();
 };
 
 

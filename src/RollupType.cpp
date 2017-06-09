@@ -28,7 +28,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <set>
-
+#include <stdexcept>
+#include <sys/stat.h>
 
 #include "ivytime.h"
 #include "ivydefines.h"
@@ -56,7 +57,6 @@
 #include "WorkloadTracker.h"
 #include "WorkloadTrackers.h"
 #include "Subinterval_CPU.h"
-#include "RollupInstance.h"
 #include "RollupType.h"
 #include "RollupSet.h"
 #include "master_stuff.h"
@@ -643,9 +643,109 @@ std::string RollupType::getDataValidationCsvValues()
     return o.str();
 }
 
+void RollupType::make_step_subfolder()
+{
+    step_subfolder_name = m_s.stepFolder + std::string("/") + attributeNameCombo.attributeNameComboID;
+
+    if (mkdir(step_subfolder_name.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+    {
+        std::ostringstream o;
+        o << std::endl << "Writhe and fail, gasping:   Couldn\'t make by-subinterval rollup subfolder "
+            << "\"" << step_subfolder_name << "\" within step folder \"" << m_s.stepFolder << "\""
+            << " - " << strerror(errno) << std::endl;
+        log(m_s.masterlogfile,o.str());
+        m_s.kill_subthreads_and_exit();
+        exit(-1);
+    }
+
+    for (auto& pear : instances)
+    {
+        pear.second->set_by_subinterval_filename();
+
+        pear.second->print_by_subinterval_header();
+    }
+}
+
+void RollupType::print_measurement_summary_csv_line()
+{
+    struct stat struct_stat;
+
+    const std::string& rollupTypeName = attributeNameCombo.attributeNameComboID;
+
+    if (routine_logging)
+    {
+        std::ostringstream o;
+        o << std::endl << "Making csv files for " << rollupTypeName << "=" << attributeNameCombo.attributeNameComboID << "." << std::endl;
+        log(m_s.masterlogfile,o.str());
+    }
+
+    // Make the RollupInstance's RollupType subfolder if necessary
+    measurementRollupFolder = m_s.testFolder + std::string("/") + rollupTypeName;
+
+    if(0==stat(measurementRollupFolder.c_str(),&struct_stat))
+    {
+        // folder name already exists
+        if(!S_ISDIR(struct_stat.st_mode))
+        {
+            std::ostringstream o;
+            o << "At line " << __LINE__ << " of source code file " << __FILE__ << " - ";
+            o << std::endl << "writhe and fail, gasping measurement rollup folder \"" << measurementRollupFolder << "\" exists but is not a directory.   Uuuugg." << std::endl;
+            log(m_s.masterlogfile,o.str());
+            m_s.kill_subthreads_and_exit();
+            exit(-1);
+        }
+    }
+    else if (mkdir(measurementRollupFolder.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+    {
+        std::ostringstream o;
+        o << "At line " << __LINE__ << " of source code file " << __FILE__ << " - ";
+        o << std::endl << "writhe and fail, gasping couldn\'t make measurement rollup folder \"" << measurementRollupFolder << "\".   Uuuugg." << std::endl;
+        log(m_s.masterlogfile,o.str());
+        m_s.kill_subthreads_and_exit();
+        exit(-1);
+    }
 
 
+    // print data validation csv headerline if necessary
 
+    {
+        // but first figure out the data validation csv filename
+        std::ostringstream data_validation_filename_stream;
+
+        data_validation_filename_stream << measurementRollupFolder << "/" << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName)
+                                        << '.' << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(rollupTypeName) << ".data_validation.csv";
+
+        measurement_rollup_data_validation_csv_filename = data_validation_filename_stream.str();
+    }
+
+    if ( 0 != stat(measurement_rollup_data_validation_csv_filename.c_str(),&struct_stat))
+    {
+        // we need to print the header line.
+
+        std::ostringstream o;
+
+        o << "Test Name,Step Number,Step Name,Rollup," << RollupType::getDataValidationCsvTitles();
+
+        fileappend( measurement_rollup_data_validation_csv_filename, o.str() );
+    }
+
+    // print data validation csv data line
+
+    {
+        std::ostringstream o;
+        o 	<< m_s.testName << ',' << m_s.stepNNNN << ',' << m_s.stepName
+            << ',' << attributeNameCombo.attributeNameComboID
+            << ',' << getDataValidationCsvValues();
+
+        {
+            std::ostringstream g; g << quote_wrap_csvline_except_numbers(o.str()) << std::endl;
+            fileappend(measurement_rollup_data_validation_csv_filename,g.str());
+        }
+
+    }
+
+    for (auto& peer : instances) peer.second->print_measurement_summary_csv_line();
+}
 
 
 

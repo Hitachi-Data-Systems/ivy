@@ -95,6 +95,9 @@ public:
 	ivytime* p_current_end_time() { if (0 == starting_ending_times.size()) return NULL; return &(starting_ending_times[-1+starting_ending_times.size()].second); }
 	std::string debugListRollups();
 	void printMe(std::ostream&);
+	void make_step_rollup_subfolders() { for (auto pear : rollups) { auto& p_RollupType = pear.second; p_RollupType->make_step_subfolder(); } }
+
+    void print_measurement_summary_csv_line();
 };
 
 // Comment section referred to above regarding how subsystem focus metric data are

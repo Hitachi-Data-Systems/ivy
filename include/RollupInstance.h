@@ -162,6 +162,13 @@ public:
     ivy_float per_instance_high_IOPS;
     ivy_float per_instance_max_IOPS;
 
+    std::string by_subinterval_csv_filename {};  // set by set_by_subinterval_filename()
+    std::string csv_filename_prefix {};          // set by set_by_subinterval_filename()
+
+    std::string measurement_rollup_by_test_step_csv_filename;      // goes in measurementRollupFolder
+    std::string measurement_rollup_by_test_step_csv_type_filename; // goes in measurementRollupFolder
+
+
 
 // methods
 	RollupInstance(RollupType* pRT, RollupSet* pRS, std::string nameCombo, std::string valueCombo)
@@ -196,5 +203,21 @@ public:
     void print_pid_csv_files();
 
     std::pair<bool,ivy_float> isValidMeasurementStartingFrom(unsigned int n);
+
+    void set_by_subinterval_filename();
+    void print_by_subinterval_header();
+    void print_config_thumbnail();  // gets called by RollupType's make_step_folder()
+    void print_subinterval_csv_line(unsigned int subinterval_number /* from zero */, bool is_provisional);
+        // The first or "provisional" time we print this csv file, the lines are printed one by one as each subinterval ends,
+        // but we don't know yet if the subinterval is "warmup", "measurement", or "cooldown", so this column is left blank.
+        // This way, if ivy is terminated with a control-C, or if it explodes, we can at least see what had happened up to
+        // the unexpected end, but of course we won't see a summary csv file line for that test step.
+
+        // Then later, when we make the measurement rollup and print the summary csv line,
+        // we re-print the by-subinterval csv files for each rollup, but this time showing "warmup", "measurment", or "cooldown",
+        // as this is very handy when looking at the by-subinterval csv files, to see exactly the behaviour in each phase, and
+        // to know which subinterval lines were rolled up in the measurement.
+
+    void print_measurement_summary_csv_line();
 };
 

@@ -400,16 +400,11 @@ std::pair<bool,std::string> RollupSet::passesDataVariationValidation()
     return std::make_pair(retval,s);
 }
 
+void RollupSet::print_measurement_summary_csv_line()
+{
+    for (auto& pear : rollups)  // For each RollupType
+    {
+        pear.second->print_measurement_summary_csv_line();
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
+}
