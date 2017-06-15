@@ -44,7 +44,7 @@
 #include "ListOfWorkloadIDs.h"
 #include "RollupInstance.h"
 #include "RollupType.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 #include "studentsTdistribution.h"
 
 extern std::string masterlogfile();

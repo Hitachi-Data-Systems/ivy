@@ -110,7 +110,7 @@ public:
         // for those LDEVs, Ports, or PGs, etc. that are under test.
 
         // ivy builds by-RollupInstance real-time subsystem rollups according
-        // to master_stuff.h's "subsystem_summary_metrics" specification where have
+        // to ivy_engine.h's "subsystem_summary_metrics" specification where have
         // subsystem configuration elements, with a sequence of metrics for those elements.
 
         // The first time ivy ran with this feature, the specification was:

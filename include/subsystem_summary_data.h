@@ -24,7 +24,7 @@
 #include "ivydefines.h"
 #include "RunningStat.h"
 
-class master_stuff;
+class ivy_engine;
 
 class subsystem_summary_data
 {

@@ -329,6 +329,9 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
+		<Unit filename="include/ivy_engine.h">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="include/ivybuilddate.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
@@ -358,10 +361,6 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 			<Option target="clear_hung_ivy_threads" />
-		</Unit>
-		<Unit filename="include/master_stuff.h">
-			<Option target="ivymaster" />
-			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/pattern.h">
 			<Option target="ivymaster" />
@@ -651,6 +650,9 @@
 		<Unit filename="src/ivy_RAID800.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="src/ivy_engine.cpp">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="src/ivy_engine_startup.cpp">
 			<Option target="ivymaster" />
 		</Unit>
@@ -695,9 +697,6 @@
 		</Unit>
 		<Unit filename="src/makedict.cpp">
 			<Option target="makedict" />
-		</Unit>
-		<Unit filename="src/master_stuff.cpp">
-			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/pattern.cpp">
 			<Option target="ivymaster" />

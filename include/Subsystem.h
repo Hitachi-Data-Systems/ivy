@@ -25,7 +25,7 @@
 #include "LUN.h"
 #include "GatherData.h"
 
-class master_stuff;
+class ivy_engine;
 
 class Subsystem
 {

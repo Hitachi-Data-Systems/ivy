@@ -24,7 +24,7 @@
 #include "GatherData.h"
 #include "Subsystem.h"
 #include "ivyhelpers.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 #include "RollupInstance.h"
 
 extern bool routine_logging;

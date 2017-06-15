@@ -24,7 +24,7 @@
 #include "Ivy_pgm.h"
 #include "Stmt.h"
 #include "ivy.parser.hh"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 #include "ivyhelpers.h"
 
 

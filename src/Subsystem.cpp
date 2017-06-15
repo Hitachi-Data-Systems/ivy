@@ -34,7 +34,7 @@
 #include "GatherData.h"
 #include "RunningStat.h"
 #include "Subsystem.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 
 Subsystem::Subsystem(std::string sn) : serial_number(sn) {} // Note constructor leaves LUNpointers empty
 

@@ -20,7 +20,7 @@
 #include <set>
 
 #include "ivyhelpers.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 
 std::pair<bool,std::string> ParameterValueLookupTable::fromString(std::string s)
 {

@@ -71,7 +71,7 @@ public:
     // This extra column shows for each of IOPS and service time the estimated plus/minus accuracy.
     // Then when the measurement csv file line is printed, two overall "settings" values are shown:
     //  - m_s.non_random_sample_correction_factor
-    //        * at present, this factor is hard-coded in master_stuff.
+    //        * at present, this factor is hard-coded in ivy_engine.
     //  - +/- statistical confidence
     //        * at present, hard coded to a fixed value originally "95%"
     // Extra columns for measurement rollup csv columns are indicated by a pointer to a SubintervalRollup object.

@@ -27,7 +27,7 @@
 #include "ListOfWorkloadIDs.h"
 #include "Test_config_thumbnail.h"
 
-class master_stuff;
+class ivy_engine;
 class RollupSet;
 class RollupType;
 
@@ -81,7 +81,7 @@ public:
         // at the time rollups are done at the end of a subinterval, and made available to the DFC when it is called.
 
         // The definition of the subsystem performance data summary columns is "subsystem_summary_metrics"
-        // in master_stuff.h.
+        // in ivy_engine.h.
 
 
         // Special processing is performed for the "all=all" rollup instance.

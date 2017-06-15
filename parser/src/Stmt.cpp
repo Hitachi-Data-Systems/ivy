@@ -21,7 +21,7 @@
 
 #include "Ivy_pgm.h"
 #include "Stmt.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 #include "SymbolTableEntry.h"
 
 extern std::string inter_statement_divider;

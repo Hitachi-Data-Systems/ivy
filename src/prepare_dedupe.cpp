@@ -49,7 +49,7 @@
 #include <string>
 #include <map>
 
-#include <master_stuff.h>
+#include <ivy_engine.h>
 
 class dedupe_workload
 {

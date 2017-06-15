@@ -22,7 +22,7 @@
 #include <sys/stat.h>
 
 #include "ivybuilddate.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 #include "hosts_list.h"
 
 extern bool routine_logging;
@@ -35,7 +35,7 @@ void invokeThread(pipe_driver_subthread* T)
 
 
 std::pair<bool /*success*/, std::string /* message */>
-    master_stuff::startup(
+    ivy_engine::startup(
             const std::string& output_folder_root,
             const std::string& test_name,
             const std::string& ivyscript_filename,

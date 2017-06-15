@@ -33,7 +33,7 @@
 #include "LUN.h"
 #include "AttributeNameCombo.h"
 #include "RollupType.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 
 void SubintervalRollup::clear()
 {

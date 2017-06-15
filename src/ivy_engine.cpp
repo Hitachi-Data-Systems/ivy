@@ -70,14 +70,14 @@ using namespace std;
 #include "WorkloadTrackers.h"
 #include "Subinterval_CPU.h"
 #include "RollupSet.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 #include "NameEqualsValueList.h"
 #include "ListOfNameEqualsValueList.h"
 #include "Ivy_pgm.h"
 
 extern bool routine_logging;
 
-master_stuff m_s;
+ivy_engine m_s;
 
 std::string outputFolderRoot() {return m_s.outputFolderRoot;}
 std::string masterlogfile()    {return m_s.masterlogfile;}
@@ -160,7 +160,7 @@ std::string accessor_enum_to_string(accessor_enum e)
     }
 }
 
-bool master_stuff::some_cooldown_WP_not_empty()
+bool ivy_engine::some_cooldown_WP_not_empty()
 {
     for (auto& pear : cooldown_WP_watch_set)
     {
@@ -342,7 +342,7 @@ bool rewrite_total_IOPS(std::string& parametersText, int instances)
 	return false; // return point if no match.
 }
 
-void master_stuff::error(std::string m)
+void ivy_engine::error(std::string m)
 {
     std::ostringstream o;
     o << "Error: " << m << std::endl;
@@ -351,13 +351,13 @@ void master_stuff::error(std::string m)
     kill_subthreads_and_exit();
 }
 
-void master_stuff::kill_subthreads_and_exit()
+void ivy_engine::kill_subthreads_and_exit()
 {
     std::pair<bool,std::string> rc = shutdown_subthreads();
 	exit(0);
 }
 
-void master_stuff::write_clear_script()
+void ivy_engine::write_clear_script()
 {
     // This writes a script to invoke the "clear_hung_ivy_threads" executable on this ivy master host,
     // as well as once for each distinct IP address for ivyslave hosts.
@@ -370,7 +370,7 @@ void master_stuff::write_clear_script()
     char my_hostname[max_hostnamesize];
     my_hostname[max_hostnamesize-1] = 0;
 
-    const std::string method = "master_stuff::write_clear_script() - ";
+    const std::string method = "ivy_engine::write_clear_script() - ";
 
     const std::string scriptname = "clear_hung_ivy_threads.sh";
     const std::string executable = "clear_hung_ivy_threads";
@@ -511,12 +511,12 @@ void master_stuff::write_clear_script()
     return;
 }
 
-std::pair<bool,std::string> master_stuff::make_measurement_rollup_CPU(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
+std::pair<bool,std::string> ivy_engine::make_measurement_rollup_CPU(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
 {
 		if (cpu_by_subinterval.size() < 3)
 		{
 			std::ostringstream o;
-			o << "master_stuff::make_measurement_rollup_CPU() - The total number of subintervals in the cpu_by_subinterval sequence is " << cpu_by_subinterval.size()
+			o << "ivy_engine::make_measurement_rollup_CPU() - The total number of subintervals in the cpu_by_subinterval sequence is " << cpu_by_subinterval.size()
 			<< std::endl << "and there must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, "
 			<< std::endl << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
 			return std::make_pair(false,o.str());
@@ -530,7 +530,7 @@ std::pair<bool,std::string> master_stuff::make_measurement_rollup_CPU(unsigned i
 		))
 		{
 			std::ostringstream o;
-			o << "master_stuff::make_measurement_rollup_CPU() - Invalid first (" << firstMeasurementIndex << ") and last (" << lastMeasurementIndex << ") measurement period indices."
+			o << "ivy_engine::make_measurement_rollup_CPU() - Invalid first (" << firstMeasurementIndex << ") and last (" << lastMeasurementIndex << ") measurement period indices."
 			<< std::endl << " There must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, "
 			<< std::endl << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
 			return std::make_pair(false,o.str());
@@ -546,7 +546,7 @@ std::pair<bool,std::string> master_stuff::make_measurement_rollup_CPU(unsigned i
 		return std::make_pair(true,"");
 }
 
-std::string master_stuff::getWPthumbnail(int subinterval_index) // use subinterval_index = -1 to get the t=0 gather thumbnail
+std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval_index = -1 to get the t=0 gather thumbnail
 // throws std::invalid_argument.    Shows WP for each CLPR on the watch list as briefly as possible
 {
 	std::ostringstream result;
@@ -564,7 +564,7 @@ std::string master_stuff::getWPthumbnail(int subinterval_index) // use subinterv
 		catch (std::invalid_argument& iae)
 		{
 			std::ostringstream o;
-			o << "master_stuff::getWPthumbnail(int subinterval_index="
+			o << "ivy_engine::getWPthumbnail(int subinterval_index="
 				<< subinterval_index << ") - WP = Subsystem.get_wp(CLPR=\"" << CLPR << "\", subinterval_index=" << subinterval_index
 				<< ") failed saying - " << iae.what();
 			log(masterlogfile,o.str());
@@ -592,7 +592,7 @@ std::string master_stuff::getWPthumbnail(int subinterval_index) // use subinterv
 }
 
 
-ivy_float master_stuff::get_rollup_metric
+ivy_float ivy_engine::get_rollup_metric
 (
     const std::string& rollup_type_parameter,
     const std::string& rollup_instance_parameter,
@@ -606,7 +606,7 @@ ivy_float master_stuff::get_rollup_metric
     if (rt_it == m_s.rollups.rollups.end())
     {
         std::ostringstream o;
-        o << "In master_stuff::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
+        o << "In ivy_engine::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
             << "\", subinterval_number=" << subinterval_number << ", accumulator_type=\"" << accumulator_type_parameter
             << "\", category=\"" << category_parameter << "\", metric=\"" << metric_parameter << "\"," << std::endl;
         o << "<Error> did not find rollup type \"" << rollup_type_parameter << "\"." << std::endl;
@@ -621,7 +621,7 @@ ivy_float master_stuff::get_rollup_metric
     if (ri_it == pRT->instances.end())
     {
         std::ostringstream o;
-        o << "In master_stuff::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
+        o << "In ivy_engine::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
             << "\", subinterval_number=" << subinterval_number << ", accumulator_type=\"" << accumulator_type_parameter
             << "\", category=\"" << category_parameter << "\", metric=\"" << metric_parameter << "\"," << std::endl;
         o << "<Error> did not find rollup instance \"" << rollup_instance_parameter << "\"." << std::endl;
@@ -635,7 +635,7 @@ ivy_float master_stuff::get_rollup_metric
     if (subinterval_number > sosr.sequence.size())
     {
         std::ostringstream o;
-        o << "In master_stuff::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
+        o << "In ivy_engine::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
             << "\", subinterval_number=" << subinterval_number << ", accumulator_type=\"" << accumulator_type_parameter
             << "\", category=\"" << category_parameter << "\", metric=\"" << metric_parameter << "\"," << std::endl;
         o << "<Error> requested subinterval number is greater than the number of subintervals in the rollup, which is " << sosr.sequence.size() << "." << std::endl;
@@ -652,7 +652,7 @@ ivy_float master_stuff::get_rollup_metric
     if (acc_type == accumulator_type_enum::error)
     {
         std::ostringstream o;
-        o << "In master_stuff::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
+        o << "In ivy_engine::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
             << "\", subinterval_number=" << subinterval_number << ", accumulator_type=\"" << accumulator_type_parameter
             << "\", category=\"" << category_parameter << "\", metric=\"" << metric_parameter << "\"," << std::endl;
         o << "<Error> Invalid accumulator_type.  Valid values are "  << accumulator_types() << std::endl;
@@ -674,7 +674,7 @@ ivy_float master_stuff::get_rollup_metric
             p_acc = & so.u.a.response_time;
             break;
         default:
-            throw std::runtime_error("master_stuff::get_rollup_metric - this cannot happen.  impossible accumulator_type.");
+            throw std::runtime_error("ivy_engine::get_rollup_metric - this cannot happen.  impossible accumulator_type.");
     }
 
     for (int i = 0; i <= Accumulators_by_io_type::max_category_index(); i++)
@@ -693,7 +693,7 @@ ivy_float master_stuff::get_rollup_metric
 
             {
                 std::ostringstream o;
-                o << "In master_stuff::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
+                o << "In ivy_engine::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
                     << "\", subinterval_number=" << subinterval_number << ", accumulator_type=\"" << accumulator_type_parameter
                     << "\", category=\"" << category_parameter << "\", metric=\"" << metric_parameter << "\"," << std::endl;
                 o << "<Error> invalid metric \"" << metric_parameter << "\".  Valid metrics (accumulator access functions) are \"count\", \"min\", \"max\", \"sum\", \"avg\", \"variance\", and \"standardDeviation\"." << std::endl;
@@ -705,7 +705,7 @@ ivy_float master_stuff::get_rollup_metric
     }
     {
         std::ostringstream o;
-        o << "In master_stuff::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
+        o << "In ivy_engine::get_rollup_metric(rollup_type=\"" << rollup_type_parameter << "\", rollup_instance=\"" << rollup_instance_parameter
             << "\", subinterval_number=" << subinterval_number << ", accumulator_type=\"" << accumulator_type_parameter
             << "\", category=\"" << category_parameter << "\", metric=\"" << metric_parameter << "\"," << std::endl;
         o << "<Error> invalid category \"" << category_parameter << "\".  Valid categories are " << Accumulators_by_io_type::getCategories() << "." << std::endl;
@@ -717,7 +717,7 @@ ivy_float master_stuff::get_rollup_metric
 
 }
 
-std::string master_stuff::focus_caption()
+std::string ivy_engine::focus_caption()
 {
     if (! (have_pid || have_measure) ) return "";
 
@@ -725,7 +725,7 @@ std::string master_stuff::focus_caption()
 
     if (p_focus_rollup == nullptr)
     {
-        std::string m {"<Error> internal programming error. in master_stuff::focus_rollup_metric_caption(), p_focus_rollup == nullptr.\n"};
+        std::string m {"<Error> internal programming error. in ivy_engine::focus_rollup_metric_caption(), p_focus_rollup == nullptr.\n"};
         std::cout << m;
         log(masterlogfile,m);
         kill_subthreads_and_exit();
@@ -809,7 +809,7 @@ std::string master_stuff::focus_caption()
 
             default:
                 {
-                    std::string m {"<Error> internal programming error. in master_stuff::focus_rollup_metric_caption(), unknown source_enum value.\n"};
+                    std::string m {"<Error> internal programming error. in ivy_engine::focus_rollup_metric_caption(), unknown source_enum value.\n"};
                     std::cout << m;
                     log(masterlogfile,m);
                     kill_subthreads_and_exit();
@@ -1019,7 +1019,7 @@ std::string master_stuff::focus_caption()
     return o.str();
 }
 
-std::string master_stuff::last_result()
+std::string ivy_engine::last_result()
 {
     if (lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS) return "success";
     if (lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_FAILURE) return "failure";
@@ -1031,7 +1031,7 @@ std::string last_result() {return m_s.last_result();}  // used by a builtin func
 
 int exit_statement() { m_s.kill_subthreads_and_exit(); return 0; }
 
-std::string master_stuff::show_rollup_structure()
+std::string ivy_engine::show_rollup_structure()
 {
     std::ostringstream o;
 
@@ -1087,7 +1087,7 @@ std::string master_stuff::show_rollup_structure()
 
 std::string show_rollup_structure(){ return m_s.show_rollup_structure();}
 
-std::string master_stuff::focus_metric_ID()
+std::string ivy_engine::focus_metric_ID()
 {
     std::ostringstream o;
 
@@ -1155,7 +1155,7 @@ int ivy_engine_set(std::string thing, std::string value)
 
 
 std::pair<bool /*success*/, std::string /* message */>
-master_stuff::set_iosequencer_template(
+ivy_engine::set_iosequencer_template(
     const std::string& template_name,
     const std::string& parameters)
 {
@@ -1198,7 +1198,7 @@ master_stuff::set_iosequencer_template(
 }
 
 std::pair<bool /*success*/, std::string /* message */>
-master_stuff::createWorkload(
+ivy_engine::createWorkload(
     const std::string& workloadName,
     const std::string& select_string,
     const std::string& iosequencerName,
@@ -1454,7 +1454,7 @@ master_stuff::createWorkload(
 }
 
 std::pair<bool /*success*/, std::string /* message */>
-master_stuff::deleteWorkload(
+ivy_engine::deleteWorkload(
     const std::string& workloadName,
     const std::string& select_string)
 {
@@ -1647,7 +1647,7 @@ master_stuff::deleteWorkload(
 }
 
 std::pair<bool /*success*/, std::string /* message */>
-master_stuff::create_rollup(
+ivy_engine::create_rollup(
       std::string attributeNameComboText
     , bool nocsvSection
     , bool quantitySection
@@ -1699,7 +1699,7 @@ master_stuff::create_rollup(
 }
 
 std::pair<bool /*success*/, std::string /* message */>
-master_stuff::edit_rollup(const std::string& rollupText, const std::string& original_parametersText)
+ivy_engine::edit_rollup(const std::string& rollupText, const std::string& original_parametersText)
 // returns true on success
 {
     {
@@ -1880,7 +1880,7 @@ master_stuff::edit_rollup(const std::string& rollupText, const std::string& orig
 				if (workloadTrackers.workloadTrackerPointers.end() == wit)
 				{
 					std::ostringstream o;
-					o << "master_stuff::editRollup() - dreaded internal programming error - at the last moment the WorkloadTracker pointer lookup failed for workloadID = \"" << wID.workloadID << "\"" << std::endl;
+					o << "ivy_engine::editRollup() - dreaded internal programming error - at the last moment the WorkloadTracker pointer lookup failed for workloadID = \"" << wID.workloadID << "\"" << std::endl;
                     return std::make_pair(false,o.str());
 				}
 
@@ -1966,7 +1966,7 @@ master_stuff::edit_rollup(const std::string& rollupText, const std::string& orig
 }
 
 std::pair<bool /*success*/, std::string /* message */>
-master_stuff::delete_rollup(const std::string& attributeNameComboText)
+ivy_engine::delete_rollup(const std::string& attributeNameComboText)
 {
     {
         std::ostringstream o;
@@ -2028,7 +2028,7 @@ master_stuff::delete_rollup(const std::string& attributeNameComboText)
 }
 
 std::pair<bool /*success*/, std::string /* message */>
-master_stuff::go(const std::string& parameters)
+ivy_engine::go(const std::string& parameters)
 {
     {
         std::ostringstream o;
@@ -2624,7 +2624,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
                             }
                         }
 
-                        o << std::endl << "The definition of the these subsystems metrics which are rolled up for each rollup instance is in subsystem_summary_metrics in master_stuff.h." << std::endl << std::endl;
+                        o << std::endl << "The definition of the these subsystems metrics which are rolled up for each rollup instance is in subsystem_summary_metrics in ivy_engine.h." << std::endl << std::endl;
 
                         log(masterlogfile,o.str());
                         std::cout << o.str();
@@ -2657,7 +2657,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
                     }
                 }
 
-                o << std::endl << "The definition of these subsystem element metrics which are rolled up for each rollup instance is in subsystem_summary_metrics in master_stuff.h." << std::endl << std::endl;
+                o << std::endl << "The definition of these subsystem element metrics which are rolled up for each rollup instance is in subsystem_summary_metrics in ivy_engine.h." << std::endl << std::endl;
 
                 log(masterlogfile,o.str());
                 std::cout << o.str();
@@ -3031,7 +3031,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
 
 std::pair<bool,std::string>
-master_stuff::shutdown_subthreads()
+ivy_engine::shutdown_subthreads()
 {
     {
         std::string m = "ivy engine API shutdown_subthreads()\n";
@@ -3050,7 +3050,7 @@ master_stuff::shutdown_subthreads()
 			pear.second->command=true;
 
 			std::ostringstream o;
-			o << "master_stuff::shutdown_subthreads() - posting \"die\" command to subthread for host " << pear.first
+			o << "ivy_engine::shutdown_subthreads() - posting \"die\" command to subthread for host " << pear.first
                 << " pid = " << pear.second->pipe_driver_pid << ", gettid() thread ID = " << pear.second->linux_gettid_thread_id<< std::endl;
 			log (masterlogfile, o.str());
 		}
@@ -3074,7 +3074,7 @@ master_stuff::shutdown_subthreads()
 					p_pds->command=true;
 
 					std::ostringstream o;
-					o << "master_stuff::shutdown_subthreads() - posting \"die\" command to subthread for subsystem " << pear.first
+					o << "ivy_engine::shutdown_subthreads() - posting \"die\" command to subthread for subsystem " << pear.first
                         << " pid = " << p_pds->pipe_driver_pid << ", gettid() thread ID = " << p_pds->linux_gettid_thread_id<< std::endl;
 					log (masterlogfile, o.str());
 				}
@@ -3161,7 +3161,7 @@ master_stuff::shutdown_subthreads()
 	}
 
 	std::ostringstream o;
-	o << "master_stuff::shutdown_subthreads() told " << notified << " host driver and "
+	o << "ivy_engine::shutdown_subthreads() told " << notified << " host driver and "
         << notified_subsystems << " command device subthreads to die." << std::endl;
 	log(masterlogfile,o.str());
 
@@ -3245,7 +3245,7 @@ std::string valid_get_parameters()
 }
 
     std::pair<bool, std::string>  // <true,value> or <false,error message>
-master_stuff::get(const std::string& thingee)
+ivy_engine::get(const std::string& thingee)
 {
     std::string t {};
 
@@ -3320,7 +3320,7 @@ master_stuff::get(const std::string& thingee)
 }
 
     std::pair<bool, std::string>  // <true,possibly in future some additional info if needed> or <false,error message>
-master_stuff::set(const std::string& thingee,
+ivy_engine::set(const std::string& thingee,
     const std::string& value)
 {
     std::string t {};

@@ -19,7 +19,7 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #include <sys/stat.h>
 
-#include "master_stuff.h"
+#include "ivy_engine.h"
 #include "DynamicFeedbackController.h"
 #include "RollupInstance.h"
 
@@ -261,7 +261,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
         m_s.rollups.startNewSubinterval(m_s.subintervalStart,m_s.subintervalEnd);
 
-        m_s.cpu_by_subinterval.push_back(s);  // master_stuff: std::vector<Subinterval_CPU> cpu_by_subinterval;
+        m_s.cpu_by_subinterval.push_back(s);  // ivy_engine: std::vector<Subinterval_CPU> cpu_by_subinterval;
 
         m_s.rollups.not_participating.push_back(subsystem_summary_data());
         for (auto& rt_pair : m_s.rollups.rollups)
@@ -417,7 +417,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
                 // Note that it is the subtask for each host that does the posting of iosequencer detail lines
                 // into the various rollups.  It does this after grabbing the lock to serialize access to the
-                // "master_stuff" structure the rollups are kept in that is shared by the main thread and all
+                // "ivy_engine" structure the rollups are kept in that is shared by the main thread and all
                 // the host driver subthreads.
 
                 if (!pear.second->commandSuccess)
@@ -936,7 +936,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
         if (!retval.first)
         {
             std::ostringstream o;
-            o << std::endl << "writhe and fail, gasping that master_stuff::make_measurement_rollup_CPU()\'s last words were - " << retval.second << std::endl
+            o << std::endl << "writhe and fail, gasping that ivy_engine::make_measurement_rollup_CPU()\'s last words were - " << retval.second << std::endl
                 << std::endl << "Source code reference: function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile,o.str());

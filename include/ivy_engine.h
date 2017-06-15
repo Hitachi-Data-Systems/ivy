@@ -55,7 +55,7 @@ accumulator_type_enum string_to_accumulator_type_enum (const std::string&);
 std::string accumulator_types();
 
 
-class master_stuff {
+class ivy_engine {
 // One static copy of this exists in the ivymaster main thread, but it is made external
 // and all code in the ivymaster executable gets access via linkage editor.
 public:
@@ -78,7 +78,7 @@ public:
 
     int running_subinterval {-1};
 
-	std::mutex master_mutex;  // This is the overall one, for synchronizing access to "master_stuff".
+	std::mutex master_mutex;  // This is the overall one, for synchronizing access to "ivy_engine".
 	std::condition_variable master_cv;
 
 	std::unordered_map<std::string /*ivyscript_hostname*/ ,pipe_driver_subthread*> host_subthread_pointers;
@@ -103,7 +103,7 @@ public:
 		// and accumulated output data followed by an ending marker line.
 
 		// On the ivymaster host, as each ivyslave_hostname_thread receives a CPU data line from their remote ivyslave host,
-		// it gets the master lock and goes into master_stuff and adds the CPU busy data for that host into
+		// it gets the master lock and goes into ivy_engine and adds the CPU busy data for that host into
 		// the current Subinterval_CPU object put in cpu_by_subinterval by the ivymaster main thread at the top
 		// of the subinterval.
 
@@ -361,7 +361,7 @@ public:
     unsigned int best_of_wurst_first, best_of_wurst_last;
     bool have_timeout_rollup {false};
 
-    // for the following, see initialization to default values in master_stuff
+    // for the following, see initialization to default values in ivy_engine
     ivy_float gain_step;                      // The amount to increase / decrease gain in the adaptive PID approach.  2.0 works exactly same as 0.5
     ivy_float max_ripple;                     // The max amount that in a PID loop IOPS can bounce up and down before reducing I gain.
 
@@ -370,7 +370,7 @@ public:
 
     ivy_float ballpark_seconds;               // A measure of the gain.  Smaller values represent higher gain.
 
-    int last_gain_adjustment_subinterval {-1};  // One central value in master_stuff with the latest gain adjustment made in any focus rollup instance.
+    int last_gain_adjustment_subinterval {-1};  // One central value in ivy_engine with the latest gain adjustment made in any focus rollup instance.
 
 
     // The next bit is for the "sequential_fill = on" go parameter
@@ -545,6 +545,6 @@ public:
     std::string show_rollup_structure();   // available for diagnostic use
 };
 
-extern master_stuff m_s;
+extern ivy_engine m_s;
 
 

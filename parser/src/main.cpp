@@ -29,7 +29,7 @@
 #include "Ivy_pgm.h"
 #include "ivy.parser.hh"
 #include "ivyhelpers.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 #include "MeasureDFC.h"
 #include "ivybuilddate.h"
 
@@ -120,7 +120,28 @@ int main(int argc, char* argv[])
 
     {
         std::ostringstream o;
-        o << "ivy version " << ivy_version << " build date " << IVYBUILDDATE << " starting." << std::endl << std::endl;
+        o << "ivy version " << ivy_version << " build date " << IVYBUILDDATE ;
+
+#ifdef __GNUC__
+    o << "  - gcc version " << __GNUC__;
+#endif
+
+#ifdef __GNUC_MINOR__
+    o << "." << __GNUC_MINOR__;
+#endif
+
+#ifdef __GNUC_PATCHLEVEL__
+    o << "." << __GNUC_PATCHLEVEL__;
+#endif
+
+#ifdef __GLIBCPP__
+    o << " - libstdc++ date " << __GLIBCPP__;
+#endif
+
+#ifdef __GLIBCXX__
+    o << " - libstdc++ date " << __GLIBCXX__;
+#endif
+        o << " starting." << std::endl << std::endl;
         std::cout << o.str();
     }
 

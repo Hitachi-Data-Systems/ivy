@@ -61,7 +61,7 @@ using namespace std;
 #include "WorkloadTrackers.h"
 #include "Subinterval_CPU.h"
 #include "RollupSet.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 
 #include "subsystem_summary_data.h"
 

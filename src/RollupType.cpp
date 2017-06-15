@@ -59,7 +59,7 @@
 #include "Subinterval_CPU.h"
 #include "RollupType.h"
 #include "RollupSet.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 #include "HM800_tables.h"
 
 extern bool routine_logging, trace_evaluate;

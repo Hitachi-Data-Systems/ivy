@@ -85,7 +85,7 @@ using namespace std;
 #include "RollupInstance.h"
 #include "RollupType.h"
 #include "RollupSet.h"
-#include "master_stuff.h"
+#include "ivy_engine.h"
 
 
 #define PIPE_READ 0
@@ -1591,7 +1591,7 @@ void pipe_driver_subthread::threadRun()
                             //	- if gather is not for t=0
                             //		- for each RollupType, for each RollupInstance
                             //			- add a subsystem_summary_data object for this subinterval
-                            //			- for each summary element type ("MP_core", "CLPR", ...) master_stuff::subsystem_summary_metrics
+                            //			- for each summary element type ("MP_core", "CLPR", ...) ivy_engine::subsystem_summary_metrics
                             //				- for each instance of the element, e.g. MP_core="MP10-00"
                             //					- if the subsystem serial number and attribute name match the RollupInstance
                             //						- for each metric
