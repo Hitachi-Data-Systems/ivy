@@ -385,6 +385,8 @@ public:
 
     unsigned int firstMeasurementIndex, lastMeasurementIndex;
 
+    std::string subsystem_thumbnail {};
+
 // methods
 	void kill_subthreads_and_exit();
 	void error(std::string);

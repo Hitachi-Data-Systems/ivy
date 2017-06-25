@@ -321,25 +321,25 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 			<< "bytes_transferred.count() = " << bytes_transferred.count() << " differs from service_time.count() = " << service_time.count() << "  ";
 	}
 
-    o << std::endl;
+    //o << std::endl;
 
-	o << "Host workload overall:  IOPS = " << ( ((ivy_float) bytes_transferred.count()) / seconds ) ;
-	o << ", read IOPS = " << ( ((ivy_float) read_bytes_transferred.count()) / seconds ) ;
+	o << "Host IOPS = " << std::fixed << std::setprecision(1) << ( ((ivy_float) bytes_transferred.count()) / seconds ) ;
+	//o << ", read IOPS = " << std::fixed << std::setprecision(1) << ( ((ivy_float) read_bytes_transferred.count()) / seconds ) ;
 
-	o << ", write IOPS = " << ( ((ivy_float) write_bytes_transferred.count()) / seconds ) ;
+	//o << ", write IOPS = " << std::fixed << std::setprecision(1) << ( ((ivy_float) write_bytes_transferred.count()) / seconds ) ;
 
-	o << ", MB/s = " << ( (bytes_transferred.sum() / 1000000.0) / seconds ) ;
-	o << ", MiB/s = " << ( (bytes_transferred.sum() / (1024.0*1024.0)) / seconds ) ;
+	//o << ", MB/s = " << std::fixed << std::setprecision(1) << ( (bytes_transferred.sum() / 1000000.0) / seconds ) ;
+	o << ", MiB/s = " << std::fixed << std::setprecision(1) << ( (bytes_transferred.sum() / (1024.0*1024.0)) / seconds ) ;
 
-	o << ", avg Blk (KiB) = " << ( bytes_transferred.avg() / 1024.0      );
+	o << ", avg Blk (KiB) = " << std::fixed << std::setprecision(1) << ( bytes_transferred.avg() / 1024.0      );
 
 	o << ", Little\'s law avg  Q = " << std::fixed << std::setprecision(1) << (    ( ((ivy_float) bytes_transferred.count()) / seconds )/*IOPS*/  *   service_time.avg()     );
 
-    o << std::endl << std::endl;
+    //o << std::endl << std::endl;
 
-	o << "                        avg Serv. Time (ms) = " <<  std::fixed << std::setprecision(3) <<  (service_time.avg() * 1000.0) ;
-	o << ", avg Read Serv. Time (ms) = "; if (read_bytes_transferred.count()==0) o << "< no reads >"; else o <<  std::fixed << std::setprecision(3) << (read_service_time.avg() * 1000.0) ;
-	o << ", avg Write Serv. Time (ms) = "; if (write_bytes_transferred.count()==0) o << "< no writes >"; else o <<  std::fixed << std::setprecision(3) << (write_service_time.avg() * 1000.0) ;
+	o << ", service time = " <<  std::fixed << std::setprecision(3) <<  (service_time.avg() * 1000.0) << " ms";
+	//o << ", avg Read Serv. Time (ms) = "; if (read_bytes_transferred.count()==0) o << "< no reads >"; else o <<  std::fixed << std::setprecision(3) << (read_service_time.avg() * 1000.0) ;
+	//o << ", avg Write Serv. Time (ms) = "; if (write_bytes_transferred.count()==0) o << "< no writes >"; else o <<  std::fixed << std::setprecision(3) << (write_service_time.avg() * 1000.0) ;
 
     o << std::endl;
 

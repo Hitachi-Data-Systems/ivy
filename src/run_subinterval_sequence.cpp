@@ -68,6 +68,8 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     m_s.min_sequential_fill_progress = 1.0;
     m_s.keep_filling = false;
 
+    m_s.subsystem_thumbnail.clear();
+
     // Clear out Subsystem data from a possible earlier subinterval sequence,
     // and then make the first gather for t=0, recording how long it takes.
 
@@ -247,14 +249,14 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
         {
             std::ostringstream o;
 
-            o << std::endl << "--------------------------------------------------------------------------------------------------" << std::endl
-                << "Test name = \"" << m_s.testName << "\""
-                << ", step number = \"" << m_s.stepNNNN << "\""
-                << ", step name = \"" << m_s.stepName << "\""
-                << " - Top of subinterval " << (m_s.rollups.current_index()+1)
+            o << "--------------------------------------------------------------------------------------------------" << std::endl;
+//          o     << "Test name = \"" << m_s.testName << "\""
+//                << ", step number = \"" << m_s.stepNNNN << "\""
+//                << ", step name = \"" << m_s.stepName << "\""
+//                << " - Top of subinterval " << (m_s.rollups.current_index()+1)
 //                << " from " << m_s.subintervalStart.format_as_datetime_with_ns()
 //                <<  " to  " << m_s.subintervalEnd.format_as_datetime_with_ns()
-                << std::endl;
+//                << std::endl;
             std::cout << o.str();
             if (routine_logging) log(m_s.masterlogfile,o.str());
         }
@@ -298,7 +300,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             gather_schedule = m_s.subintervalEnd - ivytime( (long double) ( (1.0 + gather_lead_time_safety_margin) * m_s.overallGatherTimeSeconds.avg()) );
             gather_schedule.waitUntilThisTime();
 
-            std::system("clear");
+//            std::system("clear");
 
             tn_gather_start.setToNow();
 
@@ -324,7 +326,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                             std::ostringstream o;
                             o << "Gathering from " << pHitachiRAID->command_device_description;
                             log(m_s.masterlogfile,o.str());
-                            std::cout << o.str();
+                            if (routine_logging) { std::cout << o.str(); }
                         }
                     }
                     p_pds->master_slave_cv.notify_all();
@@ -384,19 +386,20 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             m_s.overallGatherTimeSeconds.push(tn_gather_time.getlongdoubleseconds());
             {
                 std::ostringstream o;
-                o << "\"" << m_s.testName << "\" " << m_s.stepNNNN << " \"" << m_s.stepName << "\" bottom of subinterval " << m_s.rollups.current_index() << " - overall gather time was " << tn_gather_time.format_as_duration_HMMSSns()
-                  << "     " << m_s.getWPthumbnail(m_s.rollups.current_index())
-                  << std::endl
-                  << std::endl
-                  << "\"all=all\" rollup\'s configuration under test:" << std::endl
-                  << m_s.rollups.get_all_equals_all_instance()->test_config_thumbnail
-                  << "\"all=all\" rollup\'s subsystem_summary_data.thumbnail(): "
-                        << m_s.rollups.get_all_equals_all_instance()->subsystem_data_by_subinterval.back().thumbnail()
-                  << std::endl;
+
+//                o << "\"" << m_s.testName << "\" " << m_s.stepNNNN << " \"" << m_s.stepName << "\" bottom of subinterval " << m_s.rollups.current_index() << " - overall gather time was " << tn_gather_time.format_as_duration_HMMSSns()
+//                  << "     " << m_s.getWPthumbnail(m_s.rollups.current_index()) << std::endl << std::endl;
+
+//                o << "\"all=all\" rollup\'s configuration under test:" << std::endl
+//                  << m_s.rollups.get_all_equals_all_instance()->test_config_thumbnail;
+
+                o  << m_s.rollups.get_all_equals_all_instance()->subsystem_data_by_subinterval.back().thumbnail() << std::endl;
+
+                m_s.subsystem_thumbnail = o.str();
+
                 if (routine_logging)
                 {
                     log(m_s.masterlogfile,o.str());
-                    std::cout << o.str();
                 }
             }
         }
@@ -446,10 +449,10 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             }
         }
 
-        if (!m_s.haveCmdDev)
-        {
-            std::system("clear");
-        }
+//        if (!m_s.haveCmdDev)
+//        {
+//            std::system("clear");
+//        }
 
         if (routine_logging)
         {
@@ -503,19 +506,20 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 ivytime step_duration = n - m_s.get_go;
 
                 std::ostringstream o;
-//                o << "At " << test_duration.format_as_duration_HMMSS() << " into test \"" << m_s.testName << "\" and "
-//                  << "at " << step_duration.format_as_duration_HMMSS() << " into " << m_s.stepNNNN
-//                  << " \"" << m_s.stepName << "\" "
-//                  << " rollups complete at " << rollup_time.format_as_duration_HMMSSns() << " after subinterval end." << std::endl;
-
-                if (m_s.haveCmdDev)
-                {
-                    o << m_s.getWPthumbnail(((*allAllIterator).second->subintervals.sequence.size())-1);
-                }
+                o << test_duration.format_as_duration_HMMSS() << " into test \"" << m_s.testName << "\"" << std::endl;
+                o << step_duration.format_as_duration_HMMSS() << " into " << m_s.stepNNNN << " \"" << m_s.stepName << "\" at subinterval " << m_s.running_subinterval << std::endl << std::endl;
+                //o << " rollups complete at " << rollup_time.format_as_duration_HMMSSns() << " after subinterval end." << std::endl;
 
                 o << allAllSubintervalOutput.thumbnail(allAllSubintervalRollup.durationSeconds()) << std::endl;
 
+                if (m_s.haveCmdDev)
+                {
+                    o << m_s.getWPthumbnail(((*allAllIterator).second->subintervals.sequence.size())-1) << std::endl;
+                    o << m_s.subsystem_thumbnail;
+                }
+
                 std::cout << o.str();
+
                 if (routine_logging) log(m_s.masterlogfile,o.str());
             }
         }
@@ -779,8 +783,8 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                     o << "unexpected return code " << m_s.lastEvaluateSubintervalReturnCode;
 
                 o << std::endl;
-                std::cout << o.str();
-                if (routine_logging) log(m_s.masterlogfile,o.str());
+                if (routine_logging || EVALUATE_SUBINTERVAL_CONTINUE != m_s.lastEvaluateSubintervalReturnCode) {std::cout << o.str();}
+                log(m_s.masterlogfile,o.str());
             }
 
             if (

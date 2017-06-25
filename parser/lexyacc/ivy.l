@@ -274,13 +274,13 @@ inklude	BEGIN(inklude);
 \[\ *[oO][uU][tT][pP][uU][tT]\ *[fF][oO][lL][dD][eE][rR]\ *[rR][oO][oO][tT]\ *\] 	{
     /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_OUTPUT_FOLDER_ROOT" << std::endl; return token::KW_OUTPUT_FOLDER_ROOT; }
 
-\[\ *[sS][eE][tT]\ *[gG][eE][nN][eE][rR][aA][tT][oO][rR]\ *[tT][eE][mM][pP][lL][aA][tT][eE]\ *\] 	{
-    /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_SET_IOSEQUENCER_TEMPLATE" << std::endl; return token::KW_SET_IOSEQUENCER_TEMPLATE; }
-
 \[\ *[sS][eE][tT]\ *[iI][oO][gG][eE][nN][eE][rR][aA][tT][oO][rR]\ *[tT][eE][mM][pP][lL][aA][tT][eE]\ *\] 	{
     /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_SET_IOSEQUENCER_TEMPLATE" << std::endl; return token::KW_SET_IOSEQUENCER_TEMPLATE; }
 
 \[\ *[sS][eE][tT]\ *[iI][oO][gG][eE][nN][eE][rR][aA][tT][oO][rR]\ *[dD][eE][fF][aA][uU][lL][tT]\ *\] 	{
+    /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_SET_IOSEQUENCER_TEMPLATE" << std::endl; return token::KW_SET_IOSEQUENCER_TEMPLATE; }
+
+\[\ *[sS][eE][tT]\ *[iI][oO][sS][eE][qQ][uU][eE][nN][cC][eE][rR]\ *[tT][eE][mM][pP][lL][aA][tT][eE]\ *\] 	{
     /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning KW_SET_IOSEQUENCER_TEMPLATE" << std::endl; return token::KW_SET_IOSEQUENCER_TEMPLATE; }
 
 \[\ *[cC][rR][eE][aA][tT][eE]\ *[wW][oO][rR][kK][lL][oO][aA][dD]\ *\] 	{

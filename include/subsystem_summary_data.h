@@ -46,6 +46,8 @@ class subsystem_summary_data
     // addIn() adds the repetition factor of the other thing you are adding in.
     // Thus if you look at the sum() function, you need to divide sum values by the repetition factor.
 
+    bool detailed_thumbnail {false};
+
 
     // methods
     subsystem_summary_data(){};

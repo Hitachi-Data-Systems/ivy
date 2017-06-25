@@ -1957,8 +1957,11 @@ ivy_engine::edit_rollup(const std::string& rollupText, const std::string& origin
 				<< " - max " << std::fixed << std::setprecision(1) << (100.*editWorkloadExecutionTimeSeconds.max()) << " ms"
 				<< std::endl << std::endl;
 
-			if (routine_logging) log(masterlogfile,o.str());
-			std::cout<< o.str();
+			if (routine_logging)
+			{
+                log(masterlogfile,o.str());
+                std::cout<< o.str();
+			}
             return std::make_pair(true,o.str());
 		}
 	}

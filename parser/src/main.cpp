@@ -51,11 +51,11 @@ void usage_message(char* argv_0)
         << "     Turns on logging of routine events." << std::endl << std::endl
         << "-hostname-hyphen" << std::endl
         << "     Recognize \"aardvark10-12\" as a single host named \"aardvark10-12\" rather than \"aardvark10, aardvark11, aardvark12\"." << std::endl << std::endl
-        << "-trace_lexer" << std::endl
+        << "-trace_lexer or -l" << std::endl
         << "     Log routine events and trace the \"lexer\" which breaks down the .ivyscript program into \"tokens\"." << std::endl << std::endl
-        << "-trace_parser" << std::endl
+        << "-trace_parser or -p" << std::endl
         << "     Log routine events and trace the \"parser\" which recognizes the syntax of the stream of tokens as a program." << std::endl << std::endl
-        << "-trace_evaluate" << std::endl
+        << "-trace_evaluate or -e" << std::endl
         << "     Log routine events and trace the execution of the compiled ivyscript program." << std::endl << std::endl
         << "-t" << std::endl
         << "     Same as -trace_lexer -trace_parser -trace_evaluate." << std::endl << std::endl
@@ -168,11 +168,11 @@ int main(int argc, char* argv[])
     {
         std::string item {argv[arg_index]};
 
-        if (item == "-log")            { routine_logging = true; continue; }
-        if (item == "-t")              { routine_logging = trace_lexer = trace_parser = trace_evaluate = true; continue; }
-        if (item == "-trace_lexer")    { routine_logging = trace_lexer = true; continue; }
-        if (item == "-trace_parser")   { routine_logging = trace_parser = true; continue; }
-        if (item == "-trace_evaluate") { routine_logging = trace_evaluate = true; continue; }
+        if (item == "-log")                            { routine_logging = true; continue; }
+        if (item == "-t")                              { routine_logging = trace_lexer = trace_parser = trace_evaluate = true; continue; }
+        if (item == "-trace_lexer"    || item == "-l") { routine_logging = trace_lexer = true; continue; }
+        if (item == "-trace_parser"   || item == "-p") { routine_logging = trace_parser = true; continue; }
+        if (item == "-trace_evaluate" || item == "-e") { routine_logging = trace_evaluate = true; continue; }
 
         if (item == "-hostname-hyphen") { hostname_hyphen = true; continue; }
 
