@@ -352,7 +352,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
     std::ostringstream o;
     bool need_comma = false;
 
-    o << "Subsystem: ";
+    o << "rollup filtered subsystem data: ";
 
     //This bit commented out as there's a separate thumbnail for CLPR data
 //    auto clpr_it = data.find("CLPR");
@@ -767,7 +767,8 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
             o << std::endl; // -----------------------------------------
         }
         else
-        {
+        {   // not detailed_thumbnail
+
             o << ", " << LDEV_count << " LDEVs: ";
 
             if (IOPS <= 0.0)
@@ -777,16 +778,16 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
             else
             {
                 o << "IOPS = " << std::fixed << std::setprecision(2) << IOPS;
-                o << "; service time = " << std::fixed << std::setprecision(3) << service_time_ms << " ms";
-                o << "; transfer rate = " << std::fixed << std::setprecision(2) << decimal_MB_per_second << " decimal MB/s.";
+                o << "; serv time = " << std::fixed << std::setprecision(3) << service_time_ms << " ms";
+                o << "; transfer rate = " << std::fixed << std::setprecision(2) << (decimal_MB_per_second/(1.024*1.024)) << " MiB/s";
 
                 if (random_IOPS > 0.0 )
                 {
-                    o << "; random blocksize = " << std::fixed << std::setprecision(3) << random_blocksize_KiB << " KiB";
+                    o << "; rand blk = " << std::fixed << std::setprecision(2) << random_blocksize_KiB << " KiB";
                 }
                 if (sequential_IOPS > 0.0 )
                 {
-                    o << "; sequential blocksize = " << std::fixed << std::setprecision(3) << sequential_blocksize_KiB << " KiB";
+                    o << "; seq blk = " << std::fixed << std::setprecision(2) << sequential_blocksize_KiB << " KiB";
                 }
             }
         }

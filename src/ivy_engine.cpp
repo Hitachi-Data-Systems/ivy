@@ -1708,7 +1708,8 @@ ivy_engine::edit_rollup(const std::string& rollupText, const std::string& origin
             << "rollup_name = \"" << rollupText << "\""
             << ", parameters = \"" << original_parametersText << "\""
             << ")" << std::endl;
-        std::cout << o.str();
+        std::cout << o.str()
+            << std::endl;  // The extra new line groups fine-grained DFC lines showing first what happened in English, and then here show setting the resulting new IOPS.
         log (m_s.masterlogfile,o.str());
         log(ivy_engine_logfile,o.str());
     }

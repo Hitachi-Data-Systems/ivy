@@ -393,7 +393,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 //                o << "\"all=all\" rollup\'s configuration under test:" << std::endl
 //                  << m_s.rollups.get_all_equals_all_instance()->test_config_thumbnail;
 
-                o  << m_s.rollups.get_all_equals_all_instance()->subsystem_data_by_subinterval.back().thumbnail() << std::endl;
+                o  << "all=all " << m_s.rollups.get_all_equals_all_instance()->subsystem_data_by_subinterval.back().thumbnail() << std::endl;
 
                 m_s.subsystem_thumbnail = o.str();
 
@@ -724,14 +724,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             {
                 pear.second->collect_and_push_focus_metric();
                 if (m_s.have_pid) pear.second->perform_PID();
-            }
-            if (m_s.have_pid)
-            {
-                // this puts a blank line to separate from the PID loops' [EditRollup} lines.
-                std::ostringstream o;
-                o << std::endl;
-                std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
             }
 
             std::string s = m_s.focus_caption();

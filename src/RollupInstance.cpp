@@ -552,7 +552,7 @@ void RollupInstance::perform_PID()
 
             monotone_count = 0;
 
-            {std::ostringstream o; o << "Starting new adaptive PID cycle at overall subinterval " << subinterval_count << "." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+            {std::ostringstream o; o << "Starting new adaptive PID cycle at overall subinterval " << subinterval_count << "." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
         }
         else
         {
@@ -585,17 +585,17 @@ void RollupInstance::perform_PID()
                 {
                     on_way_up = true;
                     monotone_count = 1;
-                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - initial IOPS movement is upwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - initial IOPS movement is upwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                 }
                 else if (total_IOPS < total_IOPS_last_time)
                 {
                     on_way_down = true;
                     monotone_count = 1;
-                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - initial IOPS movement is downwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - initial IOPS movement is downwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                 }
                 else
                 {
-                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - always calculated exactly same IOPS this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - always calculated exactly same IOPS this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                 }
             }
             else
@@ -620,7 +620,7 @@ void RollupInstance::perform_PID()
                     {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID
                         << " - increasing gain because over at least  " << m_s.balanced_step_direction_by
                         << " IOPS adjustments, over two thirds of the adjustments were in the same direction"
-                        << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                        << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                     b_count++;
 
                     gain_history
@@ -673,7 +673,7 @@ void RollupInstance::perform_PID()
                                 m_s.last_gain_adjustment_subinterval = m_s.running_subinterval; // warmup extends until at least the last gain adjustmenty
                                 {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw inflection " << (on_way_up ? "upwards" : "downwards")
                                     << ", size of swing is " << std::fixed << std::setprecision(2) << (100.*swing_fraction_of_IOPS) << "% of its midpoint IOPS.  "
-                                    << "Due to excessive swing size in both directions reducing gain at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                                    << "Due to excessive swing size in both directions reducing gain at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                                 adaptive_PID_subinterval_count = 0;  // other things get reset from this
                                 d_count++;
 
@@ -696,14 +696,14 @@ void RollupInstance::perform_PID()
                                 previous_inflection = this_inflection;
                                 {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw inflection " << (on_way_up ? "upwards" : "downwards")
                                     << ", size of swing is " << std::fixed << std::setprecision(2) << (100.*swing_fraction_of_IOPS) << "% of its midpoint IOPS"
-                                    << ", starting new swing at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                                    << ", starting new swing at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                             }
                         }
                         else // this is the first inflection point this adaptive PID cycle, start the first swing.
                         {
                             previous_inflection = this_inflection;
                             have_previous_inflection = true;
-                            {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw first inflection (" << (on_way_up ? "upwards" : "downwards") << ") this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                            {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw first inflection (" << (on_way_up ? "upwards" : "downwards") << ") this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                         }
                     }
                     else
@@ -722,7 +722,7 @@ void RollupInstance::perform_PID()
                             {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID
                                 << " - increasing gain because over at least " << m_s.max_monotone
                                 << " consecutive subintervals, all IOPS adjustments were in the same direction"
-                                << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                                << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                             m_count++;
 
                             gain_history
@@ -739,7 +739,7 @@ void RollupInstance::perform_PID()
                         else
                         {
                             std::ostringstream o;
-                            o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - IOPS kept going " << (on_way_up ? "upwards" : "downwards") << " (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str());
+                            o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - IOPS kept going " << (on_way_up ? "upwards" : "downwards") << " (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str());
                         }
                     }
                 }
