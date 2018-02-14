@@ -70,6 +70,7 @@ bool endsIn(std::string s, std::string ending);
 
 std::string rewrite_HHMMSS_to_seconds(std::string);
 
+std::string safe_string(const unsigned char* p, unsigned int l); // stops at nulls, unprintables changed to '.'
 std::string remove_non_alphameric(std::string s);
 std::string convert_non_alphameric_to_underscore(std::string s);
 std::string convert_non_alphameric_or_hyphen_or_period_to_underscore(std::string s);
@@ -98,6 +99,8 @@ std::string toUpper(std::string s);
 std::string toLower(std::string s);
 std::string justTheCommas(std::string);
 std::string remove_underscores(std::string);
+std::string LDEV_to_string(uint16_t);
+std::string LDEV_to_string(unsigned int); // calls the uint16_t version
 
 // CSV file operations - quoted strings in csv column values.
 // A quoted string starts with either a single or double quote - the "starting quote" and continues to the closing quote mark of the same type as the starting quote.
@@ -122,11 +125,13 @@ bool isPlusSignCombo(std::string& callers_error_message, int& callersNumberOfFie
 ivy_float number_optional_trailing_percent(const std::string& s /* e.g. "1.2%" */, std::string name_associated_with_value_for_error_message = std::string("") );  // throws std::invalid_argument
 unsigned int unsigned_int(const std::string&, std::string name_associated_with_value_for_error_message = std::string("") );
 
+std::string render_string_harmless(const std::string s);
 std::string quote_wrap(const std::string s);
 std::string quote_wrap_except_number(const std::string s);
 std::string quote_wrap_csvline_except_numbers(const std::string csvline); // This is specifically so that when you double-click on an ivy csv file to launch Excel, it won't think LDEV names are times, etc.
 
 std::string column_header_to_identifier(const std::string&s);
+std::string munge_to_identifier(const std::string&s);
 
 void xorshift64star(uint64_t&);
 
@@ -141,3 +146,8 @@ bool normalized_identifier_equality(const std::string& s1, const std::string& s2
 std::string remove_trailing_fractional_zeros(std::string s);
 
 std::string rewrite_HHMMSS_to_seconds(std::string s);
+
+std::string byte_as_hex(unsigned char);
+
+std::string left(const std::string&,unsigned int);  // leftmost "n" characters
+std::string right(const std::string&,unsigned int);

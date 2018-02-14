@@ -725,6 +725,11 @@ void pipe_driver_subthread::threadRun()
             }
             if (routine_logging)
             {
+                std::ostringstream o;
+                o << "execl(\"usr/bin/ssh\", \"ssh\", \"-t\", \"-t\", \""
+                    << login << "\", \"" << cmd << "\", \"-log\", \"" << arg << "\", \"" << serial << "\", \"" << remote_logfilename << "\")" << std::endl;
+                log(logfilename,o.str());
+
                 execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(), "-log", arg.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
             }
             else
@@ -864,7 +869,7 @@ void pipe_driver_subthread::threadRun()
             if ( i == (prompt.size()-hellowhirrled.size()) )
             {
                 std::ostringstream o;
-                o << "Remote ";
+                o << "<Error> Remote ";
                 if (pCmdDevLUN) o << "ivy_cmddev";
                 else            o << "ivyslave";
                 o << " startup failure, saying \"" << prompt << "\"." << std::endl;

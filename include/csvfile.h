@@ -48,8 +48,13 @@ class csvfile
 //methods
     public:
         csvfile();
+
         csvfile(const std::string& filename) { load(filename); }
+
         virtual ~csvfile();
+
+        void clear() { raw_values.clear(); column_by_header_identifier_value.clear(); }
+
         friend std::ostream& operator<<(std::ostream&, const csvfile&);
 
         std::pair<bool,std::string> load(const std::string& /*filename*/);

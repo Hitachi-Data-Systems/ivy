@@ -550,6 +550,9 @@ std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval
 // throws std::invalid_argument.    Shows WP for each CLPR on the watch list as briefly as possible
 {
 	std::ostringstream result;
+
+	result << "Available test CLPRs:";
+
 	for (auto& pear : cooldown_WP_watch_set) // std::set<std::pair<std::string /*CLPR*/, Subsystem*>>
 	{
 		const std::string& CLPR {pear.first};
@@ -573,19 +576,20 @@ std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval
 		}
 
 
-		if (result.str().size() > 0) result << " ";
 
-		result << cereal << ':' << CLPR << ":WP=" << std::fixed << std::setprecision(3) << (100.*WP) << '%';
+		result << " <" << cereal << " " << CLPR << ": WP = " << std::fixed << std::setprecision(3) << (100.*WP) << '%';
 
 		if (subinterval_index >-1)
 		{
 			ivy_float delta, slew_rate;
 			delta = p_RAID->get_wp_change_from_last_subinterval( CLPR,subinterval_index );
 			slew_rate = delta/subinterval_seconds;
-			result << ' ';
+			result << ", ";
 			if (slew_rate >= 0.0) result << '+';
 			result << std::fixed << std::setprecision(3) << (100.*slew_rate) << "%/sec";
 		}
+
+		result << ">";
 	}
 
 	return result.str();

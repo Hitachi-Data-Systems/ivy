@@ -270,7 +270,7 @@ std::pair<bool /*success*/, std::string /* message */>
         std::ostringstream o;
         o << std::endl << "Note:" << std::endl
             << "Sometimes the ssh command to start up ivyslave on a test host can take a long time when waiting for DNS timeouts.  "
-            << "This can be speeded up by editing resolv.conf to use /etc/hosts first, or options for the sshd daemon can be edited; search for \"ssh login timeout\"." << std::endl << std::endl;
+            << "This can be speeded up by editing /etc/nsswitch.conf / resolv.conf to use /etc/hosts first, or options for the sshd daemon can be edited; search for \"ssh login timeout\"." << std::endl << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
     }

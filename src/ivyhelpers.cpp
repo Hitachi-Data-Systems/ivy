@@ -798,13 +798,13 @@ std::string UnwrapCSVcolumn(std::string s)
 	return s;
 }
 
-std::string quote_wrap(const std::string s)
+std::string render_string_harmless(const std::string s)
 {
     std::ostringstream o;
-    o << '\"';
     for (unsigned int i=0; i<s.size(); i++)
     {
-        switch (s[i])
+        auto c = s[i];
+        switch (c)
         {
             case '\'': o << "\\\'"; break;
             case '\"': o << "\\\""; break;
@@ -816,9 +816,21 @@ std::string quote_wrap(const std::string s)
             case '\f': o << "\f";   break;
             case '\v': o << "\\v";  break;
             case '\0': o << "\\0";  break;
-            default:   o << s[i];
+            default:
+            {
+                if (isprint(c)) o << c;
+                else            o << byte_as_hex(c);
+            }
         }
     }
+    return o.str();
+}
+
+std::string quote_wrap(const std::string s)
+{
+    std::ostringstream o;
+    o << '\"';
+    render_string_harmless(s);
     o << '\"';
     return o.str();
 }
@@ -1153,8 +1165,75 @@ std::string rewrite_HHMMSS_to_seconds( std::string s )
 }
 
 
+std::string LDEV_to_string(unsigned int ldev)
+{
+    if ( ldev > 0xffff )
+    {
+        std::ostringstream o;
+        o << "LDEV_to_string( ldev = 0x" << std::uppercase << std::hex << ldev << " ) - max ldev value is 0xFFFF";
+        throw std::invalid_argument(o.str());
+    }
+    return LDEV_to_string((uint16_t) ldev);
+}
+
+std::string LDEV_to_string(uint16_t ldev)
+{
+    std::ostringstream helldev;
+
+    helldev << std::hex << std::setfill('0') << std::setw(4) << std::uppercase << ldev;
+
+    return helldev.str().substr(0,2) + std::string(":") + helldev.str().substr(2,2);
+}
 
 
+std::string byte_as_hex(unsigned char c)
+{
+    std::ostringstream o;
+    o << "0x" << std::hex << std::setfill('0') << std::setw(2) << (unsigned int) c;
+    return o.str();
+}
+
+std::string safe_string(const unsigned char* p, unsigned int l) // stops at nulls, unprintables changed to '.'
+{
+    std::string s {};
+    for (unsigned int i = 0; i < l; i++)
+    {
+        unsigned char c = *p++;
+        if (c == 0) break;
+        if (isprint(c)) { s.push_back(c)   ;}
+        else            { s.push_back('.') ;}
+    }
+    return s;
+}
+
+std::string munge_to_identifier(const std::string&s)
+{
+    std::ostringstream o;
+    for (auto c : s)
+    {
+        if (isalnum(c)) o << c;
+        else            o << '_';
+    }
+    return o.str();
+}
+
+std::string left(const std::string& s,unsigned int n)  // leftmost "n" characters
+{
+    auto sn = s.size();
+
+    if ( n >= sn ) return s;
+
+    return (s.substr(0,n));
+}
+
+std::string right(const std::string& s,unsigned int n )
+{
+    auto sn = s.size();
+
+    if ( n >= sn ) return s;
+
+    return (s.substr(sn-n,n));
+}
 
 
 
