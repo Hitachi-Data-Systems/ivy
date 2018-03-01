@@ -495,7 +495,7 @@ std::string pipe_driver_subthread::get_line_from_pipe
             continue;
         }
 
-        if (startsWith(s, std::string("<Error>"))) throw std::runtime_error(s);
+        if ( startsWith(s, std::string("<Error>")) || startsWith(s, std::string("Error:")) ) throw std::runtime_error(s);
 
         return s;
     }
@@ -1417,7 +1417,53 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
-
+                        gatherStart.setToNow();
+                        try
+                        {
+                            send_and_get_OK("get UR_Jnl");
+                            try
+                            {
+                                process_ivy_cmddev_response(currentGD, gatherStart);
+                            }
+                            catch (std::invalid_argument& iaex)
+                            {
+                                std::ostringstream o;
+                                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get UR_Jnl\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+                            catch (std::runtime_error& reex)
+                            {
+                                std::ostringstream o;
+                                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get UR_Jnl\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            std::ostringstream o;
+                            o << "\"get UR_Jnl\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            master_slave_cv.notify_all();
+                            return;
+                        }
 
                         // Post-processing after gather to fill in derived metrics.
 

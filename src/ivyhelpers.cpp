@@ -927,14 +927,10 @@ bool isPlusSignCombo(std::string& callers_error_message, int& callersNumberOfFie
 // - May not have two consecutive '+'
 // Number of fields returned is the same as 1 + number of '+'
 {
-
-//*debug*/std::cout<< "isPlusSignCombo(std::string& callers_error_message, int& callersNumberOfFields, const std::string& token=\"" << token << "\"." << std::endl;
 	callers_error_message.clear();
 	callersNumberOfFields = -1;
 
 	int plus_signs_seen {0};
-
-//*debug*/std::cout<< "token.length()=" << token.length() << "." << std::endl;
 
 	if (0 == token.length())
 	{

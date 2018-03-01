@@ -289,7 +289,7 @@ std::pair<bool /*success*/, std::string /* message */>
                 (
                     u_lk,
                     leftnow + std::chrono::seconds(ivy_ssh_timeout),
-                    [&pear]() { return pear.second->startupComplete; }
+                    [&pear]() { return pear.second->startupComplete || pear.second->dead; }
                 )
             )
             {
@@ -526,7 +526,7 @@ std::pair<bool /*success*/, std::string /* message */>
                             (
                                 u_lk,
                                 leftnow + std::chrono::seconds(ivy_ssh_timeout),
-                                [&p_pipe_driver_subthread](){return p_pipe_driver_subthread->startupComplete;}
+                                [&p_pipe_driver_subthread](){return p_pipe_driver_subthread->startupComplete || p_pipe_driver_subthread->dead;}
                         )
                     )
                         {
@@ -600,7 +600,7 @@ std::pair<bool /*success*/, std::string /* message */>
                             (
                                 u_lk,
                                 start_getconfig_time_point + std::chrono::seconds(get_config_timeout_seconds /* see ivydefines.h */),
-                                [&p_pipe_driver_subthread](){return p_pipe_driver_subthread->commandComplete;}
+                                [&p_pipe_driver_subthread](){ return p_pipe_driver_subthread->commandComplete || p_pipe_driver_subthread->dead; }
                             )
                         )
                         {
