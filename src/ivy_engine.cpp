@@ -584,7 +584,7 @@ std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval
 			ivy_float delta, slew_rate;
 			delta = p_RAID->get_wp_change_from_last_subinterval( CLPR,subinterval_index );
 			slew_rate = delta/subinterval_seconds;
-			result << ", ";
+			result << " ";
 			if (slew_rate >= 0.0) result << '+';
 			result << std::fixed << std::setprecision(3) << (100.*slew_rate) << "%/sec";
 		}
