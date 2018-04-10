@@ -3369,7 +3369,10 @@ ivy_engine::set(const std::string& thingee,
 }
 
 
+void remove_empty_columns()
+{
 
+}
 
 
 

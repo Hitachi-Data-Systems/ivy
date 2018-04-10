@@ -20,6 +20,7 @@
 
 
 #include <sys/stat.h>
+#include <cstring>
 
 #include "ivybuilddate.h"
 #include "ivy_engine.h"

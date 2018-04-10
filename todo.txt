@@ -1,3 +1,7 @@
+- ALLOW hyphens in hostnames [come up with new syntax for hostname ranges]
+
+- stop logging internally-invoked "edit rollup" calls in the ivy engine API call list.
+
 - restore -t tracing
 
 - when creating output folders and files, make them deletable by anyone

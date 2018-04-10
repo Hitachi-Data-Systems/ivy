@@ -389,7 +389,7 @@ void WorkloadThread::WorkloadThreadRun() {
 						if (i>0) // i.e. it didn't work on the first try - this call is documented to fail spuriously.
 						{
 							std::ostringstream o;
-							o << std::endl << "[Exception] - it took " << (i+1) << " attempts to get the lock at the end of the subinterval." << std::endl;
+							o << std::endl << "<Warning> - it took " << (i+1) << " attempts to get the lock at the end of the subinterval." << std::endl;
 							o << "The std::mutex::try_lock() call is documented to fail spuriously, so at this point we just want to see how often this is happening." << std::endl;
 							log(slavethreadlogfile, o.str());
 						}

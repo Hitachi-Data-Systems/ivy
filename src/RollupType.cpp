@@ -30,6 +30,7 @@
 #include <set>
 #include <stdexcept>
 #include <sys/stat.h>
+#include <cstring>
 
 #include "ivytime.h"
 #include "ivydefines.h"

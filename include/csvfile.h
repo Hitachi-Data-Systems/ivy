@@ -57,6 +57,8 @@ class csvfile
 
         friend std::ostream& operator<<(std::ostream&, const csvfile&);
 
+        std::string details();
+
         std::pair<bool,std::string> load(const std::string& /*filename*/);
 
         int rows();
@@ -95,5 +97,7 @@ class csvfile
             // This returns a column slice, e.g. "IOPS,56,67,88"
 
         int lookup_column(const std::string& /* header name */);
+
+        void remove_empty_columns();
 
 };

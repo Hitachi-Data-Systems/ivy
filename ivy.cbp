@@ -130,6 +130,11 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 			</Target>
+			<Target title="remove_empty_columns">
+				<Option output="bin/remove_empty_columns" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;" />
@@ -143,7 +148,10 @@
 			<Add directory="include" />
 		</Compiler>
 		<Linker>
+			<Add option="-static-libstdc++" />
 			<Add option="-lrt -static-libstdc++" />
+			<Add library="/opt/rh/devtoolset-7/root/lib/gcc/x86_64-redhat-linux/7/libstdc++.a" />
+			<Add directory="/opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7" />
 		</Linker>
 		<Unit filename="../LUN_discovery/include/printableAndHex.h">
 			<Option target="ivymaster" />
@@ -317,6 +325,7 @@
 			<Option target="csv_lookup_column" />
 			<Option target="csv_row" />
 			<Option target="csv_column" />
+			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="include/discover_luns.h">
 			<Option target="ivymaster" />
@@ -352,6 +361,7 @@
 			<Option target="csv_lookup_column" />
 			<Option target="csv_row" />
 			<Option target="csv_column" />
+			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="include/ivylinuxcpubusy.h">
 			<Option target="ivymaster" />
@@ -361,6 +371,7 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 			<Option target="clear_hung_ivy_threads" />
+			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="include/pattern.h">
 			<Option target="ivymaster" />
@@ -631,6 +642,7 @@
 			<Option target="csv_lookup_column" />
 			<Option target="csv_row" />
 			<Option target="csv_column" />
+			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="src/discover_luns.cpp">
 			<Option target="ivymaster" />
@@ -671,6 +683,7 @@
 			<Option target="csv_column" />
 			<Option target="testRegex" />
 			<Option target="test_LDEVset" />
+			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="src/ivylinuxcpubusy.cpp">
 			<Option target="ivymaster" />
@@ -694,6 +707,7 @@
 			<Option target="csv_column" />
 			<Option target="testRegex" />
 			<Option target="test_LDEVset" />
+			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="src/makedict.cpp">
 			<Option target="makedict" />
@@ -707,6 +721,9 @@
 		</Unit>
 		<Unit filename="src/prepare_dedupe.cpp">
 			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/remove_empty_columns.cpp">
+			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="src/rollup_Hitachi_RAID_data.cpp">
 			<Option target="ivymaster" />

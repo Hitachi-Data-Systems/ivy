@@ -39,46 +39,21 @@ csvfile::~csvfile()
 
 std::ostream& operator<<(std::ostream& os, const csvfile& c)
 {
-    for (const auto& row : c.raw_values)
-    {
-        bool first_col;
-
-        first_col = true;
-
-        for (const auto& v : row)
-        {
-            if (!first_col) { os << ','; }
-
-            first_col=false;
-
-            os << v;
-        }
-        os << std::endl;
-    }
-   return os;
-}
-
-
-std::string csvfile::details()
-{
-   std::ostringstream os;
-
-   os << "csvfile<" << (((int)raw_values.size())-1) << " rows after header row.>" << std::endl;
-   for (int row=-1; row < (((int)raw_values.size())-1); row++)
+   os << "csvfile<" << (((int)c.raw_values.size())-1) << " rows after header row.>" << std::endl;
+   for (int row=-1; row < (((int)c.raw_values.size())-1); row++)
    {
         os << "<csvfile row " << row << ">";
-        const std::vector<std::string>& r = raw_values[row+1];
+        const std::vector<std::string>& r = c.raw_values[row+1];
         os << " " << r.size() << " columns ";
         for (auto& s : r) os << "  \"" << s << "\"";
         os << std::endl;
    }
 
-   for (auto& pear : column_by_header_identifier_value)
+   for (auto& pear : c.column_by_header_identifier_value)
    {
         os << "\"" << pear.first << "\" is column " << pear.second << std::endl;
    }
-
-   return os.str();
+   return os;
 }
 
 std::pair<bool,std::string> csvfile::load(const std::string& filename)
@@ -86,42 +61,34 @@ std::pair<bool,std::string> csvfile::load(const std::string& filename)
     raw_values.clear();
     column_by_header_identifier_value.clear();
 
-    std::istream* p_istream = &std::cin;
-
-    std::ifstream input_stream;
-
-    if (!filename.empty())
+    struct stat struct_stat;
+    if(stat(filename.c_str(),&struct_stat))
     {
-        struct stat struct_stat;
-        if(stat(filename.c_str(),&struct_stat))
-        {
-            std::ostringstream o;
-            o << "<Error> csvfile::load() - csv filename \"" + filename + "\" does not exist." << std::endl;
-            return std::make_pair(false,o.str());
-        }
+        std::ostringstream o;
+        o << "<Error> csvfile::load() - csv filename \"" + filename + "\" does not exist." << std::endl;
+        return std::make_pair(false,o.str());
+    }
 
-        if(!S_ISREG(struct_stat.st_mode))
-        {
-            std::ostringstream o;
-            o << "csvfile::load() - csv filename \"" + filename + "\" is not a regular file." << std::endl;
-            return std::make_pair(false,o.str());
-        }
+    if(!S_ISREG(struct_stat.st_mode))
+    {
+        std::ostringstream o;
+        o << "csvfile::load() - csv filename \"" + filename + "\" is not a regular file." << std::endl;
+        return std::make_pair(false,o.str());
+    }
 
-        input_stream.open(filename);
+    std::ifstream input_stream(filename);
 
-        if (!input_stream.is_open())
-        {
-            std::ostringstream o;
-            o << "csvfile::load() - csv filename \"" + filename + "\" failed to open for input." << std::endl;
-            return std::make_pair(false,o.str());
-        }
-        p_istream = &input_stream;
+    if (!input_stream.is_open())
+    {
+        std::ostringstream o;
+        o << "csvfile::load() - csv filename \"" + filename + "\" failed to open for input." << std::endl;
+        return std::make_pair(false,o.str());
     }
 
     std::string csvline;
     std::string token;
 
-    while (std::getline(*p_istream,csvline))
+    while (std::getline(input_stream,csvline))
     {
         raw_values.push_back(std::vector<std::string>());
 
@@ -134,7 +101,7 @@ std::pair<bool,std::string> csvfile::load(const std::string& filename)
         }
     }
 
-    // p_istream->close();
+    input_stream.close();
 
     if (raw_values.size() > 0) for ( auto& s: raw_values[0] )
     {
@@ -271,7 +238,6 @@ std::string csvfile::column( const std::string& column_header )
       return column(col);
 }
 
-
 void csvfile::remove_empty_columns()
 {
     if ( raw_values.size() <= 1 ) return;  // no data rows
@@ -286,12 +252,11 @@ void csvfile::remove_empty_columns()
     // earlier as-yet-unprocessed columns don't get renumbered.
     {
         bool leeg;
-
         leeg = true;
 
         for (unsigned int row = 1; row < (raw_values[row].size()); row++)
         {
-            if (!(raw_values[row][col].empty()))
+            if (raw_values[row][col].size() > 0)
             {
                 leeg = false;
                 break;
@@ -300,44 +265,12 @@ void csvfile::remove_empty_columns()
 
         if (leeg)
         {
-            for (auto& csv_row : raw_values)
+            for (auto& row : raw_values)
             {
-                if (csv_row.size() <= col) continue;
+                if (row.size() <= col) continue;
 
-                csv_row.erase(csv_row.begin()+col);                    //
+                row.erase(row.begin()+col);                    //
             }
         }
-        if (col == 0) break;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
