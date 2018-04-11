@@ -138,7 +138,7 @@
 		</Build>
 		<VirtualTargets>
 			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;" />
-			<Add alias="csv_utilities" targets="csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;" />
+			<Add alias="csv_utilities" targets="csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
@@ -150,6 +150,7 @@
 		<Linker>
 			<Add option="-static-libstdc++" />
 			<Add option="-lrt -static-libstdc++" />
+			<Add option="-Wl,--wrap=memcpy" />
 			<Add library="/opt/rh/devtoolset-7/root/lib/gcc/x86_64-redhat-linux/7/libstdc++.a" />
 			<Add directory="/opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7" />
 		</Linker>
@@ -711,6 +712,9 @@
 		</Unit>
 		<Unit filename="src/makedict.cpp">
 			<Option target="makedict" />
+		</Unit>
+		<Unit filename="src/memcpy.c">
+			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="src/pattern.cpp">
 			<Option target="ivymaster" />
