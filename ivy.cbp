@@ -135,6 +135,11 @@
 				<Option type="0" />
 				<Option compiler="gcc" />
 			</Target>
+			<Target title="test_hosts_list">
+				<Option output="bin/test_hosts_list" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;" />
@@ -334,6 +339,7 @@
 		</Unit>
 		<Unit filename="include/hosts_list.h">
 			<Option target="ivymaster" />
+			<Option target="test_hosts_list" />
 		</Unit>
 		<Unit filename="include/iosequencer_stuff.h">
 			<Option target="ivymaster" />
@@ -652,13 +658,16 @@
 		<Unit filename="src/hosts/hosts.l">
 			<Option compile="1" />
 			<Option target="ivymaster" />
+			<Option target="test_hosts_list" />
 		</Unit>
 		<Unit filename="src/hosts/hosts.y">
 			<Option compile="1" />
 			<Option target="ivymaster" />
+			<Option target="test_hosts_list" />
 		</Unit>
 		<Unit filename="src/hosts_list.cpp">
 			<Option target="ivymaster" />
+			<Option target="test_hosts_list" />
 		</Unit>
 		<Unit filename="src/ivy_RAID800.cpp">
 			<Option target="ivymaster" />
@@ -715,6 +724,22 @@
 		</Unit>
 		<Unit filename="src/memcpy.c">
 			<Option compilerVar="CC" />
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+			<Option target="clear_hung_ivy_threads" />
+			<Option target="makedict" />
+			<Option target="csv_rows" />
+			<Option target="csv_header_columns" />
+			<Option target="csv_columns_in_row" />
+			<Option target="csv_column_header" />
+			<Option target="csv_raw_cell_value" />
+			<Option target="csv_cell_value" />
+			<Option target="csv_lookup_column" />
+			<Option target="csv_row" />
+			<Option target="csv_column" />
+			<Option target="testRegex" />
+			<Option target="test_LDEVset" />
+			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="src/pattern.cpp">
 			<Option target="ivymaster" />
@@ -755,6 +780,9 @@
 		</Unit>
 		<Unit filename="src/test_LDEVset.cpp">
 			<Option target="test_LDEVset" />
+		</Unit>
+		<Unit filename="src/test_hosts_list.cpp">
+			<Option target="test_hosts_list" />
 		</Unit>
 		<Unit filename="src/test_subinterval.cpp">
 			<Option target="&lt;{~None~}&gt;" />

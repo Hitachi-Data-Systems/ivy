@@ -97,11 +97,15 @@ bool hosts_list::compile(const std::string& s)
     {
         std::ostringstream o;
 
-        o << "Unsuccessful compile of list of test hosts \"" << s << "\"." << std::endl
-        << "Example of a list of test hosts - \"aardvark, scooter12-15, 192.168.0.0\"." << std::endl
-        << "ivy accepts only hostnames that look like an \"identifier\", that is, a word that starts with a letter" << std::endl
-        << "followed by zero or more letters, digits, or underscores _. Ranges of hostnames with numbered suffixes" << std::endl
-        << "as in scooter12-15 are expanded as in scooter12, scooter13, scooter14, scooter15.";
+        // sorry that this is duplicated here and in host.y
+
+        o << "Unsuccessful compile of list of test hosts \"" << s << "\"." << std::endl<< std::endl
+        << "Example of a list of test hosts - \"aardvark, scooter[00-15], 192.168.0.0\"." << std::endl << std::endl
+        << "ivy accepts only hostnames that start with a letter followed by " << std::endl
+        << "zero or more letters (a-zA-Z), digits (0-9), hyphens (-) or underscores (_)." << std::endl << std::endl
+        << "Ranges of hostnames with numbered suffixes as in scooter[0-2] are expanded as scooter0, scooter1, scooter2." << std::endl << std::endl
+        << "Ranges of hostnames with numbered suffixes as in scooter[00-02] are expanded as scooter00, scooter01, scooter02." << std::endl
+        ;
 
         message += o.str();
     }

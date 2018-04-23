@@ -45,7 +45,7 @@ int hosts_string_start_line;
 
 ws         [ \t]+
 
-identifier [a-zA-Z]([a-zA-Z0-9]|_)*
+hostname [a-zA-Z]([-_a-zA-Z0-9])*
 
 unsigned_int [0-9]+
 
@@ -79,14 +79,14 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 		return token::IPV4_DOTTED_QUAD;
     }
 
-{identifier} {
+{hostname} {
 		yylval->p_str = new std::string(yytext);
 		if (!yylval->p_str) {
 			context_ref.error("out of memory in lexer");
 			exit(1);
 		}
-		if (trace_hosts_lexer) std::cout << "hosts lexer returning IDENTIFIER = " << *(yylval->p_str) << std::endl;
-		return token::IDENTIFIER;
+		if (trace_hosts_lexer) std::cout << "hosts lexer returning HOSTNAME = " << *(yylval->p_str) << std::endl;
+		return token::HOSTNAME;
     }
 
 {unsigned_int} {
@@ -100,8 +100,8 @@ dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
     }
 
 
-.	{
-		std::cout << "hosts lexer returning character \'" << yytext[0] << "\'" << std::endl;
+ .	{
+		if (trace_hosts_lexer) { std::cout << "hosts lexer returning character \'" << yytext[0] << "\'" << std::endl; }
 
         return yytext[0];
     }

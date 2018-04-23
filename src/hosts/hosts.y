@@ -38,8 +38,6 @@ using namespace std;
 
 bool trace_hosts_parser {false};
 
-extern bool hostname_hyphen;
-
 %}
 
 %parse-param { hosts_list&  context_ref }
@@ -51,7 +49,7 @@ extern bool hostname_hyphen;
 
 /* declare tokens */
 
-%token <p_str> IPV4_DOTTED_QUAD IDENTIFIER UNSIGNED_INTEGER
+%token <p_str> IPV4_DOTTED_QUAD HOSTNAME UNSIGNED_INTEGER
 %token END_OF_FILE
 
 %type <not_used> host_list
@@ -91,70 +89,57 @@ host_list:
         {
             if (trace_hosts_parser) std::cout << "hosts_list parser host_list \',\'" << std::endl;
         }
-    | host_list IDENTIFIER '-' UNSIGNED_INTEGER
+    | host_list HOSTNAME '[' UNSIGNED_INTEGER '-' UNSIGNED_INTEGER ']'
         {
-            if (trace_hosts_parser) std::cout<<"hosts_list parser host_list IDENTIFIER=" << (*($2)) << " \'-\' UNSIGNED_INTEGER=" << (*($4)) << std::endl;
+            if (trace_hosts_parser) {std::cout << "hosts_list parser host_list HOSTNAME=" << (*($2)) << " \'[\' UNSIGNED_INTEGER=" << (*($4)) << " \'-\' UNSIGNED_INTEGER=" << (*($6)) << " \']\'" << std::endl; }
 
-            if (hostname_hyphen)
             {
-                context_ref.hosts.push_back
-                (
-                    (*($2))
-                      +
-                    std::string("-")
-                      +
-                    (*($4))
-                );
+                std::string& base = *($2);  // we delete the strings after the life of these references
+                std::string& from = *($4);
+                std::string& to   = *($6);
 
-                delete $2;
-                delete $4;
-            }
-            else
-            {
+                unsigned int from_length = from.size();
+                    // there may be leading zeros, if so, we make sure the generated numbers have at least the same number of digits as the "from" value by adding leading zeros as necessary
 
+                unsigned int first, last;
                 {
-                    std::string& id = *($2);  // we delete the strings after the life of these references
-                    std::string& ui = *($4);
+                    std::istringstream i(from);
+                    i >> first;
+                }
+                {
+                    std::istringstream i(to);
+                    i >> last;
+                }
+                if (first >= last)
+                {
+                    context_ref.unsuccessful_compile=true;
+                    std::ostringstream o;
+                    o << "<Error> Invalid numbered hostname range - in \"" << base << "[" << from << "-" << to << "]\", the starting host number must be smaller than the ending number." << std::endl;
+                    context_ref.message += o.str();
+                }
 
-                    unsigned int suffix_length {0};
-                    for (unsigned int i = id.size()-1; i>0; i--)
-                    {
-                        if (!isdigit(id[i])) break;
-                        suffix_length++;
-                    }
-                    std::string id_base = id.substr(0,id.size()-suffix_length);
-                    std::string suffix = id.substr(id.size()-suffix_length,suffix_length);
-                    unsigned int first, last;
-                    {
-                        std::istringstream i(suffix);
-                        i >> first;
-                    }
-                    {
-                        std::istringstream i(ui);
-                        i >> last;
-                    }
-                    if (first >= last)
-                    {
-                        context_ref.unsuccessful_compile=true;
-                        std::ostringstream o;
-                        o << "<Error> Invalid numbered hostname range - in \"" << id << "-" << ui << "\", the starting host number is must be smaller than the ending number." << std::endl;
-                        context_ref.message += o.str();
-                    }
+                for (unsigned int i=first; i<=last; i++)
+                {
+                    {  // extra block to get fresh newly initialized variables.
 
-                    for (unsigned int i=first; i<=last; i++)
-                    {
                         std::ostringstream o;
-                        o << id_base << i;
-                        context_ref.hosts.push_back(o.str());
+                        o << i;
+                        std::string suffix = o.str();
+                        while (suffix.size() < from_length)
+                        {
+                            suffix = std::string("0") + suffix;
+                        }
+
+                        context_ref.hosts.push_back(base+suffix);
                     }
                 }
-                context_ref.has_hostname_range = true;
-                delete $2; delete $4;
             }
+            context_ref.has_hostname_range = true;
+            delete $2; delete $4; delete $6;
         }
-    | host_list IDENTIFIER
+    | host_list HOSTNAME
         {
-            if (trace_hosts_parser) std::cout<<"hosts_list parser host_list IDENTIFIER=" << (*($2)) << std::endl;
+            if (trace_hosts_parser) std::cout<<"hosts_list parser host_list HOSTNAME=" << (*($2)) << std::endl;
             context_ref.hosts.push_back(*($2));
             delete $2;
         }
@@ -174,8 +159,8 @@ namespace xy_
 {
 	void hosts::error(location const &loc, const std::string& s)
 	{
-		std::cout << "<Error> at " << loc << " invalid list of hostnames - " << s << std::endl;
-		std::cout << "A valid list of hostnames looks like \"winter, host16-18, 192.168.0.0\" which means the same as \"winter, host16, host17, host18, 192.168.0.0\"." << std::endl;
+		std::cout << "<Error> at " << loc << " invalid list of hostnames - \"" << s << "\"" << std::endl << std::endl;
+
 		context_ref.unsuccessful_compile = true;
 	}
 }
