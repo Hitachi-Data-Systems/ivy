@@ -37,6 +37,15 @@ csvfile::~csvfile()
     //dtor
 }
 
+void csvfile::clear()
+{
+    raw_values.clear();
+    column_by_header_identifier_value.clear();
+    is_loaded=false;
+    encountered_error=false;
+    error_message.clear();
+}
+
 std::ostream& operator<<(std::ostream& os, const csvfile& c)
 {
     for (const auto& row : c.raw_values)
@@ -61,6 +70,9 @@ std::ostream& operator<<(std::ostream& os, const csvfile& c)
 
 std::string csvfile::details()
 {
+    if (encountered_error) {return error_message;}
+    if (!is_loaded) {return "<Error> csvfile has not been loaded";}
+
    std::ostringstream os;
 
    os << "csvfile<" << (((int)raw_values.size())-1) << " rows after header row.>" << std::endl;
@@ -83,27 +95,36 @@ std::string csvfile::details()
 
 std::pair<bool,std::string> csvfile::load(const std::string& filename)
 {
-    raw_values.clear();
-    column_by_header_identifier_value.clear();
+    clear();
 
     std::istream* p_istream = &std::cin;
 
     std::ifstream input_stream;
 
-    if (!filename.empty())
+    if (filename.empty())
+    {
+        encountered_error = true;
+        error_message = "<Error> csvfile::load() was called with empty filename";
+        return std::make_pair(false,error_message);
+    }
+    else
     {
         struct stat struct_stat;
         if(stat(filename.c_str(),&struct_stat))
         {
             std::ostringstream o;
             o << "<Error> csvfile::load() - csv filename \"" + filename + "\" does not exist." << std::endl;
+            encountered_error = true;
+            error_message = o.str();
             return std::make_pair(false,o.str());
         }
 
         if(!S_ISREG(struct_stat.st_mode))
         {
             std::ostringstream o;
-            o << "csvfile::load() - csv filename \"" + filename + "\" is not a regular file." << std::endl;
+            o << "<Error> csvfile::load() - csv filename \"" + filename + "\" is not a regular file." << std::endl;
+            encountered_error = true;
+            error_message = o.str();
             return std::make_pair(false,o.str());
         }
 
@@ -112,7 +133,9 @@ std::pair<bool,std::string> csvfile::load(const std::string& filename)
         if (!input_stream.is_open())
         {
             std::ostringstream o;
-            o << "csvfile::load() - csv filename \"" + filename + "\" failed to open for input." << std::endl;
+            o << "<Error> csvfile::load() - csv filename \"" + filename + "\" failed to open for input." << std::endl;
+            encountered_error = true;
+            error_message = o.str();
             return std::make_pair(false,o.str());
         }
         p_istream = &input_stream;
@@ -144,12 +167,14 @@ std::pair<bool,std::string> csvfile::load(const std::string& filename)
     }
 
     // baseline_service_time_secondsstd::cout << "After csvfile::load: " << std::endl << *this << std::endl;
-
+    is_loaded = true;
     return std::make_pair(true,"");
 }
 
 int csvfile::lookup_column(const std::string& header_name)
 {
+    if ((!is_loaded) || encountered_error) return -2;
+
     auto it = column_by_header_identifier_value.find(column_header_to_identifier(header_name));
 
     if (it == column_by_header_identifier_value.end()) return -1;
@@ -159,6 +184,8 @@ int csvfile::lookup_column(const std::string& header_name)
 
 int csvfile::rows()
 {
+    if ((!is_loaded) || encountered_error) return -2;
+
     // not including header row.
     // returns -1 if file loaded didn't exist or was empty.
 
@@ -167,6 +194,8 @@ int csvfile::rows()
 
 int csvfile::header_columns()
 {
+    if ((!is_loaded) || encountered_error) return -2;
+
     // returns -1 if file loaded didn't exist or was empty.
 
     if ( raw_values.size() == 0 ) return -1;
@@ -176,6 +205,7 @@ int csvfile::header_columns()
 
 int csvfile::columns_in_row(int row)
 {
+    if ((!is_loaded) || encountered_error) return -2;
     // row number -1 means header row
 
     // returns -1 for an invalid row
@@ -189,6 +219,9 @@ int csvfile::columns_in_row(int row)
 
 std::string csvfile::raw_cell_value(int row, int col )
 {
+    if (encountered_error) {return error_message;}
+    if (!is_loaded) {return "<Error> csvfile has not been loaded";}
+
     // returns the exact characters found between commas in the source file
 
     // returns the empty string on invalid row or column
@@ -206,16 +239,25 @@ std::string csvfile::raw_cell_value(int row, int col )
 
 std::string csvfile::raw_cell_value(int row, const std::string& column_header )
 {
+    if (encountered_error) {return error_message;}
+    if (!is_loaded) {return "<Error> csvfile has not been loaded";}
+
     return raw_cell_value(row,lookup_column(column_header));
 }
 
 std::string csvfile::column_header(int col)
 {
+    if (encountered_error) {return error_message;}
+    if (!is_loaded) {return "<Error> csvfile has not been loaded";}
+
     return raw_cell_value(-1,col);
 }
 
 std::string csvfile::cell_value(int row, int col)
 {
+    if (encountered_error) {return error_message;}
+    if (!is_loaded) {return "<Error> csvfile has not been loaded";}
+
     // This "unwraps" the raw cell value.
 
     // First if it starts with =" and ends with ", we just clip those off and return the rest.
@@ -228,12 +270,18 @@ std::string csvfile::cell_value(int row, int col)
 
 std::string csvfile::cell_value(int row, const std::string& column_header)
 {
+    if (encountered_error) {return error_message;}
+    if (!is_loaded) {return "<Error> csvfile has not been loaded";}
+
     return UnwrapCSVcolumn(raw_cell_value(row,lookup_column(column_header)));
 }
 
 
 std::string csvfile::row(int r)
 {
+    if (encountered_error) {return error_message;}
+    if (!is_loaded) {return "<Error> csvfile has not been loaded";}
+
     // e.g. true,56.2,="bork"
 
     // -1 gives you the header row
@@ -253,6 +301,9 @@ std::string csvfile::row(int r)
 
 std::string csvfile::column(int col)
 {
+    if (encountered_error) {return error_message;}
+    if (!is_loaded) {return "<Error> csvfile has not been loaded";}
+
     // This returns a column slice, e.g. "IOPS,56,67,88"
     std::ostringstream o;
 
@@ -266,6 +317,9 @@ std::string csvfile::column(int col)
 
 std::string csvfile::column( const std::string& column_header )
 {
+    if (encountered_error) {return error_message;}
+    if (!is_loaded) {return "<Error> csvfile has not been loaded";}
+
       int col = lookup_column(column_header);
 
       return column(col);

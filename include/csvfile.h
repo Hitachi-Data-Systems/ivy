@@ -44,7 +44,9 @@ class csvfile
             // the column header value the user gives you.
             // So for lookups " 50% busy", 50__busy, or "50% BUSY" are synonymous.
 
-
+        bool is_loaded {false};
+        bool encountered_error {false};
+        std::string error_message {};
 //methods
     public:
         csvfile();
@@ -53,7 +55,7 @@ class csvfile
 
         virtual ~csvfile();
 
-        void clear() { raw_values.clear(); column_by_header_identifier_value.clear(); }
+        void clear();
 
         friend std::ostream& operator<<(std::ostream&, const csvfile&);
 

@@ -143,6 +143,7 @@
 		</Build>
 		<VirtualTargets>
 			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;" />
+			<Add alias="allall" targets="ivymaster;ivyslave;clear_hung_ivy_threads;csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
 			<Add alias="csv_utilities" targets="csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
 		</VirtualTargets>
 		<Compiler>
@@ -724,22 +725,6 @@
 		</Unit>
 		<Unit filename="src/memcpy.c">
 			<Option compilerVar="CC" />
-			<Option target="ivymaster" />
-			<Option target="ivyslave" />
-			<Option target="clear_hung_ivy_threads" />
-			<Option target="makedict" />
-			<Option target="csv_rows" />
-			<Option target="csv_header_columns" />
-			<Option target="csv_columns_in_row" />
-			<Option target="csv_column_header" />
-			<Option target="csv_raw_cell_value" />
-			<Option target="csv_cell_value" />
-			<Option target="csv_lookup_column" />
-			<Option target="csv_row" />
-			<Option target="csv_column" />
-			<Option target="testRegex" />
-			<Option target="test_LDEVset" />
-			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="src/pattern.cpp">
 			<Option target="ivymaster" />
