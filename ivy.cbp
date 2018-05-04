@@ -132,12 +132,13 @@
 			</Target>
 			<Target title="remove_empty_columns">
 				<Option output="bin/remove_empty_columns" prefix_auto="1" extension_auto="1" />
-				<Option type="0" />
+				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="/home/ian/messedup.csv" />
 			</Target>
 			<Target title="test_hosts_list">
 				<Option output="bin/test_hosts_list" prefix_auto="1" extension_auto="1" />
-				<Option type="0" />
+				<Option type="1" />
 				<Option compiler="gcc" />
 			</Target>
 		</Build>

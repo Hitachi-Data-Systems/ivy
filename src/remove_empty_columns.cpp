@@ -29,18 +29,24 @@ extern std::string csv_usage ;
 
 int main(int argc,char* argv[])
 {
-    std::string executable_name {argv[0]};
+    std::string executable_name { argv[0] };
 
-    if (1 != argc)
+    if (2 < argc)
     {
-        std::cout << "<Error> " << executable_name << " was called with " << (argc-1) << " arguments." << std::endl;
-        std::cout << executable_name << " must be called with no arguments. input is from stdin, output is to stdout." << std::endl;
+        std::cout << "<Error> " << executable_name << " was called with " << (argc-1) << " arguments." << std::endl << std::endl;
+        std::cout << executable_name << " must be called with zero or one arguments."<< std::endl
+            << "With no arguments, input is from stdin.  The optional argument is the name of the input file." << std::endl
+            << "Output is to stdout." << std::endl;
         return -1;
     }
 
+    std::string input_filename {};
+
+    if (argc > 1) { input_filename = std::string(argv[1]); }
+
     csvfile seesv {};
 
-    auto rv = seesv.load(std::string(""));  // reads from stdin
+    auto rv = seesv.load(input_filename);
 
     if (!rv.first)
     {

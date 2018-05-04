@@ -101,13 +101,7 @@ std::pair<bool,std::string> csvfile::load(const std::string& filename)
 
     std::ifstream input_stream;
 
-    if (filename.empty())
-    {
-        encountered_error = true;
-        error_message = "<Error> csvfile::load() was called with empty filename";
-        return std::make_pair(false,error_message);
-    }
-    else
+    if (!filename.empty())
     {
         struct stat struct_stat;
         if(stat(filename.c_str(),&struct_stat))
