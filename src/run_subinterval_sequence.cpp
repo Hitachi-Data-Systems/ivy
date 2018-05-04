@@ -92,10 +92,11 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             {
                 Hitachi_RAID_subsystem* pHitachiRAID = (Hitachi_RAID_subsystem*) pear.second;
                 pipe_driver_subthread* p_pds = pHitachiRAID->pRMLIBthread;
+                if (p_pds->pCmdDevLUN == nullptr) continue;
 
                 {
                     std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
-                    p_pds->commandString = std::string("gather");
+                    p_pds->commandString = std::string("gatherT0");
                     p_pds->command=true;
                     p_pds->commandComplete=false;
                     p_pds->commandSuccess=false;
@@ -117,6 +118,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             {
                 Hitachi_RAID_subsystem* pHitachiRAID = (Hitachi_RAID_subsystem*) pear.second;
                 pipe_driver_subthread* p_pds = pHitachiRAID->pRMLIBthread;
+                if (p_pds->pCmdDevLUN == nullptr) continue;
 
                 {
                     std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
@@ -229,6 +231,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
 
 
+    ivytime sendup_time;
     // Now the iosequencer threads are running the first subinterval
 
     while (true) // loop starts where we wait for iosequencer threads to have posted the results of a subinterval
@@ -285,34 +288,18 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             //std::cout << o.str();
         }
 
-
-
-        // Start of code to perform a "gather()" near the end of the subsystem so the resulting data will be fresh.
-        // It's assumed the gather time is comfortably smaller than the subinterval length.  We will see in the log entries.
-
-        ivytime gather_schedule;
-
-        ivytime tn_gather_start, tn_gather_complete, tn_gather_time;
-
+	// Issue the "gather" command to the ivy_cmddev's pipedriver_subthreads. The actual gather to ivy_cmddev itelf
+	// will be timed to start for just in time completion at the time of rollups 
 
         if (m_s.haveCmdDev)
         {
-            gather_schedule = m_s.subintervalEnd - ivytime( (long double) ( (1.0 + gather_lead_time_safety_margin) * m_s.overallGatherTimeSeconds.avg()) );
-            gather_schedule.waitUntilThisTime();
-
-//            std::system("clear");
-
-            tn_gather_start.setToNow();
-
-            std::chrono::system_clock::time_point leftnow {std::chrono::system_clock::now()};
-            int timeout_seconds {2};
-
             for (auto& pear : m_s.subsystems)
             {
                 if (0 == std::string("Hitachi RAID").compare(pear.second->type()))
                 {
                     Hitachi_RAID_subsystem* pHitachiRAID = (Hitachi_RAID_subsystem*) pear.second;
                     pipe_driver_subthread* p_pds = pHitachiRAID->pRMLIBthread;
+                    if (p_pds->pCmdDevLUN == nullptr) continue;
 
                     {
                         std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
@@ -333,12 +320,58 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 }
             }
 
+        }
+
+        RunningStat<ivy_float, ivy_int> time_in_hand;
+        time_in_hand.clear();
+
+        for (auto& pear : m_s.host_subthread_pointers)
+        {
+            {
+                std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
+
+                // Wait for each subtask to post "subinterval complete".
+                while (!pear.second->commandComplete) pear.second->master_slave_cv.wait(u_lk);
+
+                // Note that it is the subtask for each host that does the posting of iosequencer detail lines
+                // into the various rollups.  It does this after grabbing the lock to serialize access to the
+                // "ivy_engine" structure the rollups are kept in that is shared by the main thread and all
+                // the host driver subthreads.
+
+                if (!pear.second->commandSuccess)
+                {
+                    std::ostringstream o;
+                    o << std::endl << std::endl << "When waiting for subinterval complete, subthread for " << pear.first << " posted an error, saying "  << pear.second->commandErrorMessage << std::endl;
+                    std::cout << o.str();
+                    log (m_s.masterlogfile,o.str());
+                    m_s.kill_subthreads_and_exit();
+                }
+
+                time_in_hand.push(pear.second->time_in_hand_before_subinterval_end.getlongdoubleseconds());
+
+                pear.second->commandComplete=false; // reset for next pass
+                pear.second->commandSuccess=false;
+                pear.second->commandErrorMessage.clear();
+            }
+        }
+
+	// Measure time the send up time from ivyslave
+	ivytime now;
+        now.setToNow();
+	sendup_time = now - m_s.subintervalEnd;
+        m_s.sendupTime.push(sendup_time);
+
+        if (m_s.haveCmdDev)
+        {
+            std::chrono::system_clock::time_point leftnow {std::chrono::system_clock::now()};
+            int timeout_seconds {2};
             for (auto& pear : m_s.subsystems)
             {
                 if (0 == std::string("Hitachi RAID").compare(pear.second->type()))
                 {
                     Hitachi_RAID_subsystem* pHitachiRAID = (Hitachi_RAID_subsystem*) pear.second;
                     pipe_driver_subthread* p_pds = pHitachiRAID->pRMLIBthread;
+                    if (p_pds->pCmdDevLUN == nullptr) continue;
 
                     {
                         std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
@@ -380,10 +413,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                     }
                 }
             }
-            tn_gather_complete.setToNow();
-
-            ivytime tn_gather_time {tn_gather_complete - tn_gather_start};
-            m_s.overallGatherTimeSeconds.push(tn_gather_time.getlongdoubleseconds());
             {
                 std::ostringstream o;
 
@@ -402,43 +431,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                     log(m_s.masterlogfile,o.str());
                 }
             }
-        }
-        // end of code for gathering real-time data from subsystems.
-
-        //{ostringstream o; o << "done gathering real-time data from subsystems, if any.\n"; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
-
-        RunningStat<ivy_float, ivy_int> time_in_hand;
-        time_in_hand.clear();
-
-        for (auto& pear : m_s.host_subthread_pointers)
-        {
-            {
-                std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
-
-                // Wait for each subtask to post "subinterval complete".
-                while (!pear.second->commandComplete) pear.second->master_slave_cv.wait(u_lk);
-
-                // Note that it is the subtask for each host that does the posting of iosequencer detail lines
-                // into the various rollups.  It does this after grabbing the lock to serialize access to the
-                // "ivy_engine" structure the rollups are kept in that is shared by the main thread and all
-                // the host driver subthreads.
-
-                if (!pear.second->commandSuccess)
-                {
-                    std::ostringstream o;
-                    o << std::endl << std::endl << "When waiting for subinterval complete, subthread for " << pear.first << " posted an error, saying "  << pear.second->commandErrorMessage << std::endl;
-                    std::cout << o.str();
-                    log (m_s.masterlogfile,o.str());
-                    m_s.kill_subthreads_and_exit();
-                }
-
-                time_in_hand.push(pear.second->time_in_hand_before_subinterval_end.getlongdoubleseconds());
-
-                pear.second->commandComplete=false; // reset for next pass
-                pear.second->commandSuccess=false;
-                pear.second->commandErrorMessage.clear();
-            }
-        }
+	}
 
         // print the by-subinterval "provisional" csv line with a blank "warmup" / "measurement" / "cooldown" column
         for (auto& pear: m_s.rollups.rollups)
@@ -448,11 +441,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 peach.second->print_subinterval_csv_line(m_s.running_subinterval,true);
             }
         }
-
-//        if (!m_s.haveCmdDev)
-//        {
-//            std::system("clear");
-//        }
 
         if (routine_logging)
         {
@@ -477,7 +465,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             log(m_s.masterlogfile,o.str());
             std::cout << o.str() << std::endl;
         }
-
 
         auto allTypeIterator = m_s.rollups.rollups.find(std::string("all"));
 
@@ -835,6 +822,11 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             pear.second->master_slave_cv.notify_all();
         }
     }
+ 
+    ivytime commands_issue_completion_time;
+    commands_issue_completion_time.setToNow();
+    m_s.masterProcessTimeInterval.push(ivytime(commands_issue_completion_time - sendup_time));
+    m_s.actualTimeInHand.push(ivytime(m_s.nextSubintervalEnd - commands_issue_completion_time));
 
 //*debug*/{std::ostringstream o; o << "After subinterval sequence but before calculating measurement interval stuff." << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
 
@@ -1014,7 +1006,20 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     {
         std::ostringstream o;
         o << "\"Catch in flight I/Os\" command to wait for in-flight I/Os at end of last subinterval complete, duration =  " << stopdur.format_as_duration_HMMSSns()
-            << ".  run_subinterval_sequence() complete." << std::endl;
+            << ".  run_subinterval_sequence() complete." << std::endl << std::endl;
+        log(m_s.masterlogfile,o.str());
+    }
+
+    {
+        std::ostringstream o;
+
+        if (m_s.haveCmdDev)
+		o << "Subinterval Time Statistics: " << std::endl << "\tGatherTime: " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.avg() << "  seconds (Avg)" << std::endl;
+
+	o << "\tSendUpTime: " << std::fixed << std::setprecision(3) << m_s.sendupTime.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.sendupTime.max() <<  " seconds (Max) "<< std::fixed << std::setprecision(3) << m_s.sendupTime.avg() <<  " seconds (Avg)" << std::endl;
+
+	o << "\tActualTimeInHand: " << std::fixed << std::setprecision(3) << m_s.actualTimeInHand.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.actualTimeInHand.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.actualTimeInHand.avg() << " seconds (Avg)" << std::endl;
+
         log(m_s.masterlogfile,o.str());
     }
 

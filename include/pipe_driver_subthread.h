@@ -33,6 +33,7 @@ public:
 		logfolder;
 	std::string prompt, login;
 	ivytime lasttime{0};  // this has the time of the previous utterance going in either direction on the piped connections
+	RunningStat<ivy_float, ivy_int> perSubsytemGatherTimeSeconds;
 	std::string
 
 		logfilename;

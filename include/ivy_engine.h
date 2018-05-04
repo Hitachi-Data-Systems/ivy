@@ -264,6 +264,9 @@ public:
 
 	bool haveCmdDev {false};
 	RunningStat<ivy_float, ivy_int> overallGatherTimeSeconds;
+	RunningStat<ivy_float, ivy_int> actualTimeInHand;	
+	RunningStat<ivy_float, ivy_int> sendupTime;	
+	RunningStat<ivy_float, ivy_int> masterProcessTimeInterval;	
 
 	std::set<std::pair<std::string /*CLPR*/, Subsystem*>> cooldown_WP_watch_set;
 		// the cooldown_set is those < CLPR, serial_number > pairs in the available workload LUNs
