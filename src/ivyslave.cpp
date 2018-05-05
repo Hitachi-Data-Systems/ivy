@@ -1076,7 +1076,7 @@ bool waitForSubintervalEndThenHarvest()
 
 	ivytime afterCatnap = master_thread_subinterval_end_time + ivytime(catnap_time_seconds);
 
-	// Fine grained catnap - peek the workload threads state every 10 ms
+	// Fine grained catnap - peek the workload threads state every 5 ms
 	// without taking a lock until exhausting the catnap_times_seconds.
  	for (auto& pear : iosequencer_threads)
         {
@@ -1085,11 +1085,13 @@ bool waitForSubintervalEndThenHarvest()
                 // wait upto max catnap seconds
                 if (now > afterCatnap)
                     break;
-                if(subinterval_state::ready_to_run !=
-                    pear.second->subinterval_array[pear.second->currentSubintervalIndex].subinterval_status)
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		else 
+                if ((subinterval_state::ready_to_send ==
+                    pear.second->subinterval_array[pear.second->currentSubintervalIndex].subinterval_status) ||
+                    (subinterval_state::ready_to_send ==
+                    pear.second->subinterval_array[pear.second->otherSubintervalIndex].subinterval_status))
                     break;
+		else 
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }
         }
 
