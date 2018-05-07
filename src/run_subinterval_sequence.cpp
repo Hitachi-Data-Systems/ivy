@@ -232,6 +232,8 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
 
     ivytime sendup_time;
+    m_s.actualTimeInHand.push(ivytime(m_s.subintervalLength)); // initialize
+
     // Now the iosequencer threads are running the first subinterval
 
     while (true) // loop starts where we wait for iosequencer threads to have posted the results of a subinterval
@@ -356,10 +358,9 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
         }
 
 	// Measure time the send up time from ivyslave
-	ivytime now;
-        now.setToNow();
-	sendup_time = now - m_s.subintervalEnd;
-        m_s.sendupTime.push(sendup_time);
+        ivytime sendup_time;
+        sendup_time.setToNow();
+        m_s.sendupTime.push(ivytime(sendup_time - m_s.subintervalEnd));
 
         if (m_s.haveCmdDev)
         {
@@ -821,12 +822,12 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             }
             pear.second->master_slave_cv.notify_all();
         }
-    }
  
-    ivytime commands_issue_completion_time;
-    commands_issue_completion_time.setToNow();
-    m_s.masterProcessTimeInterval.push(ivytime(commands_issue_completion_time - sendup_time));
-    m_s.actualTimeInHand.push(ivytime(m_s.nextSubintervalEnd - commands_issue_completion_time));
+        ivytime commands_issue_completion_time;
+        commands_issue_completion_time.setToNow();
+        m_s.masterProcessTimeInterval.push(ivytime(commands_issue_completion_time - sendup_time));
+        m_s.actualTimeInHand.push(ivytime(m_s.nextSubintervalEnd - commands_issue_completion_time));
+    }
 
 //*debug*/{std::ostringstream o; o << "After subinterval sequence but before calculating measurement interval stuff." << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
 
@@ -1013,10 +1014,13 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     {
         std::ostringstream o;
 
+	o << "Subinterval Time Statistics: " << std::endl;
         if (m_s.haveCmdDev)
-		o << "Subinterval Time Statistics: " << std::endl << "\tGatherTime: " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.avg() << "  seconds (Avg)" << std::endl;
+            o  << "\tGatherTime: " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.avg() << "  seconds (Avg)" << std::endl;
 
 	o << "\tSendUpTime: " << std::fixed << std::setprecision(3) << m_s.sendupTime.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.sendupTime.max() <<  " seconds (Max) "<< std::fixed << std::setprecision(3) << m_s.sendupTime.avg() <<  " seconds (Avg)" << std::endl;
+
+	o << "\tRollup+DFC process Time: " << std::fixed << std::setprecision(3) << m_s.masterProcessTimeInterval.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.masterProcessTimeInterval.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.masterProcessTimeInterval.avg() << " seconds (Avg)" << std::endl;
 
 	o << "\tActualTimeInHand: " << std::fixed << std::setprecision(3) << m_s.actualTimeInHand.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.actualTimeInHand.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.actualTimeInHand.avg() << " seconds (Avg)" << std::endl;
 

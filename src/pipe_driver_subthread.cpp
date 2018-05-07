@@ -1220,11 +1220,13 @@ void pipe_driver_subthread::threadRun()
                             // This is determined by checking for overlap of
                             // actual gather start time and the earliest
                             // possible gather start time
-                            ivytime earliest_gather_schedule = m_s.subintervalStart +  ivytime( (long double) m_s.actualTimeInHand.avg());
+                            ivytime earliest_gather_schedule = m_s.subintervalEnd - ivytime((long double) m_s.actualTimeInHand.avg());
 
                             if (gather_schedule < earliest_gather_schedule) {
+                                ivytime now; 
+                                now.setToNow();
                                 std::ostringstream o;
-                                o << "Warning: subsystem gather time: " << std::fixed << std::setprecision(3) << perSubsytemGatherTimeSeconds.avg() << " seconds exceeds limit to fit within a subinterval length:  " << m_s.subintervalLength.toString() << " seconds" << std::endl;
+                                o << (long double) m_s.actualTimeInHand.avg() << "curr time: " << now.toString() << "subInt start time: " <<  m_s.subintervalStart.toString() << "subInt end time: " << m_s.subintervalEnd.toString() << "Warning: scheduled gather start time: " << gather_schedule.toString() << " is before subsystem earliest start " << earliest_gather_schedule.toString() << " gather time: " << std::fixed << std::setprecision(3) << perSubsytemGatherTimeSeconds.avg() << " seconds exceeds limit to fit within a subinterval length:  " << m_s.subintervalLength.toString() << " seconds" << std::endl;
                                 log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             }
                         }
