@@ -139,9 +139,6 @@ const uint64_t pattern_seed_default {1};
 #define io_time_buckets 56
 // This is the number of buckets defined in Accumulators_by_io_type.cpp
 
-#define gather_lead_time_safety_margin (0.5)
-// A safety margin of 0.5 means add 50% onto the average time it has taken to perform a gather so far, and start each gather at that padded lead time before the end of the subinterval.
-
 extern std::string indent_increment;
 
 #define unique_word_count (32*1024)

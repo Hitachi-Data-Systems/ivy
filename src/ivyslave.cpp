@@ -1075,7 +1075,26 @@ bool waitForSubintervalEndThenHarvest()
 	// If the iosequencer thread hasn't posted the last subinterval as complete by then, we abort.
 
 	ivytime afterCatnap = master_thread_subinterval_end_time + ivytime(catnap_time_seconds);
-	afterCatnap.waitUntilThisTime();
+
+	// Fine grained catnap - peek the workload threads state every 5 ms
+	// without taking a lock until exhausting the catnap_times_seconds.
+ 	for (auto& pear : iosequencer_threads)
+        {
+	    while (true ) {
+                now.setToNow();
+                // wait upto max catnap seconds
+                if (now > afterCatnap)
+                    break;
+                if ((subinterval_state::ready_to_send ==
+                    pear.second->subinterval_array[pear.second->currentSubintervalIndex].subinterval_status) ||
+                    (subinterval_state::ready_to_send ==
+                    pear.second->subinterval_array[pear.second->otherSubintervalIndex].subinterval_status))
+                    break;
+		else 
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            }
+        }
+
         // The idea here is that under normal/ideal circumstances we don't ever want a WorkloadThread that's
         // running I/Os in real time to have to wait to get the lock when talking to the ivyslave main thread.
 
