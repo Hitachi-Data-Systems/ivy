@@ -1177,12 +1177,11 @@ void pipe_driver_subthread::threadRun()
 
                         // "get config" - end
                     }
-                    else if (0==std::string("gather").compare(commandString) ||
-                            (0==std::string("gatherT0").compare(commandString)))
+                    else if (0==std::string("gather").compare(commandString))
                     {
 
-                        ivytime gather_schedule;
                         ivytime tn_gather_start, tn_gather_complete;
+                        ivytime tn_sub_gather_end;
                         ivytime gatherStart;
 
                         if (routine_logging)
@@ -1200,37 +1199,7 @@ void pipe_driver_subthread::threadRun()
                         // run whatever ivy_cmddev commands we need to, and parse the output pointing at the current GatherData object.
                         GatherData& currentGD = p_Hitachi_RAID_subsystem->gathers.back();
 
-			// Wait and initiate "gather()" to be timed to be complete near the end of the subinterval so as to keep the subsystem and
-			// test data measurements close in time for better correlation. Typically gather times are fast, but if for some reason
-			// they are unusually large, perhaps due to network congestion
-			// As a safety margin pad with the standard deviation
-			// of the perSubsytemGatherTimeSeconds
-			//
-			// start the T0 gather immediately
-                        if (0==std::string("gatherT0").compare(commandString)) {
-                            gather_schedule.setToNow();
-                        } else {
-                            gather_schedule = m_s.subintervalEnd +
-                                  ivytime((long double) m_s.sendupTime.avg()) -
-                                  ivytime((long double)
-                                  (perSubsytemGatherTimeSeconds.avg() +
-                                   perSubsytemGatherTimeSeconds.standardDeviation()));
-                            // Issue a warning if gather times are (unusually)
-                            // large relative to the subinterval length.
-                            // This is determined by checking for overlap of
-                            // actual gather start time and the earliest
-                            // possible gather start time
-                            ivytime earliest_gather_schedule = m_s.subintervalEnd - ivytime((long double) m_s.actualTimeInHand.avg());
-
-                            if (gather_schedule < earliest_gather_schedule) {
-                                ivytime now; 
-                                now.setToNow();
-                                std::ostringstream o;
-                                o << (long double) m_s.actualTimeInHand.avg() << "curr time: " << now.toString() << "subInt start time: " <<  m_s.subintervalStart.toString() << "subInt end time: " << m_s.subintervalEnd.toString() << "Warning: scheduled gather start time: " << gather_schedule.toString() << " is before subsystem earliest start " << earliest_gather_schedule.toString() << " gather time: " << std::fixed << std::setprecision(3) << perSubsytemGatherTimeSeconds.avg() << " seconds exceeds limit to fit within a subinterval length:  " << m_s.subintervalLength.toString() << " seconds" << std::endl;
-                                log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
-                            }
-                        }
-                        gather_schedule.waitUntilThisTime();
+                        gather_scheduled_start_time.waitUntilThisTime();
 
                         gatherStart.setToNow();
                         tn_gather_start.setToNow();
@@ -1282,6 +1251,9 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
+                        tn_sub_gather_end.setToNow();
+                        getCLPRDetailTime.push(ivytime(tn_sub_gather_end - gatherStart));
+
                         gatherStart.setToNow();
                         try
                         {
@@ -1330,6 +1302,8 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
+                        tn_sub_gather_end.setToNow();
+                        getMPbusyTime.push(ivytime(tn_sub_gather_end - gatherStart));
 
                         gatherStart.setToNow();
                         try
@@ -1379,7 +1353,8 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
-
+                        tn_sub_gather_end.setToNow();
+                        getLDEVIOTime.push(ivytime(tn_sub_gather_end - gatherStart));
                         // element port
                             // instance 1a
                                 // mainframe:
@@ -1453,6 +1428,8 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
+                        tn_sub_gather_end.setToNow();
+                        getPORTIOTime.push(ivytime(tn_sub_gather_end - gatherStart));
                         gatherStart.setToNow();
                         try
                         {
@@ -1501,6 +1478,8 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
+                        tn_sub_gather_end.setToNow();
+                        getUR_JnlTime.push(ivytime(tn_sub_gather_end - gatherStart));
                         // Post-processing after gather to fill in derived metrics.
 
 
@@ -1745,7 +1724,7 @@ void pipe_driver_subthread::threadRun()
                         tn_gather_complete.setToNow();
                         ivytime tn_gather_time {tn_gather_complete - tn_gather_start};
                         m_s.overallGatherTimeSeconds.push(tn_gather_time.getlongdoubleseconds());
-                        perSubsytemGatherTimeSeconds.push(tn_gather_time.getlongdoubleseconds());
+                        perSubsystemGatherTime.push(tn_gather_time.getlongdoubleseconds());
                         continue;
                     }
                     else
@@ -1906,6 +1885,7 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
+                        commandAcknowledged=true;;
                         ivytime ivyslave_said_OK;
                         ivyslave_said_OK.setToNow();
 
@@ -2169,7 +2149,6 @@ void pipe_driver_subthread::threadRun()
 
                             {
                                 std::unique_lock<std::mutex> s_lk(m_s.master_mutex);
-
                                 auto rc = m_s.rollups.add_workload_detail_line(detailWID, detailInput, detailOutput);
                                 if (!rc.first)
                                 {
@@ -2191,6 +2170,7 @@ void pipe_driver_subthread::threadRun()
                         }
 
                         now.setToNow();
+                        sendupTime.push(ivytime(now - m_s.subintervalEnd));
                         if (now > m_s.nextSubintervalEnd)
                         {
                             std::ostringstream o;

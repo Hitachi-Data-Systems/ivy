@@ -96,11 +96,12 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
 
                 {
                     std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
-                    p_pds->commandString = std::string("gatherT0");
+                    p_pds->commandString = std::string("gather");
                     p_pds->command=true;
                     p_pds->commandComplete=false;
                     p_pds->commandSuccess=false;
                     p_pds->commandErrorMessage.clear();
+                    p_pds->gather_scheduled_start_time.setToNow();
 
                     {
                         std::ostringstream o;
@@ -228,12 +229,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     m_s.lastEvaluateSubintervalReturnCode=EVALUATE_SUBINTERVAL_CONTINUE;
     Subinterval_CPU s;
 
-
-
-
-    ivytime sendup_time;
-    m_s.actualTimeInHand.push(ivytime(m_s.subintervalLength)); // initialize
-
     // Now the iosequencer threads are running the first subinterval
 
     while (true) // loop starts where we wait for iosequencer threads to have posted the results of a subinterval
@@ -290,10 +285,8 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             //std::cout << o.str();
         }
 
-	// Issue the "gather" command to the ivy_cmddev's pipedriver_subthreads. The actual gather to ivy_cmddev itelf
-	// will be timed to start for just in time completion at the time of rollups 
-
-        if (m_s.haveCmdDev)
+        // for subinterval 0 initiate immediate subsystem gathers
+        if (m_s.haveCmdDev && m_s.running_subinterval == 0)
         {
             for (auto& pear : m_s.subsystems)
             {
@@ -310,7 +303,7 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                         p_pds->commandComplete=false;
                         p_pds->commandSuccess=false;
                         p_pds->commandErrorMessage.clear();
-
+                        p_pds->gather_scheduled_start_time.setToNow();
                         {
                             std::ostringstream o;
                             o << "Gathering from " << pHitachiRAID->command_device_description;
@@ -323,9 +316,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             }
 
         }
-
-        RunningStat<ivy_float, ivy_int> time_in_hand;
-        time_in_hand.clear();
 
         for (auto& pear : m_s.host_subthread_pointers)
         {
@@ -349,18 +339,11 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                     m_s.kill_subthreads_and_exit();
                 }
 
-                time_in_hand.push(pear.second->time_in_hand_before_subinterval_end.getlongdoubleseconds());
-
                 pear.second->commandComplete=false; // reset for next pass
                 pear.second->commandSuccess=false;
                 pear.second->commandErrorMessage.clear();
             }
         }
-
-	// Measure time the send up time from ivyslave
-        ivytime sendup_time;
-        sendup_time.setToNow();
-        m_s.sendupTime.push(ivytime(sendup_time - m_s.subintervalEnd));
 
         if (m_s.haveCmdDev)
         {
@@ -434,6 +417,11 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             }
 	}
 
+        // Barrier 1
+        ivytime barrier_1_time;
+        barrier_1_time.setToNow();
+        m_s.barrierOneTime.push(ivytime(barrier_1_time - m_s.subintervalEnd));
+
         // print the by-subinterval "provisional" csv line with a blank "warmup" / "measurement" / "cooldown" column
         for (auto& pear: m_s.rollups.rollups)
         {
@@ -441,17 +429,6 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
             {
                 peach.second->print_subinterval_csv_line(m_s.running_subinterval,true);
             }
-        }
-
-        if (routine_logging)
-        {
-            std::ostringstream o;
-            o << "Received notification of delivery to all workload threads of \"" << m_s.host_subthread_pointers.begin()->second->commandString << "\" command from ivyslave instances "
-                << "earliest " << std::fixed << std::setprecision(3) << time_in_hand.max() << " seconds, "
-                << "latest " << std::fixed << std::setprecision(3) << time_in_hand.min() << " seconds "
-                << "before end of subinterval." << std::endl << std::endl;
-            std::cout << o.str();
-            log(m_s.masterlogfile, o.str());
         }
 
         if (routine_logging)
@@ -818,15 +795,83 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
                 pear.second->command=true;
                 pear.second->commandComplete=false;
                 pear.second->commandSuccess=false;
+                pear.second->commandAcknowledged=false;
                 pear.second->commandErrorMessage.clear();
             }
             pear.second->master_slave_cv.notify_all();
         }
- 
-        ivytime commands_issue_completion_time;
-        commands_issue_completion_time.setToNow();
-        m_s.masterProcessTimeInterval.push(ivytime(commands_issue_completion_time - sendup_time));
-        m_s.actualTimeInHand.push(ivytime(m_s.nextSubintervalEnd - commands_issue_completion_time));
+
+        // Barrier 2
+        // wait to get until OK for command from all hosts
+        for (auto& pear : m_s.host_subthread_pointers)
+        {
+            while (!pear.second->commandAcknowledged)
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
+        ivytime barrier_2_time;
+        barrier_2_time.setToNow();
+        m_s.centralProcessingTime.push(ivytime(barrier_2_time - barrier_1_time));
+        if (!m_s.haveCmdDev)
+            m_s.subintervalSpareTime.push(ivytime(
+                                      m_s.nextSubintervalEnd - barrier_2_time));
+        // Issue next gather
+        for (auto& pear : m_s.subsystems)
+        {
+            if (0 == std::string("Hitachi RAID").compare(pear.second->type()))
+            {
+                Hitachi_RAID_subsystem* pHitachiRAID = (Hitachi_RAID_subsystem*) pear.second;
+                pipe_driver_subthread* p_pds = pHitachiRAID->pRMLIBthread;
+                if (p_pds->pCmdDevLUN == nullptr) continue;
+
+                {
+                    std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
+                    p_pds->commandString = std::string("gather");
+                    p_pds->command=true;
+                    p_pds->commandComplete=false;
+                    p_pds->commandSuccess=false;
+                    p_pds->commandErrorMessage.clear();
+
+                    // post variable per subsystem gather start times
+                    p_pds->gather_scheduled_start_time =
+                        m_s.nextSubintervalEnd +
+                        ivytime((long double) p_pds->sendupTime.avg() -
+                            p_pds->sendupTime.standardDeviation()) -
+                        ivytime((long double)
+                        p_pds->perSubsystemGatherTime.avg() +
+                        p_pds->perSubsystemGatherTime.standardDeviation());
+
+                    m_s.subintervalSpareTime.push(ivytime(
+                        p_pds->gather_scheduled_start_time - barrier_2_time));
+
+                    // Error if the earliest start time is before barrier_2
+                    if (p_pds->gather_scheduled_start_time < barrier_2_time)
+                    {
+                        std::ostringstream o;
+                        o << "<ERROR> ";
+                        o << "Insufficient subinterval length: " << m_s.subintervalLength.toString();
+                        o << "to fit subsystem gather for " << p_pds->ivyscript_hostname;
+                        o << "within subinterval spare time: ";
+                        o << (long double) m_s.subintervalSpareTime.min();
+                        o << "Scheduled gather start time: " <<
+                        p_pds->gather_scheduled_start_time.toString();
+                        o << "Earliest allowed gather start time: " <<
+                        barrier_2_time.toString() << std::endl << std::endl;
+
+                        std::cout << o.str();
+                        log (m_s.masterlogfile,o.str());
+                        m_s.kill_subthreads_and_exit();
+                    }
+                    {
+                        std::ostringstream o;
+                        o << "Gathering from " << pHitachiRAID->command_device_description;
+                        log(m_s.masterlogfile,o.str());
+                        if (routine_logging) { std::cout << o.str(); }
+                    }
+                }
+                p_pds->master_slave_cv.notify_all();
+            }
+        }
     }
 
 //*debug*/{std::ostringstream o; o << "After subinterval sequence but before calculating measurement interval stuff." << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
@@ -1014,17 +1059,42 @@ void run_subinterval_sequence(DynamicFeedbackController* p_DynamicFeedbackContro
     {
         std::ostringstream o;
 
-	o << "Subinterval Time Statistics: " << std::endl;
+	o << "Step Time Statistics: " << std::endl;
         if (m_s.haveCmdDev)
             o  << "\tGatherTime: " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.overallGatherTimeSeconds.avg() << "  seconds (Avg)" << std::endl;
 
-	o << "\tSendUpTime: " << std::fixed << std::setprecision(3) << m_s.sendupTime.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.sendupTime.max() <<  " seconds (Max) "<< std::fixed << std::setprecision(3) << m_s.sendupTime.avg() <<  " seconds (Avg)" << std::endl;
+	o << "\tBarrier_1 Time: " << std::fixed << std::setprecision(3) << m_s.barrierOneTime.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.barrierOneTime.max() <<  " seconds (Max) "<< std::fixed << std::setprecision(3) << m_s.barrierOneTime.avg() <<  " seconds (Avg)" << std::endl;
 
-	o << "\tRollup+DFC process Time: " << std::fixed << std::setprecision(3) << m_s.masterProcessTimeInterval.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.masterProcessTimeInterval.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.masterProcessTimeInterval.avg() << " seconds (Avg)" << std::endl;
+	o << "\tCentral Processing Time: Barrier_2 - Barrier_1 Time " << std::fixed << std::setprecision(3) << m_s.centralProcessingTime.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.centralProcessingTime.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.centralProcessingTime.avg() << " seconds (Avg)" << std::endl;
 
-	o << "\tActualTimeInHand: " << std::fixed << std::setprecision(3) << m_s.actualTimeInHand.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.actualTimeInHand.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.actualTimeInHand.avg() << " seconds (Avg)" << std::endl;
+	o << "\tSubinterval Spare Time: " << std::fixed << std::setprecision(3) << m_s.subintervalSpareTime.min() << " seconds (Min) " << std::fixed << std::setprecision(3) << m_s.subintervalSpareTime.max() << " seconds (Max) " << std::fixed << std::setprecision(3) << m_s.subintervalSpareTime.avg() << " seconds (Avg)" << std::endl;
+
+        // reset subinterval spare time at the end of each step (Go!)
+        // as the subinterval length could be different for the next step.
+        m_s.subintervalSpareTime.clear();
 
         log(m_s.masterlogfile,o.str());
+
+        // log gather time breakdown
+        for (auto& pear : m_s.subsystems)
+        {
+            std::ostringstream o;
+            if (0 == std::string("Hitachi RAID").compare(pear.second->type()))
+            {
+                Hitachi_RAID_subsystem* pHitachiRAID = (Hitachi_RAID_subsystem*) pear.second;
+                pipe_driver_subthread* p_pds = pHitachiRAID->pRMLIBthread;
+                if (p_pds->pCmdDevLUN == nullptr) continue;
+
+	        o << "Step Gather Statistics Breakdown: " << std::endl;
+                o << "\tget CLPR detail stats: " << p_pds->getCLPRDetailTime.min()<< " seconds (Min) " << p_pds->getCLPRDetailTime.max() << " seconds (Max) " << p_pds->getCLPRDetailTime.avg() << " seconds (Avg) " << std::endl;
+                o << "\tget MP_busy_detail stats: " << p_pds->getMPbusyTime.min()<< " seconds (Min) " << p_pds->getMPbusyTime.max() << " seconds (Max) " << p_pds->getMPbusyTime.avg() << " seconds (Avg) " << std::endl;
+                o << "\tget LDEVIO detail stats: " << p_pds->getLDEVIOTime.min()<< " seconds (Min) " << p_pds->getLDEVIOTime.max() << " seconds (Max) " << p_pds->getLDEVIOTime.avg() << " seconds (Avg) " << std::endl;
+                o << "\tget PORTIO detail stats: " << p_pds->getPORTIOTime.min()<< " seconds (Min) " << p_pds->getPORTIOTime.max() << " seconds (Max) " << p_pds->getPORTIOTime.avg() << " seconds (Avg) " << std::endl;
+                o << "\tget UR_Jnl detail stats: " << p_pds->getUR_JnlTime.min()<< " seconds (Min) " << p_pds->getUR_JnlTime.max() << " seconds (Max) " << p_pds->getUR_JnlTime.avg() << " seconds (Avg) " << std::endl;
+
+                log(p_pds->logfilename,o.str());
+            }
+        }
     }
 
     return;

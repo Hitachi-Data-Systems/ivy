@@ -44,6 +44,12 @@ enum class ThreadState
 	exited_normally
 };
 
+enum class BallInCourt
+{
+    wl_orchestrator,
+    wl_thread
+};
+
 std::ostream& operator<< (std::ostream& o, const ThreadState s);
 
 std::string threadStateToString (const ThreadState);
@@ -128,6 +134,7 @@ public:
 	MainThreadCommand ivyslave_main_says {MainThreadCommand::die};
 
 	ThreadState state {ThreadState::died};
+	BallInCourt ball_in_whose_court {BallInCourt::wl_thread};
 
 	int EyeoCount;
 	int currentSubintervalIndex, otherSubintervalIndex, subinterval_number;  // The master thread never sets these or refers to them.
