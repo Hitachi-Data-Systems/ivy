@@ -33,7 +33,19 @@ public:
 		logfolder;
 	std::string prompt, login;
 	ivytime lasttime{0};  // this has the time of the previous utterance going in either direction on the piped connections
-	RunningStat<ivy_float, ivy_int> perSubsytemGatherTimeSeconds;
+	RunningStat<ivy_float, ivy_int> perSubsystemGatherTime;
+
+        // statistics of breakdown of the overall gather
+	RunningStat<ivy_float, ivy_int> getConfigTime;
+	RunningStat<ivy_float, ivy_int> getCLPRDetailTime;
+	RunningStat<ivy_float, ivy_int> getMPbusyTime;
+	RunningStat<ivy_float, ivy_int> getLDEVIOTime;
+	RunningStat<ivy_float, ivy_int> getPORTIOTime;
+	RunningStat<ivy_float, ivy_int> getUR_JnlTime;
+
+	RunningStat<ivy_float, ivy_int> sendupTime;
+	ivytime gather_scheduled_start_time;
+
 	std::string
 
 		logfilename;
@@ -83,6 +95,7 @@ public:
 	int subinterval_seconds;
 	bool command{false}, dead{false};
 	bool commandComplete{false}, commandSuccess{false};
+	bool commandAcknowledged{false};
 	std::string commandString;
 
 	std::string commandHost, commandLUN, commandWorkloadID;

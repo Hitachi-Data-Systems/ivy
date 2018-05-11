@@ -44,6 +44,12 @@ enum class ThreadState
 	exited_normally
 };
 
+enum class BallInCourt
+{
+    wl_orchestrator,
+    wl_thread
+};
+
 std::ostream& operator<< (std::ostream& o, const ThreadState s);
 
 std::string threadStateToString (const ThreadState);
@@ -73,6 +79,8 @@ public:
 	std::mutex slaveThreadMutex;
 	std::condition_variable slaveThreadConditionVariable;
 
+	std::mutex ball_in_court_lk;
+	std::condition_variable ball_in_court_cv;;
 
 	ivytime nextIO_schedule_time;  // 0 means means right away.  (This is initialized later.)
 	ivytime now;
@@ -128,6 +136,7 @@ public:
 	MainThreadCommand ivyslave_main_says {MainThreadCommand::die};
 
 	ThreadState state {ThreadState::died};
+	BallInCourt ball_in_whose_court {BallInCourt::wl_thread};
 
 	int EyeoCount;
 	int currentSubintervalIndex, otherSubintervalIndex, subinterval_number;  // The master thread never sets these or refers to them.

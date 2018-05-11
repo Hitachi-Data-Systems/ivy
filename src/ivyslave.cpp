@@ -1074,24 +1074,18 @@ bool waitForSubintervalEndThenHarvest()
 
 	// If the iosequencer thread hasn't posted the last subinterval as complete by then, we abort.
 
-	ivytime afterCatnap = master_thread_subinterval_end_time + ivytime(catnap_time_seconds);
-
-	// Fine grained catnap - peek the workload threads state every 5 ms
-	// without taking a lock until exhausting the catnap_times_seconds.
- 	for (auto& pear : iosequencer_threads)
+        // optimal catnap - wait for all the workload threads for ready_to_send
+        for (auto& pear : iosequencer_threads)
         {
-	    while (true ) {
-                now.setToNow();
-                // wait upto max catnap seconds
-                if (now > afterCatnap)
-                    break;
-                if ((subinterval_state::ready_to_send ==
-                    pear.second->subinterval_array[pear.second->currentSubintervalIndex].subinterval_status) ||
-                    (subinterval_state::ready_to_send ==
-                    pear.second->subinterval_array[pear.second->otherSubintervalIndex].subinterval_status))
-                    break;
-		else 
-                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            std::unique_lock<std::mutex> u_lk(pear.second->ball_in_court_lk);
+            while (pear.second->ball_in_whose_court == BallInCourt::wl_thread)
+            {
+                if (pear.second->ball_in_court_cv.wait_for(u_lk, std::chrono::seconds(1)) == std::cv_status::timeout)
+                {
+                    std::ostringstream o;
+                    o << "<Warning> Timeout expired waiting for " << pear.second->workloadID.workloadID << std::endl;
+                    log(slavelogfile, o.str());
+                }
             }
         }
 
@@ -1154,6 +1148,7 @@ bool waitForSubintervalEndThenHarvest()
                 if((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status == subinterval_state::ready_to_send)
                 {
                     (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status = subinterval_state::sending;
+                    pear.second->ball_in_whose_court = BallInCourt::wl_thread;
                     break;  // note we still have the lock
                 }
                 if (now > post_time_limit)
