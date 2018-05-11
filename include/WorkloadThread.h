@@ -79,6 +79,8 @@ public:
 	std::mutex slaveThreadMutex;
 	std::condition_variable slaveThreadConditionVariable;
 
+	std::mutex ball_in_court_lk;
+	std::condition_variable ball_in_court_cv;;
 
 	ivytime nextIO_schedule_time;  // 0 means means right away.  (This is initialized later.)
 	ivytime now;

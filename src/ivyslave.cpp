@@ -1074,20 +1074,18 @@ bool waitForSubintervalEndThenHarvest()
 
 	// If the iosequencer thread hasn't posted the last subinterval as complete by then, we abort.
 
-        ivytime wait_time_limit = master_thread_subinterval_end_time + ivytime(0.25 * subinterval_duration.getlongdoubleseconds());
-        now.setToNow();
-
-	// Fine grained catnap - peek the workload threads state every 50 ms without taking a lock
+        // optimal catnap - wait for all the workload threads for ready_to_send
         for (auto& pear : iosequencer_threads)
         {
-            while (now < wait_time_limit)
+            std::unique_lock<std::mutex> u_lk(pear.second->ball_in_court_lk);
+            while (pear.second->ball_in_whose_court == BallInCourt::wl_thread)
             {
-                if (pear.second->ball_in_whose_court == BallInCourt::wl_thread)
-                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                else 
-                    break;
-
-                now.setToNow();
+                if (pear.second->ball_in_court_cv.wait_for(u_lk, std::chrono::seconds(1)) == std::cv_status::timeout)
+                {
+                    std::ostringstream o;
+                    o << "<Warning> Timeout expired waiting for " << pear.second->workloadID.workloadID << std::endl;
+                    log(slavelogfile, o.str());
+                }
             }
         }
 
