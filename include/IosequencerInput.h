@@ -93,6 +93,7 @@ public:
 	std::string getNonDefaultParameterNameEqualsTextValueCommaSeparatedList();
 	void reset();
 	void copy(const IosequencerInput& source);
+	IosequencerInput(const IosequencerInput& source) { copy(source);}
 
 	bool defaultBlocksize() { return blocksize_bytes_default == blocksize_bytes; }
 	bool defaultMaxTags() { return maxTags_default == maxTags; }

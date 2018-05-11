@@ -291,6 +291,9 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
+		<Unit filename="include/Subinterval_detail_line.h">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="include/Subsystem.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />

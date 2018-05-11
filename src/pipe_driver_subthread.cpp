@@ -86,6 +86,7 @@ using namespace std;
 #include "RollupType.h"
 #include "RollupSet.h"
 #include "ivy_engine.h"
+#include "Subinterval_detail_line.h"
 
 
 #define PIPE_READ 0
@@ -1223,7 +1224,7 @@ void pipe_driver_subthread::threadRun()
                             ivytime earliest_gather_schedule = m_s.subintervalEnd - ivytime((long double) m_s.actualTimeInHand.avg());
 
                             if (gather_schedule < earliest_gather_schedule) {
-                                ivytime now; 
+                                ivytime now;
                                 now.setToNow();
                                 std::ostringstream o;
                                 o << (long double) m_s.actualTimeInHand.avg() << "curr time: " << now.toString() << "subInt start time: " <<  m_s.subintervalStart.toString() << "subInt end time: " << m_s.subintervalEnd.toString() << "Warning: scheduled gather start time: " << gather_schedule.toString() << " is before subsystem earliest start " << earliest_gather_schedule.toString() << " gather time: " << std::fixed << std::setprecision(3) << perSubsytemGatherTimeSeconds.avg() << " seconds exceeds limit to fit within a subinterval length:  " << m_s.subintervalLength.toString() << " seconds" << std::endl;
@@ -2044,7 +2045,7 @@ void pipe_driver_subthread::threadRun()
 
 
                         {
-                            std::unique_lock<std::mutex> s_lk(m_s.master_mutex);
+                            std::unique_lock<std::mutex> m_lk(m_s.master_mutex);
 
                             m_s.cpu_by_subinterval[m_s.rollups.current_index()].add(toLower(ivyscript_hostname),cpudata);
 
@@ -2052,6 +2053,11 @@ void pipe_driver_subthread::threadRun()
                         }
 
                         std::string detail_line="";
+
+                        std::vector<Subinterval_detail_line> parsed_detail_lines {};
+
+                        parsed_detail_lines.clear();
+
                         while (true)
                         {
                             try
@@ -2110,71 +2116,84 @@ void pipe_driver_subthread::threadRun()
                                 master_slave_cv.notify_all();
                                 return;
                             }
+
                             if (startsWith(detail_line,std::string("<end>"))) break;
 
-                            WorkloadID detailWID;
-                            IosequencerInput detailInput;
-                            SubintervalOutput detailOutput;
-
-                            std::istringstream detailstream(detail_line);
-
-                            std::string err_msg;
-                            if (!parseWorkloadIDfromIstream(err_msg, detailstream, detailWID))
+                            parsed_detail_lines.emplace_back(Subinterval_detail_line());
                             {
-                                std::ostringstream o;
-                                o << "For host " << ivyscript_hostname << ", internal programming error - detail line WorkloadID failed to parse correctly or doesn't exist - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
-                                log(logfilename,o.str());
-                                std::cout << o.str();
-                                kill_ssh_and_harvest();
-                                commandComplete=true;
-                                commandSuccess=false;
-                                commandErrorMessage = o.str();
-                                dead=true;
-                                s_lk.unlock();
-                                master_slave_cv.notify_all();
-                                return;
+                                // nested block is to get a new reference each time
+
+                                Subinterval_detail_line& sdl = parsed_detail_lines.back();
+
+                                WorkloadID&        detailWID    = sdl.workloadID;
+                                IosequencerInput&  detailInput  = sdl.iosequencerInput;
+                                SubintervalOutput& detailOutput = sdl.subintervalOutput;
+
+                                sdl.line = detail_line;
+
+                                std::istringstream detailstream(detail_line);
+
+                                std::string err_msg;
+                                if (!parseWorkloadIDfromIstream(err_msg, detailstream, detailWID))
+                                {
+                                    std::ostringstream o;
+                                    o << "For host " << ivyscript_hostname << ", internal programming error - detail line WorkloadID failed to parse correctly or doesn't exist - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
+                                    log(logfilename,o.str());
+                                    std::cout << o.str();
+                                    kill_ssh_and_harvest();
+                                    commandComplete=true;
+                                    commandSuccess=false;
+                                    commandErrorMessage = o.str();
+                                    dead=true;
+                                    s_lk.unlock();
+                                    master_slave_cv.notify_all();
+                                    return;
+                                }
+
+                                if (!detailInput.fromIstream(detailstream,logfilename))
+                                {
+                                    std::ostringstream o;
+                                    o << "For host " << ivyscript_hostname << ", internal programming error - detail line IosequencerInput failed to parse correctly - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
+                                    log(logfilename,o.str());
+                                    std::cout << o.str();
+                                    kill_ssh_and_harvest();
+                                    commandComplete=true;
+                                    commandSuccess=false;
+                                    commandErrorMessage = o.str();
+                                    dead=true;
+                                    s_lk.unlock();
+                                    master_slave_cv.notify_all();
+                                    return;
+                                }
+
+                                if (!detailOutput.fromIstream(detailstream))
+                                {
+                                    std::ostringstream o;
+                                    o << "For host " << ivyscript_hostname << ", internal programming error - detail line SubintervalOutput failed to parse correctly - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
+                                    log(logfilename,o.str());
+                                    std::cout << o.str();
+                                    kill_ssh_and_harvest();
+                                    commandComplete=true;
+                                    commandSuccess=false;
+                                    commandErrorMessage = o.str();
+                                    dead=true;
+                                    s_lk.unlock();
+                                    master_slave_cv.notify_all();
+                                    return;
+                                }
                             }
+                        }
 
-                            if (!detailInput.fromIstream(detailstream,logfilename))
+                        {
+                            std::unique_lock<std::mutex> m_lk(m_s.master_mutex);
+                            for (auto& x : parsed_detail_lines)
                             {
-                                std::ostringstream o;
-                                o << "For host " << ivyscript_hostname << ", internal programming error - detail line IosequencerInput failed to parse correctly - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
-                                log(logfilename,o.str());
-                                std::cout << o.str();
-                                kill_ssh_and_harvest();
-                                commandComplete=true;
-                                commandSuccess=false;
-                                commandErrorMessage = o.str();
-                                dead=true;
-                                s_lk.unlock();
-                                master_slave_cv.notify_all();
-                                return;
-                            }
+                                auto rc = m_s.rollups.add_workload_detail_line(x.workloadID, x.iosequencerInput, x.subintervalOutput);
 
-                            if (!detailOutput.fromIstream(detailstream))
-                            {
-                                std::ostringstream o;
-                                o << "For host " << ivyscript_hostname << ", internal programming error - detail line SubintervalOutput failed to parse correctly - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
-                                log(logfilename,o.str());
-                                std::cout << o.str();
-                                kill_ssh_and_harvest();
-                                commandComplete=true;
-                                commandSuccess=false;
-                                commandErrorMessage = o.str();
-                                dead=true;
-                                s_lk.unlock();
-                                master_slave_cv.notify_all();
-                                return;
-                            }
-
-                            {
-                                std::unique_lock<std::mutex> s_lk(m_s.master_mutex);
-
-                                auto rc = m_s.rollups.add_workload_detail_line(detailWID, detailInput, detailOutput);
                                 if (!rc.first)
                                 {
                                     std::ostringstream o;
-                                    o << "Rollup of detail line failed. \"" << detail_line << "\" - " << rc.second << std::endl;
+                                    o << "Rollup of detail line failed. \"" << x.line << "\" - " << rc.second << std::endl;
                                     log(logfilename, o.str());
                                     kill_ssh_and_harvest();
                                     commandComplete = true;
@@ -2182,13 +2201,13 @@ void pipe_driver_subthread::threadRun()
                                     commandErrorMessage = o.str();
                                     dead=true;
                                     s_lk.unlock();
+                                    m_lk.unlock();
                                     m_s.master_cv.notify_all();
                                     return;
                                 }
                             }
-
-                            m_s.master_cv.notify_all();
                         }
+                        m_s.master_cv.notify_all();
 
                         now.setToNow();
                         if (now > m_s.nextSubintervalEnd)
