@@ -869,6 +869,7 @@ int main(int argc, char* argv[])
 //*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[1].subinterval_status = subinterval_state::ready_to_send"; log(pear.second->slavethreadlogfile, o.str());}
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
+					pear.second->ball_in_whose_court = BallInCourt::wl_thread;
 					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command.");
 
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting first subinterval MainThreadCommand::run.");
@@ -893,6 +894,7 @@ int main(int argc, char* argv[])
 //*debug*/{ostringstream o; o << "Posting IVYSLAVE_SAYS_RUN command for second subinterval for " << pear.first  << std::endl; log(slavelogfile,o.str());}
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
+					pear.second->ball_in_whose_court = BallInCourt::wl_thread;
 					if (routine_logging) { log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command."); }
 
 //*debug*/pear.second->debug_command_log("ivyslave.cpp posting second subinterval MainThreadCommand::run");
@@ -936,6 +938,7 @@ int main(int argc, char* argv[])
 
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::run;
+					pear.second->ball_in_whose_court = BallInCourt::wl_thread;
 					pear.second->cooldown = cooldown_flag;
 
 					if (routine_logging) { log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command with cooldown flag."); }
@@ -1077,15 +1080,28 @@ bool waitForSubintervalEndThenHarvest()
         // optimal catnap - wait for all the workload threads for ready_to_send
         for (auto& pear : iosequencer_threads)
         {
-            std::unique_lock<std::mutex> u_lk(pear.second->ball_in_court_lk);
-            while (pear.second->ball_in_whose_court == BallInCourt::wl_thread)
+            ivytime now; now.setToNow();
+            int64_t duration = master_thread_subinterval_end_time.Milliseconds() + 0.25*subinterval_duration.Milliseconds() - now.Milliseconds();
+
             {
-                if (pear.second->ball_in_court_cv.wait_for(u_lk, std::chrono::seconds(1)) == std::cv_status::timeout)
-                {
-                    std::ostringstream o;
-                    o << "<Warning> Timeout expired waiting for " << pear.second->workloadID.workloadID << std::endl;
-                    log(slavelogfile, o.str());
-                }
+            //std::ostringstream o;
+            //o << "Duration:  " << duration << " waiting for " << pear.second->workloadID.workloadID << " master: " << master_thread_subinterval_end_time.Milliseconds() << " subint: " << subinterval_duration.Milliseconds() << " subint quarter: " << 0.25*subinterval_duration.Milliseconds() << "time now: " << now.Milliseconds() << std::endl;
+            //log(slavelogfile, o.str());
+            }
+
+            WorkloadThread &wlt = (*pear.second);
+            std::unique_lock<std::mutex> u_lk(wlt.ball_in_court_lk);
+            if (wlt.ball_in_court_cv.wait_for(u_lk, std::chrono::milliseconds(duration),
+                       [&wlt] {return wlt.ball_in_whose_court == BallInCourt::wl_orchestrator; }))
+                continue;
+            else
+            {
+                std::ostringstream o;
+                //o << "<Error> Timeout of duration " << duration << " expired waiting for " << pear.second->workloadID.workloadID << std::endl;
+                o << "<Warning> Timeout of duration " << duration << " expired waiting for " << pear.second->workloadID.workloadID << std::endl;
+                say(o.str());
+                log(slavelogfile, o.str());
+                //killAllSubthreads(slavelogfile);
             }
         }
 
@@ -1148,7 +1164,6 @@ bool waitForSubintervalEndThenHarvest()
                 if((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status == subinterval_state::ready_to_send)
                 {
                     (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status = subinterval_state::sending;
-                    pear.second->ball_in_whose_court = BallInCourt::wl_thread;
                     break;  // note we still have the lock
                 }
                 if (now > post_time_limit)
