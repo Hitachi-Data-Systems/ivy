@@ -266,10 +266,10 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
     now.setToNow();
     if (now >= (start+timeout)) return false;
 
-    remaining=(start+timeout)-now;
 
     while(true)
     {
+        remaining=(start+timeout)-now;
         // This loop keeps running until the child pid exits, we time out, or we have something ready to read from the pipe
 
         if (-1==fcntl(slave_to_pipe_driver_subthread_pipe[PIPE_READ],F_GETFD)) // check to make sure fd is valid
@@ -1200,6 +1200,7 @@ void pipe_driver_subthread::threadRun()
                         GatherData& currentGD = p_Hitachi_RAID_subsystem->gathers.back();
 
                         gather_scheduled_start_time.waitUntilThisTime();
+                        start.setToNow();
 
                         gatherStart.setToNow();
                         tn_gather_start.setToNow();
