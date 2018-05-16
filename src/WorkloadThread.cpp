@@ -249,6 +249,10 @@ void WorkloadThread::WorkloadThreadRun() {
 		otherSubintervalIndex=1;
 		subinterval_number=0;
 
+		seconds_to_be_dispatched_after_subinterval_end.clear();
+        seconds_to_get_lock_at_end_of_subinterval.clear();
+        seconds_after_subinterval_end_completed_switchover.clear();
+
 		p_current_subinterval = &(subinterval_array[currentSubintervalIndex]);
 		p_current_IosequencerInput = & (p_current_subinterval-> input);
 		p_current_SubintervalOutput = & (p_current_subinterval->output);
@@ -381,6 +385,11 @@ void WorkloadThread::WorkloadThreadRun() {
 
 				ivytime before_getting_lock;
 				before_getting_lock.setToNow();
+                ivytime dispatch_time = before_getting_lock - p_current_subinterval->end_time;
+                seconds_to_be_dispatched_after_subinterval_end.push(dispatch_time.getlongdoubleseconds());
+
+
+// if timed_mutex:          have_lock_at_subinterval_end = slaveThreadMutex.try_lock_for(std::chrono::milliseconds(25)));
 
 				for (int i=0; i<10; i++)
 				{
@@ -399,20 +408,36 @@ void WorkloadThread::WorkloadThreadRun() {
                     if (i>1) {std::this_thread::sleep_for(std::chrono::milliseconds(1));}
 				}
 
+				ivytime got_lock_time;
+				got_lock_time.setToNow();
+
+				ivytime lock_aquire_time = got_lock_time - before_getting_lock;
+
+				ivytime subinterval_end_to_now = got_lock_time - p_current_subinterval->end_time;
+
 				if (!have_lock_at_subinterval_end)
 				{
 					// we do not have the lock
 					ivytime t; t.setToNow();
+					ivytime time_into_subinterval;
+					time_into_subinterval = t - p_current_subinterval->end_time;
+
 					std::ostringstream o;
-					o << "<Error> Workload thread failed to get the lock within " << ivytime(t-before_getting_lock).format_as_duration_HMMSSns() << " at the end of the subinterval." << std::endl;
+					o << "<Error> Workload thread failed to get the lock after trying for "
+                        << lock_aquire_time.format_as_duration_HMMSSns()
+                        << " after getting dispatched, now "
+                        << subinterval_end_to_now.format_as_duration_HMMSSns()
+                        << " after end of the subinterval." << std::endl;
 					log (slavethreadlogfile,o.str());
 					state=ThreadState::died;
 					slaveThreadConditionVariable.notify_all();
 					return;
 				}
 
+				seconds_to_get_lock_at_end_of_subinterval.push(lock_aquire_time.getlongdoubleseconds());
+
 				// we have the lock
-//*debug*/{ std::ostringstream o; o << "Have the lock at end of subinterval " << subinterval_number << std::endl; log(slavethreadlogfile,o.str()); }
+//*debug*/{ std::ostringstream o; o << "Have the lock +at end of subinterval " << subinterval_number << std::endl; log(slavethreadlogfile,o.str()); }
 				if (!ivyslave_main_posted_command)
 				{
 					log(slavethreadlogfile,"<Error> Workload thread got the lock at the end of the subinterval, but no command was posted.\n");
@@ -437,8 +462,8 @@ void WorkloadThread::WorkloadThreadRun() {
 				}
 
 				subinterval_array[currentSubintervalIndex].subinterval_status=subinterval_state::ready_to_send;
-				ball_in_whose_court = BallInCourt::wl_orchestrator;
-				ball_in_court_cv.notify_all();
+//				ball_in_whose_court = BallInCourt::wl_orchestrator;
+//				ball_in_court_cv.notify_all();
 
 //*debug*/{std::ostringstream o; o << "Workload thread marking subinterval_array[" << currentSubintervalIndex << "].subinterval_status = subinterval_state::ready_to_send"; log(slavethreadlogfile, o.str());}
 
@@ -479,6 +504,27 @@ void WorkloadThread::WorkloadThreadRun() {
 					}  // lock no longer held
 					slaveThreadConditionVariable.notify_all();
 
+					{
+                        std::ostringstream o;
+                        o << "Subinterval count = "  << seconds_to_be_dispatched_after_subinterval_end.count() << std::endl
+                            << "seconds to be dispatched after subinterval end: "
+                            << " avg = " << seconds_to_be_dispatched_after_subinterval_end.avg()
+                            << " / min = " << seconds_to_be_dispatched_after_subinterval_end.min()
+                            << " / max = " << seconds_to_be_dispatched_after_subinterval_end.max()
+                            << std::endl
+                            << "seconds to get lock at end of subinterval: "
+                            << " avg = " << seconds_to_get_lock_at_end_of_subinterval.avg()
+                            << " / min = " << seconds_to_get_lock_at_end_of_subinterval.min()
+                            << " / max = " << seconds_to_get_lock_at_end_of_subinterval.max()
+                            << std::endl
+                            << "seconds after subinterval end completed_switchover: "
+                            << " avg = " << seconds_after_subinterval_end_completed_switchover.avg()
+                            << " / min = " << seconds_after_subinterval_end_completed_switchover.min()
+                            << " / max = " << seconds_after_subinterval_end_completed_switchover.max()
+                            << std::endl;
+                        log(slavethreadlogfile,o.str());
+					}
+
 					break;  // go back to waiting for a command
 				}
 				if (MainThreadCommand::run != ivyslave_main_says)
@@ -502,6 +548,8 @@ void WorkloadThread::WorkloadThreadRun() {
 				}
 
                 subinterval_array[currentSubintervalIndex].subinterval_status = subinterval_state::running;
+
+                ball_in_whose_court  = BallInCourt::wl_orchestrator;
 
 				slaveThreadMutex.unlock();
 				slaveThreadConditionVariable.notify_all();

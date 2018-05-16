@@ -2149,7 +2149,7 @@ void pipe_driver_subthread::threadRun()
                             }
 
                             {
-                                std::unique_lock<std::mutex> s_lk(m_s.master_mutex);
+                                std::unique_lock<std::mutex> m_lk(m_s.master_mutex);
                                 auto rc = m_s.rollups.add_workload_detail_line(detailWID, detailInput, detailOutput);
                                 if (!rc.first)
                                 {
@@ -2161,7 +2161,7 @@ void pipe_driver_subthread::threadRun()
                                     commandSuccess = false;
                                     commandErrorMessage = o.str();
                                     dead=true;
-                                    s_lk.unlock();
+                                    m_lk.unlock();
                                     m_s.master_cv.notify_all();
                                     return;
                                 }

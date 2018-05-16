@@ -79,14 +79,18 @@ public:
 	std::mutex slaveThreadMutex;
 	std::condition_variable slaveThreadConditionVariable;
 
-	std::mutex ball_in_court_lk;
-	std::condition_variable ball_in_court_cv;;
+//	std::mutex ball_in_court_lk;
+//	std::condition_variable ball_in_court_cv;;
 
 	ivytime nextIO_schedule_time;  // 0 means means right away.  (This is initialized later.)
 	ivytime now;
 	ivytime subinterval_duration, currentSubintervalEndTime;
 	ivytime waitduration;
 	ivytime precompute_horizon {ivytime(0,125000000)};
+
+    RunningStat<ivy_float,ivy_int> seconds_to_be_dispatched_after_subinterval_end;
+    RunningStat<ivy_float,ivy_int> seconds_to_get_lock_at_end_of_subinterval;
+    RunningStat<ivy_float,ivy_int> seconds_after_subinterval_end_completed_switchover;
 
 	Subinterval subinterval_array[2];
 

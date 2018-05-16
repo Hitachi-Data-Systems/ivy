@@ -48,7 +48,7 @@
 #include <unordered_map>
 #include <linux/aio_abi.h>
 #include <semaphore.h>
-
+#include <chrono>
 
 using namespace std;
 
@@ -1027,9 +1027,15 @@ bool waitForSubintervalEndThenHarvest()
 		throw;
 	}
 
-    ivytime end_of_running_subinterval;
-    end_of_running_subinterval = master_thread_subinterval_end_time + subinterval_duration;
+    ivytime subinterval_ending_time;
+            subinterval_ending_time.setToNow();
 
+    ivytime quarter_subinterval = ivytime(0.25 * subinterval_duration.getlongdoubleseconds());
+
+    ivytime limit_time = subinterval_ending_time + quarter_subinterval;
+
+//    ivytime end_of_running_subinterval;
+//    end_of_running_subinterval = master_thread_subinterval_end_time + subinterval_duration;
 
 	// harvest CPU counters and send CPU line.
 
@@ -1077,123 +1083,127 @@ bool waitForSubintervalEndThenHarvest()
 
 	// If the iosequencer thread hasn't posted the last subinterval as complete by then, we abort.
 
-        // optimal catnap - wait for all the workload threads for ready_to_send
-        for (auto& pear : iosequencer_threads)
-        {
-            ivytime now; now.setToNow();
-            int64_t duration = master_thread_subinterval_end_time.Milliseconds() + 0.25*subinterval_duration.Milliseconds() - now.Milliseconds();
+    // optimal catnap - wait for all the workload threads for ready_to_send
 
-            {
-            //std::ostringstream o;
-            //o << "Duration:  " << duration << " waiting for " << pear.second->workloadID.workloadID << " master: " << master_thread_subinterval_end_time.Milliseconds() << " subint: " << subinterval_duration.Milliseconds() << " subint quarter: " << 0.25*subinterval_duration.Milliseconds() << "time now: " << now.Milliseconds() << std::endl;
-            //log(slavelogfile, o.str());
-            }
-
-            WorkloadThread &wlt = (*pear.second);
-            std::unique_lock<std::mutex> u_lk(wlt.ball_in_court_lk);
-            if (wlt.ball_in_court_cv.wait_for(u_lk, std::chrono::milliseconds(duration),
-                       [&wlt] {return wlt.ball_in_whose_court == BallInCourt::wl_orchestrator; }))
-                continue;
-            else
-            {
-                std::ostringstream o;
-                //o << "<Error> Timeout of duration " << duration << " expired waiting for " << pear.second->workloadID.workloadID << std::endl;
-                o << "<Warning> Timeout of duration " << duration << " expired waiting for " << pear.second->workloadID.workloadID << std::endl;
-                say(o.str());
-                log(slavelogfile, o.str());
-                //killAllSubthreads(slavelogfile);
-            }
-        }
-
-        // The idea here is that under normal/ideal circumstances we don't ever want a WorkloadThread that's
-        // running I/Os in real time to have to wait to get the lock when talking to the ivyslave main thread.
-
-        // Therefore we catnap for a short period after the end of the subinterval to ensure the WorkloadThread
-        // when it reaches the end of a subinterval, can usually get the lock without waiting, without clashing
-        // with ivyslave when it is sending up the results from the subinterval from each WorkloadThread.
-
-//*debug*/log(slavelogfile,"after catnap.\n");
-
-	// Now we go through the iosequencer threads, harvesting the input & output objects and sending them
-	// to ivymaster's host driver thread.  We send the key for each iosequencer thread to make it easy
-	// to do the rollups in ivymaster, as the key has the workload name (from the [CreateWorkload] statement),
-	// the LDEV name, the LUN name, and the port name. (The iosequencer type name is in the subinterval input object.)
-
-    ivytime post_time_limit = master_thread_subinterval_end_time + ivytime(post_time_limit_seconds);
-        // Workload threads must post a subinterval object as "ready to send" within this number of seconds from that subinterval's scheduled end time.
-        // After the catnap, ivyslave iterates over the WorkloadThreads, and getting the lock for WorkloadThread to transition to its next state.
-
-    ivytime max_seen_post_delay = ivytime(0.0);
+    unsigned int numthreads = iosequencer_threads.size();
+    unsigned int thread_number {0};
 
     ivy_float min_seq_fill_fraction = 1.0;
+
     for (auto& pear : iosequencer_threads)
     {
-        if (pear.second->sequential_fill_fraction < min_seq_fill_fraction)
+        thread_number++;
+
+        int64_t microseconds_to_limit;
+
+        ivytime n; n.setToNow();
+
+        if ( n > limit_time )
         {
-            min_seq_fill_fraction = pear.second->sequential_fill_fraction;
+            std::ostringstream o;
+            o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): "
+                << " over 1/4 of the way through the subinterval and still workload thread number "
+                << thread_number << " of" << numthreads << " \"" << pear.first << "\" hadn't posted ready-to-send.";
+            say(o.str());
+            killAllSubthreads(slavelogfile);
+            return false;
+        }
+
+        ivytime togo = limit_time - n;
+        std::chrono::nanoseconds time_to_limit ( (int64_t) togo.getAsNanoseconds() );
+
+        {
+            WorkloadThread &wlt = (*pear.second);  // this only gets set on the first pass through the loop.  Now it's been put in a nested block to change every pass through.
+
+            {
+                std::unique_lock<std::mutex> slavethread_lk(wlt.slaveThreadMutex);
+
+                if (!wlt.slaveThreadConditionVariable.wait_for(slavethread_lk, time_to_limit,
+                           [&wlt] { return wlt.ball_in_whose_court == BallInCourt::wl_orchestrator; }))
+                {
+                    std::ostringstream o;
+                    o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): "
+                        << " over 1/4 of the way through the subinterval and still workload thread number "
+                        << thread_number << " of" << numthreads << " \"" << pear.first << "\" hadn't posted ready-to-send.";
+                    say(o.str());
+                    log(slavelogfile, o.str());
+                    slavethread_lk.unlock();
+                    killAllSubthreads(slavelogfile);
+                }
+
+                // now we keep the lock while we are processing this subthread???
+
+                if (pear.second->sequential_fill_fraction < min_seq_fill_fraction)
+                {
+                    min_seq_fill_fraction = pear.second->sequential_fill_fraction;
+                }
+
+                if((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status == subinterval_state::ready_to_send)
+                {
+                    (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status = subinterval_state::sending;
+                }
+                else
+                {
+                    std::ostringstream o;
+                    o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): "
+                        << " ball was in our court for " << pear.first << ", but WorkloadThread hadn't marked subinterval ready-to-send.";
+                    say(o.str());
+                    log(slavelogfile, o.str());
+                    slavethread_lk.unlock();
+                    pear.second->slaveThreadConditionVariable.notify_all();
+                    killAllSubthreads(slavelogfile);
+                }
+
+                // what bugs me is that now I have the lock for this workload thread, but first I have to
+                // iterate overall of them to be able to say the min_seq_fill_fraction
+            }
+
         }
     }
+
     {
         std::ostringstream o;
         o << "min_seq_fill_fraction = " << min_seq_fill_fraction;
         say(o.str());
     }
 
+    now.setToNow();
+    if (now > end_of_running_subinterval)
+    {
+        std::ostringstream o;
+        o << "<Error> "<< __FILE__ << " line " << __LINE__ << " - subinterval_seconds too short.  "
+            << "Went over the end of the subinterval when sending up results from previous subinterval.";
+        say(o.str());
+        killAllSubthreads(slavelogfile);
+        return false;
+    }
 
-    unsigned int thread_number = 0;
+
+    thread_number = 0;
 
 	for (auto& pear : iosequencer_threads)
 	{
+        // this time iterating through the workload threads, we don't have the lock,
+        // but that's OK because the workload thread will wait to be notified that the ball is in its court.
         thread_number++;
 
         while (true)
         {
-            now.setToNow();
-            if (now > end_of_running_subinterval)
-            {
-                std::ostringstream o;
-                o << "<Error> "<< __FILE__ << " line " << __LINE__ << " - Subinterval length parameter subinterval_seconds too short - current subinterval was already over when "
-                    << "ivyslave about to send results from previous subinterval for workload thread " << thread_number << " of " << iosequencer_threads.size() << ".";
-                say(o.str());
-                killAllSubthreads(slavelogfile);
-                return false;
-            }
 
-            if (pear.second->slaveThreadMutex.try_lock())
+            if (pear.second->slaveThreadMutex.try_lock())  // but sometimes this spuriously fails ... !!!  come back to this
             {
-                if((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status == subinterval_state::ready_to_send)
-                {
-                    (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status = subinterval_state::sending;
-                    break;  // note we still have the lock
-                }
-                if (now > post_time_limit)
-                {
-                    std::ostringstream o;
-                    o << "<Error> "<< __FILE__ << " line " << __LINE__ << " - Workload thread " << pear.first << " did not post \"ready to send\" for previous subinterval within "
-                        << ivytime(post_time_limit_seconds).format_as_duration_HMMSSns()
-                        << " from end of subinterval.  At " << ivytime(now-master_thread_subinterval_end_time).format_as_duration_HMMSSns() << " past subinterval end, "
-                        << "not-running subinterval status was " << (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status
-                        ;
-                    say(o.str());
-                    pear.second->slaveThreadMutex.unlock();
-                    killAllSubthreads(slavelogfile);
-                    return false;
-                }
-                if (!((pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status == subinterval_state::running))
-                {
-                    std::ostringstream o;
-                    o << "<Error> "<< __FILE__ << " line " << __LINE__ << " - Workload thread " << pear.first << " previous subinterval status was not (still) \"running\" or \"ready to send\" "
-                        << "at " << ivytime(now-master_thread_subinterval_end_time).format_as_duration_HMMSSns() << "past subinterval end.  "
-                        << "Previous subinterval status was " << (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status
-                        ;
-                    say(o.str());
-                    pear.second->slaveThreadMutex.unlock();
-                    killAllSubthreads(slavelogfile);
-                    return false;
-                }
                 pear.second->slaveThreadMutex.unlock();
                 pear.second->slaveThreadConditionVariable.notify_all();
             }
+
+            {
+                std::unique_lock<std::mutex> lk(cv_m);
+                if(cv.wait_for(lk, idx*100ms, []{return i == 1;}))
+                    std::cerr << "Thread " << idx << " finished waiting. i == " << i << '\n';
+                else
+                    std::cerr << "Thread " << idx << " timed out. i == " << i << '\n';
+            }
+
             ivytime wait_until_time;
             wait_until_time = now + ivytime(0.25*catnap_time_seconds);
             wait_until_time.waitUntilThisTime();
