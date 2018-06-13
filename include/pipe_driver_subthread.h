@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,15 +13,75 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 #include <sys/types.h>
+#include <mutex>
+#include <condition_variable>
+
 
 #include "ListOfWorkloadIDs.h"
 #include "Subsystem.h"
+#include "RunningStat.h"
+#include "Subinterval_CPU.h"
+#include "LUNpointerList.h"
+
+// pipe_driver_subthread commands from the master thread
+// - "die"
+
+// commands for command device
+//
+// - "get config"
+//      We say "get config" to ivy_cmddev
+//      Config data comes in 4-tuples <element type> <element instance> <attribute name> <attribute value>
+//      We do post-processing of received config data
+//      to connect indirect attributes like making a list of pool vols for each pool.
+//
+// - "gather"
+//      we wait until the scheduled time calculated by the master thread
+//      We say "get CLPRdetail" to ivy_cmddev
+//      Performance data also comes in 4-tuples <element type> <element instance> <attribute name> <attribute value>
+//      We say "get MP_busy"    to ivy_cmddev
+//      We say "get LDEVIO"     to ivy_cmddev
+//      We say "get PORTIO"     to ivy_cmddev
+//      We say "get UR_Jnl"     to ivy_cmddev
+//      We do some post-processing of the performance data gather,
+//      including transforming counter value deltas over successive gathers into rates.
+//
+//
+// commands for ivyslave
+//
+// - "[CreateWorkload]"
+//      We send to ivyslave and wait for it to say OK
+//
+// - "[EditWorkload]"
+//      We send to ivyslave and wait for it to say OK
+//
+// - "[DeleteWorkload]"
+//      We send to ivyslave and wait for it to say OK
+//
+// - "Go!<5,0>    - subinterval_seconds as seconds and nanoseconds.
+// - "continue"
+// - "cooldown"
+// - "stop"
+//      For each of these, we send to ivyslave and wait for it to say OK,
+//      which means that the command has been delivered to all workload threads.
+//      Then we measure the times from the beginning of the subinterval
+//      that we received the OK.
+//
+// - "get subinterval result"
+//      Then we send the command "get subinterval result", and wait for the CPU line
+//      and then the detail lines for each workloadthread, and then
+//      the sequential fill progress info.
+//      Then when we have the CPU data, the detail lines, the seq fill data,
+//      we get the master lock once and load all of the data, including
+//      posting each workload thread's data into the apporopriate instance
+//      of each rollup type in the RollupSet m_s.rollups.
+//
+
 
 class pipe_driver_subthread {
 public:
@@ -33,6 +93,7 @@ public:
 		logfolder;
 	std::string prompt, login;
 	ivytime lasttime{0};  // this has the time of the previous utterance going in either direction on the piped connections
+
 	RunningStat<ivy_float, ivy_int> perSubsystemGatherTime;
 
         // statistics of breakdown of the overall gather
@@ -43,11 +104,17 @@ public:
 	RunningStat<ivy_float, ivy_int> getPORTIOTime;
 	RunningStat<ivy_float, ivy_int> getUR_JnlTime;
 
-	RunningStat<ivy_float, ivy_int> sendupTime;
 	ivytime gather_scheduled_start_time;
 
-	std::string
+    RunningStat<ivy_float,ivy_int> dispatching_latency_seconds_accumulator;
+    RunningStat<ivy_float,ivy_int> lock_aquisition_latency_seconds_accumulator;
+    RunningStat<ivy_float,ivy_int> switchover_completion_latency_seconds_accumulator;
 
+    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_dispatching_latency;
+    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_lock_acquisition;
+    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_switchover;
+
+	std::string
 		logfilename;
 
 	int
@@ -82,7 +149,7 @@ private:
         std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
         bool reading_echo_line
     );
-    bool pipe_driver_subthread_has_lock;
+
 public:
 
 	std::string extra_from_last_time{""};  // Used by get_line_from_pipe() to store
@@ -95,7 +162,6 @@ public:
 	int subinterval_seconds;
 	bool command{false}, dead{false};
 	bool commandComplete{false}, commandSuccess{false};
-	bool commandAcknowledged{false};
 	std::string commandString;
 
 	std::string commandHost, commandLUN, commandWorkloadID;
@@ -107,6 +173,7 @@ public:
 
 	std::mutex master_slave_lk;
 	std::condition_variable master_slave_cv;
+
 	std::string hostname;
     std::list<std::string> lun_csv_lines;
 
@@ -118,6 +185,8 @@ public:
 
 	std::string hostcsvline{"untouched\n"};  // you get one of these from the remote end, and you leave it here for the master task to harvest after you've passed on
 	bool successful_completion{false};
+
+	ivytime last_message_time { ivytime(0) };
 
 // methods
 	pipe_driver_subthread(std::string Hostname, std::string OutputFolderRoot, std::string TestName, std::string lf)
@@ -131,6 +200,8 @@ public:
 	void send_and_get_OK(std::string s, const ivytime timeout);// throws std::runtime_error
 	void send_and_get_OK(std::string s);// throws std::runtime_error
 	std::string send_and_clip_response_upto(std::string s, std::string pattern, const ivytime timeout);// throws std::runtime_error
+
+
 
 
 // ivy_cmddev variables:
@@ -149,15 +220,18 @@ public:
 		token_quoted_string {false};
 	std::string element, instance, attribute;
 	ivytime complete { ivytime(0) };
-	ivytime duration;
+	ivytime duration; // most recent "gather" duration.
 	ivytime time_in_hand_before_subinterval_end;
         // This is the amount of time from when we receive the OK from ivyslave that all workload threads have
         // been posted with the "Go!" / "continue" / "cooldown" / "stop" command
         // until the end of the subinterval.
+    std::vector<long double> gather_times_seconds;
 
 // ivy_cmddev methods:
 	void get_token();  // throws std::invalid_argument, std::runtime_error
 	void process_ivy_cmddev_response(GatherData& gd, ivytime start); // throws std::invalid_argument, std::runtime_error
-
+    void pipe_driver_gather(std::unique_lock<std::mutex>&);
+    void process_cmddev_commands(std::unique_lock<std::mutex>&);
+    void process_ivyslave_commands(std::unique_lock<std::mutex>&);
 };
 

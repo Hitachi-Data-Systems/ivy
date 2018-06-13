@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 // ivyhelpers.cpp
 
 
@@ -168,8 +168,22 @@ void log(std::string filename, std::string s) {
 
 void ivy_log(std::string filename, std::string s) {log(filename,s);} // crutch for Builtin.cpp
 
-std::string format_utterance(std::string speaker, std::string utterance) {
+std::string format_utterance(std::string speaker, std::string utterance, ivytime delta)
+{
 	std::ostringstream o;
+
+	o << delta.format_as_duration_HMMSSns() << ' ';
+
+	if (delta == ivytime(0))
+	{
+	    std::string same_size_blanks {};
+	    for (unsigned int i = 0; i < o.str().size(); i++)
+	    {
+	        same_size_blanks.push_back(' ');
+	    }
+	    o.str() = same_size_blanks;
+	}
+
 	o << speaker << ": \"";
 	if (utterance.length()>0) {
 		for (unsigned int i=0; i<utterance.length(); i++) {

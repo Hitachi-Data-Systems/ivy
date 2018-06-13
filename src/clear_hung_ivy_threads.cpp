@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <regex>
 #include <iostream>
 #include <chrono>
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 
 #ifdef development
 	std::string ps_ef_output(R"(/home/ivogelesang/ivy: ps -ef | grep ivy
-501       5477     1  0 Apr30 ?        00:05:25 gedit /home/ivogelesang/ivy/src/DynamicFeedbackController.h
+501       5477     1  0 Apr30 ?        00:05:25 gedit /home/ivogelesang/ivy/src/MeasureController.h
 501       5497     1  0 Apr30 ?        00:00:35 /usr/bin/gnome-terminal -x /bin/sh -c cd '/home/ivogelesang/ivy' && exec $SHELL
 root     20576  5552  0 16:12 pts/1    00:00:00 ivy bork
 root     20582 20576  0 16:12 pts/1    00:00:00 ssh -t -t root@sun159 ivyslave sun159

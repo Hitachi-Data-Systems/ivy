@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <string>
 #include <list>
 #include <algorithm>
@@ -648,7 +648,11 @@ void RollupType::make_step_subfolder()
 {
     step_subfolder_name = m_s.stepFolder + std::string("/") + attributeNameCombo.attributeNameComboID;
 
-    if (mkdir(step_subfolder_name.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+    if (mkdir(step_subfolder_name.c_str(),
+          S_IRWXU  // r,w,x user
+        | S_IRWXG  // r,w,x group
+        | S_IRWXO  // r,w,x other
+    ))
     {
         std::ostringstream o;
         o << std::endl << "Writhe and fail, gasping:   Couldn\'t make by-subinterval rollup subfolder "
@@ -696,7 +700,11 @@ void RollupType::print_measurement_summary_csv_line()
             exit(-1);
         }
     }
-    else if (mkdir(measurementRollupFolder.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+    else if (mkdir(measurementRollupFolder.c_str(),
+          S_IRWXU  // r,w,x user
+        | S_IRWXG  // r,w,x group
+        | S_IRWXO  // r,w,x other
+    ))
     {
         std::ostringstream o;
         o << "At line " << __LINE__ << " of source code file " << __FILE__ << " - ";
@@ -705,6 +713,10 @@ void RollupType::print_measurement_summary_csv_line()
         m_s.kill_subthreads_and_exit();
         exit(-1);
     }
+
+
+
+
 
 
     // print data validation csv headerline if necessary

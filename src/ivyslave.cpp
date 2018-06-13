@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,89 +13,15 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 // ivyslave.cpp
 
-#include <algorithm>
-#include <cctype>
-#include <chrono>
-#include <cstdlib>
-#include <ctime>
-#include <cstring>
-#include <errno.h>
-#include <fcntl.h>
-#include <fstream>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <malloc.h>
-#include <random>
-#include <scsi/sg.h>
-#include <sstream>
-#include <stdio.h>
-#include <string.h>
-#include <string>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <thread>
-#include <unistd.h>
-#include <vector>
-#include <mutex>
-#include <condition_variable>
-#include <unordered_map>
-#include <linux/aio_abi.h>
-#include <semaphore.h>
-#include <chrono>
 
-using namespace std;
-
-#include "ivytime.h"
-#include "iosequencer_stuff.h"
-#include "WorkloadID.h"
-#include "ListOfWorkloadIDs.h"
-#include "LUN.h"
-#include "ivydefines.h"
-#include "discover_luns.h"
-#include "LDEVset.h"
-#include "ivyhelpers.h"
-#include "ivybuilddate.h"
-#include "ivylinuxcpubusy.h"
-#include "IosequencerInput.h"
-#include "Eyeo.h"
-#include "Iosequencer.h"
-#include "RunningStat.h"
-#include "Accumulators_by_io_type.h"
-#include "SubintervalOutput.h"
-#include "Subinterval.h"
-#include "WorkloadThread.h"
-
-// variables
-
-ivy_float catnap_time_seconds, post_time_limit_seconds;
-
-std::string hostname;
-
-std::unordered_map<std::string, WorkloadThread*>
-	iosequencer_threads;  // Key looks like "workloadName:host:00FF:/dev/sdxx:2A"
-
-ivytime
-	test_start_time, subinterval_duration, master_thread_subinterval_end_time, lasttime;
-
-int
-	next_to_harvest_subinterval, otherSubinterval;
-
-struct procstatcounters
-	interval_start_CPU, interval_end_CPU;
-
-std::string
-	slavelogfile;
-
-bool routine_logging {false};
-
-std::string printable_ascii;
+#include "ivyslave.h"
+// This is the ONLY include for ivyslave.h.  including it again somewhere else would blow up in link edit.
 
 // methods
 
@@ -109,24 +35,55 @@ void invokeThread(WorkloadThread* T) {
 	T->WorkloadThreadRun();
 }
 
+void say(std::string s) {
+ 	if (s.length()==0 || s[s.length()-1] != '\n') s.push_back('\n');
 
+    if (last_message_time == ivytime(0))
+    {
+        last_message_time.setToNow();
+    }
+    else
+    {
+        ivytime now, delta;
+
+        now.setToNow();
+        delta = now - last_message_time;
+        last_message_time = now;
+
+    	if (routine_logging) log(slavelogfile,format_utterance("Slave", s, delta));
+    }
+
+	std::cout << s << std::flush;
+	return;
+}
 
 
 void killAllSubthreads(std::string logfilename) {
-	for (auto& pear : iosequencer_threads) {
-		if (ThreadState::died != pear.second->state && ThreadState::exited_normally != pear.second->state)
+	for (auto& pear : workload_threads)
+    {
+        if (ThreadState::died == pear.second->state || ThreadState::exited_normally == pear.second->state)
+        {
+            std::ostringstream o;
+            o << "<Error> Thread for " << pear.first << " in state " << threadStateToString(pear.second->state) << " whose dying_words were \"" << pear.second->dying_words << "\"." << std::endl;
+            WorkloadThread_dying_words << o.str();
+
+            if (!routine_logging) { log(slavelogfile,o.str());}
+            say(o.str());
+
+            // See if it's OK to say this during killAllSubthreads.  We're on the way out anyway.
+            // I say them one at a time, because at least if I get part way through there will be a log message on the master host pipe_driver_subthread log.
+        }
+        else
 		{
 			std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
 			pear.second->ivyslave_main_posted_command=true;
 			pear.second->ivyslave_main_says=MainThreadCommand::die;
 			log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"die\" command.");
-
-//*debug*/pear.second->debug_command_log("ivyslave.cpp killAllSubthreads");
 		}
 		pear.second->slaveThreadConditionVariable.notify_all();
 	}
 	int threads=0;
-	for (auto& pear : iosequencer_threads) {
+	for (auto& pear : workload_threads) {
 		pear.second->std_thread.join();
 		threads++;
 	}
@@ -139,20 +96,12 @@ void killAllSubthreads(std::string logfilename) {
 	}
 }
 
-void say(std::string s) {
- 	if (s.length()==0 || s[s.length()-1] != '\n') s.push_back('\n');
-	if (routine_logging) log(slavelogfile,format_utterance("Slave", s));
-	std::cout << s << std::flush;
-	return;
-}
 
 void initialize_io_time_clip_levels(); // Accumulators_by_io_type.cpp
 
 
 int main(int argc, char* argv[])
 {
-//*debug*/{std::ostringstream o; o << "fireup - argc = " << argc; for (int i=0;i<argc; i++){o << " argv[" << i << "]=\"" << argv[i] << "\"  ";} o << std::endl; fileappend("/home/ivogelesang/Desktop/eraseme.txt",o.str());}
-
 	std::mutex ivyslave_main_mutex;
 
 	initialize_io_time_clip_levels();
@@ -281,17 +230,29 @@ int main(int argc, char* argv[])
 
 	std::string input_line;
 	if(std::cin.eof()) {log("std::cin.eof()\n",slavelogfile); return 0;}
-	while(!std::cin.eof()) {
+	while(!std::cin.eof())
+	{
 		// get commands from ivymaster
 		std::getline(std::cin,input_line);
 		lasttime.setToNow();
 
-		if (routine_logging)
-		{	std::ostringstream o;
-			o << format_utterance("Host ",input_line);
-			log(slavelogfile,o.str());
-		}
+        if (last_message_time == ivytime(0))
+        {
+            last_message_time.setToNow();
+        }
+        else
+        {
+            ivytime now, delta;
+
+            now.setToNow();
+            delta = now - last_message_time;
+            last_message_time = now;
+
+            if (routine_logging) { log(slavelogfile,format_utterance("Master", input_line, delta)); }
+        }
+
 		trim(input_line);
+
 		if (stringCaseInsensitiveEquality(input_line, std::string("[Die, Earthling!]")))
 		{
 			say(std::string("[what?]"));
@@ -299,11 +260,14 @@ int main(int argc, char* argv[])
 			killAllSubthreads(slavelogfile);
 			return -1;
 		}
-		if (stringCaseInsensitiveEquality(input_line, std::string("send LUN header")))
+		// end of [Die, Earthling!]
+
+		else if (stringCaseInsensitiveEquality(input_line, std::string("send LUN header")))
 		{
 			disco.get_header_line(header_line);
 			say("[LUNheader]ivyscript_hostname,"+header_line);
 		}
+		// end of send LUN header
 		else if (stringCaseInsensitiveEquality(input_line,std::string("send LUN")))
 		{
 			if (disco.get_next_line(disco_line))
@@ -327,70 +291,8 @@ int main(int argc, char* argv[])
 				say("[LUN]<eof>");
 			}
 		}
-		else if (0 == std::string("Catch in flight I/Os").compare(input_line))
-		{
- 			for (auto& pear : iosequencer_threads)
-			{
-                if ( (pear.second->state == ThreadState::died) || (pear.second->state == ThreadState::exited_normally) )
-                {
-                    std::ostringstream o;
-                    o << "<Warning> when executing \"Catch in flight I/Os\" command for WorkloadThread "
-                        << pear.first << " was indisposed already, showing as " << pear.second->state
-                        << "  " << __FILE__ << " line " << __LINE__;
-                    say (o.str());
-                    continue;
-                }
+		// end of send LUN
 
-                // try to get the lock in increments of 100 ms and then if timeout order the thread to die, mark it dead,
-				{
-                    ivytime starting_time; starting_time.setToNow();
-
-                    ivytime now = starting_time;
-
-                    ivytime limit_time = starting_time + ivytime(subinterval_duration.getlongdoubleseconds() + catnap_time_seconds);
-
-                    while (now < limit_time)
-                    {
-                        if (pear.second->slaveThreadMutex.try_lock())
-                        {
-                            if (pear.second->state == ThreadState::waiting_for_command)
-                            {
-                                pear.second->slaveThreadMutex.unlock();
-                                pear.second->slaveThreadConditionVariable.notify_all();
-                                break;
-                            }
-                            if (!(ThreadState::stopping == pear.second->state))
-                            {
-                                pear.second->slaveThreadMutex.unlock();
-                                pear.second->slaveThreadConditionVariable.notify_all();
-                                std::ostringstream o;
-                                o << "<Warning> for host " << hostname << " WorkloadThread " << pear.first
-                                << " \"Catch in flight I/Os\" command should see state stopping or state read_for_command but instead saw "
-                                << pear.second->state;
-                                say(o.str());
-                                break;
-                            }
-                            pear.second->slaveThreadMutex.unlock();
-                            pear.second->slaveThreadConditionVariable.notify_all();
-                        }
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                        now.setToNow();
-                        continue;
-                    }
-
-                    if (now > limit_time) // if we timed out
-                    {
-                        std::ostringstream o;
-                        o << "<Warning> for host " << hostname << " WorkloadThread " << pear.first
-                        << " \"Catch in flight I/Os\" timed out waiting to get the lock and see state stopping or state read_for_command.";
-                        say(o.str());
-                        break;
-                    }
-				}
-			}
-
-            say("<OK>");
-        }
 		else if (startsWith("[CreateWorkload]",input_line,remainder))
 		{
 			// We get "[CreateWorkload] myhostname+/dev/sdxy+workload_name [Parameters] subinterval_input.toString()
@@ -415,10 +317,10 @@ int main(int argc, char* argv[])
 
 			// we get "[CreateWorkload] sun159+/dev/sdxx+ [Parameters]subinterval_input.toString()
 
-/*debug*/if (routine_logging) log(slavelogfile,std::string("[CreateWorkload] WorkloadID is ")+workloadID+std::string("\n"));
+            if (routine_logging) log(slavelogfile,std::string("[CreateWorkload] WorkloadID is ")+workloadID+std::string("\n"));
 
-			std::unordered_map<std::string, WorkloadThread*>::iterator trd=iosequencer_threads.find(workloadID);
-			if (iosequencer_threads.end()!=trd) {
+			std::unordered_map<std::string, WorkloadThread*>::iterator trd=workload_threads.find(workloadID);
+			if (workload_threads.end()!=trd) {
 				std::ostringstream o;
 				o << "<Error> [CreateWorkload] failed - thread \"" << workloadID << "\" already exists! Not supposed to happen.  ivymaster is supposed to know." << std::endl;
 				say(o.str());
@@ -478,7 +380,7 @@ int main(int argc, char* argv[])
 
 			WorkloadThread* p_WorkloadThread = new WorkloadThread(workloadID,(*nabIt).second, maxLBA, createThreadParameters,&ivyslave_main_mutex);
 
-			iosequencer_threads[workloadID]=p_WorkloadThread;
+			workload_threads[workloadID]=p_WorkloadThread;
 
 	        	p_WorkloadThread->slavethreadlogfile = std::string(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.")
 				+ convert_non_alphameric_or_hyphen_or_period_to_underscore(workloadID) + std::string(".txt");
@@ -490,9 +392,26 @@ int main(int argc, char* argv[])
 			// Invoke thread
 			p_WorkloadThread->std_thread=std::thread(invokeThread,p_WorkloadThread);
 
-			say("<OK>");
+            { // wait one second for workload thread to start.
+                std::unique_lock<std::mutex> u_lk(p_WorkloadThread->slaveThreadMutex);
 
+                if (!p_WorkloadThread->slaveThreadConditionVariable.wait_for(u_lk, 1000ms,
+                           [&p_WorkloadThread] { return p_WorkloadThread->state == ThreadState::waiting_for_command; }))
+                {
+                    std::ostringstream o;
+                    o << "<Error> ivyslave waited more than one second for workload thread \""
+                        << p_WorkloadThread->workloadID.workloadID << "\" to start up." << std::endl
+                        << "Source code reference " << __FILE__ << " line " << __LINE__ << std::endl;
+                    say(o.str());
+                    log(slavelogfile, o.str());
+                    u_lk.unlock();
+                    killAllSubthreads(slavelogfile);
+                }
+            }
+
+			say("<OK>");
 		}
+        // end of [CreateWorkload]
 
 		else if (startsWith("[DeleteWorkload]",input_line,remainder))
 		{
@@ -514,9 +433,9 @@ int main(int argc, char* argv[])
 			}
 
             std::unordered_map<std::string, WorkloadThread*>::iterator
-                t_it = iosequencer_threads.find(wid.workloadID);
+                t_it = workload_threads.find(wid.workloadID);
 
-			if (iosequencer_threads.end() == t_it)
+			if (workload_threads.end() == t_it)
 			{
 				std::ostringstream o;
 				o << "<Error> at ivyslave [DeleteWorkload] failed - no such WorkloadID \"" << remainder << "\"." << std::endl;
@@ -563,10 +482,11 @@ int main(int argc, char* argv[])
                 log(slavelogfile, o.str());
             }
 
-            iosequencer_threads.erase(t_it);
+            workload_threads.erase(t_it);
 
 			say("<OK>");
 		}
+        // end of [DeleteWorkload]
 
 		else if (startsWith("[EditWorkload]",input_line,remainder))
 		{
@@ -580,7 +500,7 @@ int main(int argc, char* argv[])
 			// So as long as the ivy engine itself isn't broken, the workload IDs are for valid existing workload threads, and we already
 			// have shown that the parameters apply cleanly to the current iosequencer_input object.
 
-/*debug*/if (routine_logging) log( slavelogfile,std::string("[EditWorkload]") + remainder + std::string("\n") );
+            if (routine_logging) log( slavelogfile,std::string("[EditWorkload]") + remainder + std::string("\n") );
 
 			std::string listOfWorkloadIDsText, parametersText;
 
@@ -600,7 +520,7 @@ int main(int argc, char* argv[])
 
 			// we get "[CreateWorkload] sun159+/dev/sdxx+ [Parameters]subinterval_input.toString()
 
-/*debug*/if(routine_logging) log(slavelogfile,std::string("[EditWorkload] WorkloadIDs are ")+listOfWorkloadIDsText+std::string(" and parametersText=\"")+parametersText+std::string("\".\n"));
+            if(routine_logging) log(slavelogfile,std::string("[EditWorkload] WorkloadIDs are ")+listOfWorkloadIDsText+std::string(" and parametersText=\"")+parametersText+std::string("\".\n"));
 
 			ListOfWorkloadIDs lowi;
 
@@ -614,11 +534,11 @@ int main(int argc, char* argv[])
 
 			for (auto& wID : lowi.workloadIDs)
 			{
-				//std::unordered_map<std::string, WorkloadThread*>  iosequencer_threads;  // Key looks like "workloadName:host:00FF:/dev/sdxx:2A"
+				//std::unordered_map<std::string, WorkloadThread*>  workload_threads;  // Key looks like "workloadName:host:00FF:/dev/sdxx:2A"
 
-				auto it = iosequencer_threads.find(wID.workloadID);
+				auto it = workload_threads.find(wID.workloadID);
 
-				if (iosequencer_threads.end() == it)
+				if (workload_threads.end() == it)
 				{
 					say(std::string("<Error> [EditWorkload] no such WorkloadID, should look like myhostname+/dev/sdxy+workload_name - \"")
 						+ wID.workloadID + std::string("\"."));
@@ -651,7 +571,6 @@ int main(int argc, char* argv[])
 
 						if ( ThreadState::running  == p_WorkloadThread->state || ThreadState::waiting_for_command == p_WorkloadThread->state )
 						{
-///*debug*/{std::ostringstream o;  o << std::endl <<  "Workload thread \"" << p_WorkloadThread->workloadID.workloadID << "\" is stopped, setting into both, parameters = \"" << parametersText<< "\".";   fileappend(slavelogfile, o.str());}
 							auto rv = p_WorkloadThread->subinterval_array[0].input.setMultipleParameters(parametersText);
 
 							if (!rv.first)
@@ -698,57 +617,18 @@ int main(int argc, char* argv[])
 			}
 			say("<OK>");
 		}
+        // end of [EditWorkload]
+
         else if (0 == input_line.compare(std::string("get subinterval result")))
         {
 			if (!waitForSubintervalEndThenHarvest()) return -1;
         }
+        // end of get subinterval result
+
 		else  if (startsWith(std::string("Go!"),input_line,subinterval_duration_as_string))
 		{
 			test_start_time.setToNow();
 			next_to_harvest_subinterval=0; otherSubinterval=1;
-
-            std::regex regex_split_to_3_at_semicolons ("([^;]+);([^;]+);([^;]+)");
-            std::smatch smash;
-
-            if (std::regex_match(subinterval_duration_as_string,smash,regex_split_to_3_at_semicolons))
-            {
-                std::ostringstream o;
-
-                if (smash.size() != 4)
-                {
-                    o << "<Error> internal programming error " << __FILE__ << " line " << __LINE__
-                        << " - failed to split a string into three non-zero size pieces separated by semicolons. "
-                        << "regex matched, but was expecting smash.size() to be 4.  Instead we got "
-                        << "smash.size() = " << smash.size();
-
-                    for (unsigned int i = 0; i < smash.size(); i++)
-                    {
-                        o << ", smash[" << i << "] = \"" << smash[i] << "\""
-                        // << " (" << smash[i].size() << ")"
-                         ;
-                    }
-                    say(o.str());
-                    killAllSubthreads(slavelogfile);
-                    return -1;
-                }
-
-            }
-            else
-            {
-                std::ostringstream o;
-                o << "<Error> " << __FILE__ << " line " << __LINE__
-                    << " - invalid Go! command \"" << input_line << "\" - the part after the Go!, being \""
-                    << subinterval_duration_as_string << "\" failed to split into three non-zero length sections separated by \';\' (semicolons).";
-
-                say(o.str());
-				killAllSubthreads(slavelogfile);
-				return -1;
-            }
-
-
-            subinterval_duration_as_string = smash[1];
-            std::string catnap_seconds_string = smash[2];
-            std::string post_time_limit_seconds_string = smash[3];
 
 			if (!subinterval_duration.fromString(subinterval_duration_as_string))
 			{
@@ -760,37 +640,12 @@ int main(int argc, char* argv[])
 				killAllSubthreads(slavelogfile);
 				return -1;
 			}
-			master_thread_subinterval_end_time = test_start_time + subinterval_duration;
 
-            try
-            {
-                catnap_time_seconds = number_optional_trailing_percent(catnap_seconds_string,"catnap_seconds");
-            }
-            catch (const std::invalid_argument& ia) {
-                std::ostringstream o;
-                o << "<Error> " << __FILE__ << " line " << __LINE__
-                    << " - invalid Go! command \"" << input_line << "\" - a valid Go! command looks like \"Go!<5,0>;1.5;2.5\" where the ivytime <5,0> is subinterval_length_seconds, "\
-                    << "the 1.5 specifies the catnap_time_seconds, and the 2.5 specifieds the post_time_limit_seconds."
-                    << "  Failed parsing catnap_seconds field - \"" << catnap_seconds_string << "\" - " << ia.what();
-                say(o.str());
-				killAllSubthreads(slavelogfile);
-				return -1;
-            }
+			master_thread_subinterval_end_time      = test_start_time + subinterval_duration;
 
-            try
-            {
-                post_time_limit_seconds = number_optional_trailing_percent(post_time_limit_seconds_string,"post_time_limit_seconds");
-            }
-            catch (const std::invalid_argument& ia) {
-                std::ostringstream o;
-                o << "<Error> " << __FILE__ << " line " << __LINE__
-                    << " - invalid Go! command \"" << input_line << "\" - a valid Go! command looks like \"Go!<5,0>;1.5;2.5\" where the ivytime <5,0> is subinterval_length_seconds, "\
-                    << "the 1.5 specifies the catnap_time_seconds, and the 2.5 specifieds the post_time_limit_seconds."
-                    << "  Failed parsing post_time_limit_seconds - \"" << post_time_limit_seconds_string << "\" - " << ia.what();
-                say(o.str());
-				killAllSubthreads(slavelogfile);
-				return -1;
-            }
+			harvest_subinterval_number = 0;
+			harvest_start = test_start_time;
+			harvest_end   = harvest_start + subinterval_duration;
 
 			// harvest CPU counters starting time first subinterval
 
@@ -798,14 +653,15 @@ int main(int argc, char* argv[])
 			{
 				say("<Error> ivyslave main thread: procstatcounters::read_CPU_counters() call to get first subinterval starting CPU counters failed.");
 			}
-			for (auto& pear : iosequencer_threads)
+			for (auto& pear : workload_threads)
 			{
 				{
 					std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
 					if (ThreadState::waiting_for_command != pear.second->state)
 					{
 						ostringstream o;
-						o << "<Error> received \"Go!\" command, but thread \"" << pear.first << "\" was in " << threadStateToString(pear.second->state) << " state, not in \"waiting_for_command\" state.  Aborting." << std::endl;
+						o << "<Error> received \"Go!\" command, but thread \"" << pear.first << "\" was in " << threadStateToString(pear.second->state) << " state, not in \"waiting_for_command\" state."
+						    << "The workload thread\'s dying words were \"" << pear.second->dying_words << "\"." << std::endl;
 						say(o.str());
 						killAllSubthreads(slavelogfile);
 						return -1;
@@ -815,7 +671,6 @@ int main(int argc, char* argv[])
 						// Either this happened from a [CreateWorkload] or when a previous run stopped, the settings
 						// from the last subinterval to run were copied to the other subinterval, or finally
 						// both were set by a "[ModifyWorkload]" command that ran while the iosequencer thread was stopped.
-//*debug*/{ostringstream o; o << "Posting IVYSLAVE_SAYS_RUN command for first subinterval for " << pear.first << std::endl; log(slavelogfile,o.str());}
 
 
 // NOTE: Originally I thought I would be switching back and forth between two IosequencerInput objects, but now they are just clones of each other.
@@ -864,15 +719,11 @@ int main(int argc, char* argv[])
 					pear.second->subinterval_array[0].output.clear();  // later if energetic figure out if these must already be cleared.
 					pear.second->subinterval_array[1].output.clear();
 					pear.second->subinterval_array[0].subinterval_status=subinterval_state::ready_to_run;
-//*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[0].subinterval_status = subinterval_state::ready_to_send"; log(pear.second->slavethreadlogfile, o.str());}
 					pear.second->subinterval_array[1].subinterval_status=subinterval_state::ready_to_run;
-//*debug*/{std::ostringstream o; o << "ivyslave main thread marking subinterval_array[1].subinterval_status = subinterval_state::ready_to_send"; log(pear.second->slavethreadlogfile, o.str());}
 					pear.second->ivyslave_main_posted_command=true;
-					pear.second->ivyslave_main_says=MainThreadCommand::run;
-					pear.second->ball_in_whose_court = BallInCourt::wl_thread;
-					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command.");
+					pear.second->ivyslave_main_says=MainThreadCommand::start;
+					log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"start\" command.");
 
-//*debug*/pear.second->debug_command_log("ivyslave.cpp posting first subinterval MainThreadCommand::run.");
                     pear.second->cooldown = false;
 
 				}
@@ -881,32 +732,29 @@ int main(int argc, char* argv[])
 
 			// Although we have prepared two subintervals for the iosequencer thread to use,
 			// when the iosequencer threads get to the end of the first subinterval, they are going to
-			// expect us to have posted another MainThreadCommand::run command.
+			// expect us to have posted another MainThreadCommand::start command.
 
-			for (auto& pear : iosequencer_threads)
+			for (auto& pear : workload_threads)
 			{
 				{
-					// Wait for the iosequencer thread to have consumed the first "IVYSLAVEMAIN_SAYS_RUN" command
-					// then post another one.
+					// Wait for the workload thread to have consumed the "start" command
+					// then post a "keep going" command
 					std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
-					while (true == pear.second->ivyslave_main_posted_command)
+					while (true == pear.second->ivyslave_main_posted_command)        // should have a timeout?? How long?
 						pear.second->slaveThreadConditionVariable.wait(u_lk);
-//*debug*/{ostringstream o; o << "Posting IVYSLAVE_SAYS_RUN command for second subinterval for " << pear.first  << std::endl; log(slavelogfile,o.str());}
 					pear.second->ivyslave_main_posted_command=true;
-					pear.second->ivyslave_main_says=MainThreadCommand::run;
-					pear.second->ball_in_whose_court = BallInCourt::wl_thread;
-					if (routine_logging) { log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command."); }
-
-//*debug*/pear.second->debug_command_log("ivyslave.cpp posting second subinterval MainThreadCommand::run");
+					pear.second->ivyslave_main_says=MainThreadCommand::keep_going;
+					if (routine_logging) { log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"keep_going\" command."); }
 				}
 				pear.second->slaveThreadConditionVariable.notify_all();
 			}
 
 			say("<OK>");
 		}
+		// end of Go!
+
 		else if ( 0 == input_line.compare(std::string("continue")) || 0 == input_line.compare(std::string("cooldown")) )
 		{
-//*debug*/{ostringstream o; o << "Got \"continue\" or  \"cooldown\". " << std::endl; log(slavelogfile,o.str());}
             bool cooldown_flag;
             if (0 == input_line.compare(std::string("cooldown")))
             {
@@ -919,15 +767,18 @@ int main(int argc, char* argv[])
 
             input_line = "continue"; //  remove later - grasping at straws
 
-			for (auto& pear : iosequencer_threads)
+			for (auto& pear : workload_threads)
 			{
 				{ // lock
 					std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
-//*debug*/{ostringstream o; o << "Got the lock for " << pear.first << std::endl; log(slavelogfile,o.str());}
+
 					if (ThreadState::running != pear.second->state)
 					{
 						ostringstream o;
-						o << "<Error> received \"continue\" or \"cooldown\" command, but thread \"" << pear.first << "\" was in " << threadStateToString(pear.second->state) << " state, not in \"running\" state.  Aborting." << std::endl;
+						o << "<Error> received \"continue\" or \"cooldown\" command, but thread \"" << pear.first
+						    << "\" was in " << threadStateToString(pear.second->state)
+						    << " state, not in \"running\" state."
+						    << "  dying_words = \"" << pear.second->dying_words << "\"." << std::endl;
 						say(o.str());
 						killAllSubthreads(slavelogfile);
 						return -1;
@@ -937,32 +788,35 @@ int main(int argc, char* argv[])
 					// and the "other" subsystem has been harvested and we need to turn it around to get ready to run
 
 					pear.second->ivyslave_main_posted_command=true;
-					pear.second->ivyslave_main_says=MainThreadCommand::run;
-					pear.second->ball_in_whose_court = BallInCourt::wl_thread;
+					pear.second->ivyslave_main_says=MainThreadCommand::keep_going;
 					pear.second->cooldown = cooldown_flag;
 
-					if (routine_logging) { log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"run\" command with cooldown flag."); }
-
-//*debug*/pear.second->debug_command_log("ivyslave.cpp posting MainThreadCommand::run");
-//*debug*/{ostringstream o; o << "Posted MainThreadCommand::run command to " << pear.first << std::endl; log(slavelogfile,o.str());}
+					if (routine_logging)
+					{
+					    std::ostringstream o;
+					    o << "ivyslave main thread posted \"keep_going\" command with cooldown_flag = "
+                            << (cooldown_flag ? "true" : "false") << ".";
+					    log(pear.second->slavethreadlogfile,o.str());
+                    }
 				}
 				pear.second->slaveThreadConditionVariable.notify_all();
-//*debug*/{ostringstream o; o << "Dropped the lock for " << pear.first << std::endl; log(slavelogfile,o.str());}
 			}
 			say("<OK>");
-
-//*debug*/log(slavelogfile,"Looping back to get next command from ivymaster.");
 		}
+		// end of continue or cooldown
+
 		else if (0==input_line.compare(std::string("stop")))
 		{
-			for (auto& pear : iosequencer_threads)
+			for (auto& pear : workload_threads)
 			{
 				{ // lock
 					std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
 					if (ThreadState::running != pear.second->state)
 					{
 						ostringstream o;
-						o << "<Error> received \"stop\" command, but thread \"" << pear.first << "\" was in " << threadStateToString(pear.second->state) << " state, not in \"running\" state.  Aborting." << std::endl;
+						o << "<Error> received \"stop\" command, but thread \"" << pear.first
+						    << "\" was in " << threadStateToString(pear.second->state) << " state, not in \"running\" state."
+                            << "  dying_words = \"" << pear.second->dying_words << "\"." << std::endl;
 						say(o.str());
 						killAllSubthreads(slavelogfile);
 						return -1;
@@ -974,14 +828,13 @@ int main(int argc, char* argv[])
 					pear.second->ivyslave_main_posted_command=true;
 					pear.second->ivyslave_main_says=MainThreadCommand::stop;
                     log(pear.second->slavethreadlogfile,"ivyslave main thread posted \"stop\" command.");
-
-//*debug*/pear.second->debug_command_log("ivyslave.cpp posting MainThreadCommand::stop");
-
 				}
 				pear.second->slaveThreadConditionVariable.notify_all();
 			}
 			say("<OK>");
 		}
+		// end of stop
+
 		else if ((input_line.length()>=bracketedExit.length())
 			&& stringCaseInsensitiveEquality(input_line.substr(0,bracketedExit.length()),bracketedExit))
         {
@@ -995,6 +848,8 @@ int main(int argc, char* argv[])
 			return 0;
 		}
 	}
+	// at eof on std::cin
+
 	killAllSubthreads(slavelogfile);
 	return 0;
 };
@@ -1008,7 +863,10 @@ bool waitForSubintervalEndThenHarvest()
     if (now > master_thread_subinterval_end_time)
 	{
         std::ostringstream o;
-        o << "<Error> " << __FILE__ << " line " << __LINE__   << " - subinterval_seconds too short - ivymaster told ivyslave main thread to wait for the end of the subinterval and then harvest results, but subinterval was already over.";	say(o.str());
+        o << "<Error> " << __FILE__ << " line " << __LINE__   << " - subinterval_seconds too short - ivymaster told ivyslave main thread to wait for the end of the subinterval and then harvest results, but subinterval was already over.";
+        o << "  This can also be caused if an ivy command device is on a subsystem port that is saturated with other (ivy) activity, making communication with the command device run very slowly.";
+        o << "master_thread_subinterval_end_time = " << master_thread_subinterval_end_time.format_as_datetime_with_ns() << ", now = " << now.format_as_datetime_with_ns();
+        say(o.str());
         say(o.str());
 		killAllSubthreads(slavelogfile);
 		return false;
@@ -1041,9 +899,9 @@ bool waitForSubintervalEndThenHarvest()
 
 	int rc;
 
-	rc=getprocstat(&interval_end_CPU, slavelogfile);
+	rc = getprocstat(&interval_end_CPU, slavelogfile);
 
-	if (0!=rc)
+	if ( 0 != rc )
 	{
 		std::ostringstream o;
 		o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): getprocstat(&interval_end_CPU, slavelogfile) call to get subinterval ending CPU counters failed.\n";
@@ -1054,7 +912,7 @@ bool waitForSubintervalEndThenHarvest()
 
 	struct cpubusypercent cpubusydetail;
 	struct avgcpubusypercent cpubusysummary;
-	if (0!=computecpubusy(
+	if ( 0 != computecpubusy (
 		&interval_start_CPU, // counters at start of interval
 		&interval_end_CPU,
 		&cpubusydetail, // this gets filled in as output
@@ -1085,16 +943,22 @@ bool waitForSubintervalEndThenHarvest()
 
     // optimal catnap - wait for all the workload threads for ready_to_send
 
-    unsigned int numthreads = iosequencer_threads.size();
+    unsigned int numthreads = workload_threads.size();
     unsigned int thread_number {0};
 
     ivy_float min_seq_fill_fraction = 1.0;
 
-    for (auto& pear : iosequencer_threads)
+    RunningStat<ivy_float,ivy_int> dispatching_latency_seconds_accumulator;  // These are a new instance each pass through, so don't need clearing.
+    RunningStat<ivy_float,ivy_int> lock_aquisition_latency_seconds_accumulator;
+    RunningStat<ivy_float,ivy_int> switchover_completion_latency_seconds_accumulator;
+
+    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_dispatching_latency;
+    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_lock_acquisition;
+    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_switchover;
+
+    for (auto& pear : workload_threads)
     {
         thread_number++;
-
-        int64_t microseconds_to_limit;
 
         ivytime n; n.setToNow();
 
@@ -1113,13 +977,13 @@ bool waitForSubintervalEndThenHarvest()
         std::chrono::nanoseconds time_to_limit ( (int64_t) togo.getAsNanoseconds() );
 
         {
-            WorkloadThread &wlt = (*pear.second);  // this only gets set on the first pass through the loop.  Now it's been put in a nested block to change every pass through.
+            WorkloadThread &wlt = (*pear.second);  // the nested block gets a fresh reference
 
             {
                 std::unique_lock<std::mutex> slavethread_lk(wlt.slaveThreadMutex);
 
                 if (!wlt.slaveThreadConditionVariable.wait_for(slavethread_lk, time_to_limit,
-                           [&wlt] { return wlt.ball_in_whose_court == BallInCourt::wl_orchestrator; }))
+                           [&wlt] { return wlt.ivyslave_main_posted_command == false; }))  // WorkloadThread turns this off when switching to a new subingerval
                 {
                     std::ostringstream o;
                     o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): "
@@ -1131,7 +995,15 @@ bool waitForSubintervalEndThenHarvest()
                     killAllSubthreads(slavelogfile);
                 }
 
-                // now we keep the lock while we are processing this subthread???
+                // now we keep the lock while we are processing this subthread
+
+                dispatching_latency_seconds_accumulator           += pear.second->dispatching_latency_seconds;
+                lock_aquisition_latency_seconds_accumulator       += pear.second->lock_aquisition_latency_seconds;
+                switchover_completion_latency_seconds_accumulator += pear.second->switchover_completion_latency_seconds;
+
+                distribution_over_workloads_of_avg_dispatching_latency.push(pear.second->dispatching_latency_seconds.avg());
+                distribution_over_workloads_of_avg_lock_acquisition   .push(pear.second->lock_aquisition_latency_seconds.avg());
+                distribution_over_workloads_of_avg_switchover         .push(pear.second->switchover_completion_latency_seconds.avg());
 
                 if (pear.second->sequential_fill_fraction < min_seq_fill_fraction)
                 {
@@ -1146,7 +1018,7 @@ bool waitForSubintervalEndThenHarvest()
                 {
                     std::ostringstream o;
                     o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): "
-                        << " ball was in our court for " << pear.first << ", but WorkloadThread hadn't marked subinterval ready-to-send.";
+                        << " WorkloadThread " << pear.first << " interlocked at subinterval end, but WorkloadThread hadn't marked subinterval ready-to-send.";
                     say(o.str());
                     log(slavelogfile, o.str());
                     slavethread_lk.unlock();
@@ -1154,12 +1026,51 @@ bool waitForSubintervalEndThenHarvest()
                     killAllSubthreads(slavelogfile);
                 }
 
-                // what bugs me is that now I have the lock for this workload thread, but first I have to
-                // iterate overall of them to be able to say the min_seq_fill_fraction
+                // indent level with lock held
+                {
+                    // send the workload detail data to pipe_driver_subthread
+
+                    ostringstream o;
+                    o << '<' << pear.second->workloadID.workloadID << '>'
+                        << (pear.second->subinterval_array)[next_to_harvest_subinterval].input.toString()
+                        << (pear.second->subinterval_array)[next_to_harvest_subinterval].output.toString() << std::endl;
+
+                    say(o.str());
+                }
+
+                // Copy subinterval object from running subinterval to inactive subinterval.
+                (pear.second->subinterval_array)[next_to_harvest_subinterval].input.copy(  (pear.second->subinterval_array)[otherSubinterval].input);
+
+                // Zero out inactive subinterval output object.
+                (pear.second->subinterval_array)[next_to_harvest_subinterval].output.clear();
+
+                pear.second->subinterval_array[next_to_harvest_subinterval].start_time
+                    = pear.second->subinterval_array[otherSubinterval].end_time;
+
+                pear.second->subinterval_array[next_to_harvest_subinterval].end_time
+                    = pear.second->subinterval_array[next_to_harvest_subinterval].start_time + subinterval_duration;
+
+                (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status = subinterval_state::ready_to_run;
+
+
             }
+            // here is where we have dropped the lock
+
+            // Note that we sent data up to pipe_driver_subthread,
+            // and we have cleared out and prepared the other subinterval to be marked "ready to run",
+            // but we have not posted a command to WorkloadThread, so it will ignore any condition variable notifications until then.
+
+            pear.second->slaveThreadConditionVariable.notify_all();  // probably superfluous
+
+            // (The command to the workload will be posted later, after we get "continue", "cooldown", or "stop".)
 
         }
+        // end nested block for fresh WorkloadThread reference
+
     }
+    // end of loop over workload threads
+
+	say(std::string("<end>"));  // end of workload detail lines
 
     {
         std::ostringstream o;
@@ -1167,101 +1078,19 @@ bool waitForSubintervalEndThenHarvest()
         say(o.str());
     }
 
-    now.setToNow();
-    if (now > end_of_running_subinterval)
     {
         std::ostringstream o;
-        o << "<Error> "<< __FILE__ << " line " << __LINE__ << " - subinterval_seconds too short.  "
-            << "Went over the end of the subinterval when sending up results from previous subinterval.";
+        o << "latencies: "
+            << dispatching_latency_seconds_accumulator.toString()
+            << lock_aquisition_latency_seconds_accumulator.toString()
+            << switchover_completion_latency_seconds_accumulator.toString()
+            << distribution_over_workloads_of_avg_dispatching_latency.toString()
+            << distribution_over_workloads_of_avg_lock_acquisition.toString()
+            << distribution_over_workloads_of_avg_switchover.toString()
+            ;
+
         say(o.str());
-        killAllSubthreads(slavelogfile);
-        return false;
     }
-
-
-    thread_number = 0;
-
-	for (auto& pear : iosequencer_threads)
-	{
-        // this time iterating through the workload threads, we don't have the lock,
-        // but that's OK because the workload thread will wait to be notified that the ball is in its court.
-        thread_number++;
-
-        while (true)
-        {
-
-            if (pear.second->slaveThreadMutex.try_lock())  // but sometimes this spuriously fails ... !!!  come back to this
-            {
-                pear.second->slaveThreadMutex.unlock();
-                pear.second->slaveThreadConditionVariable.notify_all();
-            }
-
-            {
-                std::unique_lock<std::mutex> lk(cv_m);
-                if(cv.wait_for(lk, idx*100ms, []{return i == 1;}))
-                    std::cerr << "Thread " << idx << " finished waiting. i == " << i << '\n';
-                else
-                    std::cerr << "Thread " << idx << " timed out. i == " << i << '\n';
-            }
-
-            ivytime wait_until_time;
-            wait_until_time = now + ivytime(0.25*catnap_time_seconds);
-            wait_until_time.waitUntilThisTime();
-            ivytime delay_this_time = wait_until_time - master_thread_subinterval_end_time;
-            if (delay_this_time > max_seen_post_delay) max_seen_post_delay = delay_this_time;
-        }
-
-        if (max_seen_post_delay > ivytime(catnap_time_seconds))
-        {
-            std::ostringstream o;
-
-            ivy_float times_catnap = max_seen_post_delay.getlongdoubleseconds() / catnap_time_seconds;
-
-            o << "<Warning> "<< __FILE__ << " line " << __LINE__ << " - host " << hostname
-                << " - max WorkloadThread delay to post \"ready to send\" after scheduled subinterval end time was " << max_seen_post_delay.format_as_duration_HMMSSns()
-                << " which is " << std::fixed << std::setprecision(2) << times_catnap
-                << " times the catnap time of " << std::fixed << std::setprecision(2) << catnap_time_seconds << ".";
-
-            log(slavelogfile, o.str());
-            if (times_catnap >= 2.0) say (o.str());
-        }
-
-        ostringstream o;
-        o << '<' << pear.second->workloadID.workloadID << '>'
-            << (pear.second->subinterval_array)[next_to_harvest_subinterval].input.toString()
-            << (pear.second->subinterval_array)[next_to_harvest_subinterval].output.toString() << std::endl;
-
-		say(o.str());
-
-        // Copy subinterval object from running subinterval to inactive subinterval.
-        (pear.second->subinterval_array)[next_to_harvest_subinterval].input.copy(  (pear.second->subinterval_array)[otherSubinterval].input);
-
-        // Zero out inactive subinterval output object.
-        (pear.second->subinterval_array)[next_to_harvest_subinterval].output.clear();
-
-        pear.second->subinterval_array[next_to_harvest_subinterval].start_time
-            = pear.second->subinterval_array[otherSubinterval].end_time;
-
-        pear.second->subinterval_array[next_to_harvest_subinterval].end_time
-            = pear.second->subinterval_array[next_to_harvest_subinterval].start_time + subinterval_duration;
-
-        (pear.second->subinterval_array)[next_to_harvest_subinterval].subinterval_status = subinterval_state::ready_to_run;
-
-        pear.second->slaveThreadMutex.unlock();
-		pear.second->slaveThreadConditionVariable.notify_all();
-	}
-
-	lasttime.setToNow();
-    if (lasttime > end_of_running_subinterval)
-    {
-        std::ostringstream o;
-        o << "<Error> "<< __FILE__ << " line " << __LINE__
-            << " - Subinterval length parameter subinterval_seconds too short - current subinterval was already over when ivyslave about to conclude sending results from previous subinterval.";
-        say(o.str());
-        killAllSubthreads(slavelogfile);
-        return false;
-    }
-	say(std::string("<end>"));
 
 	if (0 == next_to_harvest_subinterval)
 	{
@@ -1274,9 +1103,10 @@ bool waitForSubintervalEndThenHarvest()
 		otherSubinterval = 1;
 	}
 
+
 	master_thread_subinterval_end_time = master_thread_subinterval_end_time + subinterval_duration;
 
-//*debug*/log(slavelogfile,"Exiting from waitForSubintervalEndThenHarvest()");
 	return true;
 }
+// end of waitForSubintervalEndThenHarvest()
 

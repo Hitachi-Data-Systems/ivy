@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 //hostname,SCSI Bus Number (HBA),LUN Name,Hitachi Product,HDS Product,Serial Number,Port,LUN 0-255,LDEV,Nickname,LDEV type,RAID level,PG,Pool ID,CLPR,Max LBA,Size MB,Size MiB,Size GB,Size GiB,SizeTB,Size TiB,Vendor,Product,Product Revision,SCSI_IOCTL_PROBE_HOST
 //cb23,2,/dev/sdbu,HM700,HUS VM,210030,1A,0,00:00,,Internal,RAID-1,01-01,,CLPR0,2097151,1073.741824,1024.000000,1.073742,1.000000,0.001074,0.000977,HITACHI ,OPEN-V          ,7303,EMC LPe12002-E 8Gb 2-port PCIe Fibre Channel Adapter on PCI bus 2e device 00 irq 16 port 0 Logical L
 //172.17.19.159,1,/dev/sdb,DF800S,AMS2100,83011441,2A,4,0004,,,,,,,2247098367,1150514.364416,1097216.000000,1150.514364,1071.500000,1.150514,1.046387,HITACHI ,DF600F          ,0000,Emulex LPe11002-S 4Gb 2-port PCIe FC HBA on PCI bus 21 device 00 irq 59 port 0 Logical Link Speed: 4
@@ -62,7 +62,7 @@ void LUN::createNicknames()
 bool LUN::loadcsvline(std::string headerline, std::string dataline, std::string logfilename)
 {
 	// false on a failure to load the line properly
-	int columns = 1 + countCSVlineUnquotedCommas(headerline);
+	int header_columns = 1 + countCSVlineUnquotedCommas(headerline);
 
 	// Remind myself column title line up validation feature.
 
@@ -70,17 +70,14 @@ bool LUN::loadcsvline(std::string headerline, std::string dataline, std::string 
 
 	// Failure to have the same number of columns in the headerline and the dataline triggers a loading failure.
 
-	if ( (1 + countCSVlineUnquotedCommas(dataline)) != columns )
+	if ( countCSVlineUnquotedCommas(dataline) > countCSVlineUnquotedCommas(headerline) )
 	{
 		{
 			std::ostringstream o;
-			o << "header:" << headerline << std::endl;
-			o << "data:" << dataline << std::endl;
-
-			o	<< std::endl << "LUN::loadcsvline() failed because header line and data line didn't have the same number of un-quoted commas."
-				<< std::endl << "LUN::loadcsvline() header line has " << columns << ", header line = \"" << headerline << "\""
-				<< std::endl << "LUN::loadcsvline() data line has " << (1 + countCSVlineUnquotedCommas(dataline)) << "columns, data line = \"" << dataline << "\""
-				<< std::endl << std::endl;
+			o << "<Error> LUN::loadcsvline() failed because a data line had more columns than the header line." << std::endl;
+			o << "header columns = " << header_columns << " columns.  header: \"" << headerline << "\"." << std::endl;
+			o << "data line columns = " << (1 + countCSVlineUnquotedCommas(dataline)) << " columns.  header: \"" << dataline << "\"." << std::endl;
+			o << std::endl;
 			fileappend(logfilename, o.str());
 			return false;
 		}
@@ -90,7 +87,7 @@ bool LUN::loadcsvline(std::string headerline, std::string dataline, std::string 
 
 	std::string keyword, value;
 
-	for (int col=0; col < columns; col++)
+	for (int col=0; col < header_columns; col++)
 	{
 		keyword =
 			convert_to_lower_case_and_convert_nonalphameric_to_underscore

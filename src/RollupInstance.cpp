@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <string>
 #include <list>
 #include <algorithm>
@@ -46,6 +46,7 @@
 #include "RollupType.h"
 #include "ivy_engine.h"
 #include "studentsTdistribution.h"
+#include "ivybuilddate.h"
 
 extern std::string masterlogfile();
 
@@ -616,7 +617,7 @@ void RollupInstance::perform_PID()
                     I *= max(m_s.gain_step, 1.0/m_s.gain_step);
                     error_integral = total_IOPS / I;       // adjusts the cumulative error total to according to new I, new IOPS.
                     adaptive_PID_subinterval_count = 0;    // other things get reset from this
-                    m_s.last_gain_adjustment_subinterval = m_s.running_subinterval; // warmup extends until at least the last gain adjustmenty
+                    m_s.last_gain_adjustment_subinterval = m_s.harvesting_subinterval; // warmup extends until at least the last gain adjustmenty
                     {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID
                         << " - increasing gain because over at least  " << m_s.balanced_step_direction_by
                         << " IOPS adjustments, over two thirds of the adjustments were in the same direction"
@@ -625,7 +626,7 @@ void RollupInstance::perform_PID()
 
                     gain_history
                         << attributeNameComboID << " = " << rollupInstanceID
-                        << " \"balanced_step_direction_by\" increase at subinterval " << m_s.running_subinterval
+                        << " \"balanced_step_direction_by\" increase at subinterval " << m_s.harvesting_subinterval
                         << ", adaptive PID cycle subinterval " << adaptive_PID_subinterval_count
                         << ", I = " << I
                         << ", \"max_monotone\" increases = " << m_count
@@ -670,7 +671,7 @@ void RollupInstance::perform_PID()
                                 I *= min(m_s.gain_step, 1.0/m_s.gain_step);
                                 total_IOPS = base_IOPS;              // set new starting IOPS to be at midpoint of swing.
                                 error_integral = total_IOPS / I;     // adjusts the cumulative error total to according to new I, new IOPS.
-                                m_s.last_gain_adjustment_subinterval = m_s.running_subinterval; // warmup extends until at least the last gain adjustmenty
+                                m_s.last_gain_adjustment_subinterval = m_s.harvesting_subinterval; // warmup extends until at least the last gain adjustmenty
                                 {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw inflection " << (on_way_up ? "upwards" : "downwards")
                                     << ", size of swing is " << std::fixed << std::setprecision(2) << (100.*swing_fraction_of_IOPS) << "% of its midpoint IOPS.  "
                                     << "Due to excessive swing size in both directions reducing gain at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
@@ -679,7 +680,7 @@ void RollupInstance::perform_PID()
 
                                 gain_history
                                     << attributeNameComboID << " = " << rollupInstanceID
-                                    << " \"max_ripple\" decrease at subinterval " << m_s.running_subinterval
+                                    << " \"max_ripple\" decrease at subinterval " << m_s.harvesting_subinterval
                                     << ", adaptive PID cycle subinterval " << adaptive_PID_subinterval_count
                                     << ", I = " << I
                                     << ", \"max_monotone\" increases = " << m_count
@@ -718,7 +719,7 @@ void RollupInstance::perform_PID()
                             I *= max(m_s.gain_step, 1.0/m_s.gain_step);
                             error_integral = total_IOPS / I;       // adjusts the cumulative error total to according to new I, new IOPS.
                             adaptive_PID_subinterval_count = 0;    // other things get reset from this
-                            m_s.last_gain_adjustment_subinterval = m_s.running_subinterval; // warmup extends until at least the last gain adjustmenty
+                            m_s.last_gain_adjustment_subinterval = m_s.harvesting_subinterval; // warmup extends until at least the last gain adjustmenty
                             {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID
                                 << " - increasing gain because over at least " << m_s.max_monotone
                                 << " consecutive subintervals, all IOPS adjustments were in the same direction"
@@ -727,7 +728,7 @@ void RollupInstance::perform_PID()
 
                             gain_history
                                 << attributeNameComboID << " = " << rollupInstanceID
-                                << " \"max_monotone\" increase at subinterval " << m_s.running_subinterval
+                                << " \"max_monotone\" increase at subinterval " << m_s.harvesting_subinterval
                                 << ", adaptive PID cycle subinterval " << adaptive_PID_subinterval_count
                                 << ", I = " << I
                                 << ", \"max_monotone\" increases = " << m_count
@@ -754,7 +755,7 @@ void RollupInstance::perform_PID()
         std::ostringstream o;
         o << "total_IOPS=" << std::fixed << std::setprecision(6) << total_IOPS;
         std::string s = attributeNameComboID + std::string("=") + rollupInstanceID;
-        std::pair<bool,std::string> rc = m_s.edit_rollup(s, o.str());
+        std::pair<bool,std::string> rc = m_s.edit_rollup(s, o.str(),true /*meaning don't log this is the ivy engine API call log, as this is an internally generated call.*/);
         if (!rc.first)
         {
             std::ostringstream o2;
@@ -798,11 +799,10 @@ std::pair<bool,ivy_float> RollupInstance::isValidMeasurementStartingFrom(unsigne
     if (0.0 == sample.avg())
     {
         std::ostringstream o;
-        o << "<Error> in RollupInstance::isValidMeasurementStartingFrom( n = " << n << " ).  Last subinterval is " << (focus_metric_vector.size()-1) << "." << std::endl
+        o << "<Warning> in RollupInstance::isValidMeasurementStartingFrom( n = " << n << " ).  Last subinterval is " << (focus_metric_vector.size()-1) << "." << std::endl
             << "Average over sample set is zero, so we can\'t perform the measurement validation calculation which divides by the average over the sample set.  Number of samples in set is " << sample.count() << "." << std::endl;
         log (m_s.masterlogfile,o.str());
-        std::cout << o.str();
-        m_s.kill_subthreads_and_exit();
+        return std::make_pair(false,-1);
     }
 
 
@@ -1019,8 +1019,8 @@ void RollupInstance::print_pid_csv_files()
             << ", \"balanced_step_direction_by\" gain increase cycles = " << b_count
             << ", \"max_ripple\" gain decreases = " << d_count
             << ", gain adjustment stopped at subinterval " << m_s.last_gain_adjustment_subinterval
-            << ", followed by " << (m_s.running_subinterval - m_s.last_gain_adjustment_subinterval) << " subintervals available for measurement"
-            << ", total step subintervals = " << ( 1 + m_s.running_subinterval )
+            << ", followed by " << (m_s.harvesting_subinterval - m_s.last_gain_adjustment_subinterval) << " subintervals available for measurement"
+            << ", total step subintervals = " << ( 1 + m_s.harvesting_subinterval )
             << "\n";
 
         log(m_s.masterlogfile, o.str());
@@ -1095,7 +1095,7 @@ void RollupInstance::set_by_subinterval_filename()
 void RollupInstance::print_by_subinterval_header()
 {
     std::ostringstream o;
-    o << "ivy version,";
+    o << "ivy version,build date,";
     if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
     o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
     if (m_s.ivymaster_RMLIB_threads.size()>0) { o << Test_config_thumbnail::csv_headers(); }
@@ -1149,7 +1149,7 @@ void RollupInstance::print_subinterval_csv_line(
 {
     std::ostringstream csvline;
 
-    csvline << ivy_version << ',';
+    csvline << ivy_version << ',' << IVYBUILDDATE << ',';
 
     if (m_s.command_device_etc_version.size() > 0 ) csvline << m_s.command_device_etc_version << ',';
 
@@ -1198,7 +1198,7 @@ void RollupInstance::print_subinterval_csv_line(
         }
         else
         {
-            if (-1 == m_s.measureDFC_failure_point || ((int)i) <= m_s.measureDFC_failure_point) csvline << "warmup"
+            if (-1 == m_s.MeasureCtlr_failure_point || ((int)i) <= m_s.MeasureCtlr_failure_point) csvline << "warmup"
                         ;
             else csvline << "cooldown";
         }
@@ -1413,7 +1413,7 @@ void RollupInstance::print_measurement_summary_csv_line()
             {
                 std::ostringstream o;
 
-                o << "ivy version,";
+                o << "ivy version,build date,";
 
                 if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
 
@@ -1468,7 +1468,7 @@ void RollupInstance::print_measurement_summary_csv_line()
         {
             std::ostringstream csvline;
 
-            csvline << ivy_version << ",";
+            csvline << ivy_version << "," << IVYBUILDDATE << ',';
 
             if (m_s.command_device_etc_version.size() > 0 ) csvline << m_s.command_device_etc_version << ',';
 
@@ -1753,7 +1753,7 @@ void RollupInstance::print_measurement_summary_csv_line()
 
             std::ostringstream csvline;
 
-            csvline << ivy_version << ',';
+            csvline << ivy_version << ',' << IVYBUILDDATE << ',';
 
             if (m_s.command_device_etc_version.size() > 0 ) csvline << m_s.command_device_etc_version << ',';
 
@@ -1761,7 +1761,7 @@ void RollupInstance::print_measurement_summary_csv_line()
             csvline << ',' ; // << start.format_as_datetime();
 
             ivytime warmup_start, warmup_complete, warmup_duration, cooldown_start, cooldown_complete, cooldown_duration;
-            if (-1 == m_s.measureDFC_failure_point)
+            if (-1 == m_s.MeasureCtlr_failure_point)
             {
                 warmup_start = m_s.rollups.starting_ending_times[0].first;
                 warmup_complete = m_s.rollups.starting_ending_times[m_s.rollups.starting_ending_times.size() - 1 ].second;
@@ -1771,7 +1771,7 @@ void RollupInstance::print_measurement_summary_csv_line()
             else
             {
                 warmup_start = m_s.rollups.starting_ending_times[0].first;
-                warmup_complete = m_s.rollups.starting_ending_times[m_s.measureDFC_failure_point].second;
+                warmup_complete = m_s.rollups.starting_ending_times[m_s.MeasureCtlr_failure_point].second;
                 warmup_duration = warmup_complete - warmup_start;
                 if (warmup_complete == m_s.rollups.starting_ending_times[m_s.rollups.starting_ending_times.size()-1].second)
                 {
@@ -1779,7 +1779,7 @@ void RollupInstance::print_measurement_summary_csv_line()
                 }
                 else
                 {
-                    cooldown_start = m_s.rollups.starting_ending_times[m_s.measureDFC_failure_point].second;
+                    cooldown_start = m_s.rollups.starting_ending_times[m_s.MeasureCtlr_failure_point].second;
                     cooldown_complete = m_s.rollups.starting_ending_times[m_s.rollups.starting_ending_times.size()-1].second;
                     cooldown_duration = cooldown_complete - cooldown_start;
                 }

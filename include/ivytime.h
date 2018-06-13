@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
 // This dates back to an early version of ivy before I had std=c++11 - Ian.  At some point, switch this over to using std::chrono ...e
@@ -64,6 +64,7 @@ public:
 	std::string format_as_duration_HMMSS();
 	std::string format_as_datetime();
 	std::string format_as_datetime_with_ns();
+	std::string format_with_ms(int decimal_places=6);
 	void setToNow();
 	void waitUntilThisTime();
 	uint64_t Milliseconds();
@@ -71,8 +72,18 @@ public:
 	void setFromNanoseconds(uint64_t Nanoseconds);
 	uint64_t getAsNanoseconds();
 	long double getlongdoubleseconds();
+	long double seconds_from_now(); // positive in future, negative in past
+	long double seconds_from(const ivytime& t);
+	    // positive value means starting from "t", we move towards the future to reach my own value.
+	    // negative value means starting from "t", we move towards the past to reach my own value.
+	std::string duration_from_now();
+	std::string duration_from(const ivytime& t);
+
 	std::string toString();
 	bool fromString(std::string);
+	bool isValid();
+	void normalize(); // fix what may be an invalid representation after an operation such as plus or minus.
+    void normalize_round(); // you just keep calling this until isValid()
 
 };
 

@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 using namespace std;
 
 #include <string>
@@ -36,9 +36,10 @@ using namespace std;
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 #include "ParameterValueLookupTable.h"
-#include "MeasureDFC.h"
+#include "MeasureCtlr.h"
 #include "run_subinterval_sequence.h"
 
 #include "ivytime.h"
@@ -175,7 +176,7 @@ bool ivy_engine::some_cooldown_WP_not_empty()
         {
             // theoretically this isn't supposed to happen, as if there is a command device to the subsystem behind an available test LUN,
             // that command device always collects by-CLPR data for all CLPRs.
-            std::ostringstream o; o << "MeasureDFC::cooldown_return_code() - for subsystem " << pear.second->serial_number << ", get_WP(CLPR=\"" << CLPR
+            std::ostringstream o; o << "MeasureCtlr::cooldown_return_code() - for subsystem " << pear.second->serial_number << ", get_WP(CLPR=\"" << CLPR
                 << "\", subinterval=" << (pear.second->gathers.size()-2) <<") failed saying - " << iae.what() << std::endl;
             log (m_s.masterlogfile,o.str());
             std::cout << o.str();
@@ -1283,7 +1284,7 @@ ivy_engine::createWorkload(
 	// we apply the user's parameters to the default template to create a "stamp", an IosequencerInput object
 	// that we will then clone for each WorkloadTracker that we create to track a particular test host workload thread.
 
-	// Later on, the DynamicFeedbackController can decide to update these parameters.
+	// Later on, the MeasureController can decide to update these parameters.
 
 	// Because we keep a local copy in ivymaster in the WorkloadTracker object of the most recent update to a workload's
 	// IosequencerInput object, we can also do things like "increase IOPS by 10%".
@@ -1703,7 +1704,7 @@ ivy_engine::create_rollup(
 }
 
 std::pair<bool /*success*/, std::string /* message */>
-ivy_engine::edit_rollup(const std::string& rollupText, const std::string& original_parametersText)
+ivy_engine::edit_rollup(const std::string& rollupText, const std::string& original_parametersText, bool do_not_log_API_call)
 // returns true on success
 {
     {
@@ -1715,7 +1716,7 @@ ivy_engine::edit_rollup(const std::string& rollupText, const std::string& origin
         std::cout << o.str()
             << std::endl;  // The extra new line groups fine-grained DFC lines showing first what happened in English, and then here show setting the resulting new IOPS.
         log (m_s.masterlogfile,o.str());
-        log(ivy_engine_logfile,o.str());
+        if (!do_not_log_API_call) { log(ivy_engine_logfile,o.str()); }
     }
 
 //variables
@@ -2094,11 +2095,11 @@ ivy_engine::go(const std::string& parameters)
         kill_subthreads_and_exit();
     }
 
-    std::string valid_parameter_names = "stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, catnap_time_seconds, post_time_limit_seconds, sequential_fill";
+    std::string valid_parameter_names = "stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, sequential_fill";
 
     std::string valid_parameters_message =
         "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
-        "                                                   catnap_time_seconds, post_time_limit_seconds, sequential_fill.\n\n"
+        "                                                   sequential_fill.\n\n"
         "For dfc = PID, additional valid parameters are:    target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
         "For measure = on, additional valid parameters are: accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
         "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n\n"
@@ -2128,20 +2129,6 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     if (!go_parameters.contains(std::string("measure_seconds")))     go_parameters.contents[normalize_identifier(std::string("measure_seconds"))]     = measure_seconds_default;
     if (!go_parameters.contains(std::string("cooldown_by_wp")))      go_parameters.contents[normalize_identifier(std::string("cooldown_by_wp"))]      = cooldown_by_wp_default;
 
-    if (!go_parameters.contains(std::string("catnap_time_seconds")))
-    {
-        std::ostringstream o;
-        o << std::fixed << catnap_time_seconds_default;
-        go_parameters.contents[normalize_identifier(std::string("catnap_time_seconds"))] = o.str();
-    }
-
-    if (!go_parameters.contains(std::string("post_time_limit_seconds")))
-    {
-        std::ostringstream o;
-        o << std::fixed << post_time_limit_seconds_default;
-        go_parameters.contents[normalize_identifier(std::string("post_time_limit_seconds"))] = o.str();
-    }
-
     if (go_parameters.contains(std::string("dfc")))
     {
 
@@ -2166,7 +2153,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
             kill_subthreads_and_exit();
         }
 
-//        std::map<std::string, DynamicFeedbackController*>::iterator controller_it = availableControllers.find(toLower(controllerName));
+//        std::map<std::string, MeasureController*>::iterator controller_it = availableControllers.find(toLower(controllerName));
 //
 //        if (availableControllers.end() == controller_it)
 //        {
@@ -2375,33 +2362,6 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     }
 
 
-//----------------------------------- catnap_time_seconds
-    try
-    {
-        catnap_time_seconds = number_optional_trailing_percent(go_parameters.retrieve("catnap_time_seconds"));
-    }
-    catch(std::invalid_argument& iaex)
-    {
-        std::ostringstream o;
-        o << "<Error> ivy engine API - go() - Invalid catnap_time_seconds parameter value \"" << go_parameters.retrieve("catnap_time_seconds") << "\"." << std::endl;
-        std::cout << o.str();
-        log(masterlogfile,o.str());
-        kill_subthreads_and_exit();
-    }
-
-//----------------------------------- post_time_limit_seconds
-    try
-    {
-        post_time_limit_seconds = number_optional_trailing_percent(go_parameters.retrieve("post_time_limit_seconds"));
-    }
-    catch(std::invalid_argument& iaex)
-    {
-        std::ostringstream o;
-        o << "<Error> ivy engine API - go() - Invalid post_time_limit_seconds parameter value \"" << go_parameters.retrieve("post_time_limit_seconds") << "\"." << std::endl;
-        std::cout << o.str();
-        log(masterlogfile,o.str());
-        kill_subthreads_and_exit();
-    }
 
 //----------------------------------- subinterval_seconds
     try
@@ -3068,28 +3028,19 @@ ivy_engine::shutdown_subthreads()
 
 	int notified_subsystems {0};
 
-	for (auto& pear : subsystems)
+	for (auto& pear : command_device_subthread_pointers)
 	{
-		if (0==pear.second->type().compare(std::string("Hitachi RAID")))
-		{
-			Hitachi_RAID_subsystem* pRAID = (Hitachi_RAID_subsystem*) pear.second;
-			if (pRAID->pRMLIBthread)
-			{
-				pipe_driver_subthread* p_pds = pRAID->pRMLIBthread;
-				{
-					//std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
-					p_pds->commandString=std::string("die");
-					p_pds->command=true;
+        {
+            pear.second->commandString=std::string("die");
+            pear.second->command=true;
 
-					std::ostringstream o;
-					o << "ivy_engine::shutdown_subthreads() - posting \"die\" command to subthread for subsystem " << pear.first
-                        << " pid = " << p_pds->pipe_driver_pid << ", gettid() thread ID = " << p_pds->linux_gettid_thread_id<< std::endl;
-					log (masterlogfile, o.str());
-				}
-				p_pds->master_slave_cv.notify_all();
-				notified_subsystems++;
-			}
-		}
+            std::ostringstream o;
+            o << "ivy_engine::shutdown_subthreads() - posting \"die\" command to subthread for subsystem " << pear.first
+                << " pid = " << pear.second->pipe_driver_pid << ", gettid() thread ID = " << pear.second->linux_gettid_thread_id<< std::endl;
+            log (masterlogfile, o.str());
+        }
+        pear.second->master_slave_cv.notify_all();
+        notified_subsystems++;
 	}
 
     bool need_harakiri {false};
@@ -3125,48 +3076,35 @@ ivy_engine::shutdown_subthreads()
         }
 	}
 
-	for (auto& pear : subsystems)
-	{
-		if (0==pear.second->type().compare(std::string("Hitachi RAID")))
-		{
-			Hitachi_RAID_subsystem* pRAID = (Hitachi_RAID_subsystem*) pear.second;
-			if (pRAID->pRMLIBthread)
-			{
-				pipe_driver_subthread* p_pds = pRAID->pRMLIBthread;
-				{
-                    bool died_on_its_own;
-                    died_on_its_own = false;
+	for (auto& pear : command_device_subthread_pointers)
+    {
+        bool died_on_its_own;
+        died_on_its_own = false;
 
-                    std::chrono::milliseconds nap(100);
+        std::chrono::milliseconds nap(100);
 
-                    for (unsigned int i = 0; i < 30; i++)
-                    {
-  //                      if (p_pds->master_slave_lk.try_lock())
-  //                      {
-                            if (p_pds->dead)
-                            {
-                                died_on_its_own = true;
-                                break;
-                            }
-  //                      }
-                        std::this_thread::sleep_for(nap);
-                    }
+        for (unsigned int i = 0; i < 30; i++)
+        {
+            if (pear.second->dead)
+            {
+                died_on_its_own = true;
+                break;
+            }
+            std::this_thread::sleep_for(nap);
+        }
 
-                    if (!died_on_its_own)
-                    {
-                        std::ostringstream o;
-                        o << "********** Subthread for command device on host " << p_pds->ivyscript_hostname
-                            << " subsystem serial number " << pRAID->serial_number
-                            << " did not exit normally." << std::endl;
-                        log(m_s.masterlogfile,o.str());
-                        std::cout << o.str();
+        if (!died_on_its_own)
+        {
+            std::ostringstream o;
+            o << "********** Subthread for command device on host " << pear.second->ivyscript_hostname
+                << " subsystem serial number " << pear.first
+                << " did not exit normally." << std::endl;
+            log(m_s.masterlogfile,o.str());
+            std::cout << o.str();
 
-                        need_harakiri = true;
-                    }
-				}
-			}
-		}
-	}
+            need_harakiri = true;
+        }
+    }
 
 	std::ostringstream o;
 	o << "ivy_engine::shutdown_subthreads() told " << notified << " host driver and "
@@ -3368,16 +3306,285 @@ ivy_engine::set(const std::string& thingee,
     }
 }
 
-
-void remove_empty_columns()
+void ivy_engine::print_latency_csvfiles()
 {
+    std::string latency_subfolder = testFolder + std::string("/interlock_latencies");
 
+    struct stat struct_stat;
+
+	if ( 0 == stat(latency_subfolder.c_str(),&struct_stat))  // latencies folder already exists
+    {
+        if(!S_ISDIR(struct_stat.st_mode))
+        {
+            std::ostringstream o;
+            o << "<Error> internal_programming_error.  " << latency_subfolder << " already exists but is not a directory." << std::endl
+                << "  Occurred at line " << __LINE__ << "of " << __FILE__ << std::endl;
+            std::cout << o.str();
+            log(masterlogfile, o.str());
+            kill_subthreads_and_exit();
+        }
+    } else {
+        if (mkdir(latency_subfolder.c_str(),S_IRWXU | S_IRWXG | S_IRWXO))
+        {
+            std::ostringstream o;
+            o << "<Error> internal_programming_error.  Failed trying to create " << latency_subfolder << "." << std::endl
+                << "  Occurred at line " << __LINE__ << "of " << __FILE__ << std::endl;
+            std::cout << o.str();
+            log(masterlogfile, o.str());
+            kill_subthreads_and_exit();
+        }
+    }
+
+    m_s.dispatching_latency_seconds_accumulator.clear();
+    m_s.lock_aquisition_latency_seconds_accumulator.clear();
+    m_s.switchover_completion_latency_seconds_accumulator.clear();
+
+    m_s.distribution_over_workloads_of_avg_dispatching_latency.clear();
+    m_s.distribution_over_workloads_of_avg_lock_acquisition.clear();
+    m_s.distribution_over_workloads_of_avg_switchover.clear();
+
+    for (auto& pear : host_subthread_pointers)
+    {
+        m_s.dispatching_latency_seconds_accumulator           += pear.second->dispatching_latency_seconds_accumulator;
+        m_s.lock_aquisition_latency_seconds_accumulator       += pear.second->lock_aquisition_latency_seconds_accumulator;
+        m_s.switchover_completion_latency_seconds_accumulator += pear.second->switchover_completion_latency_seconds_accumulator;
+
+        m_s.distribution_over_workloads_of_avg_dispatching_latency += pear.second->distribution_over_workloads_of_avg_dispatching_latency;
+        m_s.distribution_over_workloads_of_avg_lock_acquisition    += pear.second->distribution_over_workloads_of_avg_lock_acquisition;
+        m_s.distribution_over_workloads_of_avg_switchover          += pear.second->distribution_over_workloads_of_avg_switchover;
+    }
+
+    std::ostringstream h;
+
+    h << "test name,stepNNNN,step name,hostname";
+
+    for (const std::string& s : { "protocol time seconds",
+                                  "host sendup seconds",
+                                  "sendup time seconds",
+                                  "central processing seconds",
+                                  "earliest subsystem gather head start seconds",
+
+                                  "continue/cooldown/stop ack seconds",
+                                  "overall_gather_seconds",
+                                  "cruise seconds",
+
+                                  "dispatcher latency seconds",
+                                  "lock aquisition latency seconds",
+                                  "switchover completion latency seconds",
+
+                                  "distribution over_workloads of avg dispatching latency",
+                                  "distribution over_workloads of avg lock acquisition",
+                                  "distribution over_workloads of avg switchover"            })
+    {
+        h << "," << s << " avg";
+    }
+        h << ",details:";
+
+
+    for (const std::string& s : { "protocol time seconds",
+                                  "host sendup seconds",
+                                  "sendup time seconds",
+                                  "central processing seconds",
+                                  "earliest subsystem gather head start seconds",
+
+                                  "continue/cooldown/stop ack seconds",
+                                  "overall gather seconds",
+                                  "cruise seconds",
+
+                                  "dispatcher latency seconds",
+                                  "lock aquisition latency seconds",
+                                  "switchover completion latency seconds",
+
+                                  "distribution over_workloads of avg dispatching latency",
+                                  "distribution over_workloads of avg lock acquisition",
+                                  "distribution over_workloads of avg switchover"            })
+    {
+        h << "," << s << " avg";
+        h << "," << s << " min";
+        h << "," << s << " max";
+        h << "," << s << " count";
+    }
+    h << std::endl;
+
+    std::string header_line = h.str();
+
+    std::string overall_filename  = latency_subfolder + std::string("/") + testName + std::string(".latencies.overall.csv");
+
+    if ( 0 != stat(overall_filename.c_str(),&struct_stat))
+    {
+        // doesn't exist yet.  write header line
+        fileappend(overall_filename,header_line);
+    }
+
+    {
+        std::ostringstream latency_line;
+        latency_line << testName << ',' << stepNNNN << ',' << stepName << ",overall";
+
+// first we print a set of columns with just the avg() for the sake of humans
+        latency_line << ',' << m_s.protocolTimeSeconds                                   .avg();
+        latency_line << ',' << m_s.hostSendupTimeSeconds                                 .avg();
+        latency_line << ',' << m_s.sendupTimeSeconds                                     .avg();
+        latency_line << ',' << m_s.centralProcessingTimeSeconds                          .avg();
+        latency_line << ',' << m_s.gatherBeforeSubintervalEndSeconds                     .avg();
+
+        latency_line << ',' << m_s.continueCooldownStopAckSeconds                        .avg();
+        latency_line << ',' << m_s.overallGatherTimeSeconds                              .avg();
+        latency_line << ',' << m_s.cruiseSeconds                                 .avg();
+
+        latency_line << ',' << m_s.dispatching_latency_seconds_accumulator               .avg();
+        latency_line << ',' << m_s.lock_aquisition_latency_seconds_accumulator           .avg();
+        latency_line << ',' << m_s.switchover_completion_latency_seconds_accumulator     .avg();
+
+        latency_line << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.avg();
+        latency_line << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .avg();
+        latency_line << ',' << m_s.distribution_over_workloads_of_avg_switchover         .avg();
+
+        latency_line << ",details:";
+// The avg columsn repeat in the full set so that they can be used standalone
+
+        latency_line << ',' << m_s.protocolTimeSeconds                                   .avg() << ',' << m_s.protocolTimeSeconds                                   .min() << ',' << m_s.protocolTimeSeconds                                   .max() << ',' << m_s.protocolTimeSeconds                                   .count();
+        latency_line << ',' << m_s.hostSendupTimeSeconds                                 .avg() << ',' << m_s.hostSendupTimeSeconds                                 .min() << ',' << m_s.hostSendupTimeSeconds                                 .max() << ',' << m_s.hostSendupTimeSeconds                                 .count();
+        latency_line << ',' << m_s.sendupTimeSeconds                                     .avg() << ',' << m_s.sendupTimeSeconds                                     .min() << ',' << m_s.sendupTimeSeconds                                     .max() << ',' << m_s.sendupTimeSeconds                                     .count();
+        latency_line << ',' << m_s.centralProcessingTimeSeconds                          .avg() << ',' << m_s.centralProcessingTimeSeconds                          .min() << ',' << m_s.centralProcessingTimeSeconds                          .max() << ',' << m_s.centralProcessingTimeSeconds                          .count();
+        latency_line << ',' << m_s.gatherBeforeSubintervalEndSeconds                     .avg() << ',' << m_s.gatherBeforeSubintervalEndSeconds                     .min() << ',' << m_s.gatherBeforeSubintervalEndSeconds                     .max() << ',' << m_s.gatherBeforeSubintervalEndSeconds                     .count();
+
+        latency_line << ',' << m_s.continueCooldownStopAckSeconds                        .avg() << ',' << m_s.continueCooldownStopAckSeconds                        .min() << ',' << m_s.continueCooldownStopAckSeconds                        .max() << ',' << m_s.continueCooldownStopAckSeconds                        .count();
+        latency_line << ',' << m_s.overallGatherTimeSeconds                              .avg() << ',' << m_s.overallGatherTimeSeconds                              .min() << ',' << m_s.overallGatherTimeSeconds                              .max() << ',' << m_s.overallGatherTimeSeconds                              .count();
+        latency_line << ',' << m_s.cruiseSeconds                                         .avg() << ',' << m_s.cruiseSeconds                                         .min() << ',' << m_s.cruiseSeconds                                         .max() << ',' << m_s.cruiseSeconds                                         .count();
+
+        latency_line << ',' << m_s.dispatching_latency_seconds_accumulator               .avg() << ',' << m_s.dispatching_latency_seconds_accumulator               .min() << ',' << m_s.dispatching_latency_seconds_accumulator               .max() << ',' << m_s.dispatching_latency_seconds_accumulator               .count();
+        latency_line << ',' << m_s.lock_aquisition_latency_seconds_accumulator           .avg() << ',' << m_s.lock_aquisition_latency_seconds_accumulator           .min() << ',' << m_s.lock_aquisition_latency_seconds_accumulator           .max() << ',' << m_s.lock_aquisition_latency_seconds_accumulator           .count();
+        latency_line << ',' << m_s.switchover_completion_latency_seconds_accumulator     .avg() << ',' << m_s.switchover_completion_latency_seconds_accumulator     .min() << ',' << m_s.switchover_completion_latency_seconds_accumulator     .max() << ',' << m_s.switchover_completion_latency_seconds_accumulator     .count();
+
+        latency_line << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.avg() << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.min() << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.max() << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.count();
+        latency_line << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .avg() << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .min() << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .max() << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .count();
+        latency_line << ',' << m_s.distribution_over_workloads_of_avg_switchover         .avg() << ',' << m_s.distribution_over_workloads_of_avg_switchover         .min() << ',' << m_s.distribution_over_workloads_of_avg_switchover         .max() << ',' << m_s.distribution_over_workloads_of_avg_switchover         .count();
+
+        latency_line << std::endl;
+
+        fileappend(overall_filename,latency_line.str());
+    }
+
+    for (auto& pear : host_subthread_pointers)
+    {
+        std::string by_host_filename = latency_subfolder + std::string("/")
+            + testName + std::string(".latencies.") + pear.first + std::string(".csv");
+
+        if ( 0 != stat(by_host_filename.c_str(),&struct_stat))
+        {
+            // doesn't exist yet.  write header line
+            fileappend(by_host_filename,header_line);
+        }
+
+        {
+            std::ostringstream latency_line;
+            latency_line << testName << ',' << stepNNNN << ',' << stepName << ',' << pear.first;
+
+// first we print a set of columns with just the avg() for the sake of humans
+            latency_line << ',' << m_s.protocolTimeSeconds                                   .avg();
+            latency_line << ',' << m_s.hostSendupTimeSeconds                                 .avg();
+            latency_line << ',' << m_s.sendupTimeSeconds                                     .avg();
+            latency_line << ',' << m_s.centralProcessingTimeSeconds                          .avg();
+            latency_line << ',' << m_s.gatherBeforeSubintervalEndSeconds                     .avg();
+
+            latency_line << ',' << m_s.continueCooldownStopAckSeconds                        .avg();
+            latency_line << ',' << m_s.overallGatherTimeSeconds                              .avg();
+            latency_line << ',' << m_s.cruiseSeconds                                 .avg();
+
+            latency_line << ',' << pear.second->dispatching_latency_seconds_accumulator               .avg();
+            latency_line << ',' << pear.second->lock_aquisition_latency_seconds_accumulator           .avg();
+            latency_line << ',' << pear.second->switchover_completion_latency_seconds_accumulator     .avg();
+
+            latency_line << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.avg();
+            latency_line << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .avg();
+            latency_line << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .avg();
+
+            latency_line << ",details:";
+
+
+// The avg columsn repeat in the full set so that they can be used standalone
+
+            latency_line << ',' << m_s.protocolTimeSeconds                                   .avg() << ',' << m_s.protocolTimeSeconds                                   .min() << ',' << m_s.protocolTimeSeconds                                   .max() << ',' << m_s.protocolTimeSeconds                                   .count();
+            latency_line << ',' << m_s.hostSendupTimeSeconds                                 .avg() << ',' << m_s.hostSendupTimeSeconds                                 .min() << ',' << m_s.hostSendupTimeSeconds                                 .max() << ',' << m_s.hostSendupTimeSeconds                                 .count();
+            latency_line << ',' << m_s.sendupTimeSeconds                                     .avg() << ',' << m_s.sendupTimeSeconds                                     .min() << ',' << m_s.sendupTimeSeconds                                     .max() << ',' << m_s.sendupTimeSeconds                                     .count();
+            latency_line << ',' << m_s.centralProcessingTimeSeconds                          .avg() << ',' << m_s.centralProcessingTimeSeconds                          .min() << ',' << m_s.centralProcessingTimeSeconds                          .max() << ',' << m_s.centralProcessingTimeSeconds                          .count();
+            latency_line << ',' << m_s.gatherBeforeSubintervalEndSeconds                     .avg() << ',' << m_s.gatherBeforeSubintervalEndSeconds                     .min() << ',' << m_s.gatherBeforeSubintervalEndSeconds                     .max() << ',' << m_s.gatherBeforeSubintervalEndSeconds                     .count();
+
+            latency_line << ',' << m_s.continueCooldownStopAckSeconds                        .avg() << ',' << m_s.continueCooldownStopAckSeconds                        .min() << ',' << m_s.continueCooldownStopAckSeconds                        .max() << ',' << m_s.continueCooldownStopAckSeconds                        .count();
+            latency_line << ',' << m_s.overallGatherTimeSeconds                              .avg() << ',' << m_s.overallGatherTimeSeconds                              .min() << ',' << m_s.overallGatherTimeSeconds                              .max() << ',' << m_s.overallGatherTimeSeconds                              .count();
+            latency_line << ',' << m_s.cruiseSeconds                                         .avg() << ',' << m_s.cruiseSeconds                                         .min() << ',' << m_s.cruiseSeconds                                         .max() << ',' << m_s.cruiseSeconds                                         .count();
+
+            latency_line << ',' << pear.second->dispatching_latency_seconds_accumulator               .avg() << ',' << pear.second->dispatching_latency_seconds_accumulator               .min() << ',' << pear.second->dispatching_latency_seconds_accumulator               .max() << ',' << pear.second->dispatching_latency_seconds_accumulator               .count();
+            latency_line << ',' << pear.second->lock_aquisition_latency_seconds_accumulator           .avg() << ',' << pear.second->lock_aquisition_latency_seconds_accumulator           .min() << ',' << pear.second->lock_aquisition_latency_seconds_accumulator           .max() << ',' << pear.second->lock_aquisition_latency_seconds_accumulator           .count();
+            latency_line << ',' << pear.second->switchover_completion_latency_seconds_accumulator     .avg() << ',' << pear.second->switchover_completion_latency_seconds_accumulator     .min() << ',' << pear.second->switchover_completion_latency_seconds_accumulator     .max() << ',' << pear.second->switchover_completion_latency_seconds_accumulator     .count();
+
+            latency_line << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.avg() << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.min() << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.max() << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.count();
+            latency_line << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .avg() << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .min() << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .max() << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .count();
+            latency_line << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .avg() << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .min() << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .max() << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .count();
+            latency_line << std::endl;
+
+            fileappend(by_host_filename,latency_line.str());
+        }
+    }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    // print subsystem gather latency csv files
+
+    std::ostringstream gather_latency_header;
+
+    gather_latency_header << "test name,stepNNNN,step name,serial_number";
+    gather_latency_header << ",get config seconds";
+
+    for (const std::string& s : { "gather seconds",
+                                  "get CLPR seconds",
+                                  "get MP seconds",
+                                  "get LDEV seconds",
+                                  "get PORT seconds",
+                                  "get UR Jnl seconds"            })
+    {
+        gather_latency_header << "," << s << " avg";
+        gather_latency_header << "," << s << " min";
+        gather_latency_header << "," << s << " max";
+        gather_latency_header << "," << s << " count";
+    }
+    gather_latency_header << std::endl;
+
+    for (auto& pear : command_device_subthread_pointers)
+    {
+        { // nested block to get fresh references
+
+            const std::string& cereal_number = pear.first;
+
+            std::string subsystem_latency_filename = latency_subfolder + std::string("/") + testName + std::string(".latencies.") + cereal_number + std::string(".csv");
+
+            if ( 0 != stat(subsystem_latency_filename.c_str(),&struct_stat))
+            {
+                // doesn't exist yet.  write header line
+                fileappend(subsystem_latency_filename,gather_latency_header.str());
+            }
+
+            {
+                std::ostringstream latency_line;
+                latency_line << testName << ',' << stepNNNN << ',' << stepName << ',' << cereal_number;
+
+                latency_line << ',' << pear.second->getConfigTime         .avg();
+
+                latency_line << ',' << pear.second->perSubsystemGatherTime.avg() << ',' << pear.second->perSubsystemGatherTime.min() << ',' << pear.second->perSubsystemGatherTime.max() << ',' << pear.second->perSubsystemGatherTime.count();
+                latency_line << ',' << pear.second->getCLPRDetailTime     .avg() << ',' << pear.second->getCLPRDetailTime     .min() << ',' << pear.second->getCLPRDetailTime     .max() << ',' << pear.second->getCLPRDetailTime     .count();
+                latency_line << ',' << pear.second->getMPbusyTime         .avg() << ',' << pear.second->getMPbusyTime         .min() << ',' << pear.second->getMPbusyTime         .max() << ',' << pear.second->getMPbusyTime         .count();
+                latency_line << ',' << pear.second->getLDEVIOTime         .avg() << ',' << pear.second->getLDEVIOTime         .min() << ',' << pear.second->getLDEVIOTime         .max() << ',' << pear.second->getLDEVIOTime         .count();
+                latency_line << ',' << pear.second->getPORTIOTime         .avg() << ',' << pear.second->getPORTIOTime         .min() << ',' << pear.second->getPORTIOTime         .max() << ',' << pear.second->getPORTIOTime         .count();
+                latency_line << ',' << pear.second->getUR_JnlTime         .avg() << ',' << pear.second->getUR_JnlTime         .min() << ',' << pear.second->getUR_JnlTime         .max() << ',' << pear.second->getUR_JnlTime         .count();
+                latency_line << std::endl;
+
+                fileappend(subsystem_latency_filename,latency_line.str());
+            }
+        }
+    }
 }
-
-
-
-
-
 
 
 

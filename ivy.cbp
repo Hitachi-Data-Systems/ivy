@@ -134,12 +134,25 @@
 				<Option output="bin/remove_empty_columns" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="/home/ian/messedup.csv" />
+				<Option parameters="/home/ian/Desktop/one.csv" />
 			</Target>
 			<Target title="test_hosts_list">
 				<Option output="bin/test_hosts_list" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+			</Target>
+			<Target title="test_negative_ivytimes">
+				<Option output="bin/test_negative_ivytimes/ivy" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="bin/test_negative_ivytimes/" />
+				<Option object_output="obj/test_negative_ivytimes/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
 			</Target>
 		</Build>
 		<VirtualTargets>
@@ -149,7 +162,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=c++11" />
+			<Add option="-std=c++14" />
 			<Add option="-g" />
 			<Add directory="src" />
 			<Add directory="include" />
@@ -174,10 +187,6 @@
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/AttributeNameCombo.h">
-			<Option target="ivymaster" />
-			<Option target="ivyslave" />
-		</Unit>
-		<Unit filename="include/DynamicFeedbackController.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
@@ -243,9 +252,11 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="include/MeasureDFC.h">
+		<Unit filename="include/MeasureController.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/MeasureCtlr.h">
+			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/NameEqualsValueList.h">
 			<Option target="ivymaster" />
@@ -290,6 +301,9 @@
 		<Unit filename="include/Subinterval_CPU.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/Subinterval_detail_line.h">
+			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/Subsystem.h">
 			<Option target="ivymaster" />
@@ -374,6 +388,9 @@
 		</Unit>
 		<Unit filename="include/ivylinuxcpubusy.h">
 			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/ivyslave.h">
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/ivytime.h">
@@ -493,9 +510,6 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="src/DynamicFeedbackController.cpp">
-			<Option target="ivymaster" />
-		</Unit>
 		<Unit filename="src/Eyeo.cpp">
 			<Option target="ivyslave" />
 		</Unit>
@@ -550,7 +564,10 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
-		<Unit filename="src/MeasureDFC.cpp">
+		<Unit filename="src/MeasureController.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/MeasureCtlr.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/NameEqualsValueList.cpp">
@@ -720,6 +737,7 @@
 			<Option target="testRegex" />
 			<Option target="test_LDEVset" />
 			<Option target="remove_empty_columns" />
+			<Option target="test_negative_ivytimes" />
 		</Unit>
 		<Unit filename="src/makedict.cpp">
 			<Option target="makedict" />
@@ -731,10 +749,16 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
+		<Unit filename="src/pipe_driver_gather.cpp">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="src/pipe_driver_subthread.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/prepare_dedupe.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/process_cmddev_commands.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/remove_empty_columns.cpp">
@@ -769,6 +793,9 @@
 		</Unit>
 		<Unit filename="src/test_hosts_list.cpp">
 			<Option target="test_hosts_list" />
+		</Unit>
+		<Unit filename="src/test_negative_ivytimes.cpp">
+			<Option target="test_negative_ivytimes" />
 		</Unit>
 		<Unit filename="src/test_subinterval.cpp">
 			<Option target="&lt;{~None~}&gt;" />

@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <vector>
 #include <map>
 #include <set>
@@ -54,9 +54,9 @@ void Subsystem::print_subinterval_csv_line_set( std::string subfolder_leaf_name 
 // that is, one data line for each subinterval.
 
 {
-    std::string& root_folder = m_s.stepFolder;
-
     if (gathers.size() == 0) return;
+
+    std::string& root_folder = m_s.stepFolder;
 
 	struct stat struct_stat;
 
@@ -113,7 +113,7 @@ void Subsystem::print_subinterval_csv_line_set( std::string subfolder_leaf_name 
 	}
 	else
 	{
-		if (mkdir(leaf_folder.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) {
+		if (mkdir(leaf_folder.c_str(),S_IRWXU | S_IRWXG | S_IRWXO)) {
 			std::ostringstream o;
 			o << "<Error> GatherData::print_subinterval_csv_line_set(std::string root_folder = \"" << root_folder << "\" - must already exist and be a directory, std::string subfolder_leaf_name=\""
 				<< subfolder_leaf_name << "\" like \"401034.config\" or \"410034.t=0\")." << std::endl
@@ -190,7 +190,7 @@ void Subsystem::print_subinterval_csv_line_set( std::string subfolder_leaf_name 
 		{
 			// element folder doesn't exist yet - need to make it
 
-			if (mkdir(element_folder.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) {
+			if (mkdir(element_folder.c_str(),S_IRWXU | S_IRWXG | S_IRWXO)) {
 				std::ostringstream o;
 				o << "<Error> Subsystem::print_subinterval_csv_line_set(root_folder = \"" << root_folder << "\",subfolder_leaf_name=\"" << subfolder_leaf_name << "\"):" << std::endl
 					<< "Failed to create element subfolder \"" << element_folder

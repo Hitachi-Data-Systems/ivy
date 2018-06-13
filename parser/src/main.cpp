@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <iostream>
 #include <stdio.h>
 #include <regex>
@@ -30,7 +30,7 @@
 #include "ivy.parser.hh"
 #include "ivyhelpers.h"
 #include "ivy_engine.h"
-#include "MeasureDFC.h"
+#include "MeasureCtlr.h"
 #include "ivybuilddate.h"
 
 std::string startup_log_file {"~/ivy_startup.txt"};
@@ -47,8 +47,8 @@ void usage_message(char* argv_0)
         << "where \"[options]\" means zero or more of:" << std::endl << std::endl
         << "-log" << std::endl
         << "     Turns on logging of routine events." << std::endl << std::endl
-        << "-hostname-hyphen" << std::endl
-        << "     Recognize \"aardvark10-12\" as a single host named \"aardvark10-12\" rather than \"aardvark10, aardvark11, aardvark12\"." << std::endl << std::endl
+        << "-no_cmd"<< std::endl
+        << "     Don\'t use any command devices." << std::endl << std::endl
         << "-trace_lexer or -l" << std::endl
         << "     Log routine events and trace the \"lexer\" which breaks down the .ivyscript program into \"tokens\"." << std::endl << std::endl
         << "-trace_parser or -p" << std::endl
@@ -171,6 +171,7 @@ int main(int argc, char* argv[])
         if (item == "-trace_lexer"    || item == "-l") { routine_logging = trace_lexer = true; continue; }
         if (item == "-trace_parser"   || item == "-p") { routine_logging = trace_parser = true; continue; }
         if (item == "-trace_evaluate" || item == "-e") { routine_logging = trace_evaluate = true; continue; }
+        if (item == "-no_cmd" )                        { m_s.use_command_device = false; continue; }
 
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }
 

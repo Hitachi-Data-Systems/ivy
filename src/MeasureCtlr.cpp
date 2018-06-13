@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,23 +13,23 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <vector>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 
 #include "ivyhelpers.h"
-#include "MeasureDFC.h"
+#include "MeasureCtlr.h"
 #include "ivy_engine.h"
 #include "RollupInstance.h"
 
 extern bool routine_logging;
 
-void MeasureDFC::reset()
+void MeasureCtlr::reset()
 {
 	current = -1;
 	seq_fill_extending = false;
@@ -37,7 +37,7 @@ void MeasureDFC::reset()
 
 std::string wurst_of_the_best();
 
-int MeasureDFC::evaluateSubinterval()
+int MeasureCtlr::evaluateSubinterval()
 {
 	current++;
 
@@ -128,7 +128,7 @@ int MeasureDFC::evaluateSubinterval()
         log (m_s.masterlogfile,o.str());
         std::cout << o.str();
 
-        m_s.measureDFC_failure_point = current;
+        m_s.MeasureCtlr_failure_point = current;
 
         return EVALUATE_SUBINTERVAL_FAILURE;
     }
@@ -186,7 +186,7 @@ int MeasureDFC::evaluateSubinterval()
 			}
 			catch(std::invalid_argument& iaex)
 			{
-				std::ostringstream o; o << "measureDFC::evaluateSubinterval() - failed retrieving Write Pending value - " << iaex.what() << std::endl;
+				std::ostringstream o; o << "MeasureCtlr::evaluateSubinterval() - failed retrieving Write Pending value - " << iaex.what() << std::endl;
 				log (m_s.masterlogfile,o.str());
 				std::cout << o.str();
 				m_s.kill_subthreads_and_exit();
@@ -271,7 +271,7 @@ int MeasureDFC::evaluateSubinterval()
 		}
 
 
-        if (m_s.p_focus_rollup == nullptr) throw std::runtime_error("<Error> internal programming error - MeasureDFC::evaluateSubinterval() - m_s.p_focus_rollup == nullptr.");
+        if (m_s.p_focus_rollup == nullptr) throw std::runtime_error("<Error> internal programming error - MeasureCtlr::evaluateSubinterval() - m_s.p_focus_rollup == nullptr.");
 
         if (fromLast == 0) continue; // we need to have a minimum of two subintervals to do the "is it valid" math.
 

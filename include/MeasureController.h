@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
 #include <climits>  // for UINT_MAX
@@ -25,7 +25,7 @@
 
 #include "ivydefines.h"
 
-//When a DynamicFeedbackController sends out an update,
+//When a MeasureController sends out an update,
 //
 //	- It provides the name of rollup type (AttributeNameCombo) to send to, like "serial_number+port"
 //
@@ -58,23 +58,23 @@ enum class DFCcategory { measure };  // There used to be fixed, warble_Sun159, P
 #define EVALUATE_SUBINTERVAL_SUCCESS 1
 // would have used enum class today.
 
-class DynamicFeedbackController
+class MeasureController
 {
 public:
 //variables
 
 //methods
-	DynamicFeedbackController(){};
+	MeasureController(){};
 
 	virtual std::string name() = 0;
 
 	virtual int evaluateSubinterval() = 0;
 
 	virtual unsigned int firstMeasurementSubintervalIndex()
-		{throw std::runtime_error("DynamicFeedbackController::firstMeasurementSubintervalIndex() - invalid for this type of DFC");}
+		{throw std::runtime_error("MeasureController::firstMeasurementSubintervalIndex() - invalid for this type of DFC");}
 
 	virtual unsigned int lastMeasurementSubintervalIndex()
-		{throw std::runtime_error("DynamicFeedbackController::lastMeasurementSubintervalIndex() - invalid for this type of DFC");}
+		{throw std::runtime_error("MeasureController::lastMeasurementSubintervalIndex() - invalid for this type of DFC");}
 
 	virtual void reset()=0;
 
@@ -83,16 +83,16 @@ public:
 	virtual bool has_multiple_measurement_intervals() {return false;}
 
 	virtual unsigned int measurement_count()
-		{throw std::runtime_error("DynamicFeedbackController::measurement_count() - invalid for this type of DFC");}
+		{throw std::runtime_error("MeasureController::measurement_count() - invalid for this type of DFC");}
 
 	virtual unsigned int get_measurement_first_index(unsigned int measurement_index)
-		{throw std::runtime_error("DynamicFeedbackController::get_measurement_first_index() - invalid for this type of DFC");}
+		{throw std::runtime_error("MeasureController::get_measurement_first_index() - invalid for this type of DFC");}
 
 	virtual unsigned int get_measurement_last_index(unsigned int measurement_index)
-		{throw std::runtime_error("DynamicFeedbackController::get_measurement_last_index() - invalid for this type of DFC");}
+		{throw std::runtime_error("MeasureController::get_measurement_last_index() - invalid for this type of DFC");}
 
 	virtual std::string get_measurement_ID_tag(unsigned int measurement_index)
-		{throw std::runtime_error("DynamicFeedbackController::get_measurement_ID_tag() - invalid for this type of DFC");}
+		{throw std::runtime_error("MeasureController::get_measurement_ID_tag() - invalid for this type of DFC");}
 
     std::string test_phase(unsigned int subinterval_index);  // returns warmup/measurement/cooldown
 };

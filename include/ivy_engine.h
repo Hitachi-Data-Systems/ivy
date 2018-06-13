@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
 #include <iostream>
@@ -37,8 +37,8 @@
 #include "pipe_driver_subthread.h"
 #include "IvyscriptLine.h"
 #include "ParameterValueLookupTable.h"
-#include "DynamicFeedbackController.h"
-#include "MeasureDFC.h"
+#include "MeasureController.h"
+#include "MeasureCtlr.h"
 #include "Test_config_thumbnail.h"
 
 enum class source_enum { error, workload, RAID_subsystem } ;
@@ -60,7 +60,8 @@ class ivy_engine {
 // and all code in the ivymaster executable gets access via linkage editor.
 public:
     std::string path_to_ivy_executable;
-	// There is one instance of this in the ivymaster main thread, but
+
+	// There is one instance of this in the ivy main thread, but
 	// all the subthreads are given access to it.
 
 	// The mutex / condition variable are used to synchronize or interlock
@@ -73,15 +74,16 @@ public:
 
     bool overall_success {false};
 
-    ivytime test_start_time;
-    ivytime get_go;
+    bool use_command_device {true};
 
-    int running_subinterval {-1};
+    int harvesting_subinterval;
 
 	std::mutex master_mutex;  // This is the overall one, for synchronizing access to "ivy_engine".
 	std::condition_variable master_cv;
 
 	std::unordered_map<std::string /*ivyscript_hostname*/ ,pipe_driver_subthread*> host_subthread_pointers;
+
+	std::unordered_map<std::string /*serial number*/ ,pipe_driver_subthread*> command_device_subthread_pointers;
 
 	WorkloadTrackers workloadTrackers;
 
@@ -128,6 +130,27 @@ public:
 	RunningStat<ivy_float, ivy_int> deleteWorkloadExecutionTimeSeconds;
 	RunningStat<ivy_float, ivy_int> editWorkloadExecutionTimeSeconds;
 
+    RunningStat<ivy_float,ivy_int> dispatching_latency_seconds_accumulator;
+    RunningStat<ivy_float,ivy_int> lock_aquisition_latency_seconds_accumulator;
+    RunningStat<ivy_float,ivy_int> switchover_completion_latency_seconds_accumulator;
+
+    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_dispatching_latency;
+    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_lock_acquisition;
+    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_switchover;
+
+ 	RunningStat<ivy_float, ivy_int> protocolTimeSeconds;
+	RunningStat<ivy_float, ivy_int> hostSendupTimeSeconds;
+	RunningStat<ivy_float, ivy_int> sendupTimeSeconds;
+	RunningStat<ivy_float, ivy_int> centralProcessingTimeSeconds;
+	RunningStat<ivy_float, ivy_int> gatherBeforeSubintervalEndSeconds;
+	    long double earliest_gather_before_subinterval_end {0.0};
+    RunningStat<ivy_float, ivy_int> overallGatherTimeSeconds;
+	RunningStat<ivy_float, ivy_int> cruiseSeconds;
+
+	RunningStat<ivy_float, ivy_int> continueCooldownStopAckSeconds;
+
+
+
     IosequencerInput
         random_steady_template,
         random_independent_template,
@@ -154,47 +177,14 @@ public:
 	int lastEvaluateSubintervalReturnCode = -1; // EVALUATE_SUBINTERVAL_FAILURE
 	int eventualEvaluateSubintervalReturnCode = -1; // delayed presenting until after cooldown, that is.
 
-    ivytime subintervalStart, subintervalEnd, nextSubintervalEnd;
-
-    ivy_float catnap_time_seconds {catnap_time_seconds_default};
-    // The amount of time after the end of the subinterval that the ivyslave main thread waits
-    // before starting to look to see if the workload threads posted their subintervals complete.
-
-    ivy_float post_time_limit_seconds {post_time_limit_seconds_default};
-
-
-// [Go!]
-//    stepname = stepNNNN,
-//    subinterval_seconds = 5,
-//    warmup_seconds=5
-//    measure_seconds=5
-//    cooldown_by_wp = on
-
-//    dfc = pid
-//       target_value=0.5
-//       low_IOPS = 50, low_target = 0.1
-//       high_IOPS = 50000, low_target = 0.9
-
-//       (These low and high IOPS values are total IOPS over all instances of the focus rollup.
-//        This then gets proportioned out
-
-//    measure = on
-//       accuracy_plus_minus = "2%"
-//       confidence = "95%"
-//       max_wp = "100%"
-//       min_wp = "0%"
-//       max_wp_change = "3%"
-//       timeout_seconds = "3600"
-
-//    either dfc = pid and/or measure = on
-//       focus_rollup = all
-//       source = workload
-//          category =  { overall, read, write, random, sequential, random_read, random_write, sequential_read, sequential_write }
-//          accumulator_type = { bytes_transferred, service_time, response_time }
-//          accessor = { avg, count, min, max, sum, variance, standardDeviation }
-//       source = RAID_subsystem
-//          subsystem_element = ""
-//          element_metric = ""
+	ivytime test_start_time;
+    ivytime
+        get_go,
+        subintervalStart,  // These describe the subinterval that we are rolling up and processing,
+        subintervalEnd,    // not the subinterval that is running as we do this.
+        nextSubintervalEnd;// nextSubintervalEnd refers to the end of the running subinterval.
+                           // These are moved forward just before we send out "get subinterval result",
+                           // and then add a new subinterval on the various std::vector of subintervals.
 
     // these flags are set when parsing the [Go!] statement
     bool have_workload       {false};         // This is just to make the code a little easier to read by separating out a first step
@@ -241,7 +231,7 @@ public:
 
 
 
-    MeasureDFC the_dfc;
+    MeasureCtlr the_dfc;
 
     // measure = on
     //? ivy_float relative_plus_minus_target;  // is set before first reference
@@ -263,17 +253,13 @@ public:
 	LUN TheSampleLUN;
 
 	bool haveCmdDev {false};
-	RunningStat<ivy_float, ivy_int> overallGatherTimeSeconds;
-	RunningStat<ivy_float, ivy_int> subintervalSpareTime;	
-	RunningStat<ivy_float, ivy_int> barrierOneTime;	
-	RunningStat<ivy_float, ivy_int> centralProcessingTime;	
 
 	std::set<std::pair<std::string /*CLPR*/, Subsystem*>> cooldown_WP_watch_set;
 		// the cooldown_set is those < CLPR, serial_number > pairs in the available workload LUNs
-		// for which we have a command device.  This list is used at least by the MeasureDFC DFC
+		// for which we have a command device.  This list is used at least by the MeasureCtlr DFC
 		// to know when it should send "IOPS=0" to all workloads and then wait for WP to empty on all cooldownlist CLPRs before
 		// issuing it's final success / failure code.
-	int measureDFC_failure_point;
+	int MeasureCtlr_failure_point;
 
 #define fetch_metric           (0x80)
 
@@ -353,7 +339,7 @@ public:
     int goStatementsSeen {0};
     std::string goParameters;
     ParameterValueLookupTable go_parameters;
-    std::map<std::string, DynamicFeedbackController*> availableControllers;
+    std::map<std::string, MeasureController*> availableControllers;
 
     std::ostringstream step_times;
 
@@ -406,6 +392,8 @@ public:
         const std::string&  // metric_parameter
     );
 
+    void print_latency_csvfiles();
+
     bool some_cooldown_WP_not_empty();
 
     std::string focus_metric_ID();
@@ -455,7 +443,8 @@ public:
     edit_rollup(
         const std::string& rollup_name,        //   serial_number+Port = { 410321+1A, 410321+2A }
             // all=all gets every workload thread
-        const std::string& parameters);
+        const std::string& parameters,
+        bool do_not_log_API_call = false);
 
         std::pair<bool /*true = success*/, std::string /* message */>
     delete_rollup(
@@ -475,6 +464,9 @@ public:
 
         std::pair<bool,std::string>
     shutdown_subthreads();
+
+
+// End of ivy engine API.  The methods below have been superseded by "get" and "set"
 
     // accessor API methods to help scripting
 

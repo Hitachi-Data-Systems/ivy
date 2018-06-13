@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,16 +13,16 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
 #include <array>
 #include <string>
 
-const std::string ivy_version {"1.06.01"};
+const std::string ivy_version {"2.00.00"};
 
 
 //using ivy_int = long long int; using ivy_float = long double;
@@ -78,11 +78,6 @@ const std::string ivy_version {"1.06.01"};
 #define path_separator (std::string("/"))
 
 #define sector_size_bytes (512)
-
-#define catnap_time_seconds_default (1.0)
-    // The amount of time after the end of the subinterval that the ivyslave main thread waits
-    // before looking to see if the workload threads posted their subintervals complete.
-#define post_time_limit_seconds_default (2.5)
 
 // go statement universal parameters
 #define subinterval_seconds_default_int 5

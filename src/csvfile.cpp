@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <sys/stat.h>
 #include <iostream>
 #include <fstream>
@@ -336,9 +336,23 @@ void csvfile::remove_empty_columns()
         bool leeg;
 
         leeg = true;
+//debug For some reason, PG% busy data from a "configuration filter" doesn't come out if the LUN doesn't have a "Parity Group" attribute, even if it's empty!
+//debug Come back later and fix this.
+/*debug*/        {
+/*debug*/            std::string& header = raw_values[0][col];
+/*debug*/            if (stringCaseInsensitiveEquality(header,std::string("Parity Group"))) continue;
+/*debug*/            if (stringCaseInsensitiveEquality(header,std::string("Parity_Group"))) continue;
+/*debug*/            if (stringCaseInsensitiveEquality(header,std::string("PG"))) continue;
+/*debug*/        }
 
         for (unsigned int row = 1; row < (raw_values[row].size()); row++)
         {
+
+            if (col >= raw_values[row].size())
+            {
+                continue;
+            }
+
             if (!(raw_values[row][col].empty()))
             {
                 leeg = false;
@@ -352,7 +366,7 @@ void csvfile::remove_empty_columns()
             {
                 if (csv_row.size() <= col) continue;
 
-                csv_row.erase(csv_row.begin()+col);                    //
+                csv_row.erase(csv_row.begin()+col);
             }
         }
         if (col == 0) break;

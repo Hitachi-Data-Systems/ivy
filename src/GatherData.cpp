@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
@@ -198,7 +198,12 @@ void GatherData::print_csv_file_set(std::string root_folder /* must already exis
 	}
 	else
 	{
-		if (mkdir(leaf_folder.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) {
+		if (mkdir(leaf_folder.c_str(),
+		      S_IRWXU  // r,w,x user
+		    | S_IRWXG  // r,w,x group
+		    | S_IRWXO  // r,w,x other
+        ))
+        {
 			std::ostringstream o;
 			o << "<Error> GatherData::print_csv_file_set(std::string root_folder = \"" << root_folder << "\" - must already exist and be a directory, std::string subfolder_leaf_name=\""
 				<< subfolder_leaf_name << "\" like \"401034.config\" or \"410034.t=0\")." << std::endl

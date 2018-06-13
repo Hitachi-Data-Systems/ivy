@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #define _LARGE_FILE_API
 #include <iostream>
 #include <fstream>
@@ -45,6 +45,65 @@
 using namespace std;
 
 #include "ivytime.h"
+
+
+bool ivytime::isValid()
+{
+    // The signs of both tv_sec and tv_nsec must be the same;
+
+    if ( (t.tv_sec < 0) && (t.tv_nsec > 0) ) { return false; }
+
+    if ( (t.tv_sec > 0) && (t.tv_nsec < 0) ) { return false; }
+
+    // The nanosecnd value can't be bigger than a second.
+    if ( t.tv_nsec > 1000000000 || t.tv_nsec < -1000000000) { return false; }
+
+    return true;
+}
+
+void ivytime::normalize()
+{
+    while (!isValid()) { normalize_round(); }
+    return;
+}
+
+void ivytime::normalize_round() // you just keep calling this until isValid()
+{
+    // fix what may be an invalid representation after an operation such as plus or minus.
+
+    if ( t.tv_sec < 0 )
+    {
+        // work with negative seconds value
+        if (t.tv_nsec <= -1000000000)
+        {
+            t.tv_sec  -= 1;
+            t.tv_nsec += 1000000000;
+            return;
+        }
+        else if (t.tv_nsec > 0)
+        {
+            t.tv_sec  += 1;
+            t.tv_nsec -= 1000000000;
+            return;
+        }
+    }
+    else
+    {
+        // work with zero or positive seconds value
+        if (t.tv_nsec >= 1000000000)
+        {
+            t.tv_sec  += 1;
+            t.tv_nsec -= 1000000000;
+            return;
+        }
+        else if (t.tv_nsec < 0)
+        {
+            t.tv_sec  -= 1;
+            t.tv_nsec += 1000000000;
+            return;
+        }
+    }
+}
 
 ivytime::ivytime() {
 	t.tv_sec=0;
@@ -165,26 +224,28 @@ bool ivytime::operator>=(const ivytime& rhs) const {
 	return false;
 }
 
-const ivytime ivytime::operator+ (const ivytime &rhs) const {
+const ivytime ivytime::operator+ (const ivytime &rhs) const
+{
 	ivytime result(this);
+
 	result.t.tv_sec += rhs.t.tv_sec;
 	result.t.tv_nsec += rhs.t.tv_nsec;
-	if (result.t.tv_nsec > 1000000000) {
-		result.t.tv_sec++;
-		result.t.tv_nsec-=1000000000;
-	}
+
+	result.normalize();
+
 	return result;
 }
 
 const ivytime ivytime::operator- (const ivytime &rhs) const{
+
 	ivytime result(this);
+
 	result.t.tv_sec -= rhs.t.tv_sec;
 	result.t.tv_nsec -= rhs.t.tv_nsec;
-	if (result.t.tv_nsec < 0) {
-		result.t.tv_sec--;
-		result.t.tv_nsec+=1000000000;
-	}
-	return result;
+
+    result.normalize();
+
+    return result;
 }
 
 
@@ -207,6 +268,43 @@ void ivytime::waitUntilThisTime()
 }
 
 
+long double ivytime::seconds_from_now()
+{
+	ivytime now;
+	now.setToNow();
+
+    ivytime delta = *this - now;   // positive deltas are in the future
+
+	return delta.getlongdoubleseconds();
+}
+
+long double ivytime::seconds_from(const ivytime& t)
+{
+    ivytime delta = *this - t;   // positive deltas are in the future
+
+	return delta.getlongdoubleseconds();
+}
+
+std::string ivytime::duration_from_now()
+{
+	ivytime now;
+	now.setToNow();
+
+    ivytime delta = *this - now;   // positive deltas are in the future
+
+	return delta.format_as_duration_HMMSSns();
+}
+
+std::string ivytime::duration_from(const ivytime& t)
+{
+    ivytime delta = *this - t;   // positive deltas are in the future
+
+	return delta.format_as_duration_HMMSSns();
+}
+
+
+
+
 std::string ivytime::format_as_datetime() {
 	// 2012-04-15 HH:MM:SS - 19 characters plus terminating null makes buffer size 20
 	char timebuffer[20];
@@ -225,27 +323,99 @@ std::string ivytime::format_as_datetime_with_ns() {
 	return os.str();
 }
 
-ivytime::operator std::string() { return format_as_datetime_with_ns(); }
-
-std::string ivytime::format_as_duration_HMMSSns() {
-	uint64_t hours, minutes, seconds;
-	seconds = t.tv_sec % 60;
-	minutes = ((t.tv_sec-seconds)/60) % 60;
-	hours=(t.tv_sec-seconds-(minutes*60))/3600;
-	std::ostringstream os;
-	os << hours << ':' << std::setw(2) << std::setfill('0') << minutes << ':' << std::setw(2) << std::setfill('0') << seconds << '.' << std::setw(9) << std::setfill('0') << t.tv_nsec;
-	return os.str();
+std::string ivytime::format_with_ms(int decimal_places)
+{
+    long double ld_ms = 1000.0 * getlongdoubleseconds();
+    std::ostringstream o;
+    o << std::fixed << std::setprecision(decimal_places) << ld_ms << " ms";
+    return o.str();
 }
 
 
-std::string ivytime::format_as_duration_HMMSS() {
+
+ivytime::operator std::string() { return format_as_datetime_with_ns(); }
+
+
+std::string ivytime::format_as_duration_HMMSSns()
+{
+    if (!isValid())
+    {
+        return std::string("<Error> In ivytime::format_as_duration_HMMSSns().")
+            + std::string("  Invalid ivytime value ")
+            + (*this).toString()
+            + std::string("\nivytime seconds and nanoseonds must not disagree in sign (same or zero).")
+            + std::string("\nivytime nanoseconds value may not exceed plus or minus one second.")
+            ;
+    }
+
+    std::ostringstream o;
+
+    ivytime it;
+
+    if (t.tv_sec < 0 || t.tv_nsec < 0)
+    {
+        o << "-";
+        it.t.tv_sec = 0 - t.tv_sec;
+        it.t.tv_nsec = 0 - t.tv_nsec;
+    }
+    else
+    {
+        o << "+";
+        it = (*this);
+    }
+
 	uint64_t hours, minutes, seconds;
-	seconds = t.tv_sec % 60;
-	minutes = ((t.tv_sec-seconds)/60) % 60;
-	hours=(t.tv_sec-seconds-(minutes*60))/3600;
-	std::ostringstream os;
-	os << hours << ':' << std::setw(2) << std::setfill('0') << minutes << ':' << std::setw(2) << std::setfill('0') << seconds;
-	return os.str();
+
+	seconds = it.t.tv_sec % 60;
+	minutes = ((it.t.tv_sec-seconds)/60) % 60;
+	hours=(it.t.tv_sec-seconds-(minutes*60))/3600;
+
+	o << hours
+	    << ':' << std::setw(2) << std::setfill('0') << minutes
+	    << ':' << std::setw(2) << std::setfill('0') << seconds
+	    << '.' << std::setw(9) << std::setfill('0') << it.t.tv_nsec;
+
+	return o.str();
+}
+
+
+std::string ivytime::format_as_duration_HMMSS()
+{
+    if (!isValid())
+    {
+        return std::string("<Error> In ivytime::format_as_duration_HMMSS().")
+            + std::string("  Invalid ivytime value ")
+            + (*this).toString()
+            + std::string("\nivytime seconds and nanoseonds must not disagree in sign (same or zero).")
+            + std::string("\nivytime nanoseconds value may not exceed plus or minus one second.")
+            ;
+    }
+
+    std::ostringstream o;
+
+    ivytime it;
+
+    if (t.tv_sec < 0 || t.tv_nsec < 0)
+    {
+        o << "-";
+        it.t.tv_sec = 0 - t.tv_sec;
+        it.t.tv_nsec = 0 - t.tv_nsec;
+    }
+    else
+    {
+        o << "+";
+        it = (*this);
+    }
+
+	uint64_t hours, minutes, seconds;
+
+	seconds = it.t.tv_sec % 60;
+	minutes = ((it.t.tv_sec-seconds)/60) % 60;
+	hours=(it.t.tv_sec-seconds-(minutes*60))/3600;
+
+	o << hours << ':' << std::setw(2) << std::setfill('0') << minutes << ':' << std::setw(2) << std::setfill('0') << seconds;
+
+	return o.str();
 }
 
 ivytime::operator double() {
@@ -260,7 +430,8 @@ ivytime::operator time_t() { return t.tv_sec;}
 
 void ivytime::setToNow() {
 	int rc;
-	if ((rc=clock_gettime(CLOCK_REALTIME,&t))!= 0) {
+	if ((rc=clock_gettime(CLOCK_REALTIME,&t))!= 0)
+	{
 		std::cerr<<"clock_gettime(CLOCK_REALTIME,) failed with return code " << rc << std::endl;
 		t.tv_sec=0;
 		t.tv_nsec=0;

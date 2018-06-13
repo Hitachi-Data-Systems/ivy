@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
 #include <list>
@@ -37,17 +37,12 @@ typedef long double pattern_float_type ;
 enum class ThreadState
 {
     undefined,
+    initial,
 	waiting_for_command,
 	running,
 	stopping, // for example catching ing-flight I/Os after final subinterval
 	died,
 	exited_normally
-};
-
-enum class BallInCourt
-{
-    wl_orchestrator,
-    wl_thread
 };
 
 std::ostream& operator<< (std::ostream& o, const ThreadState s);
@@ -56,7 +51,7 @@ std::string threadStateToString (const ThreadState);
 
 enum class MainThreadCommand
 {
-	run, stop, die
+    start, keep_going, stop, die
 };
 
 std::string mainThreadCommandToString(MainThreadCommand);
@@ -76,11 +71,20 @@ public:
 	std::thread std_thread;
 
 
+//// thread interlock stuff:
+
 	std::mutex slaveThreadMutex;
 	std::condition_variable slaveThreadConditionVariable;
 
-//	std::mutex ball_in_court_lk;
-//	std::condition_variable ball_in_court_cv;;
+	bool ivyslave_main_posted_command = false;
+
+	MainThreadCommand ivyslave_main_says {MainThreadCommand::die};
+
+	ThreadState state {ThreadState::initial};
+
+	std::string dying_words {};
+
+//// end of thread interlock stuff
 
 	ivytime nextIO_schedule_time;  // 0 means means right away.  (This is initialized later.)
 	ivytime now;
@@ -88,9 +92,12 @@ public:
 	ivytime waitduration;
 	ivytime precompute_horizon {ivytime(0,125000000)};
 
-    RunningStat<ivy_float,ivy_int> seconds_to_be_dispatched_after_subinterval_end;
-    RunningStat<ivy_float,ivy_int> seconds_to_get_lock_at_end_of_subinterval;
-    RunningStat<ivy_float,ivy_int> seconds_after_subinterval_end_completed_switchover;
+	ivytime switchover_begin;
+
+
+    RunningStat<ivy_float,ivy_int> dispatching_latency_seconds;
+    RunningStat<ivy_float,ivy_int> lock_aquisition_latency_seconds;
+    RunningStat<ivy_float,ivy_int> switchover_completion_latency_seconds;
 
 	Subinterval subinterval_array[2];
 
@@ -134,13 +141,8 @@ public:
 	std::map<std::string, Iosequencer*> available_iosequencers;
 
 	bool dieImmediately{false};
-	bool ivyslave_main_posted_command = false;  // This is used for thread interlock, so made it volatile just in case.
 
 
-	MainThreadCommand ivyslave_main_says {MainThreadCommand::die};
-
-	ThreadState state {ThreadState::died};
-	BallInCourt ball_in_whose_court {BallInCourt::wl_thread};
 
 	int EyeoCount;
 	int currentSubintervalIndex, otherSubintervalIndex, subinterval_number;  // The master thread never sets these or refers to them.

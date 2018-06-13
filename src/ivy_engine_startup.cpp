@@ -1,4 +1,4 @@
-//Copyright (c) 2016 Hitachi Data Systems, Inc.
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
 //
-//Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 
 #include <sys/stat.h>
@@ -107,7 +107,7 @@ std::pair<bool /*success*/, std::string /* message */>
 
     }
 
-    if (mkdir(testFolder.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+    if (mkdir(testFolder.c_str(),S_IRWXU | S_IRWXG | S_IRWXO))
     {
         std::ostringstream o;
         o << "<Error> Failed trying to create output folder \"" << testFolder << "\" << errno = " << errno << " " << strerror(errno) << std::endl;
@@ -117,7 +117,7 @@ std::pair<bool /*success*/, std::string /* message */>
 
     std::cout << "      Created test run output folder \"" << testFolder << "\"." << std::endl;
 
-    if (mkdir((testFolder+std::string("/logs")).c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+    if (mkdir((testFolder+std::string("/logs")).c_str(),S_IRWXU | S_IRWXG | S_IRWXO))
     {
         std::ostringstream o;
         o << "<Error> - Failed trying to create logs subfolder in output folder \"" << testFolder << "\" << errno = " << errno << " " << strerror(errno) << std::endl;
@@ -394,6 +394,11 @@ std::pair<bool /*success*/, std::string /* message */>
             {
                 ; // Ignore "phantom LUNs" that have been deleted on the subsystem but for which a /dev/sdxxx entry still exists.
             }
+            else if ( pLUN->attribute_value_matches("ldev",      "FF:FF")
+                &&    pLUN->attribute_value_matches("ldev_type", "phantom LUN")  )
+            {
+                ; // Ignore "phantom LUNs" that have been deleted on the subsystem but for which a /dev/sdxxx entry still exists.
+            }
             else
             {
                 availableTestLUNs.LUNpointers.push_back(pLUN);
@@ -462,9 +467,9 @@ std::pair<bool /*success*/, std::string /* message */>
         if (0 == std::string("Hitachi RAID").compare(pSubsystem->type()))
         {
             Hitachi_RAID_subsystem* pRAIDsubsystem {(Hitachi_RAID_subsystem*) pSubsystem};
-            bool have_cmd_dev {false};
+            bool have_cmd_dev_this_subsystem = false;
 
-            for (auto& pL : commandDeviceLUNs.LUNpointers)
+            if (m_s.use_command_device) for (auto& pL : commandDeviceLUNs.LUNpointers)
                 // for each command device LUN as candidate to match as first command device for this subsystem.
             {
                 if (0 == pSubsystem->serial_number.compare(pL->attribute_value("serial_number")))
@@ -509,6 +514,8 @@ std::pair<bool /*success*/, std::string /* message */>
 
                     pRAIDsubsystem->pRMLIBthread=p_pipe_driver_subthread;
 
+                    command_device_subthread_pointers[pSubsystem->serial_number] = p_pipe_driver_subthread;
+
                     ivymaster_RMLIB_threads.push_back(std::thread(invokeThread,p_pipe_driver_subthread));
                     // Note: I wasn't sure, since std::thread is not copyable but is moveable, how to handle
                     //       the case when the command device doesn't start up correctly.  So in the interest of
@@ -538,7 +545,7 @@ std::pair<bool /*success*/, std::string /* message */>
                                 std::cout << o.str();
                                 log(masterlogfile,o.str());
                                 haveCmdDev = true;
-                                have_cmd_dev = true;
+                                have_cmd_dev_this_subsystem = true;
                             }
                             else
                             {
@@ -562,7 +569,7 @@ std::pair<bool /*success*/, std::string /* message */>
                         }
                     }
 
-                    if (!have_cmd_dev) continue;  // This command device did not start up OK - try the next one if we have another to the same subsystem.
+                    if (!have_cmd_dev_this_subsystem) continue;  // This command device did not start up OK - try the next one if we have another to the same subsystem.
                                                   // Maybe there is a command device perhaps on a different host that does have RMLIB installed,
                                                   // does have a valid license key installed, and does have the ivy_cmddev executable.
 
@@ -769,19 +776,21 @@ std::pair<bool /*success*/, std::string /* message */>
 
             // back to Hitachi RAID subsystem type
 
-            if (!have_cmd_dev)
+            if (!have_cmd_dev_this_subsystem)
             {
                 std::ostringstream o;
                 o << "No command device found for subsystem " << pSubsystem->serial_number << std::endl;
                 std::cout << o.str();
                 log(masterlogfile,o.str());
             }
-
-            pRAIDsubsystem->configGatherData.print_csv_file_set
-            (
-                testFolder,
-                pRAIDsubsystem->serial_number+std::string(".config")
-            );
+            else
+            {
+                pRAIDsubsystem->configGatherData.print_csv_file_set
+                (
+                    testFolder,
+                    pRAIDsubsystem->serial_number+std::string(".config")
+                );
+            }
 
         } // end for Hitachi RAID subsystem
 
