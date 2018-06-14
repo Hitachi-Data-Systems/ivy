@@ -565,6 +565,8 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                         log(slavethreadlogfile,o.str());
                     }
 
+                    ivyslave_main_posted_command = false;
+
                     state=ThreadState::waiting_for_command;
                     wkld_lk.unlock();
                     slaveThreadConditionVariable.notify_all();

@@ -22,7 +22,7 @@
 #include <array>
 #include <string>
 
-const std::string ivy_version {"2.00.00"};
+const std::string ivy_version {"2.00.01"};
 
 
 //using ivy_int = long long int; using ivy_float = long double;

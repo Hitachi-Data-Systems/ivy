@@ -967,7 +967,7 @@ bool waitForSubintervalEndThenHarvest()
             std::ostringstream o;
             o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): "
                 << " over 1/4 of the way through the subinterval and still workload thread number "
-                << thread_number << " of" << numthreads << " \"" << pear.first << "\" hadn't posted ready-to-send.";
+                << thread_number << " of " << numthreads << " \"" << pear.first << "\" hadn't posted ready-to-send.";
             say(o.str());
             killAllSubthreads(slavelogfile);
             return false;
@@ -988,7 +988,7 @@ bool waitForSubintervalEndThenHarvest()
                     std::ostringstream o;
                     o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): "
                         << " over 1/4 of the way through the subinterval and still workload thread number "
-                        << thread_number << " of" << numthreads << " \"" << pear.first << "\" hadn't posted ready-to-send.";
+                        << thread_number << " of " << numthreads << " \"" << pear.first << "\" hadn't posted ready-to-send.";
                     say(o.str());
                     log(slavelogfile, o.str());
                     slavethread_lk.unlock();
