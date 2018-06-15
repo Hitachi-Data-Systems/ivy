@@ -1,3 +1,7 @@
+- remove "stopping" state from WorkloadThread.
+
+- remove "set iosequencer template"
+
 - maybe add a "running" container to track I/Os that have been successfully started on the I/O context.  Right now if the AIO context doesn't return an I/O completion event, we have lost the Eyeo object.
 
 - with a command device, check at end of test step if there is a failed component, and abort and fail the test step if so.

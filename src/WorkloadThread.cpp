@@ -586,6 +586,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 				    dying_words = o.str();
 					log(slavethreadlogfile,dying_words);
 					state=ThreadState::died;
+                    ivyslave_main_posted_command = false;
 					wkld_lk.unlock();
 					slaveThreadConditionVariable.notify_all();
 					return;
@@ -596,6 +597,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 				    std::ostringstream o; o << "<Error> WorkloadThread told to keep going, but next subinterval not marked READY_TO_RUN.  Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
 				    dying_words = o.str();
 					log(slavethreadlogfile,dying_words);
+                    ivyslave_main_posted_command = false;
 					state=ThreadState::died;
 					wkld_lk.unlock();
 					slaveThreadConditionVariable.notify_all();
