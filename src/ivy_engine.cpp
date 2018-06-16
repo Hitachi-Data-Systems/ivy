@@ -1639,8 +1639,8 @@ ivy_engine::deleteWorkload(
 		o << "      remote delete workload thread execution time summary: total time " << deleteWorkloadExecutionTimeSeconds.sum()
 			<<" seconds - count " <<   deleteWorkloadExecutionTimeSeconds.count()
 			<< " - average " << deleteWorkloadExecutionTimeSeconds.avg()
-			<< "seconds - minimum " << deleteWorkloadExecutionTimeSeconds.min()
-			<< "seconds - maximum " << deleteWorkloadExecutionTimeSeconds.max() << "seconds." << std::endl;
+			<< " seconds - minimum " << deleteWorkloadExecutionTimeSeconds.min()
+			<< " seconds - maximum " << deleteWorkloadExecutionTimeSeconds.max() << " seconds." << std::endl;
 
 /*debug*/ std::cout<< o.str();
 

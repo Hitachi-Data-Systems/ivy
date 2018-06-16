@@ -98,21 +98,33 @@ void SubintervalOutput::add(const SubintervalOutput& s_o) {
 /*2*/            o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " IOPS +/- estimate";
         }
 /*3*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " MB/s";
-/*3a*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " MiB/s";
-/*4*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Blocksize (KiB)";
-/*5*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Little\'s Law Avg Q";
-/*6*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Service Time (ms)";
+/*4*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " MiB/s";
+/*5*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Blocksize (KiB)";
+/*6*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Little\'s Law Avg Q";
+///*6a*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " running time Little\'s Law Avg Q";
+/*7*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Service Time (ms)";
         if (measurement_columns)
         {
-/*7*/           o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " service time +/- estimate";
+/*8*/           o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " service time +/- estimate";
         }
-/*8*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Service Time (ms)";
-/*9*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Service Time (ms)";
-/*10*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Service Time Standard Deviation (ms)";
-/*11*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Response Time (ms)";
-/*12*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Response Time (ms)";
-/*13*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Response Time (ms)";
-/*14*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Response Time Standard Deviation (ms)";
+/*9*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Service Time (ms)";
+/*10*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Service Time (ms)";
+/*11*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Service Time Standard Deviation (ms)";
+
+/*12*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Pend Time (ms)";
+//*13*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Pend Time (ms)";
+//*14*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Pend Time (ms)";
+//*15*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Pend Time Standard Deviation (ms)";
+
+//*16*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Running Time (ms)";
+//*17*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Running Time (ms)";
+//*18*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Running Time (ms)";
+//*19*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Running Time Standard Deviation (ms)";
+
+/*20*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Response Time (ms)";
+/*21*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Response Time (ms)";
+/*22*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Response Time (ms)";
+/*23*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Response Time Standard Deviation (ms)";
 	}
 	return o.str();
 }
@@ -135,7 +147,7 @@ std::string SubintervalOutput::csvValues
 		return o.str();
 	}
 
-	RunningStat<ivy_float, ivy_int> bytes_transferred, service_time, response_time;
+	RunningStat<ivy_float, ivy_int> bytes_transferred, service_time, response_time, pend_time, running_time;
 
 	std::ostringstream o;
 	for (int i=0; i <= Accumulators_by_io_type::max_category_index(); i++)
@@ -143,13 +155,18 @@ std::string SubintervalOutput::csvValues
 		bytes_transferred.clear();
 		service_time.clear();
 		response_time.clear();
+        pend_time.clear();
+        running_time.clear();
+
 		bytes_transferred += u.a.bytes_transferred.getRunningStatByCategory(i);  // not a reference because some categories are generated upon demand by summing more detailed categories.
-		service_time += u.a.service_time.getRunningStatByCategory(i);
-		response_time += u.a.response_time.getRunningStatByCategory(i);
+		service_time      += u.a.service_time     .getRunningStatByCategory(i);
+		response_time     += u.a.response_time    .getRunningStatByCategory(i);
+		pend_time         += u.a.pend_time        .getRunningStatByCategory(i);
+		running_time      += u.a.running_time     .getRunningStatByCategory(i);
 
 		if (0 == bytes_transferred.count())
 		{
-            unsigned int columns = 13;
+            unsigned int columns = 14;   //////////////////////////////  <=====  change this if you change the number of columns below
 
             if (nullptr != p_SubintervalRollup) { columns += 2; }
 
@@ -166,7 +183,7 @@ std::string SubintervalOutput::csvValues
 			}
 			else
 			{
-				/* IOPS */
+				/* 1 IOPS */
 				o << ',' << ( ((ivy_float) bytes_transferred.count()) / seconds );
 
 				if (nullptr != p_SubintervalRollup)
@@ -189,6 +206,8 @@ std::string SubintervalOutput::csvValues
                             {
                                 ivy_float plusminusfraction =  (  students_t_multiplier * samples.standardDeviation() / sqrt((ivy_float) samples.count())   ) / samples.avg();
 
+                                /* 2 IOPS +/- estimate */
+
                                 plusminusfraction *= non_random_sample_correction_factor;
                                     // This adjusts the plus-minus magnitude to compensate for the fact that there is a correlation between the measurements in successive subintervals
                                     // making the excursions locally smaller than if you had run infinitely many subintervals and you selected subintervals at random from that population,
@@ -200,25 +219,29 @@ std::string SubintervalOutput::csvValues
                     }
 				}
 
-				/* MB/s */
+				/* 3 MB/s */
 				o << ',' << ( (bytes_transferred.sum() / 1000000.0) / seconds );
 
-				/* MiB/s */
+				/* 4 MiB/s */
 				o << ',' << ( (bytes_transferred.sum() / (1024.0 * 1024.0) ) / seconds );
 
-				/* Average Blocksize (KiB) */
+				/* 5 Average Blocksize (KiB) */
 				o << ',' << ( bytes_transferred.avg() / 1024.0      );
 
-				/* Little's law average queue depth */
+				/* 6 Little's law average queue depth */
 				o << ',' <<	( 	( ((ivy_float) bytes_transferred.count()) / seconds)   /*IOPS*/ *  	service_time.avg() 	);
 
-				/* Average Service Time (ms) */
+//				/* 6a running time Little's law average queue depth */
+//				o << ',' <<	( 	( ((ivy_float) bytes_transferred.count()) / seconds)   /*IOPS*/ *  	running_time.avg() 	);
+
+				/* 7 Average Service Time (ms) */
 				o << ',' << (service_time.avg() * 1000.0);
 
 				if (nullptr != p_SubintervalRollup)
 				{
                     RunningStat<ivy_float, ivy_int>& samples = p_SubintervalRollup->service_time_series[i];
 
+                    /* 8 service time +/- estimate */
                     o << ',';
 
                     if ( samples.count() >= 2 && samples.avg() != 0.0)
@@ -242,14 +265,38 @@ std::string SubintervalOutput::csvValues
                     }
 				}
 
-				/* Min Service Time (ms) */
+				/* 9 Min Service Time (ms) */
 				o << ',' << (service_time.min() * 1000.0);
 
-				/* Max Service Time (ms) */
+				/* 10 Max Service Time (ms) */
 				o << ',' << (service_time.max() * 1000.0);
 
-				/* Service Time Standard Deviation (ms) */
+				/* 11 Service Time Standard Deviation (ms) */
 				o << ',' << (service_time.standardDeviation() * 1000.0);
+
+				/* 12 Average Pend Time (ms) */
+                o << ',' << (pend_time.avg() * 1000.0);
+
+//				/* 13 Min Pend Time (ms) */
+//                o << ',' << (pend_time.min() * 1000.0);
+//
+//				/* 14 Max Pend Time (ms) */
+//                o << ',' << (pend_time.max() * 1000.0);
+//
+//				/* 15 Pend Time Standard Deviation (ms) */
+//                o << ',' << (pend_time.standardDeviation() * 1000.0);
+
+//				/* 16 Average Running Time (ms) */
+//                o << ',' << (running_time.avg() * 1000.0);
+
+//				/* 17 Min Running Time (ms) */
+//                o << ',' << (running_time.min() * 1000.0);
+//
+//				/* 18 Max Running Time (ms) */
+//                o << ',' << (running_time.max() * 1000.0);
+//
+//				/* 19 Running Time Standard Deviation (ms) */
+//                o << ',' << (running_time.standardDeviation() * 1000.0);
 
 				if (0 == response_time.count())
 				{
@@ -257,16 +304,16 @@ std::string SubintervalOutput::csvValues
 				}
 				else
 				{
-					/* Average Response Time (ms) */
+					/* 20 Average Response Time (ms) */
 					o << ',' << (response_time.avg() * 1000.0);
 
-					/* Min Response Time (ms) */
+					/* 21 Min Response Time (ms) */
 					o << ',' << (response_time.min() * 1000.0);
 
-					/* Max Response Time (ms) */
+					/* 22 Max Response Time (ms) */
 					o << ',' << (response_time.max() * 1000.0);
 
-					/* Response Time Standard Deviation (ms) */
+					/* 23 Response Time Standard Deviation (ms) */
 					o << ',' << (response_time.standardDeviation() * 1000.0);
 				}
 			}
@@ -286,6 +333,15 @@ RunningStat<ivy_float,ivy_int> SubintervalOutput::overall_bytes_transferred_RS()
 	return u.a.bytes_transferred.getRunningStatByCategory(0);
 }
 
+RunningStat<ivy_float,ivy_int> SubintervalOutput::overall_pend_time_RS()
+{
+    return u.a.pend_time.getRunningStatByCategory(0);
+}
+
+RunningStat<ivy_float,ivy_int> SubintervalOutput::overall_running_time_RS()
+{
+    return u.a.running_time.getRunningStatByCategory(0);
+}
 
 
 
@@ -299,12 +355,14 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 		return o.str();
 	}
 
-	RunningStat<ivy_float, ivy_int>	bytes_transferred {u.a.bytes_transferred.getRunningStatByCategory(0)};
-	RunningStat<ivy_float, ivy_int>	service_time {u.a.service_time.getRunningStatByCategory(0)};
-	RunningStat<ivy_float, ivy_int>	read_service_time {u.a.service_time.getRunningStatByCategory(3)};
-	RunningStat<ivy_float, ivy_int>	write_service_time {u.a.service_time.getRunningStatByCategory(4)};
+	RunningStat<ivy_float, ivy_int>	bytes_transferred       {u.a.bytes_transferred.getRunningStatByCategory(0)};
+	RunningStat<ivy_float, ivy_int>	service_time            {u.a.service_time.getRunningStatByCategory(0)};
+	RunningStat<ivy_float, ivy_int> pend_time               {u.a.pend_time.getRunningStatByCategory(0)};
+	RunningStat<ivy_float, ivy_int> running_time            {u.a.running_time.getRunningStatByCategory(0)};
+	RunningStat<ivy_float, ivy_int>	read_service_time       {u.a.service_time.getRunningStatByCategory(3)};
+	RunningStat<ivy_float, ivy_int>	write_service_time      {u.a.service_time.getRunningStatByCategory(4)};
 
-	RunningStat<ivy_float, ivy_int>	read_bytes_transferred {u.a.bytes_transferred.getRunningStatByCategory(3)};
+	RunningStat<ivy_float, ivy_int>	read_bytes_transferred  {u.a.bytes_transferred.getRunningStatByCategory(3)};
 	RunningStat<ivy_float, ivy_int>	write_bytes_transferred {u.a.bytes_transferred.getRunningStatByCategory(4)};
 
 
@@ -334,10 +392,14 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 	o << ", avg Blk (KiB) = " << std::fixed << std::setprecision(1) << ( bytes_transferred.avg() / 1024.0      );
 
 	o << ", Little\'s law avg  Q = " << std::fixed << std::setprecision(1) << (    ( ((ivy_float) bytes_transferred.count()) / seconds )/*IOPS*/  *   service_time.avg()     );
-
-    //o << std::endl << std::endl;
+//	o << ", running time Little\'s law avg  Q = " << std::fixed << std::setprecision(1) << (    ( ((ivy_float) bytes_transferred.count()) / seconds )/*IOPS*/  *   running_time.avg()     );
 
 	o << ", service time = " <<  std::fixed << std::setprecision(3) <<  (service_time.avg() * 1000.0) << " ms";
+
+	o << ", pend time = " <<  std::fixed << std::setprecision(3) <<  (pend_time.avg() * 1000.0) << " ms";
+
+//	o << ", running time = " <<  std::fixed << std::setprecision(3) <<  (running_time.avg() * 1000.0) << " ms";
+
 	//o << ", avg Read Serv. Time (ms) = "; if (read_bytes_transferred.count()==0) o << "< no reads >"; else o <<  std::fixed << std::setprecision(3) << (read_service_time.avg() * 1000.0) ;
 	//o << ", avg Write Serv. Time (ms) = "; if (write_bytes_transferred.count()==0) o << "< no writes >"; else o <<  std::fixed << std::setprecision(3) << (write_service_time.avg() * 1000.0) ;
 

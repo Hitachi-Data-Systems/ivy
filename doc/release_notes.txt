@@ -1,0 +1,147 @@
+--------------------------------------------------------------------------------------
+Release notes ivy 2.01.00                                          2018-06-15
+
+Measure "pend time", the amount of time that the AIO interface blocks
+when submitting an I/O to be run.
+
+ivy "service time" is from just before AIO submit ("start") to I/O end.
+
+A new "running" timestamp is taken immediately after the AIO I/O submit call.
+
+The pend time is the duration from the existing "start" timestamp just before the 
+AIO I/O submit call, to the new "running" timestamp just after.
+
+The time from the "running" timestamp to the end of the I/O is called
+the "running time", that is, pend time + running time = service time.
+
+ivy "response time" is from scheduled start time to I/O end, except for 
+"IOPS=max", where all I/Os are scheduled at time zero, and response times 
+are suppressed.
+
+The Eyeo object now has a new "running" timestamp, which is set by
+WorkloadThread immediately following the AIO submit.  The return
+code from submit() tells you how many of your requested I/Os started.  
+We now iterate over those ones that actually did start and set the 
+"running" timestamp.  
+
+The ones that didn't start are then "put back" on the precompute queue.  
+
+Then in the post-processing of an Eyeo, the pend time and the running time
+from the I/O are posted alongside service time, etc. into corresponding
+data structures.
+
+In csv files, pend time is shown in a single column displaying the average pend time.
+No min/max/std dev columns are shown for pend time.
+
+--------------------------------------------------------------------------------------
+Release notes ivy 2.00.01                                         2018-06-13
+
+Fixed WorkloadThread "stop" command interlock bug - failed to turn off "command posted".
+
+--------------------------------------------------------------------------------------
+Release notes - ivy 2.00.00                                       2018-06-13
+
+Kumaran Subramaniam joined and is contributing code. 
+
+* Complete rebuild of sun159 to RHEL 7.4.  This is the ivy development host.
+
+* New Atlassian “Stash” git repository on Hitachi Vantara corporate server.
+    o Now merging Ian / Kumaran contributions on the “stash” server, later 
+	  pushing to github.
+
+	  * Kumaran now building ivy engine REST API.
+
+Major refactoring of ivy 4-level thread interlock protocol
+
+* Test host and subsystem data gathers now run in parallel.
+
+* "catnap time" and “post_time_limit” have been eliminated.  Now there is no waiting 
+  for a fixed amount of time anywhere in the interlock protocol.  There is waiting
+  for the instant a particular thing happens, often with a timeout.  
+
+* Added a top level interlock in the ivy main thread - pipe_driver_subthread interface
+  to go with the recently added middle level pipe_driver_thread to ivyslave interface 
+  to split apart sending the "continue" or "stop" and timing the delivery to all
+  workload threads everywhere, and then later saying "get subinterval result" in a
+  separate command.
+  
+* Introduced Barrier 1 and Barrier 2 points in the subinterval cycle in the code, and
+  in explanatory PowerPoint material.  “sendup time” is start of subinterval to Barrier 1,
+  and “central processing time” is Barrier 1 to Barrier 2.
+
+* Gathering detailed breakdown by CLPR, PORTIO, LDEVIO, etc. of subsystem gather times
+  in a csv file.
+
+* Added interlock_latencies subfolder with interlock latency measurement csv files
+
+* New “ivy thread interlock protocol” presentation material explains how the interlock
+  protocol works, and defining the various kinds of interlock latencies in the ivy engine.
+
+* Updated copyright notices, added Kumaran in file header as a co-author.
+
+* In "ivytime" added support for negative durations, and added a leading +/- sign where they're printed.
+
+* Switched to building using -std=c++14 from the previous -std=c++11, to get std::chrono
+  literals like "50ms".
+
+* Hyphens are now permitted in host names.  To enable this, the way you specify ranges
+  of test hosts with numeric suffixes has changed.  Now say CB[8-15] or CB[08-15].
+
+* Reworked most places that WorkloadThread can die to have it record "dying_words"
+  so you would know why it died, not just that it did die.  These are displayed when
+  ivyslave terminates.
+
+* The "catch in flight I/Os" command has been taken out of the top 3 levels of the 
+  interlock protocol, this function being invoked as part of executing the "stop"
+  WorkloadThread command.
+
+* Management of subsystem gathers is pretty much completely re-written.
+    o For each subsystem, based on that subsystem's history, a gather is started timed
+      to finish at the same time that all host data will have finished rolling up
+	  centrally, a little after the end of a subinterval.
+
+* A "first time of the day" bug that I would only see the first time I ran ivy that
+  day, that has bugged me from the very early days of ivy was diagnosed and trivially
+  fixed because of improvements made in error handling.  This bug said that when
+  doing “[CreateWorkload]”, in some rare cases ivyslave would say that one of the
+  workload threads had died.  It turned out that the initial state of WorkloadThread
+  was "died".  So now there is a new state "initial", and when you say "create workload",
+  ivyslave interlocks with the WorkloadThread to wait until the workload thread had
+  changed its state to "waiting for command", before it says “OK”.
+
+* The interlock between the ivy master thread and pipe_driver_subthreads has changed.
+
+   o Previously, as each pipe_driver_subthread received a workload thread detail line,
+     it would get the master lock and post it into the rollup structures.
+
+   o Now, each pipe_driver_subthread stores the parsed and reconstituted IosequencerInput
+     and SubintervalOutput objects for every detail line, and then it gets the master
+	 lock once to post them all in one go.
+
+* Some parts where there was deep indentation, sections were carved out into a separate
+  function / source code file.  Time would be well spent to further refactor to simplify
+  the user's ability to comprehend what is going on.
+  
+* In ivy output csv files, where the ivy version is recorded, a "build date" column was
+  added immediately following the ivy version. 
+  
+* “ivytime” now supports negative time durations.
+
+* Logs of conversations now have a “delta time” from the time of the previous thing said.
+
+* A “-no_cmd” command line option was added to suppress use of command devices.
+
+* Initial support for “phantom LUNs” was added.  Phantom LUNs occur when the subsystem
+  has unmapped the LUN, but the cables are still connected and Linux hasn’t been rebooted and is still talking to the LUN it doesn’t know has disappeared.
+
+The LUN_discovery package has had major upgrades.
+
+* New support for HM850, new support for GAD, replication, etc. A veritable blizzard of
+  new attribute names.
+  
+* There were so many new metrics that only had data in rare cases, that a new
+  "remove_empty_columns" command line executable was developed, based on the existing
+  ivy csvfile object. 
+  
+* "showluns.sh" now pipes output through remove_empty_columns.
+

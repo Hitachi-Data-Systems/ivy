@@ -698,7 +698,8 @@ void WorkloadThread::popandpostprocessoneEyeo() {
 	p_dun=postprocessQ.front();
 	postprocessQ.pop();
 
-	ivy_float service_time_seconds, response_time_seconds;
+	ivy_float service_time_seconds, response_time_seconds, pend_time_seconds, running_time_seconds;
+
 	bool have_response_time;
 
 	if (ivytime(0) == p_dun->scheduled_time)
@@ -712,34 +713,44 @@ void WorkloadThread::popandpostprocessoneEyeo() {
 		response_time_seconds = (ivytime(p_dun->end_time - p_dun->scheduled_time).getlongdoubleseconds());
 	}
 
-	service_time_seconds = (ivytime(p_dun->end_time - p_dun->start_time).getlongdoubleseconds());
-
-    if (service_time_seconds < 0. || (have_response_time && response_time_seconds < 0.))
+	if ( ivytime(0) == p_dun->start_time
+	  || ivytime(0) == p_dun->running_time
+	  || ivytime(0) == p_dun->end_time
+	  || p_dun->scheduled_time > p_dun->start_time
+	  || p_dun->start_time     > p_dun->running_time
+	  || p_dun->running_time   > p_dun->end_time
+	  )
     {
         std::ostringstream o;
-        o << "<Error> WorkloadThread::popandpostprocessoneEyeo(): Negative I/O service time or negative response time - "
+        o << "<Error> Internal programming error. Source code reference " << __FILE__ << " line " << __LINE__ << std::endl
+            << "When harvesting an I/O completion event and posting its measurements" << std::endl
+            << "One of the following timestamps was missing or they were out of order." << std::endl
             << "I/O scheduled time = " << p_dun->scheduled_time.format_as_datetime_with_ns()
-            << ", start time = " << p_dun->start_time.format_as_datetime_with_ns()
-            << ", end time = " << p_dun->end_time.format_as_datetime_with_ns()
-            << ", service_time = " << service_time_seconds
+            << "start time         = " << p_dun->start_time.format_as_duration_HMMSSns() << std::endl
+            << "running time       = " << p_dun->running_time.format_as_duration_HMMSSns() << std::endl
+            << "end time           = " << p_dun->end_time.format_as_duration_HMMSSns() << std::endl
+
             << ", have_response_time = ";
         if (have_response_time)
         {
-            o << "true";
+            o << "true, response_time_seconds = " << response_time_seconds ;
         }
         else
         {
             o << "false";
         }
-        o << ", response_time_seconds = " << response_time_seconds << std::endl
-            << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-
+        o << std::endl;
         dying_words = o.str();
         state = ThreadState::died;
 		log(slavethreadlogfile,o.str());
+		ivyslave_main_posted_command = false;
         slaveThreadConditionVariable.notify_all();
         exit(-1);
     }
+
+	service_time_seconds = (ivytime(p_dun->end_time     - p_dun->start_time).getlongdoubleseconds());
+	pend_time_seconds    = (ivytime(p_dun->running_time - p_dun->start_time).getlongdoubleseconds());
+	running_time_seconds = (ivytime(p_dun->end_time     - p_dun->running_time).getlongdoubleseconds());
 
 	// NOTE:  The breakdown of bytes_transferred (MB/s) follows service time.
 
@@ -770,6 +781,12 @@ void WorkloadThread::popandpostprocessoneEyeo() {
 
 		p_current_SubintervalOutput->u.a.service_time.rs_array[rs][rw][bucket].push(service_time_seconds);
 		p_current_SubintervalOutput->u.a.bytes_transferred.rs_array[rs][rw][bucket].push(p_current_IosequencerInput->blocksize_bytes);
+
+		bucket = Accumulators_by_io_type::get_bucket_index( pend_time_seconds );
+		p_current_SubintervalOutput->u.a.pend_time.rs_array[rs][rw][bucket].push(pend_time_seconds);
+
+		bucket = Accumulators_by_io_type::get_bucket_index( running_time_seconds );
+		p_current_SubintervalOutput->u.a.running_time.rs_array[rs][rw][bucket].push(running_time_seconds);
 
 		if (have_response_time)
 		{
@@ -1025,6 +1042,15 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                 exit(-1);
 			} else {
 				// return code is number of I/Os succesfully launched.
+
+			    ivytime running_timestamp;
+			    running_timestamp.setToNow();
+			    for (int i=0; i<rc; i++)
+			    {
+					Eyeo* p_Eyeo = (Eyeo*)(LaunchPad[i]->eyeocb.aio_data);
+					p_Eyeo->running_time = running_timestamp;
+			    }
+
 #ifdef IVY_TRACK_AIO
 				p_current_SubintervalOutput->u.a.submitcount.push((ivy_float)rc);
 				p_current_SubintervalOutput->u.a.presubmitqueuedepth.push((ivy_float)queue_depth);

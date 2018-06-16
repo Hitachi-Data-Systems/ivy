@@ -32,8 +32,10 @@ public:
 		struct a_type {
 			Accumulators_by_io_type
 				bytes_transferred,
-				response_time,		// Application-view response including any waiting for I/O to be issued.
-				service_time;		// Time from when I/O starts running until it ends.
+				response_time,		// Time from the scheduled time to the end of the I/O.
+				service_time,		// Time from just before AIO submit to start the I/O until it ends.
+                pend_time,		    // Time from just before submitting I/O to just after submitting I/O.  This includes "waiting for an underlying tag".
+				running_time;		// Time from just after AIO submit to when the I/O ends
 #ifdef IVY_TRACK_AIO
 			RunningStat<ivy_float, ivy_int>
 				presubmitqueuedepth,
@@ -80,6 +82,8 @@ public:
 
 	std::string thumbnail(ivy_float seconds);
 	RunningStat<ivy_float,ivy_int> overall_service_time_RS();
+	RunningStat<ivy_float,ivy_int> overall_pend_time_RS();
+	RunningStat<ivy_float,ivy_int> overall_running_time_RS();
 	RunningStat<ivy_float,ivy_int> overall_bytes_transferred_RS();
 };
 

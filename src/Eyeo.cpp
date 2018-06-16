@@ -114,100 +114,24 @@ std::string Eyeo::toString() {
 		default: o << eyeocb.aio_lio_opcode;
 	}
 
-	//o << ", iocb.aio_buf=" << eyeocb.aio_buf;
 	o << ", byte offset=" << eyeocb.aio_offset;
-	o << ", blksize=" << eyeocb.aio_nbytes;
-	o << ", sched=" << scheduled_time.format_as_datetime_with_ns()
-	  << ", start=" << start_time.format_as_datetime_with_ns()
-	  << ", end=" << end_time.format_as_datetime_with_ns()
-	  << ", service_time_seconds=" << std::fixed << std::setprecision(6) << service_time_seconds()
+	o << ", blksize="     << eyeocb.aio_nbytes;
+	o << ", sched="   << scheduled_time.format_as_datetime_with_ns()
+	  << ", start="   << start_time    .format_as_datetime_with_ns()
+	  << ", running=" << running_time  .format_as_datetime_with_ns()
+	  << ", end="     << end_time      .format_as_datetime_with_ns()
+	  << ", service_time_seconds="  << std::fixed << std::setprecision(6) << service_time_seconds()
 	  << ", response_time_seconds=" << std::fixed << std::setprecision(6) << response_time_seconds()
-	  << ", ret=" << return_value
-	  << ", errno=" << errno_value
+	  << ", pend_time_seconds="     << std::fixed << std::setprecision(6) << pend_time_seconds()
+	  << ", running_time_seconds="     << std::fixed << std::setprecision(6) << running_time_seconds()
+	  << ", ret="     << return_value
+	  << ", errno="    << errno_value
 	  << ", buf_size=" << buf_size;
+
 	return o.str();
 }
 
-
-//template<std::size_t Len>
-//struct ivy_aligned_iobuf
-//{
-//	alignas(4096) unsigned char data[Len];
-//};
-//
-//bool Eyeo::resize_buf(int newsize)
-//{
-//
-///*debug*/ { std::ostringstream o; o << " Eyeo::resize_buf(int newsize = " << newsize << ") entry with old buf_size = " << buf_size << " and MINBUFSIZE = " << MINBUFSIZE
-///*debug*/ 	<< "  struct iocb.aiobuf (pointer to I/O buffer to read/write data dehydrated as uint64_t= " << std::hex << std::setw(16) << std::setfill('0') << eyeocb.aio_buf
-///*debug*/	<< "  struct iocb.aio_data (pointer to owning Eyeo dehydrated as uint64_t)  = " << std::hex << std::setw(16) << std::setfill('0') << eyeocb.aio_data
-///*debug*/	<< "." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
-//
-//	if (newsize <=0) {
-///*debug*/	log(pWorkloadThread->slavethreadlogfile,"Eyeo::resize_buf() failed - called with zero or negative new size.");
-//		return false;
-//	}
-//
-//	if ( newsize == buf_size)
-//	{
-///*debug*/	log(pWorkloadThread->slavethreadlogfile,"Eyeo::resize_buf() success - nothing to do.  Already is the requested size.");
-//		return true;
-//	}
-//
-//	if ( ( newsize <= MINBUFSIZE ) && (buf_size == MINBUFSIZE) )
-//	{
-///*debug*/	log(pWorkloadThread->slavethreadlogfile,"Eyeo::resize_buf() success - nothing to do.  Requested size is below MINBUFSIZE and the size already is MINBUFSIZE.");
-//		return true;
-//	}
-//
-//	unsigned int new_buf_size = (newsize < MINBUFSIZE ) ? MINBUFSIZE : newsize;
-//
-//	{
-////		// Trying locks to see if memalign may not be thread-safe
-////		std::unique_lock<std::mutex> u_lk(*(pWorkloadThread->p_ivyslave_main_mutex));
-//
-//		if (buf_size > 0 && NULL!=(void*)eyeocb.aio_buf)
-//		{
-//			/*debug*/ { std::ostringstream o; o << " Eyeo::resize_buf() about to free struct iocb.aio_buf = "
-//			/*debug*/ 	<< "  struct iocb.aiobuf (pointer to I/O buffer to read/write data dehydrated as uint64_t= " << std::hex << std::setw(16) << std::setfill('0') << eyeocb.aio_buf
-//			/*debug*/	<< "." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
-//
-//			free((void*)eyeocb.aio_buf);
-//			eyeocb.aio_buf = 0;
-//
-//			/*debug*/ { std::ostringstream o; o << " Eyeo::resize_buf() after to free struct iocb.aio_buf = "
-//			/*debug*/ 	<< "  struct iocb.aiobuf (pointer to I/O buffer to read/write data dehydrated as uint64_t= " << std::hex << std::setw(16) << std::setfill('0') << eyeocb.aio_buf
-//			/*debug*/	<< "." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
-//
-//		}
-//
-///*debug*/ { std::ostringstream o; o << " Eyeo::resize_buf() - about to memalign(BUF_ALIGNMENT_BOUNDARY_SIZE = " << BUF_ALIGNMENT_BOUNDARY_SIZE << ", new_buf_size = " << new_buf_size << ")." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
-//
-//		eyeocb.aio_buf = (uint64_t) new struct ivy_aligned_iobuf<new_buf_size>;
-//		eyeocb.aio_buf = (uint64_t) new std::aligned_storage<new_buf_size,4096>;
-//		eyeocb.aio_buf = (uint64_t) memalign(BUF_ALIGNMENT_BOUNDARY_SIZE, new_buf_size);
-//		eyeocb.aio_buf = (uint64_t) aligned_alloc(BUF_ALIGNMENT_BOUNDARY_SIZE, new_buf_size); // doesn't work on my development machine
-//
-//
-///*debug*/ { std::ostringstream o; o << " Eyeo::resize_buf() - newly allocated struct iocb.aio_buf = "
-///*debug*/ 	<< "  struct iocb.aiobuf (pointer to I/O buffer to read/write data dehydrated as uint64_t= " << std::hex << std::setw(16) << std::setfill('0') << eyeocb.aio_buf
-///*debug*/	<< "." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
-//
-//
-//
-//
-//	}
-//	if (eyeocb.aio_buf != 0) {
-//		buf_size=new_buf_size;
-///*debug*/ { std::ostringstream o; o << " Eyeo::resize_buf() return true." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
-//		return true;
-//	} else {
-///*debug*/ { std::ostringstream o; o << " Eyeo::resize_buf() return false." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
-//		buf_size=0;
-//		return false;
-//	}
-//}
-ivy_float Eyeo::service_time_seconds()
+ivy_float Eyeo::service_time_seconds()
 {
 	if (ivytime(0) == end_time || ivytime(0) == start_time) return -1.0;
 	ivytime service_time = end_time - start_time;
@@ -219,6 +143,20 @@ ivy_float Eyeo::response_time_seconds()
 	if (ivytime(0) == end_time || ivytime(0) == scheduled_time) return -1.0;
 	ivytime response_time = end_time - scheduled_time;
 	return (ivy_float) response_time;
+}
+
+ivy_float Eyeo::pend_time_seconds()
+{
+	if (ivytime(0) == start_time || ivytime(0) == running_time) return -1.0;
+	ivytime pend_time = running_time - start_time;
+	return (ivy_float) pend_time;
+}
+
+ivy_float Eyeo::running_time_seconds()
+{
+	if (ivytime(0) == end_time || ivytime(0) == running_time) return -1.0;
+	ivytime run_time = end_time - running_time;
+	return (ivy_float) run_time;
 }
 
 extern std::string printable_ascii;
@@ -328,18 +266,6 @@ void Eyeo::generate_pattern()
                 throw std::runtime_error(o.str());
             }
     }
-
-///*debug*/ if (pWorkloadThread->write_io_count < 2)
-///*debug*/ {
-///*debug*/     std::ostringstream o;
-///*debug*/
-///*debug*/     o << "Generated pattern for write I/O number " << pWorkloadThread->write_io_count << " blocksize " << blocksize << std::endl;
-///*debug*/
-///*debug*/     // display_memory_contents is part of "printableAndHex" which is in the LUN_discovery project - https://github.com/Hitachi-Data-Systems/LUN_discovery
-///*debug*/     display_memory_contents(o, (unsigned char*)eyeocb.aio_buf, blocksize, 32 /* int perlinemax=16, std::string eachlineprefix=""*/);
-///*debug*/
-///*debug*/     log(pWorkloadThread->slavethreadlogfile,o.str());
-///*debug*/ }
 
     return;
 }

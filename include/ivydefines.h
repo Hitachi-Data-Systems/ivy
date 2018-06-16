@@ -22,7 +22,7 @@
 #include <array>
 #include <string>
 
-const std::string ivy_version {"2.00.01"};
+const std::string ivy_version {"2.01.00"};
 
 
 //using ivy_int = long long int; using ivy_float = long double;
@@ -131,7 +131,7 @@ const uint64_t pattern_seed_default {1};
 
 #define max_move_WP_error (.01)
 
-#define io_time_buckets 56
+#define io_time_buckets 58
 // This is the number of buckets defined in Accumulators_by_io_type.cpp
 
 extern std::string indent_increment;

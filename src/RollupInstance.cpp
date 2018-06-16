@@ -1120,6 +1120,8 @@ void RollupInstance::print_by_subinterval_header()
 
     o << ",IOPS histogram by service time (ms):";
     for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
+//    o << ",IOPS histogram by pend time (ms):";
+//    for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
     o << ",IOPS histogram by random read service time (ms):";
     for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
     o << ",IOPS histogram by random write service time (ms):";
@@ -1319,15 +1321,27 @@ void RollupInstance::print_subinterval_csv_line(
     {
         csvline << ',';
         RunningStat<ivy_float,ivy_int>
-        rs  = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[0][0][bucket];
-        rs += subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[0][1][bucket];
-        rs += subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[1][0][bucket];
-        rs += subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[1][1][bucket];
+        rs  = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[0][0][bucket]; // random read
+        rs += subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[0][1][bucket]; // random write
+        rs += subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[1][0][bucket]; // sequential read
+        rs += subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[1][1][bucket]; // sequential write
         if (rs.count()>0) csvline << (histogram_bucket_scale_factor(bucket) * (ivy_float) rs.count() / seconds);
     }
 
+//    csvline << ",subinterval " << i;
+//    for (int bucket=0; bucket < io_time_buckets; bucket++)
+//    {
+//        csvline << ',';
+//        RunningStat<ivy_float,ivy_int>
+//        rs  = subintervals.sequence[i].outputRollup.u.a.pend_time.rs_array[0][0][bucket];
+//        rs += subintervals.sequence[i].outputRollup.u.a.pend_time.rs_array[0][1][bucket];
+//        rs += subintervals.sequence[i].outputRollup.u.a.pend_time.rs_array[1][0][bucket];
+//        rs += subintervals.sequence[i].outputRollup.u.a.pend_time.rs_array[1][1][bucket];
+//        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(bucket) * (ivy_float) rs.count() / seconds);
+//    }
+
     csvline << ",subinterval " << i;
-    for (int bucket=0; bucket < io_time_buckets; bucket++)
+    for (int bucket=0; bucket < io_time_buckets; bucket++) // random read
     {
         csvline << ',';
         RunningStat<ivy_float,ivy_int> rs = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[0][0][bucket];
@@ -1335,7 +1349,7 @@ void RollupInstance::print_subinterval_csv_line(
     }
 
     csvline << ",subinterval " << i;
-    for (int bucket=0; bucket < io_time_buckets; bucket++)
+    for (int bucket=0; bucket < io_time_buckets; bucket++) // random write
     {
         csvline << ',';
         RunningStat<ivy_float,ivy_int> rs = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[0][1][bucket];
@@ -1343,7 +1357,7 @@ void RollupInstance::print_subinterval_csv_line(
     }
 
     csvline << ",subinterval " << i;
-    for (int bucket=0; bucket < io_time_buckets; bucket++)
+    for (int bucket=0; bucket < io_time_buckets; bucket++) // sequential read
     {
         csvline << ',';
         RunningStat<ivy_float,ivy_int> rs = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[1][0][bucket];
@@ -1351,7 +1365,7 @@ void RollupInstance::print_subinterval_csv_line(
     }
 
     csvline << ",subinterval " << i;
-    for (int bucket=0; bucket < io_time_buckets; bucket++)
+    for (int bucket=0; bucket < io_time_buckets; bucket++) // sequential write
     {
         csvline << ',';
         RunningStat<ivy_float,ivy_int> rs = subintervals.sequence[i].outputRollup.u.a.service_time.rs_array[1][1][bucket];

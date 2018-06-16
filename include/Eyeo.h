@@ -67,6 +67,7 @@ public:
 		// Browsing the web indicates there's other locations and forms of aio header file on different systems.  Hope the code is portable, resigned if not.
 	ivytime scheduled_time;  // if we have iorate=max, this is indicated by setting scheduled_time=ivytime(0)
 	ivytime start_time;
+	ivytime running_time;
 	ivytime end_time;
 	int return_value;
 	int errno_value;
@@ -83,6 +84,8 @@ public:
 	void resetForNextIO();
 	ivy_float service_time_seconds();
 	ivy_float response_time_seconds();
+	ivy_float pend_time_seconds();
+	ivy_float running_time_seconds();
 
 	std::string buffer_first_last_16_hex();
 
