@@ -84,7 +84,7 @@ public:
 	void resetForNextIO();
 	ivy_float service_time_seconds();
 	ivy_float response_time_seconds();
-	ivy_float pend_time_seconds();
+	ivy_float submit_time_seconds();
 	ivy_float running_time_seconds();
 
 	std::string buffer_first_last_16_hex();

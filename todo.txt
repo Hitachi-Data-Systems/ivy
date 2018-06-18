@@ -53,57 +53,10 @@
 -  for pid, look at if it would help to mark any subinterval where IOPS was at min_IOPS
    as invalid, like if WP were out of range for measure=on.
 
-
-/////////////////////////////////////////////////////////////////////////////////////// == or add an "inside_service_time".
-// Need to look at redesigning the definition of "service time".
-// Now we make the "I/O start" timestamp before starting the I/O.  The issue is that
-// if the device driver doesn't have an available tag, the call blocks.
-// So I think maybe we should instead define the I/O start time as the
-// time when the start I/O call FINISHES.
-///////////////////////////////////////////////////////////////////////////////////////
-
-
-// Actually, maybe just add the "I/O accepted" time stamp separately,
-// so we can measure how often / how long AIO interface blocks.
-
-        // A note here to take a look at adding an option of instead of using the target IOPS from
-        // last time as "IOPS last time", use instead the measured IOPS from the last subinterval.
-
-        // The question was would this help PID loop stability or are we doomed anyway
-        // because the I/O sequencer would keep getting further and further ahead.
-
-        // Maybe we could add a filter onto the PID loop mechanism where it maintains a
-        // second total_IOPS calculation which would be triggered when the I/O sequencer
-        // gets, say, one second in the future, which would drift us back into "reasonable host latency".
-
-        // We define the "host latency" of an I/O as the amount of time from the scheduled time
-        // until when the I/O has been accepted by the AIO interface.
-        
-            // On the to-do list:
-                // Change the definition of "service time" to be from when the I/O has been accepted
-                // by the AIO interface, not the time from just before you tried to launch the I/O,
-                // because right now we are recording time the AIO call to start an I/O blocks
-                // because the device driver doesn't have enough free tags, we record this time as
-                // service time even though the I/O hasn't been launched yet.)
-
-        // Maybe we could use a mechanism to over-ride the [EditRollup] mechanism
-        // and if host latency is getting too long, we adjust total_IOPS to make host latency
-        // drift towards the "OK" zone.
-
-// Another idea is to design the feature into the I/O sequencer itself, as
-// for example, if a bursty workload is being generated, you may want to
-// generate fewer bursts, rather than changing what a burst looks like.
-
-
-
-
-
-
-
 - have executing a statement set the current source file line number, so that error messages could print it;
 
 - look at making "collapse" which would move all files up out of subfolders and delete the subfolders.
-- or ivyscript option to not use subfolders ...
+  Or - ivyscript option to not use subfolders ...
 
 - fix bug where edit rollup total_IOPS = "45.3" fails when total_IOPS=45.3 works.
 
@@ -116,25 +69,11 @@
 
 - make ivy run other than as root.  	
  
-- go through and everywhere we have an interlock between threads or a pipe_driver conversation, 1) instrument timing & log, 
-2) where appropriate, allow a certain threshold, analogous to the BER on a disk drive that says you can have, for example,
-workload threads have to pause to wait for "continue", or "stop" for up to one second once in every 1000 subintervals
-when observed at ivymaster statistically aggregating across workload threads / LUNs / hosts,
-3) Force a failure for every interlock / conversation and either look at doing a retry
-(why does it sometimes hang only the first time you run it, and if you try a second time,
-Linux is somehow primed and it works perfectly the second time?), again either look at doing
-a retry, or else make sure we don't hang and that we shutdown gracefully with an error message.
-
-Maybe the workload thread could post "I had to wait" and post the wait time in seconds.
-Then when ivyslave reports the results of a subinterval, it reports the wait flag / wait time
-(or timeout and die status of gracefully terminated workload thread with harvested pid)
-
 - test [EditRollup] with IOPS increments  / multipliers
 
 - catch a "kill" signal and shut down subtasks gently
 
 Gather config report from SVP and import into ivy subsystem object. (adapt PERL collector).
-
 
 
 New iogenerator / DynamicFeedbackController that runs some random offset patterns to discover the underlying characteristics of the subsystem.

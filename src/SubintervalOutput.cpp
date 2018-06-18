@@ -111,10 +111,10 @@ void SubintervalOutput::add(const SubintervalOutput& s_o) {
 /*10*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Service Time (ms)";
 /*11*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Service Time Standard Deviation (ms)";
 
-/*12*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Pend Time (ms)";
-//*13*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Pend Time (ms)";
-//*14*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Pend Time (ms)";
-//*15*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Pend Time Standard Deviation (ms)";
+/*12*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Submit Time (ms)";
+/*13*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Submit Time (ms)";
+/*14*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Submit Time (ms)";
+/*15*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Submit Time Standard Deviation (ms)";
 
 //*16*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Running Time (ms)";
 //*17*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Running Time (ms)";
@@ -147,7 +147,7 @@ std::string SubintervalOutput::csvValues
 		return o.str();
 	}
 
-	RunningStat<ivy_float, ivy_int> bytes_transferred, service_time, response_time, pend_time, running_time;
+	RunningStat<ivy_float, ivy_int> bytes_transferred, service_time, response_time, submit_time, running_time;
 
 	std::ostringstream o;
 	for (int i=0; i <= Accumulators_by_io_type::max_category_index(); i++)
@@ -155,18 +155,18 @@ std::string SubintervalOutput::csvValues
 		bytes_transferred.clear();
 		service_time.clear();
 		response_time.clear();
-        pend_time.clear();
+        submit_time.clear();
         running_time.clear();
 
 		bytes_transferred += u.a.bytes_transferred.getRunningStatByCategory(i);  // not a reference because some categories are generated upon demand by summing more detailed categories.
 		service_time      += u.a.service_time     .getRunningStatByCategory(i);
 		response_time     += u.a.response_time    .getRunningStatByCategory(i);
-		pend_time         += u.a.pend_time        .getRunningStatByCategory(i);
+		submit_time         += u.a.submit_time        .getRunningStatByCategory(i);
 		running_time      += u.a.running_time     .getRunningStatByCategory(i);
 
 		if (0 == bytes_transferred.count())
 		{
-            unsigned int columns = 14;   //////////////////////////////  <=====  change this if you change the number of columns below
+            unsigned int columns = 17;   //////////////////////////////  <=====  change this if you change the number of columns below  ##################################################
 
             if (nullptr != p_SubintervalRollup) { columns += 2; }
 
@@ -274,21 +274,21 @@ std::string SubintervalOutput::csvValues
 				/* 11 Service Time Standard Deviation (ms) */
 				o << ',' << (service_time.standardDeviation() * 1000.0);
 
-				/* 12 Average Pend Time (ms) */
-                o << ',' << (pend_time.avg() * 1000.0);
+				/* 12 Average Submit Time (ms) */
+                o << ',' << (submit_time.avg() * 1000.0);
 
-//				/* 13 Min Pend Time (ms) */
-//                o << ',' << (pend_time.min() * 1000.0);
-//
-//				/* 14 Max Pend Time (ms) */
-//                o << ',' << (pend_time.max() * 1000.0);
-//
-//				/* 15 Pend Time Standard Deviation (ms) */
-//                o << ',' << (pend_time.standardDeviation() * 1000.0);
+				/* 13 Min Submit Time (ms) */
+                o << ',' << (submit_time.min() * 1000.0);
+
+				/* 14 Max Submit Time (ms) */
+                o << ',' << (submit_time.max() * 1000.0);
+
+				/* 15 Submit Time Standard Deviation (ms) */
+                o << ',' << (submit_time.standardDeviation() * 1000.0);
 
 //				/* 16 Average Running Time (ms) */
 //                o << ',' << (running_time.avg() * 1000.0);
-
+//
 //				/* 17 Min Running Time (ms) */
 //                o << ',' << (running_time.min() * 1000.0);
 //
@@ -333,9 +333,9 @@ RunningStat<ivy_float,ivy_int> SubintervalOutput::overall_bytes_transferred_RS()
 	return u.a.bytes_transferred.getRunningStatByCategory(0);
 }
 
-RunningStat<ivy_float,ivy_int> SubintervalOutput::overall_pend_time_RS()
+RunningStat<ivy_float,ivy_int> SubintervalOutput::overall_submit_time_RS()
 {
-    return u.a.pend_time.getRunningStatByCategory(0);
+    return u.a.submit_time.getRunningStatByCategory(0);
 }
 
 RunningStat<ivy_float,ivy_int> SubintervalOutput::overall_running_time_RS()
@@ -357,7 +357,7 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 
 	RunningStat<ivy_float, ivy_int>	bytes_transferred       {u.a.bytes_transferred.getRunningStatByCategory(0)};
 	RunningStat<ivy_float, ivy_int>	service_time            {u.a.service_time.getRunningStatByCategory(0)};
-	RunningStat<ivy_float, ivy_int> pend_time               {u.a.pend_time.getRunningStatByCategory(0)};
+	RunningStat<ivy_float, ivy_int> submit_time               {u.a.submit_time.getRunningStatByCategory(0)};
 	RunningStat<ivy_float, ivy_int> running_time            {u.a.running_time.getRunningStatByCategory(0)};
 	RunningStat<ivy_float, ivy_int>	read_service_time       {u.a.service_time.getRunningStatByCategory(3)};
 	RunningStat<ivy_float, ivy_int>	write_service_time      {u.a.service_time.getRunningStatByCategory(4)};
@@ -396,7 +396,7 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 
 	o << ", service time = " <<  std::fixed << std::setprecision(3) <<  (service_time.avg() * 1000.0) << " ms";
 
-	o << ", pend time = " <<  std::fixed << std::setprecision(3) <<  (pend_time.avg() * 1000.0) << " ms";
+	o << ", submit time = " <<  std::fixed << std::setprecision(3) <<  (submit_time.avg() * 1000.0) << " ms";
 
 //	o << ", running time = " <<  std::fixed << std::setprecision(3) <<  (running_time.avg() * 1000.0) << " ms";
 

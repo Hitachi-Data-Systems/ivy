@@ -698,7 +698,7 @@ void WorkloadThread::popandpostprocessoneEyeo() {
 	p_dun=postprocessQ.front();
 	postprocessQ.pop();
 
-	ivy_float service_time_seconds, response_time_seconds, pend_time_seconds, running_time_seconds;
+	ivy_float service_time_seconds, response_time_seconds, submit_time_seconds, running_time_seconds;
 
 	bool have_response_time;
 
@@ -749,7 +749,7 @@ void WorkloadThread::popandpostprocessoneEyeo() {
     }
 
 	service_time_seconds = (ivytime(p_dun->end_time     - p_dun->start_time).getlongdoubleseconds());
-	pend_time_seconds    = (ivytime(p_dun->running_time - p_dun->start_time).getlongdoubleseconds());
+	submit_time_seconds    = (ivytime(p_dun->running_time - p_dun->start_time).getlongdoubleseconds());
 	running_time_seconds = (ivytime(p_dun->end_time     - p_dun->running_time).getlongdoubleseconds());
 
 	// NOTE:  The breakdown of bytes_transferred (MB/s) follows service time.
@@ -782,8 +782,8 @@ void WorkloadThread::popandpostprocessoneEyeo() {
 		p_current_SubintervalOutput->u.a.service_time.rs_array[rs][rw][bucket].push(service_time_seconds);
 		p_current_SubintervalOutput->u.a.bytes_transferred.rs_array[rs][rw][bucket].push(p_current_IosequencerInput->blocksize_bytes);
 
-		bucket = Accumulators_by_io_type::get_bucket_index( pend_time_seconds );
-		p_current_SubintervalOutput->u.a.pend_time.rs_array[rs][rw][bucket].push(pend_time_seconds);
+		bucket = Accumulators_by_io_type::get_bucket_index( submit_time_seconds );
+		p_current_SubintervalOutput->u.a.submit_time.rs_array[rs][rw][bucket].push(submit_time_seconds);
 
 		bucket = Accumulators_by_io_type::get_bucket_index( running_time_seconds );
 		p_current_SubintervalOutput->u.a.running_time.rs_array[rs][rw][bucket].push(running_time_seconds);

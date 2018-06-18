@@ -122,7 +122,7 @@ std::string Eyeo::toString() {
 	  << ", end="     << end_time      .format_as_datetime_with_ns()
 	  << ", service_time_seconds="  << std::fixed << std::setprecision(6) << service_time_seconds()
 	  << ", response_time_seconds=" << std::fixed << std::setprecision(6) << response_time_seconds()
-	  << ", pend_time_seconds="     << std::fixed << std::setprecision(6) << pend_time_seconds()
+	  << ", submit_time_seconds="     << std::fixed << std::setprecision(6) << submit_time_seconds()
 	  << ", running_time_seconds="     << std::fixed << std::setprecision(6) << running_time_seconds()
 	  << ", ret="     << return_value
 	  << ", errno="    << errno_value
@@ -145,11 +145,11 @@ ivy_float Eyeo::response_time_seconds()
 	return (ivy_float) response_time;
 }
 
-ivy_float Eyeo::pend_time_seconds()
+ivy_float Eyeo::submit_time_seconds()
 {
 	if (ivytime(0) == start_time || ivytime(0) == running_time) return -1.0;
-	ivytime pend_time = running_time - start_time;
-	return (ivy_float) pend_time;
+	ivytime submit_time = running_time - start_time;
+	return (ivy_float) submit_time;
 }
 
 ivy_float Eyeo::running_time_seconds()

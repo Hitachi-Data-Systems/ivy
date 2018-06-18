@@ -1,14 +1,14 @@
 --------------------------------------------------------------------------------------
 Release notes ivy 2.01.00                                          2018-06-15
 
-Measure "pend time", the amount of time that the AIO interface blocks
+Measure "submit time", the amount of time that the AIO interface blocks
 when submitting an I/O to be run.
 
 ivy "service time" is from just before AIO submit ("start") to I/O end.
 
 A new "running" timestamp is taken immediately after the AIO I/O submit call.
 
-The pend time is the duration from the existing "start" timestamp just before the 
+The submit time is the duration from the existing "start" timestamp just before the 
 AIO I/O submit call, to the new "running" timestamp just after.
 
 The time from the "running" timestamp to the end of the I/O is called
@@ -30,8 +30,8 @@ Then in the post-processing of an Eyeo, the pend time and the running time
 from the I/O are posted alongside service time, etc. into corresponding
 data structures.
 
-In csv files, pend time is shown in a single column displaying the average pend time.
-No min/max/std dev columns are shown for pend time.
+In csv files, submit time is shown in a single column displaying the average pend time.
+No min/max/std dev columns are shown for submit time. // commented out
 
 --------------------------------------------------------------------------------------
 Release notes ivy 2.00.01                                         2018-06-13
