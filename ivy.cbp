@@ -20,6 +20,12 @@
 					<Add directory="parser/lexyacc" />
 				</Compiler>
 				<Linker>
+					<Add directory="/usr/local/lib" />
+					<Add directory="/usr/lib64" />
+					<Add library="/usr/local/lib/libcpprest.a" />
+					<Add library="/usr/local/lib/libboost_system.a" />
+					<Add library="/usr/lib64/libcrypto.so" />
+					<Add library="/usr/lib64/libssl.so" />
 					<Add option="-pthread -lrt" />
 				</Linker>
 				<ExtraCommands>
@@ -265,6 +271,30 @@
 		<Unit filename="include/ParameterValueLookupTable.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/RestBaseUri.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/RestCsvqueryUri.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/RestEngineUri.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/RestLogsUri.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/RestRollupsUri.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/RestSessionsUri.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/RestWorkloadsUri.h">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/RestHandler.h">
+			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/RollupInstance.h">
 			<Option target="ivymaster" />
@@ -574,6 +604,30 @@
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/ParameterValueLookupTable.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RestBaseUri.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RestCsvqueryUri.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RestEngineUri.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RestHandler.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RestLogsUri.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RestRollupsUri.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RestSessionsUri.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/RestWorkloadsUri.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/RollupInstance.cpp">

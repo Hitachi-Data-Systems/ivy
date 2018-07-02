@@ -962,7 +962,9 @@ bool waitForSubintervalEndThenHarvest()
 
         ivytime n; n.setToNow();
 
-        if ( n > limit_time )
+        // REST API correction -- add half second to limit_time to ensure ivyslave
+        // thread checks after all the workload threads are just in time.
+        if ( n > (ivytime(0.5) + limit_time))
         {
             std::ostringstream o;
             o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): "

@@ -32,6 +32,7 @@
 #include "ivy_engine.h"
 #include "MeasureCtlr.h"
 #include "ivybuilddate.h"
+#include "RestHandler.h"
 
 std::string startup_log_file {"~/ivy_startup.txt"};
 
@@ -40,11 +41,14 @@ std::ostringstream startup_ostream;
 std::string inter_statement_divider {"=================================================================================================="};
 
 bool routine_logging {false};
+bool rest_api {false};
 
 void usage_message(char* argv_0)
 {
     std::cout << std::endl << "Usage: " << argv_0 << " [options] <ivyscript file name to open>" << std::endl << std::endl
         << "where \"[options]\" means zero or more of:" << std::endl << std::endl
+        << "-rest" << std::endl
+        << "     Turns on REST API service (ignores ivyscript in command line)" << std::endl << std::endl
         << "-log" << std::endl
         << "     Turns on logging of routine events." << std::endl << std::endl
         << "-no_cmd"<< std::endl
@@ -59,6 +63,7 @@ void usage_message(char* argv_0)
         << "     Same as -trace_lexer -trace_parser -trace_evaluate." << std::endl << std::endl
         << "The .ivyscript suffix on the name of the ivyscript program is optional." << std::endl << std::endl
         << "Examples:" << std::endl
+        << "\t" << argv_0 << " -rest" << std::endl
         << "\t" << argv_0 << " xxxx.ivyscript" << std::endl
         << "\t" << argv_0 << " xxxx" << std::endl
         << "\t" << argv_0 << " -log xxxx" << std::endl
@@ -166,6 +171,7 @@ int main(int argc, char* argv[])
     {
         std::string item {argv[arg_index]};
 
+        if (item == "-rest")                           { rest_api = true; continue; }
         if (item == "-log")                            { routine_logging = true; continue; }
         if (item == "-t")                              { routine_logging = trace_lexer = trace_parser = trace_evaluate = true; continue; }
         if (item == "-trace_lexer"    || item == "-l") { routine_logging = trace_lexer = true; continue; }
@@ -176,6 +182,15 @@ int main(int argc, char* argv[])
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }
 
         ivyscriptFilename = item;
+    }
+
+    if (rest_api)
+    {
+        // setup and start serving the REST API
+        RestHandler rest_handler;
+
+        RestHandler::wait_and_serve();
+        return 0;
     }
 
     if (!endsIn(ivyscriptFilename, ".ivyscript")) ivyscriptFilename += std::string(".ivyscript");
