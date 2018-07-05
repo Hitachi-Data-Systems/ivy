@@ -12,9 +12,8 @@ extern ivy_engine m_s;
 void
 RestSessionsUri::handle_post(http_request request)
 {
-    std::cout << "POST /ivy_engine/sessions\n";
-    std::cout << "POST" << request.to_string();
-    std::cout << "POST" << request.headers()["Cookie"] << std::endl;
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
+    std::cout << request.method() << " : " << request.headers()["Cookie"] << std::endl;
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -45,8 +44,8 @@ RestSessionsUri::handle_post(http_request request)
         resultstr += "Can not establish new session, currently running: ";
         resultstr += _active_session_token;
 
-std::cout << "POST /ivy_engine/sessions: " << resultstr << std::endl;
-
+        std::cout << request.method() << " : " << request.absolute_uri().path() <<
+                                                               resultstr<< std::endl;
         make_response(response, resultstr, result);
         request.reply(response);
 
@@ -72,8 +71,7 @@ std::cout << "POST /ivy_engine/sessions: " << resultstr << std::endl;
 void
 RestSessionsUri::handle_get(http_request request)
 {
-    std::cout << "GET /ivy_engine/sessions\n";
-
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK); 
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
@@ -84,8 +82,7 @@ RestSessionsUri::handle_get(http_request request)
 void
 RestSessionsUri::handle_put(http_request request)
 {
-    std::cout << "PUT /ivy_engine/sessions\n";
-
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK); 
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
@@ -96,8 +93,7 @@ RestSessionsUri::handle_put(http_request request)
 void
 RestSessionsUri::handle_patch(http_request request)
 {
-    std::cout << "PATCH /ivy_engine/sessions\n";
-
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK); 
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
@@ -108,8 +104,7 @@ RestSessionsUri::handle_patch(http_request request)
 void
 RestSessionsUri::handle_delete(http_request request)
 {
-    std::cout << "DELETE /ivy_engine/sessions\n";
-
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     {
         std::unique_lock<std::mutex> u_lk(_session_mutex);
 

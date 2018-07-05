@@ -12,7 +12,7 @@ extern ivy_engine m_s;
 void
 RestRollupsUri::handle_post(http_request request)
 {
-    std::cout << "POST /ivy_engine/rollups\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -63,7 +63,7 @@ RestRollupsUri::handle_post(http_request request)
 void
 RestRollupsUri::handle_get(http_request request)
 {
-    std::cout << "GET /ivy_engine/rollups\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
@@ -75,7 +75,7 @@ RestRollupsUri::handle_get(http_request request)
 void
 RestRollupsUri::handle_put(http_request request)
 {
-    std::cout << "PUT /ivy_engine/rollups\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -118,7 +118,7 @@ RestRollupsUri::handle_put(http_request request)
 void
 RestRollupsUri::handle_patch(http_request request)
 {
-    std::cout << "PATCH /ivy_engine/rollups\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
@@ -130,7 +130,7 @@ RestRollupsUri::handle_patch(http_request request)
 void
 RestRollupsUri::handle_delete(http_request request)
 {
-    std::cout << "DELETE /ivy_engine/rollups\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};

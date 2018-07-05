@@ -9,7 +9,7 @@ RestHandler::RestHandler()
     RestBaseUri::initialize_ivy_schema();
 
     // URI: /ivy_engine
-    m_ivyengine = new RestEngineUri;
+    m_ivyengine = new RestEngineUri(m_ivy_engine_listener);
 
     m_ivy_engine_listener.support(methods::POST, 
         std::bind(&RestEngineUri::handle_post, m_ivyengine, std::placeholders::_1));
@@ -27,7 +27,7 @@ RestHandler::RestHandler()
         std::bind(&RestEngineUri::handle_delete, m_ivyengine, std::placeholders::_1));
 
     // URI: /ivy_engine/workloads
-    m_workloads = new RestWorkloadsUri;
+    m_workloads = new RestWorkloadsUri(m_workloads_listener);
     m_workloads_listener.support(methods::POST,
         std::bind(&RestWorkloadsUri::handle_post, m_workloads, std::placeholders::_1));
 
@@ -44,7 +44,7 @@ RestHandler::RestHandler()
         std::bind(&RestWorkloadsUri::handle_delete, m_workloads, std::placeholders::_1));
 
     // URI: /ivy_engine/rollups
-    m_rollups = new RestRollupsUri;
+    m_rollups = new RestRollupsUri(m_rollups_listener);
     m_rollups_listener.support(methods::POST,
         std::bind(&RestRollupsUri::handle_post, m_rollups, std::placeholders::_1));
 
@@ -61,7 +61,7 @@ RestHandler::RestHandler()
         std::bind(&RestRollupsUri::handle_delete, m_rollups, std::placeholders::_1));
 
     // URI: /ivy_engine/csvquery
-    m_csvquery = new RestCsvqueryUri;
+    m_csvquery = new RestCsvqueryUri(m_csvquery_listener);
     m_csvquery_listener.support(methods::POST,
         std::bind(&RestCsvqueryUri::handle_post, m_csvquery, std::placeholders::_1));
 
@@ -78,7 +78,7 @@ RestHandler::RestHandler()
         std::bind(&RestCsvqueryUri::handle_delete, m_csvquery, std::placeholders::_1));
 
     // URI: /ivy_engine/sessions
-    m_sessions = new RestSessionsUri;
+    m_sessions = new RestSessionsUri(m_sessions_listener);
     m_sessions_listener.support(methods::POST,
         std::bind(&RestSessionsUri::handle_post, m_sessions, std::placeholders::_1));
 

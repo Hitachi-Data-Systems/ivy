@@ -12,7 +12,30 @@ extern ivy_engine m_s;
 void
 RestWorkloadsUri::handle_post(http_request request)
 {
-    std::cout << "POST /ivy_engine/workloads\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
+    std::cout << request.method() << " : " << _listener.uri().path() << std::endl;
+
+    //Routing to sub uri - Example: /v1/objects/servers/{id}/hbas
+    //std::vector<std::string> baseuritokens;
+    std::vector<std::string> suburitokens;
+    std::istringstream  req_uri(request.absolute_uri().path());
+
+    if (request.absolute_uri().path().size() != _listener.uri().path().size())
+    {
+        std::ostringstream o;
+        std::string s; 
+        // tokenize and extract fields such as an id of an instance or objects under
+        while(std::getline(req_uri, s, '/'))
+            suburitokens.push_back(s);
+
+        for (auto elem : suburitokens)
+            o << elem << "+";
+
+        std::cout << request.method() << " Sub URI : " << o.str() << std::endl;
+
+    } 
+
+
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -79,6 +102,7 @@ RestWorkloadsUri::handle_post(http_request request)
 void
 RestWorkloadsUri::handle_get(http_request request)
 {
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
@@ -89,7 +113,7 @@ RestWorkloadsUri::handle_get(http_request request)
 void
 RestWorkloadsUri::handle_put(http_request request)
 {
-    std::cout << "PUT /ivy_engine/workloads\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -145,6 +169,7 @@ RestWorkloadsUri::handle_put(http_request request)
 void
 RestWorkloadsUri::handle_patch(http_request request)
 {
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
@@ -155,8 +180,7 @@ RestWorkloadsUri::handle_patch(http_request request)
 void
 RestWorkloadsUri::handle_delete(http_request request)
 {
-    std::cout << "DELETE /ivy_engine/workloads\n";
-
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK);
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};

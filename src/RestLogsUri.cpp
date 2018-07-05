@@ -12,8 +12,7 @@ extern ivy_engine m_s;
 void
 RestLogsUri::handle_post(http_request request)
 {
-    std::cout << "POST /ivy_engine/logs\n";
-
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     std::pair<bool, std::string> result {true, std::string()};
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
@@ -25,7 +24,7 @@ RestLogsUri::handle_post(http_request request)
 void
 RestLogsUri::handle_get(http_request request)
 {
-    std::cout << "GET /ivy_engine/logs\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -70,7 +69,7 @@ RestLogsUri::handle_get(http_request request)
 void
 RestLogsUri::handle_put(http_request request)
 {
-    std::cout << "PUT /ivy_engine/logs\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
@@ -82,7 +81,7 @@ RestLogsUri::handle_put(http_request request)
 void
 RestLogsUri::handle_patch(http_request request)
 {
-    std::cout << "PATCH /ivy_engine/logs\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
@@ -94,7 +93,7 @@ RestLogsUri::handle_patch(http_request request)
 void
 RestLogsUri::handle_delete(http_request request)
 {
-    std::cout << "DELETE /ivy_engine/logs\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};

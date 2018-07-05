@@ -13,6 +13,7 @@ extern ivy_engine m_s;
 void
 RestCsvqueryUri::handle_post(http_request request)
 {
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     std::string resultstr = "Not Supported";
     std::pair<bool, std::string> result {true, std::string()};
 
@@ -24,7 +25,7 @@ RestCsvqueryUri::handle_post(http_request request)
 void
 RestCsvqueryUri::handle_get(http_request request)
 {
-    std::cout << "GET /ivy_engine/csvquery\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -83,6 +84,7 @@ printf("File name2: %s\n", filename->value.GetString());
 void
 RestCsvqueryUri::handle_put(http_request request)
 {
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     std::pair<bool, std::string> result {true, std::string()};
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
@@ -93,6 +95,7 @@ RestCsvqueryUri::handle_put(http_request request)
 void
 RestCsvqueryUri::handle_patch(http_request request)
 {
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     std::pair<bool, std::string> result {true, std::string()};
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
@@ -103,6 +106,7 @@ RestCsvqueryUri::handle_patch(http_request request)
 void
 RestCsvqueryUri::handle_delete(http_request request)
 {
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     std::pair<bool, std::string> result {true, std::string()};
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");

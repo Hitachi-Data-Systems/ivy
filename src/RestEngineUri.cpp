@@ -12,10 +12,8 @@ extern ivy_engine m_s;
 void
 RestEngineUri::handle_post(http_request request)
 {
-    std::cout << "POST /ivy_engine\n";
-std::cout << "POST" << request.headers()["Cookie"] << std::endl;
-//std::cout << "POST" << request.to_string();
-
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
+    std::cout << request.method() << " : " << request.headers()["Cookie"] << std::endl;
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -91,8 +89,7 @@ std::cout << "POST" << request.headers()["Cookie"] << std::endl;
 void
 RestEngineUri::handle_get(http_request request)
 {
-    std::cout << "GET /ivy_engine\n";
-
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK);
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -188,7 +185,7 @@ RestEngineUri::handle_get(http_request request)
 void
 RestEngineUri::handle_put(http_request request)
 {
-    std::cout << "PUT /ivy_engine\n";
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -300,8 +297,7 @@ cout << pear.first << " = " << pear.second << std::endl;
 void
 RestEngineUri::handle_patch(http_request request)
 {
-    std::cout << "PATCH /ivy_engine\n";
-
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK); 
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
@@ -312,9 +308,7 @@ RestEngineUri::handle_patch(http_request request)
 void
 RestEngineUri::handle_delete(http_request request)
 {
-    std::cout << "DELETE /ivy_engine\n";
-
-    //TBD: NoOp vs. reset/wipeout tests
+    std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     http_response response(status_codes::OK); 
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
