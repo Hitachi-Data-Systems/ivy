@@ -376,6 +376,8 @@ public:
 
     std::string subsystem_thumbnail {};
 
+    bool last_command_was_stop {false};
+
 // methods
 	void kill_subthreads_and_exit();
 	void error(std::string);

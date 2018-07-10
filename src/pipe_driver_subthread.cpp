@@ -1251,7 +1251,21 @@ void pipe_driver_subthread::threadRun()
                         {
                             try
                             {
-                                detail_line = get_line_from_pipe(ivytime(2), std::string("get iosequencer detail line"));
+                                ivy_float detail_line_timeout_seconds;
+
+                                if (m_s.last_command_was_stop)
+                                {
+                                    detail_line_timeout_seconds = m_s.subinterval_seconds * 0.4;
+                                    // two seconds for 5 second subintervals
+                                }
+                                else
+                                {
+                                    detail_line_timeout_seconds = m_s.subinterval_seconds * 1.4;
+                                    // longer because "stop" command invokes "catch in flight I/Os" which can take extra time.
+                                    // There is no need to be prompt reading detail lines once we are stopped.
+                                }
+
+                                detail_line = get_line_from_pipe(ivytime(detail_line_timeout_seconds), std::string("get iosequencer detail line"));
                             }
                             catch (std::runtime_error& reex)
                             {

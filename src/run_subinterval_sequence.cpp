@@ -816,10 +816,13 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     {
                         pear.second->commandString = "continue";
                     }
+
+                    m_s.last_command_was_stop = false;
                 }
                 else
                 {
                     pear.second->commandString = "stop";
+                    m_s.last_command_was_stop = true;
                 }
                 pear.second->command=true;
                 pear.second->commandComplete=false;

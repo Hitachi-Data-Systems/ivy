@@ -1,3 +1,5 @@
+- switch from CodeBlocks build to cmake or autotools.
+
 - remove "stopping" state from WorkloadThread.
 
 - remove "set iosequencer template"
