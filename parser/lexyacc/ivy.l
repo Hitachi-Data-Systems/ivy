@@ -58,8 +58,10 @@ float_trailing_percent      ((([0-9]+\.[0-9]*)|([0-9]*\.[0-9]+)([eE][+-]?[0-9]{1
 float      (([0-9]+\.[0-9]*)|([0-9]*\.[0-9]+)([eE][+-]?[0-9]{1,3})?)|([0-9]+[eE][+-]?[0-9]{1,3})
 zero255    ([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])
 dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
+rawstart    ==>
+rawend      <==
 
-%x	STRING STRING_ESCAPE inklude
+%x	STRING STRING_ESCAPE inklude RAWSTRING
 
 %%
 
@@ -502,6 +504,26 @@ inklude	BEGIN(inklude);
 		/*debug*/if (trace_lexer) {std::cout << std::endl << "lexer returning DOTTED_QUAD_IP_ADDR = \"" << (*(yylval->p_str)) << "\"." << std::endl;}
 		return token::DOTTED_QUAD_IP_ADDR;
 	}
+
+{rawstart}	{
+		yylval->p_str = new std::string;
+		if (!yylval->p_str) {
+			context_ref.error("out of memory in lexer");
+			exit(1);
+		}
+		BEGIN RAWSTRING;
+	}
+
+<RAWSTRING>{rawend}	{
+		BEGIN INITIAL;
+
+    /*debug*/if(trace_lexer) std::cout << std::endl << "lexer returning (raw) STRING_CONSTANT \"" << *yylval->p_str << "\"." << std::endl;
+
+		return token::STRING_CONSTANT;
+	}
+
+<RAWSTRING>.	(*yylval->p_str)+= yytext;
+
 
 "\+"	{yylval->p_chars="+"; /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning PLUS (\'" << yylval->p_chars << "\')." << std::endl; return token::PLUS;}
 "-" 	{yylval->p_chars="-"; /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning MINUS (\'" << yylval->p_chars << "\')." << std::endl; return token::MINUS;}
