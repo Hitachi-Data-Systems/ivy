@@ -58,8 +58,7 @@ float_trailing_percent      ((([0-9]+\.[0-9]*)|([0-9]*\.[0-9]+)([eE][+-]?[0-9]{1
 float      (([0-9]+\.[0-9]*)|([0-9]*\.[0-9]+)([eE][+-]?[0-9]{1,3})?)|([0-9]+[eE][+-]?[0-9]{1,3})
 zero255    ([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])
 dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
-rawstart    ==>
-rawend      <==
+raw_del    %%
 
 %x	STRING STRING_ESCAPE inklude RAWSTRING
 
@@ -505,7 +504,7 @@ inklude	BEGIN(inklude);
 		return token::DOTTED_QUAD_IP_ADDR;
 	}
 
-{rawstart}	{
+<INITIAL>{raw_del}	{
 		yylval->p_str = new std::string;
 		if (!yylval->p_str) {
 			context_ref.error("out of memory in lexer");
@@ -514,7 +513,7 @@ inklude	BEGIN(inklude);
 		BEGIN RAWSTRING;
 	}
 
-<RAWSTRING>{rawend}	{
+<RAWSTRING>{raw_del}	{
 		BEGIN INITIAL;
 
     /*debug*/if(trace_lexer) std::cout << std::endl << "lexer returning (raw) STRING_CONSTANT \"" << *yylval->p_str << "\"." << std::endl;
