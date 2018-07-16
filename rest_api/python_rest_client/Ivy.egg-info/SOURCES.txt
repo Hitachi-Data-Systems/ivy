@@ -1,8 +1,0 @@
-setup.py
-Ivy.egg-info/PKG-INFO
-Ivy.egg-info/SOURCES.txt
-Ivy.egg-info/dependency_links.txt
-Ivy.egg-info/requires.txt
-Ivy.egg-info/top_level.txt
-ivyrest/__init__.py
-ivyrest/ivyrest.py

@@ -1,11 +1,7 @@
 #include "RestHandler.h"
 #include "ivy_engine.h"
-#include "rapidjson/error/en.h"
-#include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"  
 #include "rapidjson/schema.h"  
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
 
 extern ivy_engine m_s;
 
@@ -21,7 +17,7 @@ RestRollupsUri::handle_post(http_request request)
 
     // extract json from request
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
-    printf("JSON:\n %s\n", json);
+    std::cout << "JSON:\n" << json << std::endl;
 
     rapidjson::Document document; 
     if (document.Parse(json).HasParseError())
@@ -48,11 +44,11 @@ RestRollupsUri::handle_post(http_request request)
         std::unique_lock<std::mutex> u_lk(goStatementMutex);
         std::pair<int, std::string> 
         rslt = m_s.create_rollup(name->value.GetString(),
-                                 nocsv->value.GetBool(),
-                                 false /* have_quantity_validation */,
-                                 maxsdroop_validation->value.GetBool(),
-                                 quantity->value.GetInt(),
-                                 maxdroop->value.GetDouble());
+                   (nocsv != document.MemberEnd() ? nocsv->value.GetBool() : false),
+                   false /* have_quantity_validation */,
+                   (maxsdroop_validation != document.MemberEnd() ? maxsdroop_validation->value.GetBool() : false),
+                   (quantity != document.MemberEnd() ? quantity->value.GetInt() : 1),
+                   (maxdroop != document.MemberEnd() ? maxdroop->value.GetDouble() : 6.95323e-310));
     }
 
     http_response response(status_codes::OK);
@@ -84,7 +80,7 @@ RestRollupsUri::handle_put(http_request request)
 
     // extract json from request
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
-    printf("JSON:\n %s\n", json);
+    std::cout << "JSON:\n" << json << std::endl;
 
     rapidjson::Document document; 
     if (document.Parse(json).HasParseError())
@@ -139,7 +135,7 @@ RestRollupsUri::handle_delete(http_request request)
 
     // extract json from request
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
-    printf("JSON:\n %s\n", json);
+    std::cout << "JSON:\n" << json << std::endl;
 
     rapidjson::Document document; 
     if (document.Parse(json).HasParseError())

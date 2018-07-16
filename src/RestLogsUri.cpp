@@ -1,11 +1,7 @@
 #include "RestHandler.h"
 #include "ivy_engine.h"
-#include "rapidjson/error/en.h"
-#include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"  
 #include "rapidjson/schema.h"  
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
 
 extern ivy_engine m_s;
 
@@ -33,7 +29,7 @@ RestLogsUri::handle_get(http_request request)
 
     // extract json from request
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
-    printf("JSON:\n %s\n", json);
+    std::cout << "JSON:\n" << json << std::endl;
 
     rapidjson::Document document; 
     if (document.Parse(json).HasParseError())

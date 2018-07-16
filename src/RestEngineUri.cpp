@@ -1,11 +1,7 @@
 #include "RestHandler.h"
 #include "ivy_engine.h"
-#include "rapidjson/error/en.h"
-#include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"  
 #include "rapidjson/schema.h"  
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
 
 extern ivy_engine m_s;
 
@@ -44,7 +40,7 @@ RestEngineUri::handle_post(http_request request)
 
     // extract json from request
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
-    printf("JSON:\n %s\n", json);
+    std::cout << "JSON:\n" << json << std::endl;
 
     rapidjson::Document document; 
     if (document.Parse(json).HasParseError())
@@ -101,17 +97,29 @@ RestEngineUri::handle_get(http_request request)
     
     std::map<utility::string_t, utility::string_t>  qmap = req_uri.split_query(req_uri.query());
 
-    for (auto& pear : qmap)
+    for (auto& kv : qmap)
     {
-
-        cout << "key: " << pear.first << ", value: " << pear.second << std::endl;
-        if (pear.first == "hosts" && pear.second == "true")
+        std::cout << "key: " << kv.first << ", value: " << kv.second << std::endl;
+        if (kv.first == "hosts" && kv.second == "true")
             get_hosts = true;
-        else if (pear.first == "luns" && pear.second == "true")
+        else if (kv.first == "luns" && kv.second == "true")
             get_luns = true;
-        else if (pear.first == "subsystems" && pear.second == "true")
+        else if (kv.first == "subsystems" && kv.second == "true")
             get_subsystems = true;
+        else if (kv.first == "test_folder" || kv.first == "test_name")
+        {
+                if (kv.first == "test_folder")
+                    resultstr = m_s.outputFolderRoot + "/" + m_s.testName;
+                else
+                    resultstr = m_s.testName;
+                std::cout << "resultstr = " << resultstr << std::endl;
+
+                make_response(response, resultstr, result); 
+                request.reply(response);
+                return;
+        }
     }
+
     // Hosts list
     rapidjson::Document jsonDoc;
     jsonDoc.SetObject();
@@ -193,19 +201,19 @@ RestEngineUri::handle_put(http_request request)
     uri req_uri = request.absolute_uri();
     std::map<utility::string_t, utility::string_t>  qmap = req_uri.split_query(req_uri.query());
 
-    for (auto& pear : qmap)
+    for (auto& kv : qmap)
     {
-        if (pear.first == "output_folder_root" || pear.first == "test_name")
+        if (kv.first == "output_folder_root" || kv.first == "test_name")
         {
-cout << pear.first << " = " << pear.second << std::endl;
+            std::cout << kv.first << " = " << kv.second << std::endl;
             // Execute Ivy Engine command
             if (rc == 0)
             {
                 std::unique_lock<std::mutex> u_lk(goStatementMutex);
-                if (pear.first == "output_folder_root")
-                    m_s.outputFolderRoot = pear.second;
-                if (pear.first == "test_name")
-                    m_s.testName = pear.second;
+                if (kv.first == "output_folder_root")
+                    m_s.outputFolderRoot = kv.second;
+                if (kv.first == "test_name")
+                    m_s.testName = kv.second;
 
                 http_response response(status_codes::OK);
                 make_response(response, resultstr, result); 
@@ -219,7 +227,7 @@ cout << pear.first << " = " << pear.second << std::endl;
 
     // extract json from request
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
-    printf("JSON:\n %s\n", json);
+    std::cout << "JSON:\n" << json << std::endl;
 
     rapidjson::Document document; 
     if (document.Parse(json).HasParseError())

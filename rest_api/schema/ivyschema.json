@@ -69,6 +69,8 @@
                 "hot_zone_write_fraction" : { "type" : "boolean" },
                 "hot_zone_IOPS_fraction": { "$ref": "#/definitions/percentageschema" },
                 "fractionRead": { "$ref": "#/definitions/percentageschema" },
+                "VolumeCoverageFractionStart": { "$ref": "#/definitions/percentageschema" },
+                "VolumeCoverageFractionEnd": { "$ref": "#/definitions/percentageschema" },
                 "blocksize": { "type" : "integer" },
                 "IOPS": {
                     "anyof": [
@@ -126,7 +128,7 @@
 	    "properties": {
                 "Hosts" : { "$ref": "#/definitions/hostlistschema" },
                 "Select" : { "$ref": "#/definitions/selectschema" },
-	    "required": ["outputfolder", "testname", "Hosts", "Select"]
+	    "required": ["Hosts", "Select"]
             }
         },
         "setiosequencertemplateschema": {
@@ -286,10 +288,20 @@
                  }
 	    },
 	    "required": ["stepname"]
+        },
+        "responseschema":  {
+            "type": "object", 
+	    "properties": {
+                "retval": { "type": "string" },
+                "status": { "type": "string" },
+                "result": { "type": "string" }
+	    },
+	    "required": ["retval", "status", "result"]
         }
     },
 
     "anyof": [
+        { "$ref": "#/definitions/responseschema" },
         { "$ref": "#/definitions/percentageschema" },
         { "$ref": "#/definitions/binarysizeschema" },
         { "$ref": "#/definitions/hostlistschema" },

@@ -1,11 +1,7 @@
 #include "RestHandler.h"
 #include "ivy_engine.h"
-#include "rapidjson/error/en.h"
-#include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"  
 #include "rapidjson/schema.h"  
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
 
 extern ivy_engine m_s;
 
@@ -39,11 +35,12 @@ RestWorkloadsUri::handle_post(http_request request)
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
+    http_response response(status_codes::OK);
 
     char json[1024];
     // extract json from request
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
-    printf("JSON:\n %s\n", json);
+    std::cout << "JSON:\n" << json << std::endl;
 
     rapidjson::Document document; 
     if (document.Parse(json).HasParseError())
@@ -63,17 +60,6 @@ RestWorkloadsUri::handle_post(http_request request)
     rapidjson::Value::MemberIterator workload = document.FindMember("workload");
     rapidjson::Value::MemberIterator iosequencer = document.FindMember("iosequencer");
     rapidjson::Value::MemberIterator parameters = document.FindMember("parameters");
-    rapidjson::Value::MemberIterator IOPS = document.FindMember("IOPS");
-    rapidjson::Value::MemberIterator fractionRead = document.FindMember("fractionRead");
-    rapidjson::Value::MemberIterator blocksize = document.FindMember("blocksize");
-    rapidjson::Value::MemberIterator maxtags = document.FindMember("maxtags");
-
-    rapidjson::Value::MemberIterator select = document.FindMember("select");
-    if (select == document.MemberEnd())
-        selstr = "";
-    else
-        selstr = select->value.GetString();
-
     std::ostringstream params;
 
     if (parameters->value.IsString())
@@ -81,9 +67,29 @@ RestWorkloadsUri::handle_post(http_request request)
         params << parameters->value.GetString();
     } else
     {
+        rapidjson::Value::MemberIterator IOPS = document.FindMember("IOPS");
+        rapidjson::Value::MemberIterator fractionRead = document.FindMember("fractionRead");
+        rapidjson::Value::MemberIterator blocksize = document.FindMember("blocksize");
+        rapidjson::Value::MemberIterator maxtags = document.FindMember("maxtags");
+
+        rapidjson::Value::MemberIterator select = document.FindMember("select");
+        if (select == document.MemberEnd())
+            selstr = "";
+        else
+            selstr = select->value.GetString();
+
         params << "fractionRead=" << fractionRead->value.GetInt();
         params << "%, blocksize=" << blocksize->value.GetInt();
-        params << "KiB, IOPS=" << IOPS->value.GetString();
+        if (IOPS != document.MemberEnd())
+        {
+            params << "KiB, IOPS=" << IOPS->value.GetString();
+        } else {
+            // missing mandatory field
+            resultstr += "IOPS field is missing";
+            make_response(response, resultstr, result); 
+            request.reply(response);
+            return;
+        }
         params << ", maxtags=" << maxtags->value.GetInt();
     }
 
@@ -94,7 +100,6 @@ RestWorkloadsUri::handle_post(http_request request)
         m_s.createWorkload(workload->value.GetString(), selstr.c_str(), iosequencer->value.GetString(), params.str());
     }
 
-    http_response response(status_codes::OK);
     make_response(response, resultstr, result);
     request.reply(response);
 }
@@ -121,7 +126,7 @@ RestWorkloadsUri::handle_put(http_request request)
     char json[1024];
     // extract json from request
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
-    printf("JSON:\n %s\n", json);
+    std::cout << "JSON:\n" << json << std::endl;
 
     rapidjson::Document document; 
     if (document.Parse(json).HasParseError())
@@ -137,17 +142,56 @@ RestWorkloadsUri::handle_put(http_request request)
     }
 
     rapidjson::Value::MemberIterator iosequencer_template = document.FindMember("iosequencer");
-    rapidjson::Value::MemberIterator IOPS = document.FindMember("IOPS");
-    rapidjson::Value::MemberIterator fractionRead = document.FindMember("fractionRead");
-    rapidjson::Value::MemberIterator blocksize = document.FindMember("blocksize");
-    rapidjson::Value::MemberIterator maxtags = document.FindMember("maxtags");
-
+    rapidjson::Value::MemberIterator parameters = document.FindMember("parameters");
     std::ostringstream params;
 
-    params << "fractionRead=" << fractionRead->value.GetInt();
-    params << "%, blocksize=" << blocksize->value.GetInt();
-    params << "KiB, IOPS=" << IOPS->value.GetString();
-    params << ", maxtags=" << maxtags->value.GetInt();
+    rapidjson::Value::MemberIterator IOPS = document.FindMember("IOPS");
+    rapidjson::Value::MemberIterator fractionRead = document.FindMember("fractionRead");
+    rapidjson::Value::MemberIterator volfstart = document.FindMember("VolumeCoverageFractionStart");
+    rapidjson::Value::MemberIterator volfend = document.FindMember("VolumeCoverageFractionEnd");
+    rapidjson::Value::MemberIterator blocksize = document.FindMember("blocksize");
+    rapidjson::Value::MemberIterator maxtags = document.FindMember("maxtags");
+    http_response response(status_codes::OK);
+
+    if (parameters->value.IsString())
+    {
+        params << parameters->value.GetString();
+    } else
+    {
+        if (fractionRead != document.MemberEnd())
+        {
+            params << "fractionRead=" << (fractionRead->value.IsInt() ? fractionRead->value.GetInt() :
+                                          fractionRead->value.GetDouble());
+        }
+        if (volfstart != document.MemberEnd())
+        {
+            params << "VolumeCoverageFractionStart=" << (volfstart->value.IsInt() ? volfstart->value.GetInt() :
+                                                         volfstart->value.GetDouble());
+        }
+        if (volfend != document.MemberEnd())
+        {
+            params << "VolumeCoverageFractionEnd=" << ((volfend->value.IsInt() ? volfend->value.GetInt() :
+                                                        volfend->value.GetDouble()));
+        }
+        if (blocksize != document.MemberEnd())
+        {
+            params << "%, blocksize=" << blocksize->value.GetInt();
+        }
+        if (IOPS != document.MemberEnd())
+        {
+            params << "KiB, IOPS=" << IOPS->value.GetString();
+        } else {
+            // missing mandatory field
+            resultstr += "IOPS field is missing";
+            make_response(response, resultstr, result); 
+            request.reply(response);
+            return;
+        }
+        if (maxtags != document.MemberEnd())
+        {
+            params << ", maxtags=" << maxtags->value.GetInt();
+        }
+    }
 
     // Execute Ivy Engine command
     if (rc == 0)
@@ -156,12 +200,6 @@ RestWorkloadsUri::handle_put(http_request request)
         m_s.set_iosequencer_template(iosequencer_template->value.GetString(), params.str());
     }
 
-    http_response response(status_codes::OK);
-
-    response.headers().add(header_names::content_type, mime_types::application_json);
-    response.headers().add(header_names::content_type, charset_types::utf8);
-
-    response.set_body("{\"status\": 1}");
     make_response(response, resultstr, result); 
     request.reply(response);
 }
@@ -188,7 +226,7 @@ RestWorkloadsUri::handle_delete(http_request request)
     char json[1024];
     // extract json from request
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
-    printf("JSON:\n %s\n", json);
+    std::cout << "JSON:\n" << json << std::endl;
 
     rapidjson::Document document; 
     if (document.Parse(json).HasParseError())
@@ -202,12 +240,14 @@ RestWorkloadsUri::handle_delete(http_request request)
     }
 
     rapidjson::Value::MemberIterator workload = document.FindMember("workload");
-    //rapidjson::Value::MemberIterator select = document.FindMember("select");
+    rapidjson::Value::MemberIterator select = document.FindMember("select");
 
     std::string select_str;
-
-    const Value& select = document["select"];
-    json_to_select_str(select, select_str);
+    if (select != document.MemberEnd())
+    {
+        const Value& select = document["select"];
+        json_to_select_str(select, select_str);
+    }
 
     {
         std::unique_lock<std::mutex> u_lk(goStatementMutex);

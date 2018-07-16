@@ -111,11 +111,6 @@ RestHandler::RestHandler()
 
 void RestHandler::wait_and_serve()
 {
-    //std::cout << "Press ENTER to exit." << std::endl;
-
-    //std::string line;
-    //std::getline(std::cin, line);
-
     std::unique_lock<std::mutex> lk(m_rest_handler_mutex);
     while (!m_rest_handler_done) m_rest_handler_cv.wait(lk, []{return m_rest_handler_done;});
  

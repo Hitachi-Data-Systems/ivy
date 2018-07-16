@@ -49,6 +49,7 @@ public:
         rslt += result.second;
 
         writer.StartObject();
+        writer.Key("retval"); writer.Bool(result.first);
         writer.Key("status"); writer.String(resultstr.c_str());
         writer.Key("result"); writer.String(rslt.c_str());
         writer.EndObject();
