@@ -45,7 +45,7 @@ int hosts_string_start_line;
 
 ws         [ \t]+
 
-hostname [a-zA-Z]([-_a-zA-Z0-9])*
+hostname [a-zA-Z]([-_a-zA-Z0-9\.])*
 
 unsigned_int [0-9]+
 
