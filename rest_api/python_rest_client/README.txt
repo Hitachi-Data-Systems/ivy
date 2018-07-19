@@ -7,18 +7,43 @@ HTTP library.
 
 Requirements
 ============
-This library requires the use of python 3.4 or later and the third-party
-library "requests".
+This library requires the use of python 3.6 or later and the third-party
+Python library/modules, such as:  "json", "requests", "jsonschema", "uuid", "sys"
 
-Ivy version 2.02.00 is required.
+Ivy version 2.01.01 is required.
 
+By default Ivy REST API is accessible at port 9000.
 
 Installation
 ============
 ::
 
- $ python setup.py install
+$ export PATH=/opt/rh/rh-python36/root/bin:$PATH
 
+$ python --version
+Python 3.6.3
+
+(as needed)
+$ pip install requests
+$ pip install json
+$ pip install jsonschema
+$ pip install uuid
+$ pip install sys
+
+$ mkdir ivy_rest_client
+$ cd ivy_rest_client
+$ tar xzf ivy_python_rest_client.tgz
+$ cd python_rest_client
+
+$ python setup.py install
+
+(some sample python ivy scripts)
+$ cd ../samples
+
+$ unset http_proxy
+$ unset https_proxy
+
+(To try modify sample code - with correct host name and serial number)
 
 Documentation
 =============
@@ -30,8 +55,6 @@ Tests
 =====
 From the root directory of the rest-client
 ::
-
- $ PYTHONPATH=$(pwd):$PYTHONPATH py.test test/*.py
 
 
 Files
