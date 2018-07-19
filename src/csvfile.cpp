@@ -345,7 +345,7 @@ void csvfile::remove_empty_columns()
 /*debug*/            if (stringCaseInsensitiveEquality(header,std::string("PG"))) continue;
 /*debug*/        }
 
-        for (unsigned int row = 1; row < (raw_values[row].size()); row++)
+        for (unsigned int row = 1; row < (raw_values.size()); row++)
         {
 
             if (col >= raw_values[row].size())
