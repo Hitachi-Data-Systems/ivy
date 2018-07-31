@@ -140,7 +140,7 @@ bool IosequencerSequential::generate(Eyeo& slang) {
 		}
 		else
 		{
-			slang.scheduled_time = previous_scheduled_time + ivytime(1/(p_IosequencerInput->IOPS));
+			slang.scheduled_time = previous_scheduled_time + ivytime(1/(slang.pWorkloadThread->skew_factor * p_IosequencerInput->IOPS));
 		}
 		previous_scheduled_time = slang.scheduled_time;
 	}

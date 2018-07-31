@@ -139,6 +139,25 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 //        "                  hot_zone_write_fraction - default 0 (zero) fraction of all write I/Os that should go to the hit_area.\n"
 //        "                  If either of hot_zone_read_fraction or hot_zone_write_fraction are non-zero, hot_zone_fraction is ignored.\n\n"
 
+	if ( normalized_identifier_equality(parameterName, std::string("skew")) )
+	{
+        try
+        {
+            skew_weight = number_optional_trailing_percent(parameterValue);
+            skewed_workloads = true;
+        }
+        catch (const std::exception &e)
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - invalid parameter value.  Must be an unsigned integer (digits)" << std::endl
+                << "Error when trying to parse the value was " << e.what() << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        return std::make_pair(true,"");
+    }
 	if ( normalized_identifier_equality(parameterName, std::string("hot_zone_size_bytes")) )
 	{
         if ( (!normalized_identifier_equality(iosequencer_type,std::string("random_steady")))

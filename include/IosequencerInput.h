@@ -75,6 +75,11 @@ public:
     unsigned int this_thread_in_workload {this_thread_in_workload_default};
     uint64_t pattern_seed {pattern_seed_default};
 
+    // skew_factor is computed at "Go" as:
+    // (skew_weight /(sum_of skew_weights of all workloads in the current "Go" workload set.)
+    ivy_float skew_weight {1.0};
+    bool skewed_workloads {false};
+
     uint64_t hot_zone_size_bytes {0};
     ivy_float hot_zone_IOPS_fraction {0};
     ivy_float hot_zone_read_fraction {0};

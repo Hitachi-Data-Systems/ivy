@@ -45,6 +45,7 @@ using namespace std;
 #include "Iosequencer.h"
 #include "IosequencerRandom.h"
 #include "IosequencerRandomIndependent.h"
+#include "WorkloadThread.h"
 
 
 //
@@ -106,7 +107,7 @@ bool IosequencerRandomIndependent::generate(Eyeo& slang)
 			while (R == 0.0 || R == 1.0) R = (*p_uniform_real_distribution_0_to_1)(deafrangen);  // The "while" was just in case we actually got 0.0 or 1.0
 
 //*debug*/{ostringstream o; o << "IosequencerRandomIndependent::generate() random number from zero to one R=" << R <<  "\n"; log(logfilename, o.str());}
-			inter_IO_arrival_time = - log(1.0-R) / (p_IosequencerInput->IOPS);
+			inter_IO_arrival_time = - log(1.0-R) / (slang.pWorkloadThread->skew_factor * p_IosequencerInput->IOPS);
 
 //*debug*/{ostringstream o; o << "IosequencerRandomIndependent::generate() inter_IO_arrival_time=" << ivytime(inter_IO_arrival_time).format_as_duration_HMMSSns() <<  "\n"; log(logfilename, o.str());}
 			slang.scheduled_time = previous_scheduled_time + ivytime(inter_IO_arrival_time);
