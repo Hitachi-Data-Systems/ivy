@@ -184,10 +184,17 @@ int main(int argc, char* argv[])
         ivyscriptFilename = item;
     }
 
-    if (rest_api)
+    if (rest_api || endsIn(ivyscriptFilename, ".py"))
     {
         // setup and start serving the REST API
         RestHandler rest_handler;
+
+        // if a python script is provided - run script and ivy sandwiched together
+        if (endsIn(ivyscriptFilename, ".py"))
+        {
+            std::string cmd = "sleep 2; unset http_proxy https_proxy; python " + ivyscriptFilename;
+            system(cmd.c_str());
+        }
 
         RestHandler::wait_and_serve();
         return 0;

@@ -1,6 +1,4 @@
 import ivyrest
-import requests
-import time
 
 # In step 0, we measure max IOPS.
 #      -This yields the "high_IOPS" and the "high_target".

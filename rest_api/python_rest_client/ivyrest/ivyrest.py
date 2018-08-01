@@ -587,3 +587,7 @@ class IvyRestClient(object):
 
     def get_subsystem_list(self):
         return self._request("GET", "/ivy_engine?subsystems=true")
+
+    def show_rollup_structure(self):
+        ret = self._request("GET", "/ivy_engine/rollups")
+        return ret['status']
