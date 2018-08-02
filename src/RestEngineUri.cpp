@@ -249,6 +249,9 @@ RestEngineUri::handle_put(http_request request)
     rapidjson::Value::MemberIterator measure = document.FindMember("measure");
     rapidjson::Value::MemberIterator accuracy = document.FindMember("accuracy_plus_minus");
     rapidjson::Value::MemberIterator timeout_seconds = document.FindMember("timeout_seconds");
+    rapidjson::Value::MemberIterator max_wp = document.FindMember("max_wp");
+    rapidjson::Value::MemberIterator min_wp = document.FindMember("min_wp");
+    rapidjson::Value::MemberIterator max_wp_change = document.FindMember("max_wp_change");
     rapidjson::Value::MemberIterator dfc = document.FindMember("dfc");
     rapidjson::Value::MemberIterator low_IOPS = document.FindMember("low_IOPS");
     rapidjson::Value::MemberIterator low_target = document.FindMember("low_target");
@@ -270,6 +273,13 @@ RestEngineUri::handle_put(http_request request)
         parameters << ", accuracy_plus_minus=\"" << accuracy->value.GetString() << "\"";
     if (timeout_seconds != document.MemberEnd())
         parameters << ", timeout_seconds=\"" << timeout_seconds->value.GetString() << "\"";
+    if (max_wp != document.MemberEnd())
+        parameters << ", max_wp=\"" << max_wp->value.GetString() << "\"";
+    if (min_wp != document.MemberEnd())
+        parameters << ", min_wp=\"" << min_wp->value.GetString() << "\"";
+    if (max_wp_change != document.MemberEnd())
+        parameters << ", max_wp_change=\"" << max_wp_change->value.GetString() << "\"";
+
     if (dfc != document.MemberEnd())
         parameters << ", dfc=" << dfc->value.GetString();
 

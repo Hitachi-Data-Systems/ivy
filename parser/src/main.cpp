@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
         // if a python script is provided - run script and ivy sandwiched together
         if (endsIn(ivyscriptFilename, ".py"))
         {
-            std::string cmd = "sleep 2; unset http_proxy https_proxy; python " + ivyscriptFilename;
+            std::string cmd = "sleep 1; unset http_proxy https_proxy; python " + ivyscriptFilename;
             system(cmd.c_str());
         }
 
