@@ -654,25 +654,6 @@ int main(int argc, char* argv[])
 				say("<Error> ivyslave main thread: procstatcounters::read_CPU_counters() call to get first subinterval starting CPU counters failed.");
 			}
 
-                        // compute skew_factor
-                        ivy_float total_weight {0};
-                        for (auto& pear : workload_threads)
-                        {
-                            total_weight += pear.second->subinterval_array[0].input.skew_weight;               
-                        }
-                        std::ostringstream o;
-                        o << "Total skew weight of the workload set in current Go = " << total_weight << std::endl;
-                        log(slavelogfile, o.str());
-
-                        // set skew_factor
-                        for (auto& pear : workload_threads)
-                        {
-                            pear.second->skew_factor = pear.second->subinterval_array[0].input.skew_weight / total_weight;               
-                            std::ostringstream o;
-                            o << "Skew factor = " << pear.second->skew_factor << std::endl;
-                            log(slavelogfile, o.str());
-                        }
-
 			for (auto& pear : workload_threads)
 			{
 				{

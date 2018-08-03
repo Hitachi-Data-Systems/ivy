@@ -20,13 +20,13 @@
 					<Add directory="parser/lexyacc" />
 				</Compiler>
 				<Linker>
-					<Add directory="/usr/local/lib" />
-					<Add directory="/usr/lib64" />
+					<Add option="-pthread -lrt" />
 					<Add library="/usr/local/lib/libcpprest.a" />
 					<Add library="/usr/local/lib/libboost_system.a" />
 					<Add library="/usr/lib64/libcrypto.so" />
 					<Add library="/usr/lib64/libssl.so" />
-					<Add option="-pthread -lrt" />
+					<Add directory="/usr/local/lib" />
+					<Add directory="/usr/lib64" />
 				</Linker>
 				<ExtraCommands>
 					<Add before="touch include/ivybuilddate.h" />
@@ -42,6 +42,7 @@
 					<Add directory="parser/lexyacc" />
 					<Add directory="parser/include" />
 					<Add directory="../LUN_discovery/include" />
+					<Add directory="ivy/include" />
 				</Compiler>
 				<Linker>
 					<Add option="-pthread -lrt" />
@@ -281,6 +282,9 @@
 		<Unit filename="include/RestEngineUri.h">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="include/RestHandler.h">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="include/RestLogsUri.h">
 			<Option target="ivymaster" />
 		</Unit>
@@ -291,9 +295,6 @@
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/RestWorkloadsUri.h">
-			<Option target="ivymaster" />
-		</Unit>
-		<Unit filename="include/RestHandler.h">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/RollupInstance.h">
@@ -339,8 +340,14 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
+		<Unit filename="include/TestLUN.h">
+			<Option target="ivyslave" />
+		</Unit>
 		<Unit filename="include/Test_config_thumbnail.h">
 			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="include/Workload.h">
+			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/WorkloadID.h">
 			<Option target="ivymaster" />
@@ -440,6 +447,9 @@
 		<Unit filename="include/run_subinterval_sequence.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/skew_weight.h">
+			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/studentsTdistribution.h">
 			<Option target="ivymaster" />
@@ -652,8 +662,14 @@
 		<Unit filename="src/Subsystem.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="src/TestLUN.cpp">
+			<Option target="ivyslave" />
+		</Unit>
 		<Unit filename="src/Test_config_thumbnail.cpp">
 			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/Workload.cpp">
+			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/WorkloadID.cpp">
 			<Option target="ivymaster" />
@@ -830,6 +846,9 @@
 		</Unit>
 		<Unit filename="src/select/select.y">
 			<Option compile="1" />
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/skew_weight.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/studentsTdistribution.cpp">

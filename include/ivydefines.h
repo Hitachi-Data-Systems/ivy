@@ -22,8 +22,7 @@
 #include <array>
 #include <string>
 
-const std::string ivy_version {"2.01.01"};
-
+const std::string ivy_version {"2.02.00"};
 
 //using ivy_int = long long int; using ivy_float = long double;
   using ivy_int =      long int; using ivy_float =      double;
@@ -116,6 +115,7 @@ const ivy_float max_subinterval_seconds {3600.0};
 const int blocksize_bytes_default {4096};
 const int maxTags_default{1};   // make sure someone is going to notice if they haven't set this.
 const ivy_float IOPS_default {1};  // Default is 1.0 I/Os per second
+const ivy_float skew_weight_default {1.0};  // Default is 1.0 I/Os per second
 const ivy_float fractionRead_default{1.0};
 const ivy_float	volCoverageFractionStart_default {0.0};  // default is start at sector 1.  Sector 0 is considered "out of bounds".
 const ivy_float	volCoverageFractionEnd_default {1.0};    // default is 1.0 maps to the last aligned block of that blocksize that fits.

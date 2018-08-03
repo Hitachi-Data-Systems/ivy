@@ -81,7 +81,7 @@ inline int io_cancel(aio_context_t ctx, struct iocb * p_iocb, struct io_event *p
 //#
 //# This would be a pre-requisite to build ivy on other non-Linux platforms.
 
-//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
+//######## It turns out that POSIX AIO uses a thread model internally - that is exactly what we don't want. ########
 
 #include <iostream>
 

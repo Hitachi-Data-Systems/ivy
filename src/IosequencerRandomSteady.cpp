@@ -66,11 +66,7 @@ bool IosequencerRandomSteady::generate(Eyeo& slang)
 		}
 		else
 		{
-			ivy_float skew_factor;
-			skew_factor = (!slang.pWorkloadThread->subinterval_array[0].input.skewed_workloads ?
-                                                                      1.0 : slang.pWorkloadThread->skew_factor);
-
-			slang.scheduled_time = previous_scheduled_time + ivytime(1/(skew_factor * p_IosequencerInput->IOPS));
+			slang.scheduled_time = previous_scheduled_time + ivytime(1/(p_IosequencerInput->IOPS));
 		}
 		previous_scheduled_time = slang.scheduled_time;
 	}

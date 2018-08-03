@@ -151,7 +151,6 @@ private:
     );
 
 public:
-
 	std::string extra_from_last_time{""};  // Used by get_line_from_pipe() to store
 	                                              // characters received from the ivyslave main thread that
 	                                              // were past the end of the current line as marked by '\n'.
@@ -166,8 +165,12 @@ public:
 
 	std::string commandHost, commandLUN, commandWorkloadID;
 	std::string commandIosequencerName, commandIosequencerParameters;
-	ListOfWorkloadIDs commandListOfWorkloadIDs;  // used to send out parameter updates for dynamic feedback control
-
+	ListOfWorkloadIDs commandListOfWorkloadIDs;  // used{ to send out parameter updates for dynamic feedback control
+    std::map<std::string /* edit workload command text */, ListOfWorkloadIDs>
+    workloads_by_text;
+        // This is used to save up what we are later going to send.
+        // This minimizes the number of interlocks with ivyslave.
+    ListOfWorkloadIDs* p_edit_workload_IDs {nullptr};
 	ivytime commandStart, commandFinish;
 	std::string commandErrorMessage;
 

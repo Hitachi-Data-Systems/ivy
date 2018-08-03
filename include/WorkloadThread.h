@@ -160,10 +160,6 @@ public:
     bool doing_dedupe;
     bool have_writes;
     ivy_float compressibility;
-    
-    // skew_factor is computed at "Go" as:
-    // (skew_weight /(sum_of skew_weights of all workloads in the current "Go" workload set.)
-    ivy_float skew_factor {1.0};
 
     pattern_float_type threads_in_workload_name;
     pattern_float_type serpentine_number;

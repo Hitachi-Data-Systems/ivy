@@ -39,6 +39,7 @@
 		",blocksize"
 		",maxTags"
 		",IOPS input parameter setting"
+		",skew weight"
 		",fractionRead"
 		",VolumeCoverageFractionStart"
 		",VolumeCoverageFractionEnd"
@@ -175,6 +176,7 @@ std::string IosequencerInputRollup::CSVcolumnValues(bool detail)
 	<< ',' << '\"' << getParameterTextValueByName("blocksize",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("maxTags",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("IOPS",false) << '\"'   // for DFC=PID, as IOPS changes every subinterval.
+	<< ',' << '\"' << getParameterTextValueByName("skew_weight",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("fractionRead",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("VolumeCoverageFractionStart",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("VolumeCoverageFractionEnd",detail) << '\"'

@@ -139,20 +139,28 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 //        "                  hot_zone_write_fraction - default 0 (zero) fraction of all write I/Os that should go to the hit_area.\n"
 //        "                  If either of hot_zone_read_fraction or hot_zone_write_fraction are non-zero, hot_zone_fraction is ignored.\n\n"
 
-	if ( normalized_identifier_equality(parameterName, std::string("skew")) )
+	if ( normalized_identifier_equality(parameterName, std::string("skew")) || normalized_identifier_equality(parameterName, std::string("skew_weight")))
 	{
         try
         {
             skew_weight = number_optional_trailing_percent(parameterValue);
-            skewed_workloads = true;
         }
         catch (const std::exception &e)
         {
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
                 << ", parameter value \"" << parameterValue << "\")"
-                << " - invalid parameter value.  Must be an unsigned integer (digits)" << std::endl
+                << " - invalid parameter value.  Must be a number greater than zero" << std::endl
                 << "Error when trying to parse the value was " << e.what() << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        if (skew_weight <= 0.0)
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - invalid parameter value.  Must be a number greater than zero" << std::endl;
             return std::make_pair(false,o.str());
         }
 
@@ -734,6 +742,7 @@ void IosequencerInput::reset() {
 	blocksize_bytes=blocksize_bytes_default;
 	maxTags=maxTags_default;
 	IOPS=IOPS_default; // -1.0 means "drive I/Os as fast as possible"
+	skew_weight=skew_weight_default;
 	fractionRead=fractionRead_default;
 	volCoverageFractionStart=volCoverageFractionStart_default;
 	volCoverageFractionEnd=volCoverageFractionEnd_default;
@@ -818,6 +827,7 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
 	o << ",maxTags=" <<  maxTags;
 	if (IOPS==-1) o << ",IOPS=max";
 	else          o << ",IOPS=" << IOPS;
+	o << ",skew_weight=" << skew_weight;
 	o << ",fractionRead=" << fractionRead;
 	o << ",VolumeCoverageFractionStart=" <<  volCoverageFractionStart;
 	o << ",VolumeCoverageFractionEnd=" << volCoverageFractionEnd;
@@ -876,6 +886,8 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 		else          o << ",IOPS=" << IOPS;
 	}
 
+    if ( ! defaultskew_weight())                { o << ",skew_weight=" << skew_weight; }
+
 	if ( ! defaultFractionRead() )              { o << ",fractionRead=" << fractionRead; }
 
 	if ( ! defaultVolCoverageFractionStart())   { o << ",VolumeCoverageFractionStart=" <<  volCoverageFractionStart; }
@@ -921,6 +933,7 @@ void IosequencerInput::copy(const IosequencerInput& source)
 	blocksize_bytes=source.blocksize_bytes;
 	maxTags=source.maxTags;
 	IOPS=source.IOPS;
+	skew_weight = source.skew_weight;
 	fractionRead=source.fractionRead;
 	volCoverageFractionStart=source.volCoverageFractionStart;
 	volCoverageFractionEnd=source.volCoverageFractionEnd;

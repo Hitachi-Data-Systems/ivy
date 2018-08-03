@@ -1048,7 +1048,7 @@ void pipe_driver_subthread::threadRun()
                     {
 
                         ostringstream utterance;
-                        utterance << "[EditWorkload]" << commandListOfWorkloadIDs.toString() << "[Parameters]" << commandIosequencerParameters << std::endl;
+                        utterance << "[EditWorkload]" << p_edit_workload_IDs->toString() << "[Parameters]" << commandIosequencerParameters << std::endl;
 
                         try
                         {
