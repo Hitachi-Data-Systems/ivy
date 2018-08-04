@@ -31,7 +31,6 @@ RestWorkloadsUri::handle_post(http_request request)
 
     } 
 
-
     int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
@@ -55,31 +54,42 @@ RestWorkloadsUri::handle_post(http_request request)
         resultstr += get_schema_validation_error(&validator);
     }
 
-    std::string selstr;
-
     rapidjson::Value::MemberIterator workload = document.FindMember("workload");
     rapidjson::Value::MemberIterator iosequencer = document.FindMember("iosequencer");
     rapidjson::Value::MemberIterator parameters = document.FindMember("parameters");
+    rapidjson::Value::MemberIterator select = document.FindMember("select");
     std::ostringstream params;
 
-    if (parameters->value.IsString())
+    std::string select_str;
+    if (select != document.MemberEnd())
+    {
+        const Value& select = document["select"];
+        json_to_select_str(select, select_str);
+    }
+
+    if (parameters != document.MemberEnd() && parameters->value.IsString())
     {
         params << parameters->value.GetString();
     } else
     {
         rapidjson::Value::MemberIterator IOPS = document.FindMember("IOPS");
         rapidjson::Value::MemberIterator fractionRead = document.FindMember("fractionRead");
+        rapidjson::Value::MemberIterator VolumeCoverageFractionStart = document.FindMember("VolumeCoverageFractionStart");
+        rapidjson::Value::MemberIterator VolumeCoverageFractionEnd = document.FindMember("VolumeCoverageFractionEnd");
         rapidjson::Value::MemberIterator blocksize = document.FindMember("blocksize");
         rapidjson::Value::MemberIterator maxtags = document.FindMember("maxtags");
 
-        rapidjson::Value::MemberIterator select = document.FindMember("select");
-        if (select == document.MemberEnd())
-            selstr = "";
-        else
-            selstr = select->value.GetString();
-
-        params << "fractionRead=" << fractionRead->value.GetInt();
-        params << "%, blocksize=" << blocksize->value.GetInt();
+        if (fractionRead != document.MemberEnd())
+            params << "fractionRead=" << (fractionRead->value.IsInt() ? fractionRead->value.GetInt() :
+                                          fractionRead->value.GetDouble());
+        if (VolumeCoverageFractionStart != document.MemberEnd())
+            params << "VolumeCoverageFractionStart=" << (VolumeCoverageFractionStart->value.IsInt() ? VolumeCoverageFractionStart->value.GetInt() :
+                                                         VolumeCoverageFractionStart->value.GetDouble());
+        if (VolumeCoverageFractionEnd != document.MemberEnd())
+            params << "VolumeCoverageFractionEnd=" << ((VolumeCoverageFractionEnd->value.IsInt() ? VolumeCoverageFractionEnd->value.GetInt() :
+                                                        VolumeCoverageFractionEnd->value.GetDouble()));
+        if (blocksize != document.MemberEnd())
+            params << "%, blocksize=" << blocksize->value.GetInt();
         if (IOPS != document.MemberEnd())
         {
             params << "KiB, IOPS=" << IOPS->value.GetString();
@@ -90,14 +100,15 @@ RestWorkloadsUri::handle_post(http_request request)
             request.reply(response);
             return;
         }
-        params << ", maxtags=" << maxtags->value.GetInt();
+        if (maxtags != document.MemberEnd())
+            params << ", maxtags=" << maxtags->value.GetInt();
     }
 
     // Execute Ivy Engine command
     if (rc == 0)
     {
         std::unique_lock<std::mutex> u_lk(goStatementMutex);
-        m_s.createWorkload(workload->value.GetString(), selstr.c_str(), iosequencer->value.GetString(), params.str());
+        m_s.createWorkload(workload->value.GetString(), select_str.c_str(), iosequencer->value.GetString(), params.str());
     }
 
     make_response(response, resultstr, result);
@@ -153,7 +164,7 @@ RestWorkloadsUri::handle_put(http_request request)
     rapidjson::Value::MemberIterator maxtags = document.FindMember("maxtags");
     http_response response(status_codes::OK);
 
-    if (parameters->value.IsString())
+    if (parameters != document.MemberEnd() && parameters->value.IsString())
     {
         params << parameters->value.GetString();
     } else
@@ -252,7 +263,6 @@ RestWorkloadsUri::handle_delete(http_request request)
     {
         std::unique_lock<std::mutex> u_lk(goStatementMutex);
         result = m_s.deleteWorkload(workload->value.GetString(),
-                                 //select->value.GetString());
                                  select_str);
     }
     make_response(response, resultstr, result); 

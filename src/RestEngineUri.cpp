@@ -68,12 +68,9 @@ RestEngineUri::handle_post(http_request request)
     if (rc == 0)
     {
         std::unique_lock<std::mutex> u_lk(goStatementMutex);
-        m_s.shutdown_subthreads(); // reset before each run
 
         std::string outputfolder = m_s.get("output_folder_root").second;
         std::string testname = m_s.get("test_name").second;
-        //std::string testname = "MP_50";
-        //m_s.startup(outputfolder->value.GetString(), testname->value.GetString(), "", hosts_list, select_str);
         result = m_s.startup(outputfolder, testname, "", hosts_list, select_str);
     }
 
