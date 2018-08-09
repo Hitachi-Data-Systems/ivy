@@ -1,6 +1,6 @@
 import ivyrest
 
-ivy = ivyrest.IvyRestClient("localhost")
+ivy = ivyrest.IvyObj("localhost")
 
 host_list = ["sun159"]
 select_list = [ {'serial_number' : '83011441' } ]
@@ -8,7 +8,7 @@ select_list = [ {'serial_number' : '83011441' } ]
 ivy.set_output_folder_root(".")
 ivy.set_test_name("demo3_layered_workloads_RAID")
 
-ivy.hosts_luns(Hosts = host_list, Select = select_list)
+ivy.hosts_luns(hosts = host_list, select = select_list)
 
 # When creating a set of workloads that have minor variations on a base set of parameter settings,
 # you can set the default parameter settings for each [iosequencer] type, being random_steady, random_independent, and sequential.
@@ -21,17 +21,14 @@ ivy.set_io_sequencer_template(iosequencer =  "sequential", parameters = "iops=25
 # Note that the random)_steady template targets the first half of each LUN, and the sequential template covers the 2nd half of the LUNs.
 
 # parameters were set earlier using [SetIosequencerTemplate]
-ivy.create_workload(workload = "steady", iosequencer = "random_steady", parameters="")
+ivy.create_workload(name = "steady", iosequencer = "random_steady", parameters="")
 
-ivy.create_workload(workload = "sw1", select = "", iosequencer = "sequential", parameters =  "FractionRead = 0, SeqStartFractionOfCoverage=.0")
-ivy.create_workload(workload = "sw2", select =  "", iosequencer = "sequential", parameters = "FractionRead = 0, SeqStartFractionOfCoverage=.2")
-ivy.create_workload(workload = "sr3", select =  "", iosequencer =  "sequential", parameters = "FractionRead = 1, SeqStartFractionOfCoverage=.4")
-ivy.create_workload(workload = "sr4", select =  "", iosequencer = "sequential",  parameters = "FractionRead = 1, SeqStartFractionOfCoverage=.6")
+ivy.create_workload(name = "sw1", select = "", iosequencer = "sequential", parameters =  "FractionRead = 0, SeqStartFractionOfCoverage=.0")
+ivy.create_workload(name = "sw2", select =  "", iosequencer = "sequential", parameters = "FractionRead = 0, SeqStartFractionOfCoverage=.2")
+ivy.create_workload(name = "sr3", select =  "", iosequencer =  "sequential", parameters = "FractionRead = 1, SeqStartFractionOfCoverage=.4")
+ivy.create_workload(name = "sr4", select =  "", iosequencer = "sequential",  parameters = "FractionRead = 1, SeqStartFractionOfCoverage=.6")
 
 # Here we create a rollup by workload, so we will get one summary line for each workload totalled over all the hosts & LUNs.
 ivy.create_rollup(name="workload")
 
 ivy.go(stepname="step_eh", warmup_seconds = 5, measure_seconds = 10)
-
-ivy.exit()
-

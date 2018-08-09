@@ -1,13 +1,13 @@
 import ivyrest
 
-ivy = ivyrest.IvyRestClient("localhost")
+ivy = ivyrest.IvyObj("localhost")
 
 ivy.set_output_folder_root(".")
 ivy.set_test_name("demo2_create_rollup_RAID")
 
-ivy.hosts_luns(Hosts = "sun159", Select = "serial_number : 83011441")
+ivy.hosts_luns(hosts = "sun159", select = "serial_number : 83011441")
 
-ivy.create_workload (workload = "steady", select = "", iosequencer = "random_steady", parameters = "fractionRead=100%, blocksize=4KiB, IOPS=100, maxtags=32")
+ivy.create_workload (name = "steady", select = "", iosequencer = "random_steady", parameters = "fractionRead=100%, blocksize=4KiB, IOPS=100, maxtags=32")
 
 ivy.create_rollup(name="Port")
 
@@ -36,5 +36,3 @@ ivy.create_rollup(name="workloadID")
 print("-------------\nRollup structure:\n" + ivy.show_rollup_structure() + "\n");
 
 ivy.go(stepname="step_eh", warmup_seconds = 5, measure_seconds = 5)
-
-ivy.exit()

@@ -1,14 +1,13 @@
 import ivyrest
 
-ivy = ivyrest.IvyRestClient("localhost")
+ivy = ivyrest.IvyObj("localhost")
 
 ivy.set_output_folder_root(".")
 ivy.set_test_name("demo6_measure_IOPS_at_PG_busy")
 
-ivy.hosts_luns(Hosts = "sun159", Select = "serial_number : 83011441")
-# ivy.hosts_luns(Hosts = "SPPL-IVYlinux", Select = "serial_number : 410100")
+ivy.hosts_luns(hosts = "sun159", select = "serial_number : 83011441")
 
-ivy.create_workload(workload = "steady", select = [{'LDEV' : '00:10'}, {'port' : '4E'}], iosequencer = "random_steady", parameters = "fraction_read=100%, blocksize = 8 KiB, maxTags=64")
+ivy.create_workload(name = "steady", select = [{'LDEV' : '00:10'}, {'port' : '4E'}], iosequencer = "random_steady", parameters = "fraction_read=100%, blocksize = 8 KiB, maxTags=64")
 
 ## ==================================================
 ## In step 0, we measure IOPS with IOPS=max

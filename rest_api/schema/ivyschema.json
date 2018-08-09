@@ -117,18 +117,20 @@
                 "parameters" : { "$ref": "#/definitions/ioparametersschema" }
 	    }
         },
-        "outputfolderschema":  {
-            "outputfolder": { "type": "string" }
-        },
-        "testnameschema":  {
-            "testname": { "type": "string" }
+        "loggingchema":  {
+            "type": "object", 
+	    "properties": {
+                "logname": { "type": "string" },
+                "message": { "type": "string" },
+	    "required": ["logname", "message"]
+	    }
         },
         "hostsstatementschema":  {
             "type": "object", 
 	    "properties": {
-                "Hosts" : { "$ref": "#/definitions/hostlistschema" },
-                "Select" : { "$ref": "#/definitions/selectschema" },
-	    "required": ["Hosts", "Select"]
+                "hosts" : { "$ref": "#/definitions/hostlistschema" },
+                "select" : { "$ref": "#/definitions/selectschema" },
+	    "required": ["hosts", "select"]
             }
         },
         "setiosequencertemplateschema": {
@@ -137,21 +139,21 @@
         "createworkloadschema":  {
             "type": "object", 
 	    "properties": {
-                "workload": { "type": "string" },
+                "name": { "type": "string" },
                 "select" : { "$ref": "#/definitions/selectschema" },
                 "iosequencer": { "type": {
                                     "enum": [ "random_steady", "random_independent", "sequential"]}},
                 "parameters" : { "$ref": "#/definitions/ioparametersschema" }
 	    },
-	    "required": ["workload"]
+	    "required": ["name"]
         },
         "deleteworkloadschema":  {
             "type": "object", 
 	    "properties": {
-                "workload": { "type": "string" },
+                "name": { "type": "string" },
                 "select" : { "$ref": "#/definitions/selectschema" }
 	    },
-	    "required": ["workload"]
+	    "required": ["name"]
         },
         "createrollupschema":  {
             "type": "object", 
@@ -254,7 +256,12 @@
                              "service_time_seconds", "response_time_seconds"]
                 }},
                 "accuracy_plus_minus": { "type": "string" },
-                "timeout_seconds": { "type": "string" },
+                "timeout_seconds": { 
+                    "anyof": [
+                        { "type": "integer" },
+                        { "type": "string" }
+                    ]
+	        },
                 "max_wp": { "$ref": "#/definitions/percentageschema" },
                 "min_wp": { "$ref": "#/definitions/percentageschema" },
                 "max_wp_change": { "$ref": "#/definitions/percentageschema" },
@@ -318,6 +325,7 @@
         { "$ref": "#/definitions/sessionsschema" },
         { "$ref": "#/definitions/gostatementschema" },
         { "$ref": "#/definitions/configschema" },
+        { "$ref": "#/definitions/loggingschema" },
         { "$ref": "#/definitions/csvquerychema" }
     ]
 }

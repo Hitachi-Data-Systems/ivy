@@ -255,6 +255,12 @@ int main(int argc, char* argv[])
         // setup and start serving the REST API
         RestHandler rest_handler;
 
+        Ivy_pgm  context(ivyscriptFilename,test_name);
+
+        m_s.outputFolderRoot = context.output_folder_root;
+        m_s.testName = context.test_name;
+        m_s.ivyscript_filename = context.ivyscript_filename;
+
         // if a python script is provided - run script and ivy sandwiched together
         std::string cmd = "sleep 1; unset http_proxy https_proxy; python " + ivyscriptFilename;
         system(cmd.c_str());

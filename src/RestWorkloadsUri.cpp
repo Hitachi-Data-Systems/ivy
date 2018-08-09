@@ -54,7 +54,7 @@ RestWorkloadsUri::handle_post(http_request request)
         resultstr += get_schema_validation_error(&validator);
     }
 
-    rapidjson::Value::MemberIterator workload = document.FindMember("workload");
+    rapidjson::Value::MemberIterator workload = document.FindMember("name");
     rapidjson::Value::MemberIterator iosequencer = document.FindMember("iosequencer");
     rapidjson::Value::MemberIterator parameters = document.FindMember("parameters");
     rapidjson::Value::MemberIterator select = document.FindMember("select");
@@ -95,10 +95,12 @@ RestWorkloadsUri::handle_post(http_request request)
             params << "KiB, IOPS=" << IOPS->value.GetString();
         } else {
             // missing mandatory field
+#if 0
             resultstr += "IOPS field is missing";
             make_response(response, resultstr, result); 
             request.reply(response);
             return;
+#endif
         }
         if (maxtags != document.MemberEnd())
             params << ", maxtags=" << maxtags->value.GetInt();
@@ -250,7 +252,7 @@ RestWorkloadsUri::handle_delete(http_request request)
         resultstr += get_schema_validation_error(&validator);
     }
 
-    rapidjson::Value::MemberIterator workload = document.FindMember("workload");
+    rapidjson::Value::MemberIterator workload = document.FindMember("name");
     rapidjson::Value::MemberIterator select = document.FindMember("select");
 
     std::string select_str;

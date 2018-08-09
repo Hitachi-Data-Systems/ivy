@@ -3245,6 +3245,19 @@ ivy_engine::get(const std::string& thingee)
     }
 
 
+    if (0 == t.compare(normalize_identifier("test_folder")))
+    {
+        return std::make_pair(true,testFolder);
+    }
+
+
+
+    if (0 == t.compare(normalize_identifier("masterlogfile")))
+    {
+        return std::make_pair(true,masterlogfile);
+    }
+
+
     if (0 == t.compare(normalize_identifier("rollup_structure")))
     {
         return std::make_pair(true,show_rollup_structure());
@@ -3282,13 +3295,6 @@ ivy_engine::set(const std::string& thingee,
             << "\") - thing must be an identifier, that is, starts with an alphabetic character and continues with alphabetics, numerics, and underscores."
             << std::endl << std::endl;
         return std::make_pair(false,o.str());
-    }
-
-
-    if (0 == t.compare(normalize_identifier("masterlogfile")))
-    {
-        log(m_s.masterlogfile, value);
-        return std::make_pair(true,"");
     }
 
 

@@ -1,13 +1,13 @@
-import ivyrest
+import ivyrest as iv
 
 #[outputfolderroot] "/scripts/ivy/ivyoutput/sample_output";
 
-c = ivyrest.IvyRestClient("localhost")
+c = iv.IvyObj()
 
 c.set_output_folder_root(".")
 c.set_test_name("demo3_layered_workloads_DF")
 
-c.hosts_luns(Hosts = ["sun159", "172.17.19.159"], Select = "serial_number : 83011441")
+c.hosts_luns(hosts = ["sun159", "172.17.19.159"], select = "serial_number : 83011441")
 
 ## When creating a set of workloads that have minor variations on a base set of parameter settings,
 ## you can set the default parameter settings for each iosequencer =  type, being random_steady, random_independent, and sequential.
@@ -25,22 +25,20 @@ c.set_io_sequencer_template(iosequencer = "sequential", parameters = "blocksize=
 
 ## Note that the random)_steady template targets the first half of each LUN, and the sequential template covers the 2nd half of the LUNs.
 
-c.create_workload( workload = "r_steady",        select = [{ "host" :  "sun159"}, {"LDEV" : "0000" }],     ## proper JSON syntax
+c.create_workload( name = "r_steady",        select = [{ "host" :  "sun159"}, {"LDEV" : "0000" }],     ## proper JSON syntax
 	 iosequencer =  "random_steady"   )
 
-c.create_workload( workload = "r_independent"  , select =  [{ "host" : "172.17.19.159"}, {"LDEV" : "0008" }],  
+c.create_workload( name = "r_independent"  , select =  [{ "host" : "172.17.19.159"}, {"LDEV" : "0008" }],  
 	iosequencer =  "random_independent"     , parameters = "blocksize=2048, IOPS=0.5")
 
 ## Note that we used one ivyscript_hostname alias to drive DF LDEV 4, and the other host to drive DF LDEV 5.
 
-c.create_workload( workload = "sw1" , select =  "LDEV : 00:00-00:ff", iosequencer =  "sequential" , parameters = "FractionRead = 0, SeqStartFractionOfCoverage=.2")
-c.create_workload( workload = "sw2" , select =  "LDEV : 00:00-00:ff", iosequencer =  "sequential" , parameters = "FractionRead = 0, SeqStartFractionOfCoverage=.2")
-c.create_workload( workload = "sr3" , select =  "LDEV : 00:00-00:ff", iosequencer =  "sequential" , parameters = "FractionRead = 1, SeqStartFractionOfCoverage=.4")
-c.create_workload( workload = "sr4" , select =  "LDEV : 00:00-00:ff", iosequencer =  "sequential" , parameters = "FractionRead = 1, SeqStartFractionOfCoverage=.6")
-c.create_workload( workload = "sr5" , select =  "LDEV : 00:00-00:ff", iosequencer =  "sequential" , parameters = "FractionRead = 1, SeqStartFractionOfCoverage=.8")
+c.create_workload( name = "sw1" , select =  "LDEV : 00:00-00:ff", iosequencer =  "sequential" , parameters = "FractionRead = 0, SeqStartFractionOfCoverage=.2")
+c.create_workload( name = "sw2" , select =  "LDEV : 00:00-00:ff", iosequencer =  "sequential" , parameters = "FractionRead = 0, SeqStartFractionOfCoverage=.2")
+c.create_workload( name = "sr3" , select =  "LDEV : 00:00-00:ff", iosequencer =  "sequential" , parameters = "FractionRead = 1, SeqStartFractionOfCoverage=.4")
+c.create_workload( name = "sr4" , select =  "LDEV : 00:00-00:ff", iosequencer =  "sequential" , parameters = "FractionRead = 1, SeqStartFractionOfCoverage=.6")
+c.create_workload( name = "sr5" , select =  "LDEV : 00:00-00:ff", iosequencer =  "sequential" , parameters = "FractionRead = 1, SeqStartFractionOfCoverage=.8")
 
 c.create_rollup(name="workload") ## Here we create a rollup by workload, so we will get one summary line for each workload totalled over all the hosts & LUNs.
 
 c.go(stepname="step_eh", warmup_seconds = 5, measure_seconds = 10)
-
-c.exit()

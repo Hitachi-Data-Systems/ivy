@@ -1,13 +1,13 @@
 import ivyrest
 
-ivy = ivyrest.IvyRestClient("localhost")
+ivy = ivyrest.IvyObj("localhost")
 
 ivy.set_output_folder_root(".")
 ivy.set_test_name("demo7_measure_IOPS_at_MP_busy")
 
-ivy.hosts_luns(Hosts = "sun159", Select = "serial_number : 83011441")
+ivy.hosts_luns(hosts = "sun159", select = "serial_number : 83011441")
 
-ivy.create_workload(workload = "steady", select = [{'LDEV' : '00:10'}], iosequencer = "random_steady", parameters = "fraction_read=100%, blocksize = 1 KiB, maxTags=128")
+ivy.create_workload(name = "steady", select = [{'LDEV' : '00:10'}], iosequencer = "random_steady", parameters = "fraction_read=100%, blocksize = 1 KiB, maxTags=128")
 
 ivy.create_rollup(name = "MPU")
 

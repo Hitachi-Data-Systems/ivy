@@ -1,8 +1,6 @@
 import ivyrest
-import requests
-import time
 
-ivy = ivyrest.IvyRestClient("172.17.19.159")
+ivy = ivyrest.IvyObj("localhost")
 
 host_list = ["sun159"]
 select_list = [ {'serial_number' : '83011441' } ]
@@ -16,7 +14,7 @@ lun_filename = ivy.test_folder() + "/available_test_LUNs.csv"
 print(summary_filename)
 print(lun_filename)
 
-ivy.hosts_luns(Hosts = host_list, Select = select_list)
+ivy.hosts_luns(hosts = host_list, select = select_list)
 
 ivy.create_rollup(name="Workload")
 ivy.create_rollup(name="Workload+host")
@@ -34,7 +32,7 @@ ioparams = {
 }
 
 ivy.set_io_sequencer_template(**ioparams)
-ivy.create_workload(workload = "RandomReadMiss", iosequencer = "random_steady", parameters="")
+ivy.create_workload(name = "RandomReadMiss", iosequencer = "random_steady", parameters="")
 
 for i in [64,44,30,20,14,9,6,4,3,2,1]:
     ivy.edit_rollup(name = "all=all", parameters = " maxTags=" + str(i))
@@ -49,7 +47,7 @@ for j in [0.7,0.45,0.25,0.1,0.01]:
     ivy.edit_rollup(name = "all=all", parameters = "IOPS="+ str(max_IOPS * j) +", maxTags=1")
     ivy.go(stepname="RR_maxTags_1(" + str(j*100) + "%)", subinterval_seconds=10, warmup_seconds=120, measure_seconds=180)
 
-ivy.delete_workload (workload = "RandomReadMiss")
+ivy.delete_workload (name = "RandomReadMiss")
 
 #//////////Random Write Miss////////////////
 ioparams = {
@@ -63,7 +61,7 @@ ioparams = {
 }
 
 ivy.set_io_sequencer_template(**ioparams)
-ivy.create_workload(workload = "RandomWriteMiss", iosequencer = "random_steady", parameters="")
+ivy.create_workload(name = "RandomWriteMiss", iosequencer = "random_steady", parameters="")
 
 for i in [16,13,11,9,7,6,5,4,3,2,1]:
     ivy.edit_rollup(name = "all=all", parameters = " maxTags=" + str(i))
@@ -79,7 +77,7 @@ for j in [0.7,0.45,0.25,0.1,0.01]:
     ivy.edit_rollup(name = "all=all", parameters = "IOPS="+ str(max_IOPS * j) +", maxTags=1")
     ivy.go(stepname="RR_maxTags_1(" + str(j*100) + "%)", subinterval_seconds=10, warmup_seconds=120, measure_seconds=180)
 
-ivy.delete_workload (workload = "RandomWriteMiss")
+ivy.delete_workload (name = "RandomWriteMiss")
 
 #//////////Sequential Read////////////////
 ioparams = {
@@ -93,7 +91,7 @@ ioparams = {
 }
 
 ivy.set_io_sequencer_template(**ioparams)
-ivy.create_workload(workload = "SequentialRead", iosequencer = "sequential", parameters="")
+ivy.create_workload(name = "SequentialRead", iosequencer = "sequential", parameters="")
 
 for i in [32,24,17,13,9,7,5,4,3,2,1]:
     ivy.edit_rollup(name = "all=all", parameters = " maxTags=" + str(i))
@@ -109,7 +107,7 @@ for j in [0.7,0.45,0.25,0.1,0.01]:
     ivy.edit_rollup(name = "all=all", parameters = "IOPS="+ str(max_IOPS * j) +", maxTags=1")
     ivy.go(stepname="RR_maxTags_1(" + str(j*100) + "%)", subinterval_seconds=10, warmup_seconds=120, measure_seconds=180)
 
-ivy.delete_workload (workload = "SequentialRead")
+ivy.delete_workload (name = "SequentialRead")
 
 #//////////Sequential Write////////////////
 ioparams = {
@@ -123,7 +121,7 @@ ioparams = {
 }
 
 ivy.set_io_sequencer_template(**ioparams)
-ivy.create_workload(workload = "SequentialWrite", iosequencer = "sequential", parameters="")
+ivy.create_workload(name = "SequentialWrite", iosequencer = "sequential", parameters="")
 
 for i in [32,24,17,13,9,7,5,4,3,2,1]:
     ivy.edit_rollup(name = "all=all", parameters = " maxTags=" + str(i))
@@ -139,6 +137,4 @@ for j in [0.7,0.45,0.25,0.1,0.01]:
     ivy.edit_rollup(name = "all=all", parameters = "IOPS="+ str(max_IOPS * j) +", maxTags=1")
     ivy.go(stepname="RR_maxTags_1(" + str(j*100) + "%)", subinterval_seconds=10, warmup_seconds=120, measure_seconds=180)
 
-ivy.delete_workload (workload = "SequentialWrite")
-
-ivy.exit()
+ivy.delete_workload (name = "SequentialWrite")
