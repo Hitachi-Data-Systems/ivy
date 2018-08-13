@@ -75,19 +75,19 @@ bool WorkloadID::set(std::string ID)
 	return isWellFormed;
 }
 
-std::string WorkloadID::getHostPart()
+std::string WorkloadID::getHostPart() const
 {
 	if (isWellFormed) return ivyscript_hostname;
 	else return std::string("WorkloadID::getHostPart() - WorkloadID is not well-formed - \"") + workloadID + std::string("\"");
 }
 
-std::string WorkloadID::getLunPart()
+std::string WorkloadID::getLunPart() const
 {
 	if (isWellFormed) return LUN_name;
 	else return std::string("WorkloadID::getLunPart() - WorkloadID is not well-formed - \"") + workloadID + std::string("\"");
 }
 
-std::string WorkloadID::getWorkloadPart()
+std::string WorkloadID::getWorkloadPart() const
 {
 	if (isWellFormed) return workload_name;
 	else return std::string("WorkloadID::getWorkloadPart() - WorkloadID is not well-formed - \"") + workloadID + std::string("\"");

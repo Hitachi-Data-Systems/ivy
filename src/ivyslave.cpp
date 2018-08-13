@@ -653,6 +653,7 @@ int main(int argc, char* argv[])
 			{
 				say("<Error> ivyslave main thread: procstatcounters::read_CPU_counters() call to get first subinterval starting CPU counters failed.");
 			}
+
 			for (auto& pear : workload_threads)
 			{
 				{

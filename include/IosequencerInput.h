@@ -75,6 +75,8 @@ public:
     unsigned int this_thread_in_workload {this_thread_in_workload_default};
     uint64_t pattern_seed {pattern_seed_default};
 
+    ivy_float skew_weight {skew_weight_default};
+
     uint64_t hot_zone_size_bytes {0};
     ivy_float hot_zone_IOPS_fraction {0};
     ivy_float hot_zone_read_fraction {0};
@@ -98,6 +100,7 @@ public:
 	bool defaultBlocksize() { return blocksize_bytes_default == blocksize_bytes; }
 	bool defaultMaxTags() { return maxTags_default == maxTags; }
 	bool defaultIOPS() { return IOPS_default == IOPS; }
+	bool defaultskew_weight() { return skew_weight_default == skew_weight; }
 	bool defaultFractionRead() { return  fractionRead_default==fractionRead; }
 	bool defaultVolCoverageFractionStart() { return volCoverageFractionStart_default == volCoverageFractionStart; }
 	bool defaultVolCoverageFractionEnd() { return volCoverageFractionEnd_default == volCoverageFractionEnd; }

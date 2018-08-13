@@ -1,4 +1,4 @@
-//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
+//Copyright (c) 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,24 +17,56 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
+
 #pragma once
 
-class WorkloadID
-{
-public:
-// variables
-	std::string workloadID, ivyscript_hostname, LUN_name, workload_name;
-	bool isWellFormed {false};  // set() turns this on if ID looks like "sun159+/dev/sdxy+charlie"
-		// well, at least exactly 2 "+" signs and something non-blank on either side of them.
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <map>
 
-// methods
-	bool set(std::string workloadID); // true if workloadID is well-formed.
-	WorkloadID (std::string ID) { set(ID); return; }
-	WorkloadID(){}
-	std::string getHostPart() const;
-	std::string getLunPart() const;
-	std::string getWorkloadPart() const;
+#include "ivydefines.h"
+#include "WorkloadID.h"
+#include "ListOfWorkloadIDs.h"
+
+struct skew_LUN
+{
+//variables
+
+    std::map<std::string /*WorkloadID*/, ivy_float> workload_skew_weight;
+
+
+//methods
+	skew_LUN();
+
+    void clear();
+
+    ivy_float skew_total();
+
+    void push(const std::string&,ivy_float);
+
+    ivy_float normalized_skew_factor(const std::string&);
+
+    std::string toString(std::string indent="");
 };
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+struct skew_data
+{
+//variables
+    std::map<std::string,skew_LUN> LUNs;
+
+//methods
+    void clear();
+
+    void push(const WorkloadID&, ivy_float /* skew_weight */);
+
+    ivy_float fraction_of_total_IOPS(const std::string& wID);
+
+    std::string toString();
+
+};

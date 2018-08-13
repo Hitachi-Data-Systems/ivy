@@ -45,6 +45,7 @@ using namespace std;
 #include "Iosequencer.h"
 #include "IosequencerRandom.h"
 #include "IosequencerRandomSteady.h"
+#include "WorkloadThread.h"
 
 
 

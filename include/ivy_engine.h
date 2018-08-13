@@ -129,7 +129,7 @@ public:
 
 	RunningStat<ivy_float, ivy_int> createWorkloadExecutionTimeSeconds;
 	RunningStat<ivy_float, ivy_int> deleteWorkloadExecutionTimeSeconds;
-	RunningStat<ivy_float, ivy_int> editWorkloadExecutionTimeSeconds;
+	RunningStat<ivy_float, ivy_int> editWorkloadInterlockTimeSeconds;
 
     RunningStat<ivy_float,ivy_int> dispatching_latency_seconds_accumulator;
     RunningStat<ivy_float,ivy_int> lock_aquisition_latency_seconds_accumulator;
