@@ -76,9 +76,9 @@ high_target = float(o.csv_cell_value(filename = summary_filename, row = 0, col =
 
 """ divide by 1000 because pid target is in seconds, not ms. """
 
-s = "\n********** step 0 result - high_IOPS = " + str(high_IOPS), " high_target = " + str(high_target) + " seconds **********\n\n";
+s = "\n********** step 0 result - high_IOPS = " + str(high_IOPS) + ", high_target = " + str(high_target) + " seconds **********\n\n";
 
-print (s); #log(masterlogfile(),s);
+print (s); o.log(o.masterlogfile(),s);
 
 
 """
@@ -113,7 +113,7 @@ low_target = float(o.csv_cell_value(filename=summary_filename, row = 1, col = "O
 s = "\n********** step 0 result - low_IOPS = " + str(low_IOPS)  + ", low_target = " + str(low_target) + " seconds **********\n\n";
 
 
-print (s); #log(masterlogfile(),s);
+print (s); o.log(o.masterlogfile(),s);
 
 
 """

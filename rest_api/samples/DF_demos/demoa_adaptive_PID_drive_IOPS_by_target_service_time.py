@@ -57,7 +57,7 @@ max_IOPS = float(z.csv_cell_value(filename=summary_filename, row = 0, col = "Ove
 
 s = "\n********** step 0 result - max_IOPS = " + str(max_IOPS) + " **********\n\n";
 
-print (s); log(masterlogfile(),s);
+print (s); z.log(z.masterlogfile(),s);
 
 ## ==================================================
 ## In step 1, we run at 95% of the max IOPS to measure the PID loop "high_value" parameter
