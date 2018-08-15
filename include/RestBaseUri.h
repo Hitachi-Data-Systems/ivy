@@ -47,6 +47,7 @@ public:
 
         rslt += (result.first ? "Successful, " : "Failed, ");
         rslt += result.second;
+        if (!result.first) response.set_status_code(status_codes::NotAcceptable);
 
         writer.StartObject();
         writer.Key("retval"); writer.Bool(result.first);
@@ -83,6 +84,7 @@ public:
             select_str = select.GetString();
             return;
         }
+        select_str += "{";
         for (rapidjson::SizeType i = 0; i < select.Size(); ++i)
         {
             const rapidjson::Value& elem = select[i];
@@ -109,6 +111,7 @@ public:
             if (i < (select.Size() - 1))
                 select_str += ", ";
         }
+        select_str += "}";
     }
 
     virtual bool is_session_owner(http_request& request)

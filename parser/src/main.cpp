@@ -184,7 +184,16 @@ int main(int argc, char* argv[])
         ivyscriptFilename = item;
     }
 
-    if (rest_api)
+    bool is_python_script {false};
+    if (endsIn(ivyscriptFilename, ".py"))
+    {
+        rest_api = true;
+        is_python_script = true;
+    } else {
+        if (!endsIn(ivyscriptFilename, ".ivyscript")) ivyscriptFilename += std::string(".ivyscript");
+    }
+
+    if (rest_api && !is_python_script)
     {
         // setup and start serving the REST API
         RestHandler rest_handler;
@@ -193,9 +202,8 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    if (!endsIn(ivyscriptFilename, ".ivyscript")) ivyscriptFilename += std::string(".ivyscript");
-
     std::regex ivyscript_filename_regex(R"ivy((.*[/])?([^/\\]+)(\.ivyscript))ivy");
+    std::regex python_filename_regex(R"ivy((.*[/])?([^/\\]+)(\.py))ivy");
 
     // Three sub matches
     // - optional path part, which if present ends with a forward slash / or
@@ -205,7 +213,8 @@ int main(int argc, char* argv[])
     std::smatch entire_match; // we will pick out the test name part - submatch 2, the identifier, possibly with embedded periods.
     std::ssub_match test_name_sub_match;
 
-    if (!std::regex_match(ivyscriptFilename, entire_match, ivyscript_filename_regex))
+    if ((is_python_script ? !std::regex_match(ivyscriptFilename, entire_match, python_filename_regex)
+                          : !std::regex_match(ivyscriptFilename, entire_match, ivyscript_filename_regex)))
     {
         std::cout << "ivyscript filename \"" + ivyscriptFilename + "\" - bad filename or programming error extracting test name portion of filename." << std::endl;
         return -1;
@@ -241,6 +250,24 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    if (is_python_script)
+    {
+        // setup and start serving the REST API
+        RestHandler rest_handler;
+
+        Ivy_pgm  context(ivyscriptFilename,test_name);
+
+        m_s.outputFolderRoot = context.output_folder_root;
+        m_s.testName = context.test_name;
+        m_s.ivyscript_filename = context.ivyscript_filename;
+
+        // if a python script is provided - run script and ivy sandwiched together
+        std::string cmd = "sleep 1; unset http_proxy https_proxy; python " + ivyscriptFilename;
+        system(cmd.c_str());
+
+        RestHandler::wait_and_serve(); // blocking
+        return 0;
+    }
 
     extern FILE* yyin;
 
