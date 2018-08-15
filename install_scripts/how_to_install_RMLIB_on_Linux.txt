@@ -1,0 +1,20 @@
+# Look in the RMLIB distribution in the Linux subfolder for the file "RMLIB".
+
+# This file is an archive, like a ".zip" or a ".tgz" file, but the format is for the very old "cpio" command.
+
+# Don't use the shell scripts that come with the RMLIB.
+
+# Instead, use the "cpio" command to unpack the archive in a folder somewhere, e.g. /usr/lib/RMLIB.11.22.33.
+
+# The CPIO command will make a subfolder called "RMLIB", and under that will be various subfolders, like bin, lib, include.
+
+# Make a symbolic link to the RMLIB subfolder, the one that contains bin, lib, include, calling the symbolic link /usr/lib/RMLIB.
+
+# where you see "RMLIB_Linux_distribution_file", put the full path to the "RMLIB" cpio archive.
+
+mkdir /usr/lib/RMLIB_01_20_03_03
+cd /usr/lib/RMLIB_01_20_03_03
+cpio -idmu < RMLIB_Linux_distribution_file
+
+ln -s /usr/lib/RMLIB_01_20_03_03/RMLIB /usr/lib/RMLIB
+

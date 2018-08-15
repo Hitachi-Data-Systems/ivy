@@ -257,27 +257,32 @@ void RollupType::rebuild()
                     if (table_submodel_it == HM800_MPU_map.end())
                     {
                         std::ostringstream o;
-                        o << "RollupType::rebuild(), when putting in HM800 MP_core and MP# parameters, did not find sub_model \"" << sub_model << "\" in HM800_MPU_map." << std::endl;
-                        std::cout << o.str();
-                        m_s.kill_subthreads_and_exit();
+                        o << "<Warning> RollupType::rebuild(), when putting in HM800 MP_core and MP# parameters, did not find sub_model \"" << sub_model << "\" in HM800_MPU_map." << std::endl;
+                        if (routine_logging) {std::cout << o.str();}
+                        log(m_s.masterlogfile,o.str());
+                    }
+                    else
+                    {
+                        auto table_MPU_it = table_submodel_it->second.find(MPU);
+                        if (table_MPU_it == table_submodel_it->second.end())
+                        {
+                            std::ostringstream o;
+                            o << "<Warning> RollupType::rebuild(), when putting in HM800 MP_core and MP# parameters, did not find MPU \"" << MPU << "\" for sub_model \"" << sub_model << "\" in HM800_MPU_map." << std::endl;
+                            if (routine_logging) { std::cout << o.str(); }
+                            log(m_s.masterlogfile,o.str());
+                        }
+                        else
+                        {
+                            for (auto& pear : table_MPU_it->second)
+                            {
+                                std::string& MP_number = pear.first;
+                                std::string& MP_core = pear.second;
+                                pRollupInstance->config_filter[serial][toLower("MP_number")].insert(MP_number);
+                                pRollupInstance->config_filter[serial][toLower("MP_core")].insert(MP_core);
+                            }
+                        }
                     }
 
-                    auto table_MPU_it = table_submodel_it->second.find(MPU);
-                    if (table_MPU_it == table_submodel_it->second.end())
-                    {
-                        std::ostringstream o;
-                        o << "RollupType::rebuild(), when putting in HM800 MP_core and MP# parameters, did not find MPU \"" << MPU << "\" for sub_model \"" << sub_model << "\" in HM800_MPU_map." << std::endl;
-                        std::cout << o.str();
-                        m_s.kill_subthreads_and_exit();
-                    }
-
-                    for (auto& pear : table_MPU_it->second)
-                    {
-                        std::string& MP_number = pear.first;
-                        std::string& MP_core = pear.second;
-                        pRollupInstance->config_filter[serial][toLower("MP_number")].insert(MP_number);
-                        pRollupInstance->config_filter[serial][toLower("MP_core")].insert(MP_core);
-                    }
                 }
             }
         }

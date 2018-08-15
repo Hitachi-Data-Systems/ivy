@@ -722,13 +722,14 @@ void pipe_driver_subthread::threadRun()
 
         login = SLAVEUSERID + std::string("@") + ivyscript_hostname;
 
-        std::string cmd, arg, serial, remote_logfilename;
+        std::string cmd, arg, hitachi_product, serial, remote_logfilename;
 
         if (pCmdDevLUN)
         {
             cmd = m_s.path_to_ivy_executable+ IVY_CMDDEV_EXECUTABLE;
             arg = pCmdDevLUN->attribute_value("LUN_name");
             serial = pCmdDevLUN->attribute_value("serial_number");
+            hitachi_product = pCmdDevLUN->attribute_value("Hitachi Product");
             {
                 ostringstream fn;
                 fn << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << ivyscript_hostname << ".ivy_cmddev." << p_Hitachi_RAID_subsystem->serial_number << ".txt";
@@ -737,15 +738,15 @@ void pipe_driver_subthread::threadRun()
             if (routine_logging)
             {
                 std::ostringstream o;
-                o << "execl(\"usr/bin/ssh\", \"ssh\", \"-t\", \"-t\", \""
-                    << login << "\", \"" << cmd << "\", \"-log\", \"" << arg << "\", \"" << serial << "\", \"" << remote_logfilename << "\")" << std::endl;
+                o << "execl(\"usr/bin/ssh\", \"ssh\", \"-t\", \"-t\", \"" << login << "\", \"" << cmd << "\", \"-log\", \"" << arg << "\", \""
+                    << hitachi_product << "\", \""<< serial << "\", \"" << remote_logfilename << "\")" << std::endl;
                 log(logfilename,o.str());
 
-                execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(), "-log", arg.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
+                execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(), "-log", arg.c_str(), hitachi_product.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
             }
             else
             {
-                execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(),         arg.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
+                execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(),         arg.c_str(), hitachi_product.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
             }
         }
         else
