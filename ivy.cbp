@@ -32,29 +32,6 @@
 					<Add before="touch include/ivybuilddate.h" />
 				</ExtraCommands>
 			</Target>
-			<Target title="ivyenglib">
-				<Option output="bin/ivy" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="/home/ivogelesang/Desktop/eraseme" />
-				<Option type="1" />
-				<Option compiler="gcc" />
-				<Option parameters="-log /home/ivogelesang/Desktop/eraseme/segv.ivyscript" />
-				<Compiler>
-					<Add option="-pthread" />
-					<Add directory="include" />
-				</Compiler>
-				<Linker>
-					<Add directory="/usr/local/lib" />
-					<Add directory="/usr/lib64" />
-					<Add library="/usr/local/lib/libcpprest.a" />
-					<Add library="/usr/local/lib/libboost_system.a" />
-					<Add library="/usr/lib64/libcrypto.so" />
-					<Add library="/usr/lib64/libssl.so" />
-					<Add option="-pthread -lrt" />
-				</Linker>
-				<ExtraCommands>
-					<Add before="touch include/ivybuilddate.h" />
-				</ExtraCommands>
-			</Target>
 			<Target title="ivyslave">
 				<Option output="bin/ivyslave" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />

@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="Ivy",
-    version="02.02.00",
+    version="02.03.00",
     description="Ivy Engine REST Client",
     keywords=["hitachi", "storage", "ivy", "rest", "client"],
     url="https://github.com/Hitachi-Data-Systems/ivy",
