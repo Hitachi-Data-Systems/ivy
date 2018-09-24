@@ -75,7 +75,7 @@ high_target = '70%'
 result0 = '\n********** step 0 high_IOPS = ' + high_IOPS + ", high_target = " + high_target + ' **********\n\n'
 print(result0)
 
-log(masterlogfile(),s);
+ivy.log(ivy.masterlogfile(),result0);
 
 # ==================================================
 # In step 1, we run at 1% of the max IOPS to measure "low_target"
