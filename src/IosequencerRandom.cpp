@@ -37,7 +37,6 @@ using namespace std;
 #include "ivyhelpers.h"
 #include "ivytime.h"
 #include "ivydefines.h"
-#include "iosequencer_stuff.h"
 #include "IosequencerInput.h"
 #include "LUN.h"
 #include "Eyeo.h"
@@ -45,19 +44,24 @@ using namespace std;
 #include "Iosequencer.h"
 #include "IosequencerRandom.h"
 #include "WorkloadThread.h"
+#include "TestLUN.h"
 
-
+//#define IVYSLAVE_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
+                           // and so you can turn it off and on for each source file.
 
 bool IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
 //*debug*/ log(logfilename,std::string("IosequencerRandom::setFrom_IosequencerInput() - entry.\n"));
+#if defined(IVYSLAVE_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::setFrom_IosequencerInput() for " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
+
 	if (!Iosequencer::setFrom_IosequencerInput(p_i_i))
 		return false;
 
 	ivytime semence;
 	semence.setToNow();
        	deafrangen.seed(string_hash(threadKey + semence.format_as_datetime_with_ns()));
-//*debug*/ {ostringstream o; o<< "//*debug*/ IosequencerRandom::setFrom_IosequencerInput() coverageStartBlock=" << coverageStartBlock << ", coverageEndBlock=" << coverageEndBlock << ".\n"; log(logfilename, o.str()); }
 
 	if (NULL != p_uniform_int_distribution) delete p_uniform_int_distribution;
 	if (NULL != p_uniform_real_distribution_0_to_1) delete p_uniform_real_distribution_0_to_1;
@@ -69,6 +73,10 @@ bool IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 
 bool IosequencerRandom::set_hot_zone_parameters (IosequencerInput *p_ii)
 {
+#if defined(IVYSLAVE_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::set_hot_zone_parameters() for " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
+
     if (((uint64_t)0) == p_ii->hot_zone_size_bytes)
     {
         hot_zone_coverageStartBlock =   hot_zone_coverageEndBlock =   hot_zone_numberOfCoverageBlocks = (uint64_t) 0;
@@ -99,18 +107,24 @@ bool IosequencerRandom::set_hot_zone_parameters (IosequencerInput *p_ii)
 }
 
 
-bool IosequencerRandom::generate(Eyeo& slang) {
+bool IosequencerRandom::generate(Eyeo& slang)
+{
+#if defined(IVYSLAVE_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::generate() for " << workloadID << " - Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
+
+	Iosequencer::generate(slang); // Increments the I/O sequence number. Resets Eyeo for next I/O.  Always returns true.
+
 	// This is the base class IosequencerRandom::generate() function that calculates the
 	// random block number / LBA &
 
 	// Then the derived class generate() function calculates the scheduled time of the I/O.
 
-	slang.resetForNextIO();
 
 	// we assume that eyeocb.data already points to the Eyeo object
 	// and that eyeocb.aio_buf already points to a page-aligned I/O buffer
 
-	slang.eyeocb.aio_fildes = p_iosequencer_stuff->fd;
+	slang.eyeocb.aio_fildes = pTestLUN->fd;
 
 	if (NULL == p_uniform_int_distribution)
 	{
@@ -188,7 +202,7 @@ bool IosequencerRandom::generate(Eyeo& slang) {
                 << ", p_IosequencerInput->hot_zone_read_fraction = " << p_IosequencerInput->hot_zone_read_fraction
                 << ", p_IosequencerInput->hot_zone_write_fraction = " << p_IosequencerInput->hot_zone_write_fraction
                 << " for slang.eyeocb.aio_lio_opcode == ";
-            if (slang.eyeocb.aio_lio_opcode == IOCB_CMD_PREAD) o << "IOCB_CMD_PREAD";
+            if      (slang.eyeocb.aio_lio_opcode == IOCB_CMD_PREAD)  o << "IOCB_CMD_PREAD";
             else if (slang.eyeocb.aio_lio_opcode == IOCB_CMD_PWRITE) o << "IOCB_CMD_PWRITE";
             else o << "unrecognized I/O opcode " << slang.eyeocb.aio_lio_opcode;
             o << ", hot zone fraction = " << hot_zone_fraction << std::endl;
@@ -208,7 +222,7 @@ bool IosequencerRandom::generate(Eyeo& slang) {
     }
 
 	slang.eyeocb.aio_offset = (p_IosequencerInput->blocksize_bytes) * current_block;
-	slang.eyeocb.aio_nbytes = p_IosequencerInput->blocksize_bytes;
+	// slang.eyeocb.aio_nbytes was set when I/Os were built for the Workload
 	slang.scheduled_time=ivytime(0);
 	slang.start_time=0;
 	slang.end_time=0;

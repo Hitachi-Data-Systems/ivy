@@ -72,7 +72,6 @@ std::string get_ivyslave_path_part()
 
 
 void discovered_LUNs::discover() {
-//	showluns_output=GetStdoutFromCommand(SHOW_HITACHI_LUNS_CMD);
 	showluns_output=GetStdoutFromCommand(get_ivyslave_path_part() + SHOWLUNS_CMD);
 }
 

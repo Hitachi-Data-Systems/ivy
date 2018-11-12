@@ -1,4 +1,4 @@
-//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
+//Copyright (c) 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,25 +17,26 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
+
 #pragma once
 
-class WorkloadID
-{
-public:
-// variables
-	std::string workloadID, ivyscript_hostname, LUN_name, workload_name;
-	bool isWellFormed {false};  // set() turns this on if ID looks like "sun159+/dev/sdxy+charlie"
-		// well, at least exactly 2 "+" signs and something non-blank on either side of them.
+#include <map>
+#include <string>
+#include <iostream>
+#include <sstream>
 
-// methods
-	bool set(const std::string& workloadID); // true if workloadID is well-formed.
-	WorkloadID (std::string ID) { set(ID); return; }
-	WorkloadID(){}
-	std::string getHostPart() const;
-	std::string getLunPart() const;
-	std::string getWorkloadPart() const;
-	std::string getHostLunPart() const;
+struct initialized_unsigned_int
+{
+    unsigned int count {0};
 };
 
-std::ostream& operator<< (std::ostream&, const WorkloadID&);
+struct Count_by_workloadID
+{
+    std::map<std::string, initialized_unsigned_int> carte;
+
+    Count_by_workloadID() {};
+
+    std::string toString();
+    void clear();
+};
 

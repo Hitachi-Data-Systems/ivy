@@ -124,8 +124,6 @@ public:
 	SubintervalOutput
 		output;
 
-	ivytime start_time, end_time;
-
 	uint64_t currentblock; // Set by slave master for 1st subinterval, then carries forward
 	uint64_t ioerrorcount{0};
 	uint64_t

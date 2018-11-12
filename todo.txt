@@ -1,18 +1,13 @@
+Update create workload to be like edit workload where a list of workloadIDs is passed
+to ivyslave, rather than one interlock per workloadid like in original ivyslave.
+
 - switch from CodeBlocks build to cmake or autotools.
 
-- remove "stopping" state from WorkloadThread.
-
 - remove "set iosequencer template"
-
-- maybe add a "running" container to track I/Os that have been successfully started on the I/O context.  Right now if the AIO context doesn't return an I/O completion event, we have lost the Eyeo object.
 
 - with a command device, check at end of test step if there is a failed component, and abort and fail the test step if so.
 
 - restore -t tracing
-
-- fix so if RAID (OPEN-V) don't create subsystem config folder until validated license key and successful opening of command device.
-
-- permit periods in test names, so folder name same as test name if test name contains periods.
 
 - fix bug where declaring a string variable in a for loop body.
 
@@ -29,17 +24,7 @@
 // maybe we have a measure_focus_rollup and a pid_focus_rollup and they default to focus_rollup?
 // How hard would it be to have measure and pid each on their own focus_rollup?
         
-- Write .xls output instead of .csv output so that the formula ="xxx" can be removed.
-
-- take a look at where each slave driver thread posts into the rollups.
-  Right now each slave driver thread gets the master thread global lock
-  to update the rollups.  Maybe have each slave driver thread update the
-  SubintervalOutput object in the workload tracker object without a lock,
-  and then once each slave driver thread has done all its workloads, post
-  a command complete or something, and then have the ivymaster thread
-  iterate over the workload trackers and post the results into the rollups.
-  This would eliminate get/release global lock for each workload thread.
-  
+- Write .xls output instead of .csv output so that the formula ="xxx" can be removed.  
 
 - test using LVM and impact LUN discovery / SCSI Inquiry
 - test with multipath software (HDLM / MPIO)
@@ -47,8 +32,6 @@
 - validate with "top" to see if linux CPU is being reported correctly
 
 - in Excel ivy csv file loader spreadsheet - make column titles frozen when you scroll down in long csv files.
-
-- fix [hosts] so that a dotted quad in double quotes is OK.- might have been fixed already - check
 
 - Fix DF port numbers to be 0A, 1A, not 1A 2A. - update:  This is a bug in the subsystem - the ports reported by SCSI inquiry are 1A, 2A.
 
@@ -59,8 +42,6 @@
 
 - look at making "collapse" which would move all files up out of subfolders and delete the subfolders.
   Or - ivyscript option to not use subfolders ...
-
-- fix bug where edit rollup total_IOPS = "45.3" fails when total_IOPS=45.3 works.
 
 - run ivymaster as a GUI application, and show some sort of visual representation subinterval by subinteral.
   Maybe you could offer a tree on the left that shows rollups that you pick from.

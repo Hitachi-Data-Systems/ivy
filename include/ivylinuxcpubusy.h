@@ -52,7 +52,10 @@ public:
 		softirq,
 		stealtime,
 		virtualguest;
+    inline double total() const { return user + system; }
 };
+
+std::ostream& operator<<(std::ostream&, const struct linuxcpubusypercent&);
 
 struct procstatcounters{
 public:
@@ -70,6 +73,9 @@ public:
 	std::list<struct linuxcpubusypercent*> eachcore;
 	~cpubusypercent();
 };
+
+std::ostream& operator<<(std::ostream&, const struct cpubusypercent&);
+
 
 struct avgcpubusypercent{
 public:
@@ -99,5 +105,8 @@ int computecpubusy(
         struct avgcpubusypercent* cpubusysummary, // this gets filled in as output
 	const std::string logfilename
 );
+
+unsigned int core_count(const std::string& /*logfilename*/);
+    // reads /proc/stat to get CPU core count.
 
 

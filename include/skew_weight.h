@@ -30,6 +30,15 @@
 #include "WorkloadID.h"
 #include "ListOfWorkloadIDs.h"
 
+
+// skew_weight (skew) values may not be zero.
+
+// Positive skew values used with multiple layer IOPS=max workloads
+// on a LUN will constrain the ratio of the IOPS between workloads
+// to be proportional to each workload's skew_weight.
+
+// The Edit Rollup mechanism ignores the sign of the skew when distributing total_IOPS.
+
 struct skew_LUN
 {
 //variables
@@ -42,7 +51,7 @@ struct skew_LUN
 
     void clear();
 
-    ivy_float skew_total();
+    ivy_float total_abs_skew();
 
     void push(const std::string&,ivy_float);
 

@@ -1340,14 +1340,14 @@ ivy_engine::createWorkload(
 		)
 		{
 		        ostringstream o;
-			o << "Create workload - internal programming error - invalid WorkloadID = \"" << workloadID.workloadID <<   "\" generated that is not well formed as \"ivyscript_hostname+LUN_name+workload_name\".";
+			o << "Create workload - internal programming error - invalid WorkloadID = \"" << workloadID <<   "\" generated that is not well formed as \"ivyscript_hostname+LUN_name+workload_name\".";
             return std::make_pair(false,o.str());
 		}
 		std::map<std::string, WorkloadTracker*>::iterator it = workloadTrackers.workloadTrackerPointers.find(workloadID.workloadID);
 		if (it != workloadTrackers.workloadTrackerPointers.end())
 		{
             ostringstream o;
-            o << "Create workload - failed - workload ID = \"" << workloadID.workloadID <<   "\" already exists.";
+            o << "Create workload - failed - workload ID = \"" << workloadID <<   "\" already exists.";
             return std::make_pair(false,o.str());
 		}
 	}
@@ -2161,6 +2161,11 @@ ivy_engine::go(const std::string& parameters)
         std::cout << o.str();
         log(ivy_engine_logfile,o.str());
     }
+
+//*debug*/std::string debug_console_input;
+//*debug*/std::cout << "debug: pausing while you could attach a debugger - hit return to resume." << std::endl;
+//*debug*/std::getline(std::cin,debug_console_input);
+
     std::pair<bool,std::string> rc {};
 
     if ( !haveHosts )

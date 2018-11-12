@@ -32,13 +32,28 @@
 
 // For now that is OK, as ivy is designed to be a lab tool, but maybe come back and run shell commands as some other userid.
 
-extern std::string masterlogfile();
-
 // NOTE - I had an odd problem when I included ivyhelpers.h, where defining the "log" function in ivyhelpers
 // was interfering with macro generated code for the "log()" builtin.
 
 // Therefore the following are a few excerpts from ivyhelpers.h.
 // I made a stub ivy_log() function to call from here, expressly where we don't "see" ivyhelpers' log().
+
+
+extern std::string outputFolderRoot();
+extern std::string masterlogfile();
+extern std::string testName();
+extern std::string testFolder();
+extern std::string stepNNNN();
+extern std::string stepName();
+extern std::string stepFolder();
+extern std::string last_result();
+extern std::string show_rollup_structure();
+
+extern std::string ivy_engine_get(std::string thing);
+
+extern int         ivy_engine_set(std::string thing, std::string value);
+
+extern int exit_statement();  // doesn't actually return, but had to declare a return type of some kind.
 
 void fileappend(std::string /*filename*/, std::string);
 bool looksLikeIPv4Addr(std::string);
@@ -727,22 +742,6 @@ int int_trace_evaluate_of_int(int i)
     trace_evaluate = (i ? true : false);
     return i;
 }
-
-extern std::string outputFolderRoot();
-extern std::string masterlogfile();
-extern std::string testName();
-extern std::string testFolder();
-extern std::string stepNNNN();
-extern std::string stepName();
-extern std::string stepFolder();
-extern std::string last_result();
-extern std::string show_rollup_structure();
-
-extern std::string ivy_engine_get(std::string thing);
-
-extern int         ivy_engine_set(std::string thing, std::string value);
-
-extern int exit_statement();  // doesn't actually return, but had to declare a return type of some kind.
 
 void init_builtin_table()
 {

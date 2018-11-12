@@ -21,9 +21,10 @@
 
 class IosequencerSequential : public Iosequencer {
 public:
-	IosequencerSequential(LUN* pL, std::string lf, std::string tK, iosequencer_stuff* p_is, WorkloadThread* pWT) : Iosequencer(pL, lf, tK, p_is, pWT) {}
-
-	bool generate(Eyeo&);
+	IosequencerSequential(LUN* pL, std::string lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
+	    : Iosequencer(pL, lf, wID, pWT, p_tl, p_w) {}
+    virtual ~IosequencerSequential(){}
+	bool generate(Eyeo&) override;
 	bool setFrom_IosequencerInput(IosequencerInput*);
 	bool isRandom() { return false; }
 	std::string instanceType() { return std::string("sequential"); }

@@ -22,7 +22,7 @@
 #include <array>
 #include <string>
 
-const std::string ivy_version {"2.03.00"};
+const std::string ivy_version {"3.00.00"};
 
 //using ivy_int = long long int; using ivy_float = long double;
   using ivy_int =      long int; using ivy_float =      double;
@@ -37,10 +37,10 @@ const std::string ivy_version {"2.03.00"};
 #define MINBUFSIZE 4096
 #define MAX_MAXTAGS 8192
 #define BUF_ALIGNMENT_BOUNDARY_SIZE 4096
-#define MAX_IOS_LAUNCH_AT_ONCE 8
-#define MAX_IOEVENTS_REAP_AT_ONCE 16
+#define MAX_IOS_LAUNCH_AT_ONCE 128
+#define MAX_IOEVENTS_REAP_AT_ONCE 128
 #define MAXWAITFORINITALPROMPT 120
-
+#define PRECOMPUTE_HORIZON_SECONDS 0.5
 // When ivyslave runs on a test host, it temporarily writes its log files to the following
 // folder location.  Then once ivyslave has exited, the ivy master thread copies the log files
 // to the master host logs subfolder for the run, and deletes the temporary log files on the ivyslave host.
@@ -50,7 +50,8 @@ const std::string ivy_version {"2.03.00"};
 #define IVYSLAVELOGFOLDERROOT "/var"
 // This root folder must already exist when ivyslave fires up.
 
-#define IVYSLAVELOGFOLDER "/ivyslave_logs"
+//#define IVYSLAVELOGFOLDER "/ivyslave_logs"
+#define IVYSLAVELOGFOLDER "/ivyslave_debug"
 // This subfolder of the ivyslave log root folder will be created if it doesn't already exist
 
 // Then any log files called "ivyslave.hostname.log.*" are deleted if they already exists in this folder.
@@ -93,7 +94,7 @@ const std::string ivy_version {"2.03.00"};
 
 #define min_wp_default              std::string("0%")
 #define max_wp_default              std::string("100%")
-#define max_wp_change_default        std::string("5%")
+#define max_wp_change_default       std::string("100%")
 #define timeout_seconds_default     std::string("900")
 
 // dfc=pid or measure=on
@@ -115,7 +116,7 @@ const ivy_float max_subinterval_seconds {3600.0};
 const int blocksize_bytes_default {4096};
 const int maxTags_default{1};   // make sure someone is going to notice if they haven't set this.
 const ivy_float IOPS_default {1};  // Default is 1.0 I/Os per second
-const ivy_float skew_weight_default {1.0};  // Default is 1.0 I/Os per second
+const ivy_float skew_weight_default {-1.0};
 const ivy_float fractionRead_default{1.0};
 const ivy_float	volCoverageFractionStart_default {0.0};  // default is start at sector 1.  Sector 0 is considered "out of bounds".
 const ivy_float	volCoverageFractionEnd_default {1.0};    // default is 1.0 maps to the last aligned block of that blocksize that fits.
@@ -143,3 +144,5 @@ extern char* unique_words[];
 #define non_random_sample_correction_factor_default (2.0) /* Applied to accuracy +/- to adjust for subintervals being consecutive rather than taking samples (subintervals) at random from a large populatyion */
 
 #define ivy_ssh_timeout (180) /* ssh can sometimes take a long time to fire up due to DNS timeouts */
+
+#define FIRST_FEW_CALLS 250

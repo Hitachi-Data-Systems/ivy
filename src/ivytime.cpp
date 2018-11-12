@@ -47,7 +47,7 @@ using namespace std;
 #include "ivytime.h"
 
 
-bool ivytime::isValid()
+bool ivytime::isValid() const
 {
     // The signs of both tv_sec and tv_nsec must be the same;
 
@@ -111,7 +111,7 @@ ivytime::ivytime() {
 	return;
 }
 
-std::string ivytime::toString()
+std::string ivytime::toString() const
 {
 	ostringstream o;
 	o << "<" << t.tv_sec << ',' << t.tv_nsec << '>';
@@ -249,7 +249,7 @@ const ivytime ivytime::operator- (const ivytime &rhs) const{
 }
 
 
-void ivytime::waitUntilThisTime()
+void ivytime::waitUntilThisTime() const
 {
 	ivytime now;
 	now.setToNow();
@@ -305,7 +305,7 @@ std::string ivytime::duration_from(const ivytime& t)
 
 
 
-std::string ivytime::format_as_datetime() {
+std::string ivytime::format_as_datetime() const {
 	// 2012-04-15 HH:MM:SS - 19 characters plus terminating null makes buffer size 20
 	char timebuffer[20];
 	strftime(timebuffer,20,"%Y-%m-%d %H:%M:%S",localtime(&t.tv_sec));
@@ -314,7 +314,24 @@ std::string ivytime::format_as_datetime() {
 	return os.str();
 }
 
-std::string ivytime::format_as_datetime_with_ns() {
+
+std::string ivytime::format_as_hex_dot_hex() const
+{
+    std::ostringstream o;
+
+    o << "0x";
+
+	o << std::hex << std::setw(2*sizeof(t.tv_sec)) << std::setfill('0') << t.tv_sec;
+
+    o << '.';
+
+	o << std::hex << std::setw(2*sizeof(t.tv_nsec)) << std::setfill('0') << t.tv_nsec;
+
+	return o.str();
+}
+
+
+std::string ivytime::format_as_datetime_with_ns() const {
 	// 2012-04-15 HH:MM:SS - 19 characters plus terminating null makes buffer size 20
 	char timebuffer[20];
 	strftime(timebuffer,20,"%Y-%m-%d %H:%M:%S",localtime(&t.tv_sec));
@@ -323,7 +340,7 @@ std::string ivytime::format_as_datetime_with_ns() {
 	return os.str();
 }
 
-std::string ivytime::format_with_ms(int decimal_places)
+std::string ivytime::format_with_ms(int decimal_places) const
 {
     long double ld_ms = 1000.0 * getlongdoubleseconds();
     std::ostringstream o;
@@ -336,7 +353,7 @@ std::string ivytime::format_with_ms(int decimal_places)
 ivytime::operator std::string() { return format_as_datetime_with_ns(); }
 
 
-std::string ivytime::format_as_duration_HMMSSns()
+std::string ivytime::format_as_duration_HMMSSns() const
 {
     if (!isValid())
     {
@@ -379,7 +396,7 @@ std::string ivytime::format_as_duration_HMMSSns()
 }
 
 
-std::string ivytime::format_as_duration_HMMSS()
+std::string ivytime::format_as_duration_HMMSS() const
 {
     if (!isValid())
     {
@@ -438,7 +455,7 @@ void ivytime::setToNow() {
 	}
 	return;
 }
-uint64_t ivytime::Milliseconds() {
+uint64_t ivytime::Milliseconds() const {
 	return (((uint64_t)t.tv_sec)*1000) + (((uint64_t)t.tv_nsec)/1000);
 }
 
@@ -461,10 +478,10 @@ void ivytime::setFromNanoseconds(uint64_t Nanoseconds) {
 	return;
 }
 
-uint64_t ivytime::getAsNanoseconds() {
+uint64_t ivytime::getAsNanoseconds() const {
 	return (1000000000LL*((uint64_t)t.tv_sec)) + ((uint64_t)t.tv_nsec);
 }
 
-long double ivytime::getlongdoubleseconds() {
+long double ivytime::getlongdoubleseconds() const {
 	return ((long double)t.tv_sec) + (((long double)t.tv_nsec)/((long double)1000000000));
 }

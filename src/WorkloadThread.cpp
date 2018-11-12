@@ -30,13 +30,14 @@
 #include <malloc.h>  /* for memalign */
 #include <errno.h>   /* creates the external symbol errno */
 #include <scsi/sg.h>
-#include <string.h>  /* for memset, strerror() / strerror_r() */
+#include <string.h>
 #include <random>  /* uniform int distribution, etc. */
 #include <stack>
 #include <queue>
 #include <list>
 #include <exception>
 #include <math.h>  /* for ceil() */
+#include <csignal>
 
 #include "ivytime.h"
 #include "ivydefines.h"
@@ -45,7 +46,6 @@
 #include "Eyeo.h"
 #include "LUN.h"
 #include "WorkloadID.h"
-#include "iosequencer_stuff.h"
 #include "IosequencerInput.h"
 #include "Iosequencer.h"
 #include "ivylinuxcpubusy.h"
@@ -58,37 +58,33 @@
 #include "IosequencerRandomSteady.h"
 #include "IosequencerRandomIndependent.h"
 #include "IosequencerSequential.h"
+#include "ivyslave.h"
+#include "TestLUN.h"
+
+//#define IVYSLAVE_TRACE
+// IVYSLAVE_TRACE defined here in this source file rather than globally in ivydefines.h so that
+//  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
+//  - you can turn on tracing separately for each class in its own source file.
+
+//#define TRACE_SUBINTERVAL_THUMBNAILS
 
 extern bool routine_logging;
 
+pid_t get_subthread_pid()
+{
+    return syscall(SYS_gettid);
+}
 
-// for some strange reason, there's no header file for these system call wrapper functions
-inline int io_setup(unsigned nr, aio_context_t *ctxp)                   { return syscall(__NR_io_setup, nr, ctxp); }
-inline int io_destroy(aio_context_t ctx)                                { return syscall(__NR_io_destroy, ctx); }
-inline int io_submit(aio_context_t ctx, long nr,  struct iocb **iocbpp) { return syscall(__NR_io_submit, ctx, nr, iocbpp); }
-inline int io_getevents(aio_context_t ctx, long min_nr, long max_nr, struct io_event *events, struct timespec *timeout)
-	                                                                    { return syscall(__NR_io_getevents, ctx, min_nr, max_nr, events, timeout); }
-inline int io_cancel(aio_context_t ctx, struct iocb * p_iocb, struct io_event *p_io_event){ return syscall(__NR_io_cancel, ctx, p_iocb, p_io_event); };
-//#
-//# for some strange reason, in retrospect, the reason why there's no header file
-//# for these system call wapper functions, is probably becuse you would normally
-//# want to use the POSIX platform-independent calls for portability, and you could very
-//# well not lose any access to functionality.  That might be one reason why the
-//# calls directly to the underlying Linux AIO mechanism don't have header files, duh.
-//#
-//# A to-do would be to see how big of a project it would be, and if we would lose
-//# any flexibility if we cut over to using the POSIX AIO type calls.
-//#
-//# This would be a pre-requisite to build ivy on other non-Linux platforms.
+void WorkloadThread::die_saying(std::string m)
+{
+    dying_words = m;
+    log (slavethreadlogfile,dying_words);
+    state=ThreadState::died;
+    slaveThreadConditionVariable.notify_all();
+    exit(-1);
+}
 
-//######## It turns out that POSIX AIO uses a thread model internally - that is exactly what we don't want. ########
-
-#include <iostream>
-
-#include "Subinterval.h"
-
-
-std::ostream& operator<< (std::ostream& o, const ThreadState s)
+std::ostream& operator<< (std::ostream& o, const ThreadState& s)
 {
     switch (s)
     {
@@ -105,9 +101,6 @@ std::ostream& operator<< (std::ostream& o, const ThreadState s)
         case ThreadState::running:
             o << "ThreadState::running";
             break;
-        case ThreadState::stopping:
-            o << "ThreadState::stopping";
-            break;
         case ThreadState::died:
             o << "ThreadState::died";
             break;
@@ -121,8 +114,8 @@ std::ostream& operator<< (std::ostream& o, const ThreadState s)
 }
 
 
-WorkloadThread::WorkloadThread(std::string wID, LUN* pL, long long int lastLBA, std::string parms, std::mutex* p_imm)
-        : workloadID(wID), pLUN(pL), maxLBA(lastLBA), iosequencerParameters(parms), p_ivyslave_main_mutex(p_imm)
+WorkloadThread::WorkloadThread(std::mutex* p_imm, unsigned int c)
+    : p_ivyslave_main_mutex(p_imm), core(c)
 {}
 
 std::string threadStateToString (const ThreadState ts)
@@ -140,86 +133,36 @@ std::string mainThreadCommandToString(MainThreadCommand mtc)
 		case MainThreadCommand::keep_going: return "MainThreadCommand::keep_going";
 		case MainThreadCommand::stop:       return "MainThreadCommand::stop";
 		case MainThreadCommand::die:        return "MainThreadCommand::die";
+		default:
+        {
+            std::ostringstream o;
+            o << "mainThreadCommandToString (MainThreadCommand = (decimal) " << ((int) mtc) << ") - internal programming error - invalid MainThreadCommand value." ;
+            return o.str();
+        }
 	}
-	{
-		std::ostringstream o;
-		o << "mainThreadCommandToString (MainThreadCommand = (decimal) " << ((int) mtc) << ") - internal programming error - invalid MainThreadCommand value." ;
-		return o.str();
-	}
-
 }
 
-void WorkloadThread::WorkloadThreadRun() {
 
+void WorkloadThread::WorkloadThreadRun()
+{
 	if (routine_logging)
 	{
 		std::ostringstream o;
 
-		o<< "WorkloadThreadRun() fireup for workloadID = \"" << workloadID.workloadID
-            << "\", iosequencer parameters = \"" << iosequencerParameters << "\"." << std::endl;
+		o<< "WorkloadThreadRun() fireup for core = " << core << "." << std::endl;
 
 		log(slavethreadlogfile,o.str());
 	}
-	else
-	{
-        log(slavethreadlogfile,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
+    my_pid = getpid();
+    my_tid = get_subthread_pid();
+    my_pgid = getpgid(my_tid);
+
+    if (routine_logging)
+    {
+        std::ostringstream o;
+        o << "getpid() = " << my_pid << ", gettid() = " << my_tid << ", getpgid(my_tid=" << my_tid << ") = " << my_pgid << std::endl;
+        log(slavethreadlogfile,o.str());
     }
-
-	if (pLUN->contains_attribute_name(std::string("Sector Size")))
-	{
-		std::string secsize = pLUN->attribute_value(std::string("Sector Size"));
-		trim(secsize);
-		if (!isalldigits(secsize))
-		{
-			std::ostringstream o;
-			o << "<Error> WorkloadThreadRun() - workloadID = \"" << workloadID.workloadID << "\" - Sector Size attribute \"" << secsize << "\" was not all digits." << std::endl;
-            dying_words = o.str();
-			log(slavethreadlogfile, o.str());
-			state = ThreadState::died;
-			slaveThreadConditionVariable.notify_all();
-			return;
-		}
-		std::istringstream is(secsize);
-		is >> iosequencer_variables.sector_size;
-	}
-	else
-	{
-		iosequencer_variables.sector_size = 512;
-	}
-
-	iosequencer_variables.LUN_size_bytes = (1+ maxLBA) * iosequencer_variables.sector_size;
-
-	if (!pLUN->contains_attribute_name(std::string("LUN name")))
-	{
-		std::ostringstream o;
-		o << "<Error> WorkloadThreadRun() - LUN does not have \"LUN name\" attribute.  This is what the LUN is called in this OS.  In Linux, /dev/sdxxx." << std::endl;
-		dying_words = o.str();
-		log(slavethreadlogfile, dying_words);
-		state = ThreadState::died;
-        slaveThreadConditionVariable.notify_all();
-		return;
-	}
-
-	std::string LUNname = pLUN->attribute_value(std::string("LUN name"));
-
-	iosequencer_variables.fd=open64(LUNname.c_str(),O_RDWR+O_DIRECT);
-
-	if (-1 == iosequencer_variables.fd) {
-		std::ostringstream o;
-		o << "WorkloadThreadRun() - open64(\"" << LUNname << "\",O_RDWR+O_DIRECT) failed errno = " << errno << " (" << strerror(errno) << ')' << std::endl;
-		dying_words = o.str();
-		state = ThreadState::died;
-		log(slavethreadlogfile, dying_words);
-        slaveThreadConditionVariable.notify_all();
-		return;
-	}
-
-
-
-	available_iosequencers[std::string("random_steady")] = new IosequencerRandomSteady(pLUN, slavethreadlogfile, workloadID.workloadID, &iosequencer_variables, this);
-	available_iosequencers[std::string("random_independent")] = new IosequencerRandomIndependent(pLUN, slavethreadlogfile, workloadID.workloadID, &iosequencer_variables, this);
-	available_iosequencers[std::string("sequential")] = new IosequencerSequential(pLUN, slavethreadlogfile, workloadID.workloadID, &iosequencer_variables, this);
-
 
 //   The workload thread is initially in "waiting for command" state.
 //
@@ -295,109 +238,132 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 				{
                     std::ostringstream o; o << "<Error> WorkloadThread - in main loop waiting for commands didn\'t get \"start\" or \"die\" when expected.\n"
                         << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                    dying_words = o.str();
-                    log (slavethreadlogfile,dying_words);
-                    state=ThreadState::died;
                     wkld_lk.unlock();
-                    slaveThreadConditionVariable.notify_all();
-                    return;  // this is threadRun, so this is the same as exit.
+                    die_saying(o.str());
                 }
 			}
 		}  // lock released
+
+		// "start" command received.
+
 		slaveThreadConditionVariable.notify_all();
 
-		currentSubintervalIndex=0;
-		otherSubintervalIndex=1;
-		subinterval_number=0;
+        thread_view_subinterval_number = -1;
+
+#ifdef IVYSLAVE_TRACE
+        wt_callcount_linux_AIO_driver_run_subinterval = 0;
+        wt_callcount_cancel_stalled_IOs = 0;
+        wt_callcount_start_IOs = 0;
+        wt_callcount_reap_IOs = 0;
+        wt_callcount_pop_and_process_an_Eyeo = 0;
+        wt_callcount_generate_an_IO = 0;
+        wt_callcount_catch_in_flight_IOs_after_last_subinterval = 0;
+#endif
+
+		for (auto& pTestLUN : pTestLUNs)
+		{
+		    pTestLUN->testLUN_furthest_behind_weighted_IOPS_max_skew_progress = 0.0;
+		    pTestLUN->launch_count = 0;
+
+#ifdef IVYSLAVE_TRACE
+            pTestLUN->sum_of_maxTags_callcount = 0;
+            pTestLUN->open_fd_callcount = 0;
+            pTestLUN->prepare_linux_AIO_driver_to_start_callcount = 0;
+            pTestLUN->reap_IOs_callcount = 0;
+            pTestLUN->pop_front_to_LaunchPad_callcount = 0;
+            pTestLUN->start_IOs_callcount = 0;
+            pTestLUN->catch_in_flight_IOs_callcount = 0;
+            pTestLUN->ivy_cancel_IO_callcount = 0;
+            pTestLUN->pop_and_process_an_Eyeo_callcount = 0;
+            pTestLUN->generate_an_IO_callcount = 0;
+            pTestLUN->next_scheduled_io_callcount = 0;
+
+            pTestLUN->start_IOs_bookmark_count = 0;
+            pTestLUN->start_IOs_body_count = 0;
+            pTestLUN->reap_IOs_bookmark_count = 0;
+            pTestLUN->reap_IOs_body_count = 0;
+            pTestLUN->pop_n_p_bookmark_count = 0;
+            pTestLUN->pop_n_p_body_count = 0;
+            pTestLUN->generate_bookmark_count = 0;
+            pTestLUN->generate_body_count = 0;
+#endif
+            for (auto& pear: pTestLUN->workloads)
+            {
+                pear.second.iops_max_io_count = 0;
+                pear.second.currentSubintervalIndex=0;
+                pear.second.otherSubintervalIndex=1;
+                pear.second.subinterval_number=0;
+                pear.second.prepare_to_run();
+                pear.second.build_Eyeos();
+                pear.second.workload_cumulative_launch_count = 0;
+                pear.second.workload_weighted_IOPS_max_skew_progress = 0.0;
+
+#ifdef IVYSLAVE_TRACE
+                pear.second.workload_callcount_prepare_to_run = 0;
+                pear.second.workload_callcount_build_Eyeos = 0;
+                pear.second.workload_callcount_switchover = 0;
+                pear.second.workload_callcount_pop_and_process_an_Eyeo = 0;
+                pear.second.workload_callcount_front_launchable_IO = 0;
+                pear.second.workload_callcount_load_IOs_to_LaunchPad = 0;
+                pear.second.workload_callcount_generate_an_IO = 0;
+
+                pear.second.start_IOs_Workload_bookmark_count = 0;
+                pear.second.start_IOs_Workload_body_count = 0;
+                pear.second.pop_one_bookmark_count = 0;
+                pear.second.pop_one_body_count = 0;
+                pear.second.generate_one_bookmark_count = 0;
+                pear.second.generate_one_body_count = 0;
+#endif
+            }
+		}
 
 		dispatching_latency_seconds.clear();
         lock_aquisition_latency_seconds.clear();
         switchover_completion_latency_seconds.clear();
 
-		p_current_subinterval = &(subinterval_array[currentSubintervalIndex]);
-		p_current_IosequencerInput = & (p_current_subinterval-> input);
-		p_current_SubintervalOutput = & (p_current_subinterval->output);
-		p_other_subinterval = &(subinterval_array[otherSubintervalIndex]);
-		p_other_IosequencerInput = & (p_other_subinterval-> input);
-		p_other_SubintervalOutput = & (p_other_subinterval->output);
+        set_all_queue_depths_to_zero();
 
-		std::map<std::string, Iosequencer*>::iterator iogen_ptr_it = available_iosequencers.find(p_current_IosequencerInput->iosequencer_type);
-		if (available_iosequencers.end() == iogen_ptr_it)
-		{
-			std::ostringstream o; o << "<Error> WorkloadThread::WorkloadThreadRun() - Got a \"Go!\" but the first subinterval\'s IosequencerInput\'s iosequencer_type \""
-				<< p_current_IosequencerInput->iosequencer_type << "\" is not one of the available iosequencer types." << std::endl
-				 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-			dying_words = o.str();
-			log(slavethreadlogfile,dying_words);
-			state=ThreadState::died;
-            slaveThreadConditionVariable.notify_all();
-			return;
-		}
-		p_my_iosequencer = (*iogen_ptr_it).second;
-		if (!p_my_iosequencer->setFrom_IosequencerInput(p_current_IosequencerInput))
-		{
-			std::ostringstream o; o << "<Error> WorkloadThread::WorkloadThreadRun() - call to iosequencer::setFrom_IosequencerInput(() failed.\n" << std::endl
-				 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-			dying_words = o.str();
-			log(slavethreadlogfile,dying_words);
-			state=ThreadState::died;
-            slaveThreadConditionVariable.notify_all();
-			return;
-		}
+		epoll_fd = epoll_create(1 /* "size" ignored since Linux kernel 2.6.8 */ );
+		if (epoll_fd == -1)
+        {
+            std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - failed trying to create epoll fd - "
+                << std::strerror(errno) << std::endl
+                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+            die_saying(o.str());
+        }
 
-		prepare_linux_AIO_driver_to_start();
+        for (auto& pTestLUN : pTestLUNs)
+        {
+            pTestLUN->prepare_linux_AIO_driver_to_start();
+            pTestLUN->event_fd = eventfd(0,EFD_NONBLOCK);  // int eventfd(unsigned int initval, int flags);
+            if (pTestLUN->event_fd == -1)
+            {
+                std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - failed trying to create eventfd for a TestLUN fd - "
+                    << std::strerror(errno) << std::endl
+                    << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+                die_saying(o.str());
+            }
+            memset(&(pTestLUN->epoll_ev),0,sizeof(pTestLUN->epoll_ev));
+            pTestLUN->epoll_ev.data.ptr = (void*) pTestLUN;
+            pTestLUN->epoll_ev.events = EPOLLIN | EPOLLET | EPOLLOUT;
+
+            int rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pTestLUN->event_fd, &pTestLUN->epoll_ev);
+            if (rc == -1)
+            {
+                std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - epoll_ctl failed trying to add an event - "
+                    << std::strerror(errno) << std::endl
+                    << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+                die_saying(o.str());
+            }
+        }
+
+        if (p_epoll_events != nullptr) delete[] p_epoll_events;
+
+        p_epoll_events = new epoll_event[pTestLUNs.size()]; // throws on failure.
 
 		state=ThreadState::running;
 
-		int bufsize = p_current_IosequencerInput->blocksize_bytes;
-		while (0 != (bufsize % 4096)) bufsize++;
-		long int memory_allocation_size = 4095 + (bufsize * allEyeosThatExist.size());
-
-        if (routine_logging)
-        {
-            std::ostringstream o;
-            o << "getting I/O buffer memory for Eyeos.  blksize= " << p_current_IosequencerInput->blocksize_bytes
-                << ", rounded up to multiple of 4096 is bufsize = " << bufsize << ", number of Eyeos = " << allEyeosThatExist.size()
-                << ", memory allocation size with 4095 bytes for alignment padding is " << memory_allocation_size << std::endl;
-            log(slavethreadlogfile,o.str());
-        }
-
-        std::unique_ptr<unsigned char[]> ewe_neek;
-
-        try
-        {
-            ewe_neek.reset( new unsigned char[memory_allocation_size] );
-        }
-        catch(const std::bad_alloc& e)
-        {
-			state=ThreadState::died;
-			dying_words = std::string("<Error> WorkloadThread.cpp - out of memory making I/O buffer pool - ") + e.what() + std::string("\n");
-            log(slavethreadlogfile,dying_words);
-            return;
-        }
-
-        if (!ewe_neek)
-        {
-			dying_words = "<Error> WorkloadThread.cpp out of memory making I/O buffer pool\n";
-			state=ThreadState::died;
-            log(slavethreadlogfile,dying_words);
-            slaveThreadConditionVariable.notify_all();
-			return;
-        }
-
-        void* vp = (void*) ewe_neek.get();
-
-        uint64_t aio_buf_value = (uint64_t) vp;
-
-        while (0 != (aio_buf_value % 4096)) aio_buf_value++;   // yes, std::align, but we are stuffing these values in iocbs as uint64_t type anyway
-
-        for (auto& pEyeo : allEyeosThatExist)
-        {
-            pEyeo->eyeocb.aio_buf = aio_buf_value;
-            aio_buf_value += bufsize;
-        }
-
-        if (routine_logging) log(slavethreadlogfile,"Finished setting aio_buf values in all existing Eyeos.\n");
+        if (routine_logging) log(slavethreadlogfile,"Finished initialization and now about to start running subintervals.");
 
         // indent level in loop waiting for run commands
 
@@ -405,28 +371,53 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
         {
             // indent level in loop running subintervals
 
+            thread_view_subinterval_number++;
+
+            if (thread_view_subinterval_number == 0)
+            {
+                thread_view_subinterval_start = ivyslave.test_start_time;
+            }
+            else
+            {
+                thread_view_subinterval_start = thread_view_subinterval_end;
+            }
+            thread_view_subinterval_end = thread_view_subinterval_start + ivyslave.subinterval_duration;
+
             if (routine_logging){
                 std::ostringstream o;
-                o << "Top of subinterval " << subinterval_number << " " << p_current_subinterval->start_time.format_as_datetime_with_ns()
-                    << " to " << p_current_subinterval->end_time.format_as_datetime_with_ns() << " currentSubintervalIndex=" << currentSubintervalIndex
-                    << ", otherSubintervalIndex=" << otherSubintervalIndex << std::endl;
+                o << "core " << core << ": Top of subinterval " << thread_view_subinterval_number
+                << " " << thread_view_subinterval_start.format_as_datetime_with_ns()
+                << " to " << thread_view_subinterval_end.format_as_datetime_with_ns()
+                << " with subinterval_duration = " << ivyslave.subinterval_duration.format_as_duration_HMMSSns()
+                << std::endl;
                     log(slavethreadlogfile,o.str());
             }
 
-            if (p_current_IosequencerInput->hot_zone_size_bytes > 0)
+            // This nested loop to set hot zone parameters.
+            for (auto& pTestLUN : pTestLUNs)
             {
-                if (p_my_iosequencer->instanceType() == "random_steady" || p_my_iosequencer->instanceType() == "random_independent")
+                for (auto& peach : pTestLUN->workloads)
                 {
-                    IosequencerRandom* p = (IosequencerRandom*) p_my_iosequencer;
-                    if (!p->set_hot_zone_parameters(p_current_IosequencerInput))
                     {
-                        std::ostringstream o; o << "<Error> WorkloadThread::WorkloadThreadRun() - call to IosequencerRandom::set_hot_zone_parameters(() failed.\n"
-                            << "Occurred at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                        dying_words = o.str();
-                        log(slavethreadlogfile,dying_words);
-                        state=ThreadState::died;
-                        slaveThreadConditionVariable.notify_all();
-                        return;
+                        Workload& wrkld = peach.second;
+
+                        if (wrkld.p_current_IosequencerInput->hot_zone_size_bytes > 0)
+                        {
+                            if (wrkld.p_my_iosequencer->instanceType() == "random_steady"
+                             || wrkld.p_my_iosequencer->instanceType() == "random_independent")
+                            {
+                                IosequencerRandom* p = (IosequencerRandom*) wrkld.p_my_iosequencer;
+                                if (!p->set_hot_zone_parameters(wrkld.p_current_IosequencerInput))
+                                {
+                                    std::ostringstream o;
+                                    o << "<Error> Internal programming error - Workload thread for core " << core
+                                        << " working on WorkloadID " << wrkld.workloadID.workloadID
+                                        << " - call to IosequencerRandom::set_hot_zone_parameters(() failed.\n"
+                                        << "Occurred at line " << __LINE__ << " of " << __FILE__ << std::endl;
+                                    die_saying(o.str());
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -435,45 +426,52 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 // now we are running a subinterval
                 if (!linux_AIO_driver_run_subinterval())
                 {
-                    std::ostringstream o; o << "WorkloadThread::WorkloadThreadRun() - call to linux_AIO_driver_run_subinterval() failed.\n"
+                    std::ostringstream o; o << "<Error> Internal programming error - "
+                        << "WorkloadThread for core " << core
+                        << " - call to linux_AIO_driver_run_subinterval() failed.\n"
                         << "Occurred at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                    dying_words = o.str();
-                    log(slavethreadlogfile,dying_words);
-                    state=ThreadState::died;
-                    slaveThreadConditionVariable.notify_all();
-                    return;
+                    die_saying(o.str());
                 }
             }
             catch (std::exception& e)
             {
                 std::ostringstream o;
-                o << "<Error> WorkloadThread::WorkloadThreadRun() - exception during call to linux_AIO_driver_run_subinterval() - " << e.what() << std::endl
-                        << "Occurred at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                dying_words = o.str();
-                log(slavethreadlogfile,dying_words);
-                state=ThreadState::died;
-                slaveThreadConditionVariable.notify_all();
-                return;
+                o << "<Error> Internal programming error - failed running linux_AIO_driver_run_subinterval() - "
+                    << e.what() << " - at line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
+                die_saying(o.str());
             }
+
             // end of subinterval, flip over to other subinterval or stop
 
             // First record the dispatching latency,
             // the time from when the clock clicked over to a new subinterval
             // to the time that the WorkloadThread code starts running.
 
-            switchover_begin = p_current_subinterval->end_time;
+            ivytime before_getting_lock, dispatch_time;
 
-            ivytime before_getting_lock; before_getting_lock.setToNow();
 
-            ivytime dispatch_time = before_getting_lock - p_current_subinterval->end_time;
+            if ( pTestLUNs.size() == 0)
+            {
+                dispatching_latency_seconds.push(0.0);
 
-            dispatching_latency_seconds.push(dispatch_time.getlongdoubleseconds());
+            }
+            else
+            {
+                switchover_begin = ivyslave.ivyslave_view_subinterval_end;
+
+                before_getting_lock.setToNow();
+
+                dispatch_time = before_getting_lock - ivyslave.ivyslave_view_subinterval_end;
+
+                dispatching_latency_seconds.push(dispatch_time.getlongdoubleseconds());
+            }
 
             if (routine_logging)
             {
                 std::ostringstream o;
-                o << "Bottom of subinterval " << subinterval_number << " " << p_current_subinterval->start_time.format_as_datetime_with_ns()
-                << " to " << p_current_subinterval->end_time.format_as_datetime_with_ns() << std::endl;
+                o << "core " << core << ": Bottom of subinterval " << thread_view_subinterval_number
+                    << " " << thread_view_subinterval_start.format_as_datetime_with_ns()
+                    << " to " << thread_view_subinterval_end.format_as_datetime_with_ns() << std::endl;
                 log(slavethreadlogfile,o.str());
             }
 
@@ -506,23 +504,25 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                 // we still have the lock during subinterval switchover
 
-                subinterval_array[currentSubintervalIndex].subinterval_status=subinterval_state::ready_to_send;
-
-                if (0 == currentSubintervalIndex)
+                for (auto& pTestLUN : pTestLUNs)
                 {
-                    currentSubintervalIndex = 1; otherSubintervalIndex = 0;
-                } else {
-                    currentSubintervalIndex = 0; otherSubintervalIndex = 1;
+                    for (auto& peach : pTestLUN->workloads)
+                    {
+                        {
+#ifdef TRACE_SUBINTERVAL_THUMBNAILS
+                            {
+                                Workload& w = peach.second;
+                                std::ostringstream o;
+                                o << "Workload " << w.workloadID
+                                << "output summary " << w.p_current_SubintervalOutput->thumbnail(ivyslave.subinterval_duration)
+                                << " - input " << w.p_current_IosequencerInput->toString() << std::endl;
+                                log(slavethreadlogfile, o.str());
+                            }
+#endif // TRACE_SUBINTERVAL_THUMBNAILS
+                            peach.second.switchover();
+                        }
+                    }
                 }
-                p_current_subinterval = &subinterval_array[currentSubintervalIndex];
-                p_current_IosequencerInput = & (p_current_subinterval-> input);
-                p_current_SubintervalOutput = & (p_current_subinterval->output);
-                p_other_subinterval = &subinterval_array[otherSubintervalIndex];
-                p_other_IosequencerInput = & (p_other_subinterval-> input);
-                p_other_SubintervalOutput = & (p_other_subinterval->output);
-                cancel_stalled_IOs();
-
-                subinterval_number++;
 
         // indent level in loop waiting for run commands
             // indent level in loop running subintervals
@@ -532,17 +532,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 {
                     if (routine_logging) log(slavethreadlogfile,std::string("WorkloadThread stopping at end of subinterval.\n"));
 
-                    state=ThreadState::stopping;
-
-                    if (!catch_in_flight_IOs_after_last_subinterval())
-                    {
-                        dying_words = "<Error> WorkloadThread::WorkloadThreadRun() - call to catch_in_flight_IOs_after_last_subinterval() failed.\n";
-                        log(slavethreadlogfile,dying_words);
-                        state=ThreadState::died;
-                        wkld_lk.unlock();
-    					slaveThreadConditionVariable.notify_all();
-                        return;
-                    }
+                    catch_in_flight_IOs_after_last_subinterval();
 
                     {
                         std::ostringstream o;
@@ -564,6 +554,30 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                             << std::endl;
                         log(slavethreadlogfile,o.str());
                     }
+                    {
+                        std::ostringstream o;
+
+                        o << "workload_thread_max_queue_depth = " << workload_thread_max_queue_depth << std::endl;
+
+                        for (auto& pTestLUN : pTestLUNs)
+                        {
+                            o << "For TestLUN"                            << pTestLUN->host_plus_lun << " : "
+                                << "testLUN_max_queue_depth = "           << pTestLUN->testLUN_max_queue_depth
+                                << ", max_IOs_tried_to_launch_at_once = " << pTestLUN->max_IOs_tried_to_launch_at_once
+                                << ", max_IOs_launched_at_once = "        << pTestLUN->max_IOs_launched_at_once
+                                << ", max_IOs_reaped_at_once = "          << pTestLUN->max_IOs_reaped_at_once
+                                << std::endl;
+
+                            for (auto& pear : pTestLUN->workloads)
+                            {
+                                o << "For Workload" << pear.first << " : "
+                                    << "workload_max_queue_depth = " << pear.second.workload_max_queue_depth << std::endl;
+
+                            }
+                        }
+
+                        log(slavethreadlogfile,o.str());
+                    }
 
                     ivyslave_main_posted_command = false;
 
@@ -583,790 +597,663 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 				{
 				    std::ostringstream o; o <<" <Error> WorkloadThread only looks for \"stop\" or \"keep_going\" commands at end of subinterval.  Received "
 				        << mainThreadCommandToString(ivyslave_main_says) << ".  Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
-				    dying_words = o.str();
-					log(slavethreadlogfile,dying_words);
-					state=ThreadState::died;
-                    ivyslave_main_posted_command = false;
 					wkld_lk.unlock();
-					slaveThreadConditionVariable.notify_all();
-					return;
+				    die_saying(o.str());
 				}
 
-				if(subinterval_state::ready_to_run!=subinterval_array[currentSubintervalIndex].subinterval_status)
+                // MainThreadCommand::keep_going
+
+				for (auto& pTestLUN : pTestLUNs)
 				{
-				    std::ostringstream o; o << "<Error> WorkloadThread told to keep going, but next subinterval not marked READY_TO_RUN.  Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
-				    dying_words = o.str();
-					log(slavethreadlogfile,dying_words);
-                    ivyslave_main_posted_command = false;
-					state=ThreadState::died;
-					wkld_lk.unlock();
-					slaveThreadConditionVariable.notify_all();
-					return;
-				}
+				    for (auto& pear : pTestLUN->workloads)
+				    {
+				        Workload* pWorkload = & pear.second;
+                        if ( pWorkload->subinterval_array[pWorkload->currentSubintervalIndex].subinterval_status != subinterval_state::ready_to_run )
+                        {
+                            std::ostringstream o; o << "<Error> Internal programming error - "
+                                << "WorkloadThread told to keep going, but next subinterval not marked READY_TO_RUN" << std::endl
+                                << " for workload " << pWorkload->workloadID.workloadID << std::endl
+                                << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
+                            wkld_lk.unlock();
+                            die_saying(o.str());
+                        }
 
-                subinterval_array[currentSubintervalIndex].subinterval_status = subinterval_state::running;
-                // end of locked section
-                ivytime switchover_complete;
-                switchover_complete.setToNow();
-                switchover_completion_latency_seconds.push(ivytime(switchover_complete-switchover_begin).getlongdoubleseconds());
+                        pWorkload->p_current_subinterval->subinterval_status = subinterval_state::running;
+
+                        // end of locked section
+                    }
+				}
 			}
 
         // indent level in loop waiting for run commands
             // indent level in loop running subintervals
                 // indent level in locked section at subinterval switchover
 
+            ivytime switchover_complete;
+            switchover_complete.setToNow();
+            switchover_completion_latency_seconds.push(ivytime(switchover_complete-switchover_begin).getlongdoubleseconds());
 			slaveThreadConditionVariable.notify_all();
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool WorkloadThread::prepare_linux_AIO_driver_to_start()
-{
-	// Coming in, we expect the subinterval_array[] IosequencerInput and SubintervalOutput objects to be prepared.
-	// That means p_current_subinterval, p_current_IosequencerInput, and p_current_SubintervalOutput are set.
-
-	// Note: When the iosequencer gets to the end of a stubinterval, it always switches the currentSubintervalIndex and otherSubintervalIndex variables.
-	//       That way, the subinterval that is sent up to ivymaster is always "otherSubintervalIndex", whether or not the iosequencer is to stop.
-
-	//       However, when the iosequencer thread is told to "stop", what it does before stopping is copy the IosequencerInput object
-	//       for the last subinterval that ran to the other one that didn't run, the other one that would have been the next one if we hadn't stopped.
-
-	// This doesn't bother the asynchronous collection / sending up of the data for the last subinterval.
-
-
-	if (ThreadState::waiting_for_command != state)
-	{
-        std::ostringstream o; o << "<Error> prepare_linux_AIO_driver_to_start() was called, but the workload thread state was "
-            << state << ", not ThreadState::waiting_for_command as expected.\n" << std::endl
-             << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-        dying_words = o.str();
-        log(slavethreadlogfile,dying_words);
-        state=ThreadState::died;
-        slaveThreadConditionVariable.notify_all();
-        exit(-1);
-	}
-	// If Eyeos haven't been made, or it looks like we don't have enough for the next step, make some.
-		// Figure out how many we need according to the precompute count, the post-process allowance, and maxTags parameter.
-	// Empty the freeStack, precomputeQ, and postprocessQ.  Then fill the freeStack with our list of all Eyeos that exist.
-	// Create the aio context.
-
-	precomputedepth = 2 * p_current_IosequencerInput->maxTags;
-
-	EyeoCount = 2 * (precomputedepth + p_current_IosequencerInput->maxTags);  // the 2x is a postprocess queue allowance
-	for (int i=allEyeosThatExist.size() ; i < EyeoCount; i++)
-		allEyeosThatExist.push_back(new Eyeo(i,this));
-
-	precomputeQ.clear();
-	while (0 < postprocessQ.size()) postprocessQ.pop();
-	while (0 < freeStack.size()) freeStack.pop();
-	for (auto& pE : allEyeosThatExist)
-	{
-		freeStack.push(pE);
-	}
-
-    running_IOs.clear();
-    cancelled_IOs=0;
-
-	iosequencer_variables.act=0;  // must be set to zero otherwise io_setup() will fail with return code 22 - invalid parameter.
-
-	if (0 != (rc=io_setup(p_current_IosequencerInput->maxTags,&(iosequencer_variables.act))))
-	{
-        std::ostringstream o;
-        o << "<Error> io_setup(" << p_current_IosequencerInput->maxTags << "," << (&iosequencer_variables.act) << ") failed return code " << rc
-			<< ", errno=" << errno << " - " << strerror(errno) << std::endl
-            << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-        dying_words = o.str();
-        log(slavethreadlogfile,dying_words);
-        state=ThreadState::died;
-        slaveThreadConditionVariable.notify_all();
-        exit(-1);
-	}
-
-	if (routine_logging) log(slavethreadlogfile,std::string("aio context successfully constructed.\n"));
-
-	return true;
-}
-
-void WorkloadThread::popandpostprocessoneEyeo() {
-
-	if (postprocessQ.size()==0) return;
-
-	// collect I/O statistics / trace data for an I/O
-	Eyeo* p_dun;
-	p_dun=postprocessQ.front();
-	postprocessQ.pop();
-
-	ivy_float service_time_seconds, response_time_seconds, submit_time_seconds, running_time_seconds;
-
-	bool have_response_time;
-
-	if (ivytime(0) == p_dun->scheduled_time)
-	{  // to avoid confusion, we do not post "application level" response time statistics if iorate==max.
-		have_response_time = false;
-		response_time_seconds = -1.0;
-	}
-	else
-	{
-		have_response_time = true;
-		response_time_seconds = (ivytime(p_dun->end_time - p_dun->scheduled_time).getlongdoubleseconds());
-	}
-
-	if ( ivytime(0) == p_dun->start_time
-	  || ivytime(0) == p_dun->running_time
-	  || ivytime(0) == p_dun->end_time
-	  || p_dun->scheduled_time > p_dun->start_time
-	  || p_dun->start_time     > p_dun->running_time
-	  || p_dun->running_time   > p_dun->end_time
-	  )
-    {
-        std::ostringstream o;
-        o << "<Error> Internal programming error. Source code reference " << __FILE__ << " line " << __LINE__ << std::endl
-            << "When harvesting an I/O completion event and posting its measurements" << std::endl
-            << "One of the following timestamps was missing or they were out of order." << std::endl
-            << "I/O scheduled time = " << p_dun->scheduled_time.format_as_datetime_with_ns()
-            << "start time         = " << p_dun->start_time.format_as_duration_HMMSSns() << std::endl
-            << "running time       = " << p_dun->running_time.format_as_duration_HMMSSns() << std::endl
-            << "end time           = " << p_dun->end_time.format_as_duration_HMMSSns() << std::endl
-
-            << ", have_response_time = ";
-        if (have_response_time)
-        {
-            o << "true, response_time_seconds = " << response_time_seconds ;
-        }
-        else
-        {
-            o << "false";
-        }
-        o << std::endl;
-        dying_words = o.str();
-        state = ThreadState::died;
-		log(slavethreadlogfile,o.str());
-		ivyslave_main_posted_command = false;
-        slaveThreadConditionVariable.notify_all();
-        exit(-1);
-    }
-
-	service_time_seconds = (ivytime(p_dun->end_time     - p_dun->start_time).getlongdoubleseconds());
-	submit_time_seconds    = (ivytime(p_dun->running_time - p_dun->start_time).getlongdoubleseconds());
-	running_time_seconds = (ivytime(p_dun->end_time     - p_dun->running_time).getlongdoubleseconds());
-
-	// NOTE:  The breakdown of bytes_transferred (MB/s) follows service time.
-
-
-	if ( p_current_IosequencerInput->blocksize_bytes == (unsigned int) p_dun->return_value) {
-
-		int rs, rw, bucket;
-
-		if (p_my_iosequencer->isRandom())
-		{
-			rs = 0;
-		}
-		else
-		{
-			rs = 1;
-		}
-
-		if (IOCB_CMD_PREAD==p_dun->eyeocb.aio_lio_opcode)
-		{
-			rw=0;
-		}
-		else
-		{
-			rw=1;
-		}
-
-		bucket = Accumulators_by_io_type::get_bucket_index( service_time_seconds );
-
-		p_current_SubintervalOutput->u.a.service_time.rs_array[rs][rw][bucket].push(service_time_seconds);
-		p_current_SubintervalOutput->u.a.bytes_transferred.rs_array[rs][rw][bucket].push(p_current_IosequencerInput->blocksize_bytes);
-
-		bucket = Accumulators_by_io_type::get_bucket_index( submit_time_seconds );
-		p_current_SubintervalOutput->u.a.submit_time.rs_array[rs][rw][bucket].push(submit_time_seconds);
-
-		bucket = Accumulators_by_io_type::get_bucket_index( running_time_seconds );
-		p_current_SubintervalOutput->u.a.running_time.rs_array[rs][rw][bucket].push(running_time_seconds);
-
-		if (have_response_time)
-		{
-			bucket = Accumulators_by_io_type::get_bucket_index( response_time_seconds );
-
-			p_current_SubintervalOutput->u.a.response_time.rs_array[rs][rw][bucket].push(response_time_seconds);
-		}
-
-	} else {
-		ioerrorcount++;
-		if ( 0 > p_dun->return_value ) {
-			std::ostringstream o;
-			o << "<Warning> Thread for " << workloadID.workloadID << " - I/O failed return code = " << p_dun->return_value << ", errno = " << errno << " - " << strerror(errno) << p_dun->toString() << std::endl;
-			log(slavethreadlogfile,o.str());
-				// %%%%%%%%%%%%%%% come back here later and decide if we want to re-drive failing I/Os, keeping track of the original I/O start time so we record the total respone time for all attempts.
-		} else {
-			std::ostringstream o;
-			o << "<Warning> Thread for " << workloadID.workloadID << "- I/O only transferred " << p_dun->return_value << " out of requested " << p_current_IosequencerInput->blocksize_bytes << std::endl;
-			log(slavethreadlogfile,o.str());
-		}
-	}
-	freeStack.push(p_dun);
-	return;
-}
-
-
-	// Note to the reader:
-
-	// The following is a dispatcher loop that responds to real-time issues as promptly as possible.
-
-	// It will be easer to understand if you first look at the normal way you would
-	// write it down.
-
-	// Dispatcher main loop:
-	// Get "now" system timestamp (nanosecond resolution)
-	// - if pending I/O completion events
-	//	harvest a batch, timestamp them, put in postprocessQ and loop back for new timestamp;
-	// - if cooldown is not over and it's time to submit the next I/O and we are below the max tag count
-	// 	submit a block of I/Os for which it's time and for which we have tags, and loop back for a new timestamp;
-	// - if the postprocessQ is not empty
-	//	take an I/O out of the postcomputeQ, record statistics/trace data, and loop back for new timestamp;
-	// - if there is room in the precomputeQ and the test and cooldown are not over
-	//   and the scheduled time of the most recently added I/O in the precomputeQ is less than 1/4 second in the future
-	// 	take an Eyeo off the freestack, generate(), and put in the precomputeQ, loop back for new timestamp;
-	// - wait until either an I/O completion event is ready,
-	//        or it's time to drive the next I/O and we are not yet at max queue depth
-	//	  or cooldown has ended
-
-
-	// So when you read the following, I was trying to have that effect.  However, the wait actually happens
-	// at the top of the loop when you are doing the highest priority thing which is harvesting any pending
-	// I/O completion events.
-
-
-	// As a result, before you do the high priority thing, you need to know how long to wait
-	// if there are no pending I/O completion events.
-
-
-	// If there are I/Os waiting in the postprocessQ, we don't want to wait.
-	// If there is room in the precomputeQ
-	//    and the last I/O in the precomputeQ is scheduled before cooldown end time
-	//    we don't want to wait.
-	// If it's time to submit the next I/O and we are below max tag count we don't want to wait.
-	// otherwise the wait time is until the end of the test if we are already at max tag count,
-	// or if we have an available tag the wait time is until the time for the next I/O.
-
-	// In the earliest functional partial implementations of ivy, we didn't have subintervals.
-	// The earliest versions had a total test time consisting of a warmup period, then a
-	// mid-stream test section, and then a cooldown phase.  The I/O workload was generated
-	// all the way through from the beginning of warmup to the end of cooldown.  But the
-	// measurement data was collected from the beginning to the end of the mid-stream period.
-	// CPU counters were sampled at the beginning and again at the end of the mid-stream period.
-
-
 bool WorkloadThread::linux_AIO_driver_run_subinterval()
 // see also https://code.google.com/p/kernel/wiki/AIOUserGuide
 {
-	ivytime& subinterval_ending_time = p_current_subinterval->end_time;
+#if defined(IVYSLAVE_TRACE)
+    { wt_callcount_linux_AIO_driver_run_subinterval++; if (wt_callcount_linux_AIO_driver_run_subinterval <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << core << ':' << wt_callcount_linux_AIO_driver_run_subinterval << ") ";
+    o << "Entering WorkloadThread::linux_AIO_driver_run_subinterval()."; log(slavethreadlogfile,o.str()); } }
+#endif
 
-    if (routine_logging) {std::ostringstream o; o << "WorkloadThread::linux_AIO_driver_run_subinterval() running subinterval which will end at " << subinterval_ending_time.format_as_datetime_with_ns() << std::endl; log(slavethreadlogfile,o.str());}
+    if (routine_logging)
+    {
+        std::ostringstream o;
+        ivytime now; now.setToNow();
+        now = now - thread_view_subinterval_end;
+        o << "WorkloadThread::linux_AIO_driver_run_subinterval() running subinterval which will end at "
+            << thread_view_subinterval_end.format_as_datetime_with_ns()
+            << " - " << now.format_as_duration_HMMSSns() << " from now " << std::endl;
+        log(slavethreadlogfile,o.str());
+    }
 
-	while (true) {
+	while (true)
+	{
+        top_of_loop:
+
 		now.setToNow();
 
-		if (now >= subinterval_ending_time) break;  // we will post-process any I/Os that ended within the subinterval before returning.
+		if (now >= thread_view_subinterval_end) break;
+		    // we will post-process any I/Os that ended within the subinterval before returning.
 
-		if (precomputeQ.empty())
-			nextIO_schedule_time = ivytime(0);
-		else
-			nextIO_schedule_time = precomputeQ.front()->scheduled_time;
-			// If we are running at IOPS=max, the scheduled time will be ivytime(0).  It's always time to drive the next I/O.
+        unsigned int n;
 
-		// We only wait for I/O ending events if the precompute queue is full and the postprocess queue is empty
-		// and we aren't going to start new I/Os now because either we are already at the maxTags queue depth
-		// or the scheduled time of the next I/O is in the future.
+        n = reap_IOs();
 
-		// If we are going to wait, we wait for the end of the subinterval or until the scheduled time for the next I/O, whichever occurs earlier.
+        if ( n > 0 )
+        {
+            goto top_of_loop;
+        }
 
-	 	if (0 < postprocessQ.size())
-			waitduration = ivytime(0);
-		else if ( (0.0 == p_current_IosequencerInput->IOPS) || cooldown )
-		{
-			waitduration=subinterval_ending_time - now;
-			while (precomputeQ.size())  // may be paranoiaadd
-			{
-				Eyeo* pEyeo = precomputeQ.front();
-				precomputeQ.pop_front();
-				freeStack.push(pEyeo);
-			}
-		}
-		else if (precomputeQ.size() < precomputedepth)
-			waitduration = ivytime(0);
-		else if ( (nextIO_schedule_time <= now) && (queue_depth < p_current_IosequencerInput->maxTags) )
-			waitduration = ivytime(0);
-		else if (queue_depth >= p_current_IosequencerInput->maxTags)
-			waitduration=subinterval_ending_time - now;
-		else if (nextIO_schedule_time > subinterval_ending_time)
-			waitduration=subinterval_ending_time - now;
-		else
-			waitduration=nextIO_schedule_time - now;
+        n = start_IOs();
 
-		// Did your brain just explode?
+        if ( n > 0 ) { goto top_of_loop; }
 
-		// OK, we've got the wait duration if we are going to have to wait for I/O ending events.
+        n = pop_and_process_an_Eyeo();
 
-		if ((0 == queue_depth) && (ivytime(0) < waitduration))
-		{	// The one case where we simply wait unconditionally is if there are no I/Os in flight
-			// and the scheduled time to start the next I/O is in the future;
+        if ( n > 0 ) { goto top_of_loop; }
 
-			// There are no in-flight I/Os, and it's not time to issue the next I/O yet.
-			struct timespec remainder;
-			if (0 != nanosleep(&(waitduration.t),&remainder) )
-			{
-				std::ostringstream o;
-				o << "<Error> nanosleep() failed " << errno << " - " << strerror(errno) << " at " << __FILE__ << " line " << __LINE__ << "." << std::endl;
-				log(slavethreadlogfile,o.str());
-				//io_destroy(iosequencer_variables.act);
-				dying_words = o.str();
-				state=ThreadState::died;
-                slaveThreadConditionVariable.notify_all();
-				exit(-1);
-				// later we might need to come back if we need to catch or ignore signals
-			}
-			continue;
-		}
+        n = generate_an_IO();
 
-		// First priority is to reap I/Os.
-		if (0 < queue_depth)
-		{	// see if there are any pending I/O ending events
+        if ( n > 0 ) { goto top_of_loop; }
 
-			if (ivytime(0)==waitduration) events_needed=0;
-			else events_needed=1;
+        // We wait for the soonest of
+        //   - end of subinterval
+        //   - time to start next scheduled I/O over my TestLUNs, if there is a scheduled (not IOPS=max) I/O.
 
-			// when we do the io_getevents() call, if we set the mifnimum number of events needed to 0 (zero), I expect the call to be non-blocking;
+        ivytime next_overall_io = ivytime(0);
 
-			if (0 < (reaped = io_getevents(iosequencer_variables.act,events_needed,MAX_IOEVENTS_REAP_AT_ONCE,&(ReapHeap[0]),&(waitduration.t))))
-			{
-				now.setToNow();  // because we may have waited
+        for (auto& pTestLUN : pTestLUNs)
+        {
+            ivytime next_this_LUN = pTestLUN->next_scheduled_io();
 
-#ifdef IVY_TRACK_AIO
-				p_current_SubintervalOutput->u.a.harvestcount.push((ivy_float)reaped);
-				p_current_SubintervalOutput->u.a.preharvestqueuedepth.push((ivy_float)queue_depth);
-#endif
-				for (int i=0; i< reaped; i++) {
-
-					struct io_event* p_event;
-					Eyeo* p_Eyeo;
-					struct iocb* p_iocb;
-
-
-					p_event=&(ReapHeap[i]);
-					p_Eyeo = (Eyeo*) p_event->data;
-					p_iocb = (iocb*) p_event->obj;
-					p_Eyeo->end_time = now;
-					p_Eyeo->return_value = p_event->res;
-					p_Eyeo->errno_value = p_event->res2;
-
-
-                    auto running_IOs_iter = running_IOs.find(p_iocb);
-                    if (running_IOs_iter == running_IOs.end())
-                    {
-                        std::ostringstream o;
-                        o << "<Error> internal processing error - an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
-                            << "that was not found in the ivy workload thread\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
-                            << "  The ivy Eyeo object associated with the completion event describes itself as "
-                            << p_Eyeo->toString()
-                            <<  " at " << __FILE__ << " line " << __LINE__ << std::endl;
-                        dying_words = o.str();
-                        log(slavethreadlogfile,o.str());
-                        io_destroy(iosequencer_variables.act);
-                        state=ThreadState::died;
-                        slaveThreadConditionVariable.notify_all();
-                        exit(-1);
-                    }
-                    running_IOs.erase(running_IOs_iter);
-
-					queue_depth--;
-					postprocessQ.push(p_Eyeo);
-				}
-#ifdef IVY_TRACK_AIO
-				p_current_SubintervalOutput->u.a.postharvestqueuedepth.push((ivy_float)queue_depth);
-#endif
-				continue;  // start back up to the top and only do other stuff if there's nothing to reap
-			}
-		}
-
-		// we have fallen through from harvesting all available events and waiting
-
-		if ( (precomputeQ.size() > 0) && (nextIO_schedule_time <= now) && (queue_depth < p_current_IosequencerInput->maxTags) ) {
-			// It's time to launch the next I/O[s].
-
-			uint64_t launch_count=0;
-			while
-			(
-			        (!precomputeQ.empty())
-			     && (now >= (precomputeQ.front()->scheduled_time))
-			     && (launch_count < (MAX_IOS_LAUNCH_AT_ONCE-1))  // launch count starts at zero
-			     && (queue_depth+launch_count < p_current_IosequencerInput->maxTags)
-			)
-			{
-				LaunchPad[launch_count]=precomputeQ.front();
-				precomputeQ.pop_front();
-				LaunchPad[launch_count]->start_time=now;
-                auto running_IOs_iterator = running_IOs.insert(&(LaunchPad[launch_count]->eyeocb));
-                if (running_IOs_iterator.first == running_IOs.end())
-                {
-                    std::ostringstream o;
-                    o << "<Error> internal processing error - failed trying to insert a Linux aio I/O tracker "
-                        << "into the ivy workload thread\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
-                        << "  The ivy Eyeo object associated with the completion event describes itself as "
-                        << LaunchPad[launch_count]->toString()
-                        <<  "  " << __FILE__ << " line " << __LINE__ << std::endl;
-                    dying_words = o.str();
-                    log(slavethreadlogfile,o.str());
-                    io_destroy(iosequencer_variables.act);
-                    state=ThreadState::died;
-                    slaveThreadConditionVariable.notify_all();
-                    exit(-1);
-                }
-				launch_count++;
-			}
-			rc = io_submit(iosequencer_variables.act, launch_count, (struct iocb **) LaunchPad /* iocb comes first in an Eyeo */);
-			if (-1==rc)
-			{
-                std::ostringstream o;
-                o << "<Error> Asynchronous I/O \"io_submit()\" failed, errno=" << errno << " - " << strerror(errno)
-                    <<  " at " << __FILE__ << " line " << __LINE__ << std::endl;
-                dying_words = o.str();
-                log(slavethreadlogfile,o.str());
-                io_destroy(iosequencer_variables.act);
-                state=ThreadState::died;
-                slaveThreadConditionVariable.notify_all();
-                exit(-1);
-			} else {
-				// return code is number of I/Os succesfully launched.
-
-			    ivytime running_timestamp;
-			    running_timestamp.setToNow();
-			    for (int i=0; i<rc; i++)
-			    {
-					Eyeo* p_Eyeo = (Eyeo*)(LaunchPad[i]->eyeocb.aio_data);
-					p_Eyeo->running_time = running_timestamp;
-			    }
-
-#ifdef IVY_TRACK_AIO
-				p_current_SubintervalOutput->u.a.submitcount.push((ivy_float)rc);
-				p_current_SubintervalOutput->u.a.presubmitqueuedepth.push((ivy_float)queue_depth);
-				p_current_SubintervalOutput->u.a.postsubmitqueuedepth.push((ivy_float)(queue_depth+rc));
-#endif
-				queue_depth+=rc;
-				if (maxqueuedepth<queue_depth) maxqueuedepth=queue_depth;
-
-				// We put back any unsuccessfully launched back into the precomputeQ.
-
-				if (0==rc)log(slavethreadlogfile,
-					"io_submit() return code zero.  No I/Os successfully submitted.\n");
-
-				int number_to_put_back=launch_count - rc;
-
-#ifdef IVY_TRACK_AIO
-				p_current_SubintervalOutput->u.a.putback.push((ivy_float) number_to_put_back);
-#endif
-				if (routine_logging && number_to_put_back>0)
-				{
-					std::ostringstream o;
-					o << "aio context didn\'t take all the I/Os.  Putting " << number_to_put_back << " back." << std::endl;
-					log(slavethreadlogfile,o.str());
-				}
-
-				while (number_to_put_back>0) {
-					// we put them back in reverse order of how they came out
-
-					Eyeo* p_Eyeo = (Eyeo*)(LaunchPad[launch_count-1]->eyeocb.aio_data);
-
-					struct iocb* p_iocb = &(p_Eyeo->eyeocb);
-
-	                auto running_IOs_iter = running_IOs.find(p_iocb);
-                    if (running_IOs_iter == running_IOs.end())
-                    {
-                        std::ostringstream o;
-                        o << "<Error> internal processing error - after a submit was not successful for all I/Os, when trying to "
-                            << "remove from \"running_IOs\" one of the I/Os that wasn\'t successfully launched, that "
-                            << "unsuccessful I/O was not found in \"running_IOs\"."
-                            << "  The ivy Eyeo object associated with the completion event describes itself as "
-                            << p_Eyeo->toString()
-                            <<  " at " << __FILE__ << " line " << __LINE__
-                            ;
-                        dying_words = o.str();
-                        log(slavethreadlogfile,o.str());
-                        io_destroy(iosequencer_variables.act);
-                        state = ThreadState::died;
-                        slaveThreadConditionVariable.notify_all();
-                        exit(-1);
-                    }
-                    running_IOs.erase(running_IOs_iter);
-
-					precomputeQ.push_front(p_Eyeo);
-					launch_count--;
-					number_to_put_back--;
-				}
-			}
-			continue;
-		}
-
-		if (postprocessQ.size()>0) {
-			popandpostprocessoneEyeo();
-			continue;
-		}
-
-		if
-		(
-               ( precomputeQ.size() < precomputedepth )
-            && ( !cooldown )
-            && ( 0.0 != p_current_IosequencerInput->IOPS )
-            && ( ( precomputeQ.size() == 0 ) || ( (now + precompute_horizon) > precomputeQ.back()->scheduled_time ) )
-        )
-		{
-			// precompute an I/O
-			if (freeStack.empty())
-			{
-				std::ostringstream o; o << "<Error> freeStack is empty - can\'t precompute - at " << __FILE__ << " line " << __LINE__ << std::endl;
-				dying_words = o.str();
-				log(slavethreadlogfile,dying_words);
-				io_destroy(iosequencer_variables.act);
-                state = ThreadState::died;
-                slaveThreadConditionVariable.notify_all();
-                exit(-1);
-				// should not occur unless there's a design fault or maybe if CPU-bound
-			}
-			Eyeo* p_Eyeo = freeStack.top();
-			freeStack.pop();
-
-            // deterministic generation of "seed" for this I/O.
-            if (have_writes)
+            if (next_overall_io == ivytime(0))
             {
-                if (doing_dedupe)
-                {
-                    serpentine_number += threads_in_workload_name;
-                    uint64_t new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
-                    while (pattern_number < new_pattern_number)
-                    {
-                        xorshift64star(pattern_seed);
-                        pattern_number++;
-                    }
-                    block_seed = pattern_seed ^ pattern_number;
-                }
-                else
-                {
-                    xorshift64star(block_seed);
-                }
+                next_overall_io = next_this_LUN;
             }
+            else if (next_this_LUN   != ivytime(0) && next_this_LUN < next_overall_io)
+            {
+                next_overall_io = next_this_LUN;
+            }
+        }
 
-			// now need to call the iosequencer function to populate this Eyeo.
-			if (!p_my_iosequencer->generate(*p_Eyeo)) {
-				std::ostringstream o; o << "<Error> iosequencer::generate() failed - at " << __FILE__ << " line " << __LINE__ << std::endl;
-				dying_words = o.str();
-				log(slavethreadlogfile,dying_words);
-				io_destroy(iosequencer_variables.act);
-                state = ThreadState::died;
-                slaveThreadConditionVariable.notify_all();
-                exit(-1);
-			}
-			precomputeQ.push_back(p_Eyeo);
-		}
+        ivytime wait_until_this_time = thread_view_subinterval_end;
 
-	}
+        if (next_overall_io != ivytime(0) && next_overall_io < thread_view_subinterval_end)
+        {
+            wait_until_this_time = next_overall_io;
+        }
 
-	while (postprocessQ.size()>0) popandpostprocessoneEyeo();
-		// This does make it slightly non-responsive at the end of a subinterval ...
+        ivytime wait_duration;
 
+        if (wait_until_this_time <= now)
+        {
+            wait_duration = ivytime(0);
+        }
+        else
+        {
+            wait_duration = wait_until_this_time - now;
+        }
+
+        if (ivyslave.spinloop) goto top_of_loop;
+
+        int wait_ms = static_cast<int>(wait_duration.Milliseconds());
+
+        int epoll_rc = epoll_wait(epoll_fd, p_epoll_events, pTestLUNs.size(), wait_ms);
+
+        if (epoll_rc < 0)
+        {
+            std::ostringstream o;
+            o << "<Error> Internal programming error - in WorkloadThread, epoll_wait() failed - "
+                << " return code = " << epoll_rc << " - " << strerror(errno)
+                << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
+            die_saying(o.str());
+        }
+
+        if (epoll_rc > 0)
+        {
+            epoll_event* p_ee = p_epoll_events;
+
+            for ( int i = 0; i < epoll_rc; i++ )
+            {
+               TestLUN* pTestLUN = (TestLUN*) p_ee->data.ptr;
+               pTestLUN->reap_IOs();
+               p_ee++;
+            }
+        }
+
+        goto top_of_loop;
+    }
+
+#ifdef IVYSLAVE_TRACE
+    log_bookmark_counters();
+#endif
 
 	return true;
 }
 
-bool WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
+
+void WorkloadThread::cancel_stalled_IOs()
 {
-	ivytime catch_wait_duration(10); // seconds. Some disk drive error recovery can take 30 seconds or on un-mirrored SATA boot drives as long as two minutes.
+#if defined(IVYSLAVE_TRACE)
+    { wt_callcount_cancel_stalled_IOs++; if (wt_callcount_cancel_stalled_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << core << ':' << wt_callcount_cancel_stalled_IOs << ") ";
+    o << "Entering WorkloadThread::cancel_stalled_IOs()."; log(slavethreadlogfile,o.str()); } }
+#endif
 
-    ivytime entry; entry.setToNow();
-    ivytime timeout = entry + catch_wait_duration;
+    for (auto& pTestLUN : pTestLUNs)
+    {
+        for (auto& pear : pTestLUN->workloads)
+        {
+            Workload* pWorkload = &(pear.second);
+            {
+                std::list<struct iocb*> l;
 
-    ivytime now;
+                for (auto& p_iocb : pWorkload->running_IOs)
+                {
+                    Eyeo* p_Eyeo = (Eyeo*) p_iocb->aio_data;
+                    if (p_Eyeo->since_start_time() > ivytime(IO_TIME_LIMIT_SECONDS)) l.push_back(p_iocb);
+                }
+                // I didn't want to be iterating over running_IOs when cancelling I/Os, as the cancel deletes the I/O from running_IOs.
+                for (auto p_iocb : l) pTestLUN->ivy_cancel_IO(p_iocb);
+            }
+        }
+    }
+}
 
-	while (0 < queue_depth)
-	{
-        ivytime now;
 
+unsigned int WorkloadThread::start_IOs()
+{
+#if defined(IVYSLAVE_TRACE)
+    { wt_callcount_start_IOs++; if (wt_callcount_start_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << core << ':' << wt_callcount_start_IOs << ") ";
+    o << "Entering WorkloadThread::start_IOs().";log(slavethreadlogfile,o.str()); } }
+#endif
+
+    if (pTestLUNs.size() == 0) return 0;
+
+    std::vector<TestLUN*>::iterator it = pTestLUN_start_IOs_bookmark;
+
+#ifdef IVYSLAVE_TRACE
+    (*it)->start_IOs_bookmark_count++;
+#endif
+
+    unsigned int n {0};
+
+    while (true)
+    {
+        TestLUN* pTestLUN = *it;
+
+#ifdef IVYSLAVE_TRACE
+        pTestLUN->start_IOs_body_count++;
+#endif
+
+        n += pTestLUN->start_IOs();
+
+        if ( n > 0 )
+        {
+            break; // This could have started I/Os for multiple Workloads within the LUN,
+                   // but after this amount of work, we will go back to check for
+                   // I/O completions before processing the next TestLUN.
+                   // A round robbin iterator bookmark gives each TestLUN the same
+                   // priority overall.
+        }
+
+        it++; if (it == pTestLUNs.end()) { it = pTestLUNs.begin(); }
+
+        if (it == pTestLUN_start_IOs_bookmark) break;
+    }
+
+    pTestLUN_start_IOs_bookmark ++;
+
+    if (pTestLUN_start_IOs_bookmark == pTestLUNs.end())
+    {
+        pTestLUN_start_IOs_bookmark =  pTestLUNs.begin();
+    }
+
+    return n;
+}
+
+unsigned int WorkloadThread::reap_IOs()
+{
+#if defined(IVYSLAVE_TRACE)
+    { wt_callcount_reap_IOs++; if (wt_callcount_reap_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << core << ':' << wt_callcount_reap_IOs << ") ";
+    o << "Entering WorkloadThread::reap_IOs()."; log(slavethreadlogfile,o.str()); } }
+#endif
+
+    if (pTestLUNs.size() == 0) return 0;
+
+    std::vector<TestLUN*>::iterator itr = pTestLUN_reap_IOs_bookmark;
+
+#ifdef IVYSLAVE_TRACE
+    (*itr)->reap_IOs_bookmark_count++;
+#endif
+
+    unsigned int n {0};
+
+    while (true)
+    {
+        TestLUN* pTestLUN = *itr;
+
+#ifdef IVYSLAVE_TRACE
+        pTestLUN->reap_IOs_body_count++;
+#endif
+
+        n += pTestLUN->reap_IOs();
+
+        itr++;
+
+        if (itr == pTestLUNs.end())
+        {
+            itr = pTestLUNs.begin();
+        }
+
+        if (itr == pTestLUN_reap_IOs_bookmark) break;
+    }
+
+    pTestLUN_reap_IOs_bookmark++;
+
+    if (pTestLUN_reap_IOs_bookmark == pTestLUNs.end())
+    {
+        pTestLUN_reap_IOs_bookmark = pTestLUNs.begin();
+    }
+
+    return n;
+}
+
+unsigned int WorkloadThread::pop_and_process_an_Eyeo()
+{
+#if defined(IVYSLAVE_TRACE)
+    { wt_callcount_pop_and_process_an_Eyeo++; if (wt_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << core << ':' << wt_callcount_pop_and_process_an_Eyeo << ") ";
+    o << "Entering WorkloadThread::pop_and_process_an_Eyeo()."; log(slavethreadlogfile,o.str()); } }
+#endif
+
+    if (pTestLUNs.size() == 0) return 0;
+
+    std::vector<TestLUN*>::iterator it = pTestLUN_pop_bookmark;
+
+#ifdef IVYSLAVE_TRACE
+    (*it)->pop_n_p_bookmark_count++;
+#endif
+    unsigned int n {0};
+
+    while (true)
+    {
+        TestLUN* pTestLUN = (*it);
+
+#ifdef IVYSLAVE_TRACE
+        pTestLUN->pop_n_p_body_count++;
+#endif
+
+        n += pTestLUN->pop_and_process_an_Eyeo();
+
+        if ( n > 0 ) break;
+
+        it++; if (it == pTestLUNs.end()) it = pTestLUNs.begin();
+
+        if (it == pTestLUN_pop_bookmark) break;
+    }
+
+    pTestLUN_pop_bookmark++;
+
+    if (pTestLUN_pop_bookmark == pTestLUNs.end())
+    {
+        pTestLUN_pop_bookmark =  pTestLUNs.begin();
+    }
+
+    return n;
+}
+
+unsigned int WorkloadThread::generate_an_IO()
+{
+#if defined(IVYSLAVE_TRACE)
+    { wt_callcount_generate_an_IO++; if (wt_callcount_generate_an_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << core << ':' << wt_callcount_generate_an_IO << ") ";
+    o << "Entering WorkloadThread::generate_an_IO()."; log(slavethreadlogfile,o.str()); } }
+#endif
+
+    if (pTestLUNs.size() == 0) return 0;
+
+    auto it = pTestLUN_generate_bookmark;
+
+#ifdef IVYSLAVE_TRACE
+    (*it)->generate_bookmark_count++;
+#endif
+
+    unsigned int n {0};
+
+    while (true)
+    {
+        TestLUN* pTestLUN = (*it);
+
+#ifdef IVYSLAVE_TRACE
+        pTestLUN->generate_body_count++;
+#endif
+
+        n += pTestLUN->generate_an_IO();
+
+        if ( n > 0 ) break;
+
+        it++; if (it == pTestLUNs.end()) it = pTestLUNs.begin();
+
+        if (it == pTestLUN_generate_bookmark) break;
+    }
+
+    pTestLUN_generate_bookmark++;
+
+    if (pTestLUN_generate_bookmark == pTestLUNs.end())
+    {
+        pTestLUN_generate_bookmark =  pTestLUNs.begin();
+    }
+
+    return n;
+}
+
+void WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
+{
+#if defined(IVYSLAVE_TRACE)
+    { wt_callcount_catch_in_flight_IOs_after_last_subinterval++; if (wt_callcount_catch_in_flight_IOs_after_last_subinterval <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << core << ':' << wt_callcount_catch_in_flight_IOs_after_last_subinterval << ") ";
+    o << "Entering WorkloadThread::catch_in_flight_IOs_after_last_subinterval() for core " << core << "."; log(slavethreadlogfile,o.str()); } }
+#endif
+
+    ivytime half_a_subinterval = ivytime(ivyslave.subinterval_duration.getlongdoubleseconds() / 2.0);
+
+    ivytime limit_time;
+    limit_time.setToNow();
+    limit_time = limit_time + half_a_subinterval;
+
+    // First we try to harvest I/Os normally for half a subinterval
+
+    while (workload_thread_queue_depth > 0)
+    {
+        ivytime now, then;
         now.setToNow();
+        then = now + ivytime(0.1); // 1/10th of a second
 
-        if ( now >= timeout ) break;
+        if (now > limit_time) break;
 
-		int events_needed=1;
-
-		// when we do the io_getevents() call, if we set the minimum number of events needed to 0 (zero), I expect the call to be non-blocking;
-
-		if (0 < (reaped = io_getevents(iosequencer_variables.act,events_needed,MAX_IOEVENTS_REAP_AT_ONCE,&(ReapHeap[0]),&(catch_wait_duration.t))))
-		{
-			queue_depth-=reaped;
-
-            for (int i=0; i< reaped; i++)
+        for (auto& pTestLUN : pTestLUNs)
+        {
+            if (pTestLUN->testLUN_queue_depth > 0)
             {
-                struct io_event* p_event;
-                Eyeo* p_Eyeo;
-                struct iocb* p_iocb;
-
-                p_event=&(ReapHeap[i]);
-                p_Eyeo = (Eyeo*) p_event->data;
-                p_iocb = (iocb*) p_event->obj;
-
-                auto running_IOs_iter = running_IOs.find(p_iocb);
-                if (running_IOs_iter == running_IOs.end())
-                {
-                    std::ostringstream o;
-                    o << "<Error> internal processing error - during catch in flight IOs after last subinterval, an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
-                        << "that was not found in the ivy workload thread\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
-                        << "  The ivy Eyeo object associated with the completion event describes itself as "
-                        << p_Eyeo->toString()
-                        <<  "  " << __FILE__ << " line " << __LINE__
-                        ;
-                    dying_words = o.str();
-                    log(slavethreadlogfile,o.str());
-                    io_destroy(iosequencer_variables.act);
-                    state = ThreadState::died;
-                    slaveThreadConditionVariable.notify_all();
-                    exit(-1);
-                }
-                running_IOs.erase(running_IOs_iter);
+                pTestLUN->catch_in_flight_IOs();
+                // This harvests as many as it can waiting up to 1 ms.
             }
-		}
-		else if (0== reaped)
-		{
-			break; // timed out
-		}
-		else
-		{
-            std::ostringstream o;
-            o << "<Error> WorkloadThread::catch_in_flight_IOs_after_last_subinterval() - io_getevents() failed at " << __FILE__ << " line " << __LINE__ ;
-            dying_words= o.str();
-            log(slavethreadlogfile,o.str());
-            io_destroy(iosequencer_variables.act);
-            state = ThreadState::died;
-            slaveThreadConditionVariable.notify_all();
-            exit(-1);
-		}
-	}
-
-    if (queue_depth != running_IOs.size())
-    {
-        std::ostringstream o;
-        o << "<Error> internal processing error - before cancelling any remaining I/Os still running more than " << catch_wait_duration.format_as_duration_HMMSS()
-            << " after subinterval end.  Found to our consternation that queue_depth was "<< queue_depth << " but running_IOs.size() was " << running_IOs.size()
-            <<  "  " << __FILE__ << " line " << __LINE__ ;
-        dying_words= o.str();
-        log(slavethreadlogfile,o.str());
-        io_destroy(iosequencer_variables.act);
-        state = ThreadState::died;
-        slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        }
+        then.waitUntilThisTime();
     }
 
-    for (auto& p_iocb : running_IOs)
+    // Now that we have tried to harvest running I/Os for a full
+    // subinterval duration, we cancel any remaining I/Os.
+
+    for (auto& pTestLUN : pTestLUNs)
     {
-        ivy_cancel_IO(p_iocb);
+        for (auto& pear : pTestLUN->workloads)
+        {
+            auto pWorkload = &pear.second;
+
+            for (auto& p_iocb : pWorkload->running_IOs)
+            {
+                pTestLUN->ivy_cancel_IO(p_iocb);
+            }
+
+            pWorkload->running_IOs.clear();
+            pWorkload->workload_queue_depth=0;
+        }
+        pTestLUN->testLUN_queue_depth = 0;
     }
 
-    running_IOs.clear();
-
-	io_destroy(iosequencer_variables.act);
-
-	return true;
+    workload_thread_queue_depth = 0;
 }
 
-void WorkloadThread::ivy_cancel_IO(struct iocb* p_iocb)
+void WorkloadThread::set_all_queue_depths_to_zero()
 {
-    Eyeo* p_Eyeo = (Eyeo*) p_iocb->aio_data;
+    workload_thread_queue_depth = 0;
+    workload_thread_max_queue_depth = 0;
 
-
-    auto it = running_IOs.find(p_iocb);
-    if (it == running_IOs.end())
+    for (auto& pTestLUN : pTestLUNs)
     {
-        std::ostringstream o;
-        o << "<Error> ivy_cancel_IO was called to cancel an I/O that ivy wasn\'t tracking as running.  The I/O describes itself as " << p_Eyeo->toString()
-            << ".  Occurred at line " << __LINE__ << " of " << __FILE__ << ".";
-        dying_words= o.str();
-        log(slavethreadlogfile,o.str());
-        io_destroy(iosequencer_variables.act);
-        state = ThreadState::died;
-        slaveThreadConditionVariable.notify_all();
-        exit(-1);
-    }
+        pTestLUN->testLUN_queue_depth = 0;
+        pTestLUN->testLUN_max_queue_depth = 0;
 
-    {
-        std::ostringstream o;
-        o << "<Warning> about to cancel an I/O operation that has been running for " << (p_Eyeo->since_start_time()).format_as_duration_HMMSSns()
-            << " described as " << p_Eyeo->toString();
-        log(slavethreadlogfile,o.str());
-    }
-
-    struct io_event ioev;
-
-    long rc = EAGAIN;
-
-    ivy_int retry_count = 0;
-
-    while (rc == EAGAIN)
-    {
-        retry_count++;
-        if (retry_count > 100)
+        for (auto& pear : pTestLUN->workloads)
         {
-            std::ostringstream o;
-            o << "<Error> after over 100 retries of the system call to cancel an I/O, ivy_cancel_IO() is abandoning the attempt."
-                << "  Occurred at line " << __LINE__ << " of " << __FILE__ << ".";;
-            dying_words= o.str();
-            log(slavethreadlogfile,o.str());
-            io_destroy(iosequencer_variables.act);
-            state = ThreadState::died;
-            slaveThreadConditionVariable.notify_all();
-            exit(-1);
+            pear.second.workload_queue_depth = 0;
+            pear.second.workload_max_queue_depth = 0;
         }
-        rc = io_cancel(iosequencer_variables.act,p_iocb, &ioev);
-    }
-
-    if (rc == 0)
-    {
-        running_IOs.erase(it);
-        cancelled_IOs++;
-        return;
-    }
-
-    {
-        std::ostringstream o;
-        o << "<Error> in " << __FILE__ << " line " << __LINE__ << " in ivy_cancel_IO(), system call to cancel the I/O failed saying - ";
-        switch (rc)
-        {
-            case EINVAL:
-                o << "EINVAL - invalid AIO context";
-                break;
-            case EFAULT:
-                o << "EFAULT - one of the data structures points to invalid data";
-                break;
-            case ENOSYS:
-                o << "ENOSYS - io_cancel() not supported on this system.";
-                break;
-            default:
-                o << "unknown error return code " << rc;
-        }
-        log(slavethreadlogfile,o.str());
     }
     return;
 }
 
-void WorkloadThread::cancel_stalled_IOs()
-{
-    std::list<struct iocb*> l;
 
-    for (auto& p_iocb : running_IOs)
+void WorkloadThread::post_Error_for_main_thread_to_say(const std::string& msg)
+{
+    std::string e {"<Error> "};
+
+    std::string s {};
+
+    if (startsWith(msg,e)) { s = msg; }
+    else                   { s = e + msg; }
+
     {
-        Eyeo* p_Eyeo = (Eyeo*) p_iocb->aio_data;
-        if (p_Eyeo->since_start_time() > max_io_run_time_seconds) l.push_back(p_iocb);
+        std::lock_guard<std::mutex> lk_guard(*p_ivyslave_main_mutex);
+        ivyslave.workload_thread_error_messages.push_back(s);
     }
-    // I didn't want to be iterating over running_IOs when cancelling I/Os, as the cancel deletes the I/O from running_IOs.
-    for (auto p_iocb : l) ivy_cancel_IO(p_iocb);
 }
+
+
+void WorkloadThread::post_Warning_for_main_thread_to_say(const std::string& msg)
+{
+    std::string w {"<Warning> "};
+
+    std::string s {};
+
+    if (startsWith(msg,w)) { s = msg; }
+    else                   { s = w + msg; }
+
+    {
+        std::lock_guard<std::mutex> lk_guard(*p_ivyslave_main_mutex);
+        ivyslave.workload_thread_warning_messages.push_back(s);
+    }
+}
+
+#ifdef IVYSLAVE_TRACE
+void WorkloadThread::log_bookmark_counters()
+{
+    std::ostringstream o;
+
+    o << std::endl;
+
+    o << "Cumulative bookmark totals:" << std::endl;
+
+    unsigned int total_start_IOs_bookmark_count = 0;
+    unsigned int total_reap_IOs_bookmark_count = 0;
+    unsigned int total_pop_n_p_bookmark_count = 0;
+    unsigned int total_generate_bookmark_count = 0;
+
+    unsigned int total_start_IOs_body_count = 0;
+    unsigned int total_reap_IOs_body_count = 0;
+    unsigned int total_pop_n_p_body_count = 0;
+    unsigned int total_generate_body_count = 0;
+
+    for (auto& pTestLUN : pTestLUNs)
+    {
+        total_start_IOs_bookmark_count += pTestLUN->start_IOs_bookmark_count;
+        total_reap_IOs_bookmark_count  += pTestLUN->reap_IOs_bookmark_count;
+        total_pop_n_p_bookmark_count   += pTestLUN->pop_n_p_bookmark_count;
+        total_generate_bookmark_count  += pTestLUN->generate_bookmark_count;
+
+        total_start_IOs_body_count += pTestLUN->start_IOs_body_count;
+        total_reap_IOs_body_count  += pTestLUN->reap_IOs_body_count;
+        total_pop_n_p_body_count   += pTestLUN->pop_n_p_body_count ;
+        total_generate_body_count  += pTestLUN->generate_body_count;
+
+        pTestLUN->total_start_IOs_Workload_bookmark_count = 0;
+        pTestLUN->total_start_IOs_Workload_body_count = 0;
+        pTestLUN->total_pop_one_bookmark_count = 0;
+        pTestLUN->total_pop_one_body_count = 0;
+        pTestLUN->total_generate_one_bookmark_count = 0;
+        pTestLUN->total_generate_one_body_count = 0;
+
+        for (auto& pear: pTestLUN->workloads)
+        {
+            pTestLUN->total_start_IOs_Workload_bookmark_count += pear.second.start_IOs_Workload_bookmark_count;
+            pTestLUN->total_start_IOs_Workload_body_count += pear.second.start_IOs_Workload_body_count;
+            pTestLUN->total_pop_one_bookmark_count += pear.second.pop_one_bookmark_count;
+            pTestLUN->total_pop_one_body_count += pear.second.pop_one_body_count;
+            pTestLUN->total_generate_one_bookmark_count += pear.second.generate_one_bookmark_count;
+            pTestLUN->total_generate_one_body_count += pear.second.generate_one_body_count;
+        }
+    }
+
+    for (auto& pTestLUN : pTestLUNs)
+    {
+        o << pTestLUN->host_plus_lun << ": ";
+
+        o << "start_IOs"
+
+            << " bookmark " << pTestLUN->start_IOs_bookmark_count
+                << " (" << std::fixed << std::setprecision(2)
+                << (100.0 * ((ivy_float) pTestLUN->start_IOs_bookmark_count) / ((ivy_float) total_start_IOs_bookmark_count)) << "%)"
+
+            << " body " << pTestLUN->start_IOs_body_count
+                << " (" << std::fixed << std::setprecision(2)
+                << (100.0 * ((ivy_float) pTestLUN->start_IOs_body_count) / ((ivy_float) total_start_IOs_body_count)) << "%)";
+
+        o << ", reap_IOs"
+
+            << " bookmark " << pTestLUN->reap_IOs_bookmark_count
+                << " (" << std::fixed << std::setprecision(2)
+                << (100.0 * ((ivy_float) pTestLUN->reap_IOs_bookmark_count) / ((ivy_float) total_reap_IOs_bookmark_count)) << "%)"
+
+            << " body " << pTestLUN->reap_IOs_body_count
+                << " (" << std::fixed << std::setprecision(2)
+                << (100.0 * ((ivy_float) pTestLUN->reap_IOs_body_count) / ((ivy_float) total_reap_IOs_body_count)) << "%)";
+
+        o << ", pop_n_p"
+
+            << " bookmark " << pTestLUN->pop_n_p_bookmark_count
+                << " (" << std::fixed << std::setprecision(2)
+                << (100.0 * ((ivy_float) pTestLUN->pop_n_p_bookmark_count) / ((ivy_float) total_pop_n_p_bookmark_count)) << "%)"
+
+            << " body " << pTestLUN->pop_n_p_body_count
+                << " (" << std::fixed << std::setprecision(2)
+                << (100.0 * ((ivy_float) pTestLUN->pop_n_p_body_count) / ((ivy_float) total_pop_n_p_body_count)) << "%)";
+
+
+        o << ", generate"
+
+            << " bookmark " << pTestLUN->generate_bookmark_count
+                << " (" << std::fixed << std::setprecision(2)
+                << (100.0 * ((ivy_float) pTestLUN->generate_bookmark_count) / ((ivy_float) total_generate_bookmark_count)) << "%)"
+
+            << " body " << pTestLUN->generate_body_count
+                << " (" << std::fixed << std::setprecision(2)
+                << (100.0 * ((ivy_float) pTestLUN->generate_body_count) / ((ivy_float) total_generate_body_count)) << "%)";
+
+        o << std::endl;
+
+
+        for (auto& pear: pTestLUN->workloads)
+        {
+            o << pear.second.workloadID << " : " << pear.second.brief_status() << std::endl;
+
+            o << "start_IOs_Workload"
+
+                << " bookmark " << pear.second.start_IOs_Workload_bookmark_count
+                    << " (" << std::fixed << std::setprecision(2)
+                    << (100.0 * ((ivy_float) pear.second.start_IOs_Workload_bookmark_count ) / ((ivy_float) pTestLUN->total_start_IOs_Workload_bookmark_count)) << "%)"
+
+                << " body " << pear.second.start_IOs_Workload_body_count
+                    << " (" << std::fixed << std::setprecision(2)
+                    << (100.0 * ((ivy_float) pear.second.start_IOs_Workload_body_count) / ((ivy_float) pTestLUN->total_start_IOs_Workload_body_count)) << "%)";
+
+            o << "pop_one"
+
+                << " bookmark " << pear.second.pop_one_bookmark_count
+                    << " (" << std::fixed << std::setprecision(2)
+                    << (100.0 * ((ivy_float) pear.second.pop_one_bookmark_count ) / ((ivy_float) pTestLUN->total_pop_one_bookmark_count)) << "%)"
+
+                << " body " << pear.second.pop_one_body_count
+                    << " (" << std::fixed << std::setprecision(2)
+                    << (100.0 * ((ivy_float) pear.second.pop_one_body_count) / ((ivy_float) pTestLUN->total_pop_one_body_count)) << "%)";
+
+            o << "generate_one"
+
+                << " bookmark " << pear.second.generate_one_bookmark_count
+                    << " (" << std::fixed << std::setprecision(2)
+                    << (100.0 * ((ivy_float) pear.second.generate_one_bookmark_count ) / ((ivy_float) pTestLUN->total_generate_one_bookmark_count)) << "%)"
+
+                << " body " << pear.second.generate_one_body_count
+                    << " (" << std::fixed << std::setprecision(2)
+                    << (100.0 * ((ivy_float) pear.second.generate_one_body_count) / ((ivy_float) pTestLUN->total_generate_one_body_count)) << "%)";
+
+
+            o << std::endl;
+        }
+    }
+
+    log(slavethreadlogfile,o.str());
+
+    return;
+}
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

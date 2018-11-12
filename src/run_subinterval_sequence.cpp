@@ -29,6 +29,7 @@ extern bool routine_logging;
 extern bool trace_lexer;
 extern bool trace_parser;
 extern bool trace_evaluate;
+extern bool spinloop;
 
 extern void say_and_log(const std::string& s);
 
@@ -244,6 +245,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
             std::ostringstream o;
             o << "Go!" << m_s.subintervalLength.toString();
+            if (spinloop) { o << "-spinloop"; }
             pear.second->commandString = o.str();
             pear.second->command=true;
             pear.second->commandComplete=false;
@@ -495,7 +497,9 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 if (!pear.second->commandSuccess)
                 {
                     std::ostringstream o;
-                    o << std::endl << std::endl << "When waiting for \"get subinterval result\" to complete, subthread for " << pear.first << " posted an error, saying "  << pear.second->commandErrorMessage << std::endl;
+                    o << std::endl << std::endl << "When waiting for \"get subinterval result\" to complete, subthread for "
+                        << pear.first << " posted an error, saying:" << std::endl
+                        << pear.second->commandErrorMessage << std::endl;
                     std::cout << o.str();
                     log (m_s.masterlogfile,o.str());
                     m_s.kill_subthreads_and_exit();

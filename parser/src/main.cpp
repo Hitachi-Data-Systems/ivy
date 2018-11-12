@@ -42,6 +42,7 @@ std::string inter_statement_divider {"==========================================
 
 bool routine_logging {false};
 bool rest_api {false};
+bool spinloop {false};
 
 void usage_message(char* argv_0)
 {
@@ -177,7 +178,8 @@ int main(int argc, char* argv[])
         if (item == "-trace_lexer"    || item == "-l") { routine_logging = trace_lexer = true; continue; }
         if (item == "-trace_parser"   || item == "-p") { routine_logging = trace_parser = true; continue; }
         if (item == "-trace_evaluate" || item == "-e") { routine_logging = trace_evaluate = true; continue; }
-        if (item == "-no_cmd" )                        { m_s.use_command_device = false; continue; }
+        if (item == "-no_cmd")                         { m_s.use_command_device = false; continue; }
+        if (item == "-spinloop")                       { spinloop = true; continue; }
 
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }
 

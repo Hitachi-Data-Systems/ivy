@@ -52,7 +52,7 @@ WorkloadTracker::WorkloadTracker(std::string ID, std::string iosequencer_name, L
 std::string WorkloadTracker::toString()
 {
 	std::ostringstream o;
-	o << "WorkloadTracker workloadID = \"" << workloadID.workloadID << "\", LUN = " << workloadLUN.toString();
+	o << "WorkloadTracker workloadID = \"" << workloadID << "\", LUN = " << workloadLUN.toString();
 	return o.str();
 }
 

@@ -50,11 +50,11 @@
 #include <linux/aio_abi.h>
 #include <semaphore.h>
 #include <chrono>
+#include <vector>
 
 using namespace std;
 
 #include "ivytime.h"
-#include "iosequencer_stuff.h"
 #include "WorkloadID.h"
 #include "ListOfWorkloadIDs.h"
 #include "LUN.h"
@@ -73,48 +73,140 @@ using namespace std;
 #include "Subinterval.h"
 #include "WorkloadThread.h"
 
+void initialize_io_time_clip_levels(); // see Accumulators_by_io_type.cpp
+
+extern std::string printable_ascii;
+extern bool routine_logging;
+
+struct IvySlave
+{
+        // There is one external instance "ivyslave" of this class
+        // that is visible both to the main thread and to WorkloadThreads.
+
+        // It's the main thread that builds and owns the Workload-TestLUN data
+        // structures.
+
+        // TestLUNs are created with the first associated [CreateWorklaod],
+        // and destroyed with the last associated [DeleteWorkload].
+
+        // Upon "go", distribute_TestLUNs_over_cores() does a
+        // round robin reassignment of whatever TestLUNs exist at that time
+        // to the various WorkloadThreads.
+
+        // Thus there is a hierarchy:
+
+        //   There is one externally visible instance of IvySlave called ivyslave.
+        //        ivyslave has WorkloadThreads, one per core.
+        //            a WorkloadThread has an assigned set of pointers to TestLUNs
+        //        ivyslave has a map of TestLUNs which each have one or more Workloads.
+
+        // WorkloadThreads are only used during a "go" and then only if they have any assigned TestLUNs.
+
+
+
 
 // variables
 
-std::string hostname;
+    std::string hostname;
 
-std::unordered_map<std::string, WorkloadThread*>
-	workload_threads;  // Key looks like "workloadName:host:00FF:/dev/sdxx:2A"
+    std::mutex ivyslave_main_mutex;
 
-ivytime
-	test_start_time,
-	subinterval_duration,
-	master_thread_subinterval_end_time,
-	lasttime;
+    std::map<unsigned int,WorkloadThread*> all_workload_threads {};
 
-int
-	next_to_harvest_subinterval,
-	otherSubinterval,
-	running_subinterval;
+    std::map<unsigned int,WorkloadThread*>     workload_threads {}; // the ones with TestLUNs/Workloads
 
-struct procstatcounters
-	interval_start_CPU, interval_end_CPU;
+    std::map<std::string /* host+LUN part of workloadID */, TestLUN>
+        testLUNs {};
 
 
-// the next "harvest" bit follows the currently being harvested subinterval
-// this switches over at barrier 2 to the next subinterval
-int
-    harvest_subinterval_number;
+    ivytime
+        test_start_time,
+        subinterval_duration,
+        ivyslave_view_subinterval_start,
+        ivyslave_view_subinterval_end,
+        lasttime;
 
-ivytime
-    harvest_start,
-    harvest_end;
+    int
+        next_to_harvest_subinterval,
+        otherSubinterval;
 
-std::string
-	slavelogfile;
+    struct procstatcounters
+        interval_start_CPU, interval_end_CPU;
 
-bool routine_logging {false};
 
-std::string printable_ascii;
+    // the next "harvest" bit follows the currently being harvested subinterval
+    // this switches over at barrier 2 to the next subinterval
+    int
+        harvest_subinterval_number;
 
-std::ostringstream WorkloadThread_dying_words;
+    ivytime
+        harvest_start,
+        harvest_end;
 
-ivytime last_message_time = ivytime(0);
+    std::string
+        slavelogfile,
+        input_line;
+
+    std::ostringstream WorkloadThread_dying_words;
+
+    ivytime last_message_time = ivytime(0);
+
+    	std::vector<std::string> luns;
+
+	discovered_LUNs disco;
+	std::string header_line{""};
+	std::string disco_line{""};
+
+	std::map<std::string, LUN*> LUNpointers;
+		// The map is from "/dev/sdxxx" to LUN*
+		// We don't know what our ivyscript hostname is, as that gets glued on at the master end.
+		// But the WorkloadID for each workload thread is named ivyscript_hostname+/dev/sdxxx+workload_name, so you can see the ivyscript_hostname there if you need it.
+
+	std::string bracketedExit{"[Exit]"};
+	std::string bracketedCreateWorkload{"[CreateWorkload]"};
+	std::string bracketedDeleteWorkload{"[DeleteWorkload]"};
+	std::string remainder;
+	std::string subinterval_duration_as_string;
+
+    bool cooldown_flag;
+
+    bool spinloop {false};
+
+    std::vector<std::string> workload_thread_error_messages {};
+    std::vector<std::string> workload_thread_warning_messages {};
+
+// methods
+
+    int main(int argc, char* argv[]);
+
+    void say(std::string s);
+
+    void create_workload();
+
+    void edit_workload();
+
+    void delete_workload();
+
+    void go();
+
+    void distribute_TestLUNs_over_cores();
+
+    bool waitForSubintervalEndThenHarvest();
+
+    void continue_or_cooldown();
+
+    void stop();
+
+    void killAllSubthreads();
+
+    void log_TestLUN_ownership();
+
+    void log_iosequencer_settings(const std::string&);
+};
+
+extern struct IvySlave ivyslave;
+
+
 
 // ivyslave gets commands from pipe_driver_subthread:
 //
@@ -172,15 +264,38 @@ ivytime last_message_time = ivytime(0);
 //
 
 
-
-
-
-
-
-
-
-
-
+//There are three views of subinterval numbers and starting/ending times:
+//
+//    - The ivyslave_view is for the purposes of the ivyslave main thread.
+//
+//        - for example, "test start time" is an ivyslave_view item, that is
+//          referenced by all threads.
+//
+//        - ivyslave_view subinterval numbers and times are what you typically
+//          use in ivyslave main thread log messages, and would reflect
+//          where the ivyslave main thread was in the subinterval cycle.
+//
+//    - The thread_view is for the purposes of a WorkloadThread.
+//
+//        - A workload thread will iterate in general over multiple TestLUNs
+//          and their Workloads for each increment of thread_view subinterval
+//          numbers and starting/ending times.
+//
+//        - Different threads will each update their numbers / times asynchronously.
+//
+//        - Messages from WorkloadThread with thread_view subinterval numbers
+//          and times reflect where WorkloadThread was in its subinterval cycle.
+//
+//    - The workload_view times are as seen by the live running workload
+//      and are incremented during switchover().
+//
+//    Another thing to note is that the end of a subinterval at the thread
+//    view level will occur after all the output data for that subinterval have
+//    been processed and sent as a detail line to the ivy main host.
+//
+//     - This is later than when, during switchover(), the workload view
+//       subinterval numbers and starting/ending times had switched to the
+//       next subinterval.
 
 
 

@@ -146,8 +146,6 @@ bool normalized_identifier_equality(const std::string& s1, const std::string& s2
 
 std::string remove_trailing_fractional_zeros(std::string s);
 
-std::string rewrite_HHMMSS_to_seconds(std::string s);
-
 std::string byte_as_hex(unsigned char);
 
 std::string left(const std::string&,unsigned int);  // leftmost "n" characters

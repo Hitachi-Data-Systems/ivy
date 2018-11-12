@@ -19,21 +19,27 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include "iosequencer_stuff.h"
 #include "Eyeo.h"
 #include "IosequencerInput.h"
 #include "ivytime.h"
 #include "LUN.h"
+
+class TestLUN;
+class WorkloadThread;
+class Workload;
+class Eyeo;
 
 class Iosequencer
 {
 
 public:
 	LUN* pLUN;
+
 	std::string logfilename;
 	WorkloadID workloadID;
-	iosequencer_stuff* p_iosequencer_stuff;
-	WorkloadThread* p_WorkloadThread;
+	WorkloadThread* pWorkloadThread;
+	TestLUN* pTestLUN;
+	Workload* pWorkload;
 
 	bool parameters_are_valid=false;  // this will be set by setFrom_IosequencerInput()
 
@@ -73,12 +79,15 @@ public:
 
 		// These values are set by iosequencer::setFrom_IosequencerInput().
 
+    uint64_t number_of_IOs_generated{0}; // A fresh Iosequencer object is created for each "go".  Don't need to further initialize.
+
 //methods:
 
-	Iosequencer(LUN* pL, std::string lf, std::string wID, iosequencer_stuff* p_is, WorkloadThread* pWT)
-		: pLUN(pL), logfilename(lf), workloadID(wID), p_iosequencer_stuff(p_is), p_WorkloadThread(pWT) {}
+	Iosequencer(LUN* pL, std::string lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
+		: pLUN(pL), logfilename(lf), workloadID(wID), pWorkloadThread(pWT), pTestLUN(p_tl), pWorkload(p_w) {}
 
-	virtual bool generate(Eyeo&)=0;
+	virtual bool generate(Eyeo& e);
+
 	virtual bool isRandom()=0;  // This is used to plug the I/O statistics into "random" and "sequential" categories.
 
 	virtual bool setFrom_IosequencerInput(IosequencerInput*);  // This base class function should be called first
@@ -88,6 +97,7 @@ public:
 		// Returns "random_steady" or "random independent", or "sequential",
 		// or in future things like trace playback or use of advanced statistical generators.
 
+    virtual ~Iosequencer(){}
 };
 
 

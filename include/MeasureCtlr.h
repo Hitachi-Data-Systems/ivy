@@ -46,8 +46,6 @@ public:
 
 	virtual DFCcategory category() override {return DFCcategory::measure;}
 
-
-
 };
 
 

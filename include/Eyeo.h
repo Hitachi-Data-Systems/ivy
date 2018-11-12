@@ -34,11 +34,12 @@
 // rounding up blocksize to a page (4096) boundary, and adding 4095 so that std::align can give us the
 // aligned start of an array of I/O buffers.
 
+#include <linux/aio_abi.h>
+
 #include "ivytime.h"
 #include "ivydefines.h"
 #include "pattern.h"
-
-class WorkloadThread;
+#include "Workload.h"
 
 //////////////////////////////////////////////////////////////////////////////////////
 //
@@ -52,35 +53,38 @@ class WorkloadThread;
 //
 //  That way if you are having a weird problem, this might be why.
 //
-//
 // To do - rewrite resetForNextIO() to remove memset to zero and initialize each field appropriately
 //
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-struct Eyeo {
+class Eyeo {
 public:
 
-	struct iocb eyeocb;
-		// On my development machine, struct iocb is in linux/aio_abi.h, and I put a symbolic link "aio_abi.h" in the ivy src
+// variables
+	struct iocb eyeocb;  // see #include <linux/aio_abi.h>
+		// On my development machine, I put a symbolic link "aio_abi.h" in the ivy src
 		// folder pointing to /usr/include/linux/aio_abi.h to make easy to reference when coding.
 		// Browsing the web indicates there's other locations and forms of aio header file on different systems.  Hope the code is portable, resigned if not.
-	ivytime scheduled_time;  // if we have iorate=max, this is indicated by setting scheduled_time=ivytime(0)
-	ivytime start_time;
-	ivytime running_time;
-	ivytime end_time;
-	int return_value;
-	int errno_value;
-	int buf_size=0;
-	int tag;
-	WorkloadThread* pWorkloadThread;
 
-	Eyeo(int tag, WorkloadThread*);
-	~Eyeo(){} // We don't own the pointer to the memory that is kept in struct iocb.aio_buf
+	ivytime scheduled_time {ivytime(0)};  // if we have iorate=max, this is indicated by setting scheduled_time=ivytime(0).
+	ivytime start_time     {ivytime(0)};
+	ivytime running_time   {ivytime(0)};
+	ivytime end_time       {ivytime(0)};
+	int return_value {-1};
+	int errno_value  {-1};
 
-//	bool resize_buf(int newsize);
+	Workload* pWorkload;
+	bool iops_max_counted {false};
+
+    uint64_t io_sequence_number {0};
+
+// methods
+	Eyeo(Workload*);
+	~Eyeo(){};
 
 	std::string toString();
+	std::string thumbnail();
 	void resetForNextIO();
 	ivy_float service_time_seconds();
 	ivy_float response_time_seconds();
@@ -93,3 +97,4 @@ public:
 	ivytime since_start_time(); // returns ivytime(0) if start_time is not in the past
 };
 
+std::ostream& operator<<(std::ostream&, const struct io_event&);

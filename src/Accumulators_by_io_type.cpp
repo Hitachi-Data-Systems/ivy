@@ -165,15 +165,16 @@ ivy_float histogram_bucket_scale_factor(unsigned int i)
 		case 6: return std::string("Random Write");
 		case 7: return std::string("Sequential Read");
 		case 8: return std::string("Sequential Write");
-	}
-	{
-		std::ostringstream o;
-		o << "Accumulators_by_io_type::getRunningStatTitleByCategory(int = "
-			<< category_index
-			<< ") - Invalid category index.  Valid values are from 0 to "
-			<< Accumulators_by_io_type::max_category_index();
+		default:
+        {
+            std::ostringstream o;
+            o << "Accumulators_by_io_type::getRunningStatTitleByCategory(int = "
+                << category_index
+                << ") - Invalid category index.  Valid values are from 0 to "
+                << Accumulators_by_io_type::max_category_index();
 
-		throw std::out_of_range (o.str());
+            throw std::out_of_range (o.str());
+        }
 	}
 }
 
@@ -190,16 +191,17 @@ RunningStat<ivy_float, ivy_int> Accumulators_by_io_type::getRunningStatByCategor
 		case 6: return randomWrite();
 		case 7: return sequentialRead();
 		case 8: return sequentialWrite();
-	}
-	{
-		std::ostringstream o;
-		o << "Accumulators_by_io_type::getRunningStatByCategory(int = "
-			<< category_index
-			<< ") - Invalid category index.  Valid values are from 0 to "
-			<< Accumulators_by_io_type::max_category_index()
-			<< " representing " << getCategories();
+		default:
+        {
+            std::ostringstream o;
+            o << "Accumulators_by_io_type::getRunningStatByCategory(int = "
+                << category_index
+                << ") - Invalid category index.  Valid values are from 0 to "
+                << Accumulators_by_io_type::max_category_index()
+                << " representing " << getCategories();
 
-		throw std::out_of_range (o.str());
+            throw std::out_of_range (o.str());
+        }
 	}
 }
 

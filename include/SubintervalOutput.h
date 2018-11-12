@@ -28,27 +28,23 @@ class SubintervalOutput {
 
 public:
 // variables
-	union u_type {
-		struct a_type {
+	union u_type
+	{
+		struct a_type
+		{
 			Accumulators_by_io_type
 				bytes_transferred,
 				response_time,		// Time from the scheduled time to the end of the I/O.
 				service_time,		// Time from just before AIO submit to start the I/O until it ends.
-                submit_time,		    // Time from just before submitting I/O to just after submitting I/O.  This includes "waiting for an underlying tag".
+                submit_time,		// Time from just before submitting I/O to just after submitting I/O.  This includes "waiting for an underlying tag".
 				running_time;		// Time from just after AIO submit to when the I/O ends
-#ifdef IVY_TRACK_AIO
-			RunningStat<ivy_float, ivy_int>
-				presubmitqueuedepth,
-				postsubmitqueuedepth,
-				submitcount,
-				preharvestqueuedepth,
-				postharvestqueuedepth,
-				harvestcount,
-				putback;  // between submitcount and putback we may have enough, but we are not recording how many I/Os we try to submit;
-#endif
+
 		} a;
+
 		RunningStat<ivy_float, ivy_int> accumulator_array[sizeof(a)/sizeof(RunningStat<ivy_float, ivy_int>)];
-		u_type(){
+
+		u_type()
+		{
 			int n = sizeof(a)/sizeof(RunningStat<ivy_float,ivy_int>);
 			for (int i=0; i<n; i++) accumulator_array[i].clear();
 		}

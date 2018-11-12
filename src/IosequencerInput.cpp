@@ -129,6 +129,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
         std::ostringstream o;
         o << "when setting \"" << parameterNameEqualsValue
             << "\", \"iosequencer\" was not already set.  \"iosequencer\" must be set to a valid iosequencer type before setting any other parameters.";
+        o << "  IosequencerInput = " << getParameterNameEqualsTextValueCommaSeparatedList();
         return std::make_pair(false,o.str());
     }
 
@@ -139,7 +140,8 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 //        "                  hot_zone_write_fraction - default 0 (zero) fraction of all write I/Os that should go to the hit_area.\n"
 //        "                  If either of hot_zone_read_fraction or hot_zone_write_fraction are non-zero, hot_zone_fraction is ignored.\n\n"
 
-	if ( normalized_identifier_equality(parameterName, std::string("skew")) || normalized_identifier_equality(parameterName, std::string("skew_weight")))
+	if ( normalized_identifier_equality(parameterName, std::string("skew"))
+	  || normalized_identifier_equality(parameterName, std::string("skew_weight")))
 	{
         try
         {
@@ -155,12 +157,15 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
             return std::make_pair(false,o.str());
         }
 
-        if (skew_weight <= 0.0)
+        if (skew_weight == 0.0)
         {
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
                 << ", parameter value \"" << parameterValue << "\")"
-                << " - invalid parameter value.  Must be a number greater than zero" << std::endl;
+                << " - invalid parameter value.  May not be zero." << std::endl
+                << "Use positive skews to control ratio of IOPS=max workloads." << std::endl
+                << "Edit Rollup\'s total_IOPS mechanism ignores the skew's positive or negative sign." << std::endl
+                << "Default skew is -1.0, meaning IOPS=max operates independently and total_IOPS will distribute evenly." << std::endl;
             return std::make_pair(false,o.str());
         }
 
@@ -736,9 +741,10 @@ std::string IosequencerInput::toString() {
 		return std::string("IosequencerInput<>");
 }
 
-void IosequencerInput::reset() {
-        iosequencer_type=std::string("INVALID");
-        iosequencerIsSet=false;
+void IosequencerInput::reset()
+{
+    iosequencer_type=std::string("INVALID");
+    iosequencerIsSet=false;
 	blocksize_bytes=blocksize_bytes_default;
 	maxTags=maxTags_default;
 	IOPS=IOPS_default; // -1.0 means "drive I/Os as fast as possible"
@@ -760,11 +766,11 @@ void IosequencerInput::reset() {
 	hot_zone_IOPS_fraction = 0.0;
 	hot_zone_read_fraction = 0.0;
 	hot_zone_write_fraction = 0.0;
-
 }
 
 
-bool IosequencerInput::fromString(std::string s, std::string logfilename) {
+bool IosequencerInput::fromString(std::string s, std::string logfilename)
+{
 	reset();
 	std::string n {"IosequencerInput<>"};
 	if (s==n) {

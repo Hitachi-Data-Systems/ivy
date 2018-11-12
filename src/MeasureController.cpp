@@ -20,6 +20,8 @@
 #include "ivy_engine.h"
 #include "MeasureController.h"
 
+MeasureController::~MeasureController(){}
+
 std::string MeasureController::test_phase(unsigned int subinterval_index)
 {
     if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode)
@@ -34,4 +36,3 @@ std::string MeasureController::test_phase(unsigned int subinterval_index)
     else
         return std::string("warmup");
 }
-

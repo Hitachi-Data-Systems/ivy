@@ -37,7 +37,6 @@ using namespace std;
 #include "RunningStat.h"
 #include "LUN.h"
 #include "WorkloadID.h"
-#include "iosequencer_stuff.h"
 #include "IosequencerInput.h"
 #include "Iosequencer.h"
 #include "RunningStat.h"
@@ -45,27 +44,20 @@ using namespace std;
 #include "SubintervalOutput.h"
 #include "Subinterval.h"
 #include "WorkloadThread.h"
+#include "Workload.h"
 
-// display_memory_contents() is part of "printableAndHex" which is in the LUN_discovery project - https://github.com/Hitachi-Data-Systems/LUN_discovery
+extern std::string printable_ascii;
+
 #include "../../LUN_discovery/include/printableAndHex.h"
+    // display_memory_contents() is part of "printableAndHex" which is in the LUN_discovery project
+    // https://github.com/Hitachi-Data-Systems/LUN_discovery
 
-Eyeo::Eyeo(int t, WorkloadThread* pwt) : tag(t), pWorkloadThread(pwt)
+Eyeo::Eyeo(Workload* pw) : pWorkload(pw)
 {
-	// When you create an Eyeo, get gets its memory page which it keeps for life,
-	// althought the page can be resized.
+// Note that the pointer to the buffer and the blocksize in the iocb are set separately after createing the Eyeos.
+// This is because we get the memory for the buffer pool in one big piece for each Workload's Eyeos.
 
-	// Everthing else other than the pointer to the buffer needs to be initialized
-	// by the nextEyeo function of the generator.
-
-	// Well, except for the iocb's data pointer which we set to the address of the Eyeo object.
-	// which should the the same as the address of the iocb, as the iocb is the first thing in an Eyeo.
-	// But this made me feel better esthetically :-)
-
-	eyeocb.aio_buf=0;
 	eyeocb.aio_data=(uint64_t) this; // see if this works ... yes
-	buf_size=0;
-
-//	resize_buf(MINBUFSIZE);
 
 }
 
@@ -78,58 +70,121 @@ ivytime Eyeo::since_start_time() // returns ivytime(0) if start_time is not in t
 }
 
 void Eyeo::resetForNextIO() {
-	// this might be excessively cautious - look here if we need to optimize performance in future.
-	int save_tag = tag;
-	int save_aio_fildes = eyeocb.aio_fildes;
+	int      save_aio_fildes = eyeocb.aio_fildes;
 	uint64_t save_aio_data = eyeocb.aio_data; // we put a pointer to the Eyeo object here so that when the system returns an iocb after an I/O we automatically know what Eyeo that is for.
 	uint64_t save_aio_buf = eyeocb.aio_buf;
 	uint64_t save_aio_nbytes = eyeocb.aio_nbytes;
-	int save_buf_size = buf_size;
-	WorkloadThread* save_pwt = pWorkloadThread;
 
-	memset(this, 0, sizeof(Eyeo));
+	memset(&eyeocb, 0, sizeof(eyeocb));
 
-	pWorkloadThread = save_pwt;
 	eyeocb.aio_fildes=save_aio_fildes;
 	eyeocb.aio_data=save_aio_data;
 	eyeocb.aio_buf=save_aio_buf;
 	eyeocb.aio_nbytes = save_aio_nbytes;
-	buf_size=save_buf_size;
-	tag=save_tag;
+
+	iops_max_counted = false;
+	scheduled_time = start_time = running_time = end_time = ivytime(0);
+}
+
+std::ostream& operator<<(std::ostream& o, const struct io_event& e)
+{
+    o << "struct io_event at " << std::hex << std::uppercase << &e << ": ";
+    o << " data (=struct iocb.aio_data) = 0x" << std::hex << std::uppercase << e.data;
+    o << ", obj (iocb*) " << std::hex << std::uppercase << e.obj;
+    o << ", res = "  << std::dec << e.res;
+    o << ", res2 = " << std::dec << e.res2;
+    Eyeo* pEyeo = (Eyeo*) e.data;
+    o << ".  io_event.data -> Eyeo = " << pEyeo->toString();
+    return o;
 }
 
 std::string Eyeo::toString() {
 	std::ostringstream o;
-	//o << "tag_#=" << tag << ", iocb.aio_data=" << eyeocb.aio_data << ", iocb.aio_fildes=" << eyeocb.aio_fildes << ", iocb.aio_lio_opcode=";
-	o << "tag_#=" << tag << ", opcode=";
+
+	o << std::endl << std::endl; // to make the Eyeos separated in the log
+
+	o << "Eyeo " << pWorkload->workloadID << "#" << io_sequence_number << " at " << this;
+
+    o << ", eyeocb.aio_data (Eyeo*)= 0x" << std::hex << std::uppercase << eyeocb.aio_data;
+
+	o << ", opcode=";
 
 	switch (eyeocb.aio_lio_opcode) {
-		case IOCB_CMD_PREAD: o << "IOCB_CMD_PREAD"; break;
-		case IOCB_CMD_PWRITE: o << "IOCB_CMD_PWRITE"; break;
-		case IOCB_CMD_FSYNC: o << "IOCB_CMD_FSYNC"; break;
-		case IOCB_CMD_FDSYNC: o << "IOCB_CMD_FDSYNC"; break;
-		case IOCB_CMD_NOOP: o << "IOCB_CMD_NOOP"; break;
-		case IOCB_CMD_PREADV: o << "IOCB_CMD_PREADV"; break;
+		case IOCB_CMD_PREAD:   o << "IOCB_CMD_PREAD"; break;
+		case IOCB_CMD_PWRITE:  o << "IOCB_CMD_PWRITE"; break;
+		case IOCB_CMD_FSYNC:   o << "IOCB_CMD_FSYNC"; break;
+		case IOCB_CMD_FDSYNC:  o << "IOCB_CMD_FDSYNC"; break;
+		case IOCB_CMD_NOOP:    o << "IOCB_CMD_NOOP"; break;
+		case IOCB_CMD_PREADV:  o << "IOCB_CMD_PREADV"; break;
 		case IOCB_CMD_PWRITEV: o << "IOCB_CMD_PWRITEV"; break;
-		default: o << eyeocb.aio_lio_opcode;
+		default: o << "unknown opcode 0x"
+		    << std::hex << std::setw(2*sizeof(eyeocb.aio_lio_opcode)) << std::setfill('0') << std::uppercase
+            << eyeocb.aio_lio_opcode;
 	}
 
-	o << ", byte offset=" << eyeocb.aio_offset;
-	o << ", blksize="     << eyeocb.aio_nbytes;
+    o << ", eyeocb.aio_filedes = "  << std::dec << eyeocb.aio_fildes;
+    o << ", eyeocb.aio_buf = 0x"    << std::hex << std::uppercase << eyeocb.aio_buf;
+    o << ", eyeocb.aio_nbytes = "   << std::dec << eyeocb.aio_nbytes;
+    o << ", eyeocb.aio_offset = 0x" << std::hex << std::uppercase << eyeocb.aio_offset;
+    o << ", eyeocb.aio_flags = 0x"  << std::hex << std::uppercase << eyeocb.aio_flags;
+    o << ", eyeocb.aio_resfd = "    << std::dec << eyeocb.aio_resfd;
+
 	o << ", sched="   << scheduled_time.format_as_datetime_with_ns()
 	  << ", start="   << start_time    .format_as_datetime_with_ns()
 	  << ", running=" << running_time  .format_as_datetime_with_ns()
 	  << ", end="     << end_time      .format_as_datetime_with_ns()
 	  << ", service_time_seconds="  << std::fixed << std::setprecision(6) << service_time_seconds()
 	  << ", response_time_seconds=" << std::fixed << std::setprecision(6) << response_time_seconds()
-	  << ", submit_time_seconds="     << std::fixed << std::setprecision(6) << submit_time_seconds()
-	  << ", running_time_seconds="     << std::fixed << std::setprecision(6) << running_time_seconds()
+	  << ", submit_time_seconds="   << std::fixed << std::setprecision(6) << submit_time_seconds()
+	  << ", running_time_seconds="  << std::fixed << std::setprecision(6) << running_time_seconds()
 	  << ", ret="     << return_value
 	  << ", errno="    << errno_value
-	  << ", buf_size=" << buf_size;
+	  << ", pWorkload=" << pWorkload
+	  << ", iops_max_counted = ";
+	if (iops_max_counted) o << "true";
+	else                  o << "false";
+
+	o << std::endl;
+	o << std::endl;
 
 	return o.str();
 }
+
+std::string Eyeo::thumbnail()
+{
+    std::ostringstream o;
+
+	o << "Eyeo " << pWorkload->workloadID << "#" << io_sequence_number;
+
+	if (ivytime(0) == scheduled_time)
+	{
+	    o << " IOPS=max";
+	}
+	else
+	{
+	    o << " scheduled" << scheduled_time.format_as_datetime();
+	}
+
+	if (end_time != ivytime(0))
+	{
+	    o << ", service_time=" << (service_time_seconds()/1000.0) << " ms";
+	}
+	else
+	{
+	    if (start_time == ivytime(0))
+	    {
+	        o << ", not started";
+	    }
+	    else
+	    {
+	        o << ", started=" << start_time.format_as_datetime();
+	    }
+	}
+
+	return o.str();
+
+}
+
 
 ivy_float Eyeo::service_time_seconds()
 {
@@ -159,8 +214,6 @@ ivy_float Eyeo::running_time_seconds()
 	return (ivy_float) run_time;
 }
 
-extern std::string printable_ascii;
-
 void Eyeo::generate_pattern()
 {
     uint64_t blocksize = eyeocb.aio_nbytes;
@@ -173,9 +226,9 @@ void Eyeo::generate_pattern()
     char* past_buf;
     char* p_word;
 
-    pWorkloadThread->write_io_count++;
+    pWorkload->write_io_count++;
 
-    switch (pWorkloadThread->pat)
+    switch (pWorkload->pat)
     {
         case pattern::random:
 
@@ -184,8 +237,8 @@ void Eyeo::generate_pattern()
 
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
-                xorshift64star(pWorkloadThread->block_seed);
-                (*(p_uint64 + i)) = pWorkloadThread->block_seed;
+                xorshift64star(pWorkload->block_seed);
+                (*(p_uint64 + i)) = pWorkload->block_seed;
             }
 
             break;
@@ -196,9 +249,9 @@ void Eyeo::generate_pattern()
 
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
-                xorshift64star(pWorkloadThread->block_seed);
+                xorshift64star(pWorkload->block_seed);
 
-                d = pWorkloadThread->block_seed;
+                d = pWorkload->block_seed;
 
                 *p_c++ = printable_ascii[d % printable_ascii.size()]; // 1
                 d /= printable_ascii.size();
@@ -223,15 +276,15 @@ void Eyeo::generate_pattern()
         case pattern::trailing_zeros:
 
             p_uint64 = (uint64_t*) eyeocb.aio_buf;
-            uint64_t_count = ceil(  (1.0-pWorkloadThread->compressibility)  *  ((double)(blocksize / 8))  );
+            uint64_t_count = ceil(  (1.0-pWorkload->compressibility)  *  ((double)(blocksize / 8))  );
 
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
-                xorshift64star(pWorkloadThread->block_seed);
-                (*(p_uint64 + i)) = pWorkloadThread->block_seed;
+                xorshift64star(pWorkload->block_seed);
+                (*(p_uint64 + i)) = pWorkload->block_seed;
             }
 
-            first_bite = floor((1.0-pWorkloadThread->compressibility) * blocksize );
+            first_bite = floor((1.0-pWorkload->compressibility) * blocksize );
             past_buf = ((char*) eyeocb.aio_buf)+blocksize;
 
             for (p_c = (((char*) eyeocb.aio_buf)+first_bite); p_c < past_buf; p_c++)
@@ -247,8 +300,8 @@ void Eyeo::generate_pattern()
             past_buf = ((char*) eyeocb.aio_buf)+blocksize;
             while(p_c < past_buf)
             {
-                xorshift64star(pWorkloadThread->block_seed);
-                word_index = pWorkloadThread->block_seed % unique_word_count;
+                xorshift64star(pWorkload->block_seed);
+                word_index = pWorkload->block_seed % unique_word_count;
                 p_word = unique_words[word_index];
                 while ( (*p_word) && (p_c < past_buf) )
                 {
@@ -274,7 +327,7 @@ std::string Eyeo::buffer_first_last_16_hex()
 {
     std::ostringstream o;
 
-    if (eyeocb.aio_nbytes>=32)
+    if (eyeocb.aio_nbytes >= 32)
     {
         unsigned char*
         pc = (unsigned char*) eyeocb.aio_buf;

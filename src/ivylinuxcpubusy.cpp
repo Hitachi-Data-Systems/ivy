@@ -36,6 +36,7 @@
 #include "ivyhelpers.h"
 #include "ivylinuxcpubusy.h"
 #include "Subinterval_CPU.h"
+#include "ivyslave.h"
 
 // In the code below, it is taken as given that the number of cores does not change while running the program.
 // Thus when we copy or when we set new values and there is an existing set of counters for each core, we assume
@@ -571,17 +572,73 @@ std::string Subinterval_CPU::csvValues(std::string hostname)
 }
 
 
+std::regex cpu_line_regex( "cpu[0-9]+ [ 0-9]+" );
+
+unsigned int core_count(const std::string& logfilename)
+{
+    // read /proc/stat to get CPU core count.
+
+    //cpu  950690554 589052403 469908370 17009911838 47148691 0 18196600 0 0 0
+    //cpu0 80923480 45164263 39063505 961249444 4673263 0 12111457 0 0 0
+    //cpu1 60738717 38087730 29195607 1061391545 4973075 0 2625995 0 0 0
+    //cpu2 51342786 43908415 22505328 1072156314 5019881 0 1274456 0 0 0
+    //...
+    //intr ...
+
+	std::ifstream procstat("/proc/stat");
+	if (!procstat.good()){
+	    std::ostringstream o;
+	    o << "<Error> Internal programming error - failed opening /proc/stat at line " << __LINE__ << " of " << __FILE__;
+		throw std::runtime_error(o.str());
+	}
+
+	std::string inputline;
+
+	unsigned int cores {0};
+
+	while (procstat.good()){
+		getline(procstat,inputline);
+		if (!procstat.good()) break;
+		trim(inputline); // removes whitespace at beginning and end
+		if (std::regex_match(inputline,cpu_line_regex))
+		{
+		    cores++;
+		}
+	}
+	return cores;
+}
 
 
+std::ostream& operator<<(std::ostream& o, const struct linuxcpubusypercent& c)
+{
+    o << "total (user+system) = " << c.total() << "%"
+        << "%, user = "           << c.user << "%"
+        << "%, nice = "           << c.nice << "%"
+        << "%, system = "         << c.system << "%"
+        << "%, idle = "           << c.idle << "%"
+        << "%, iowait = "         << c.iowait << "%"
+        << "%, irq = "            << c.irq << "%"
+        << "%, softirq = "        << c.softirq << "%"
+        << "%, stealtime = "      << c.stealtime << "%"
+        << "%, virtualguest = "   << c.virtualguest << "%"
+        ;
+    return o;
+}
 
 
+std::ostream& operator<<(std::ostream&o, const struct cpubusypercent& c)
+{
+    o << "overall: " << c.overall << std::endl;
 
+    unsigned int i {0};
 
+    for (struct linuxcpubusypercent* p : c.eachcore)
+    {
+        o << "core " << i++ << ": " << *p << std::endl;
+    }
 
-
-
-
-
+    return o;
+}
 
 
 

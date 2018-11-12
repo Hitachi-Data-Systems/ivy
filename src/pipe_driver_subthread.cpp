@@ -499,7 +499,10 @@ std::string pipe_driver_subthread::get_line_from_pipe
         if (startsWith(s, std::string("<Warning>")))
         {
             std::ostringstream o;
-            o << std::endl << "From " << ivyscript_hostname << ": " << s << std::endl << std::endl;
+            o << std::endl << std::endl
+                << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl << std::endl
+                << "<Warning>[from " << ivyscript_hostname << "]" << s.substr(9,s.size()-9) << std::endl << std::endl
+                << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl << std::endl;
             log (logfilename, o.str());
             log (m_s.masterlogfile, o.str());
             std::cout << o.str();
@@ -901,6 +904,10 @@ void pipe_driver_subthread::threadRun()
 
         log(logfilename, std::string("remote slave said its hostname is \"")+hostname+std::string("\"."));
 
+
+//*debug*/std::cout << "debug: waiting 60 seconds to allow showluns.sh run with another ivy hammering a lun, slowing the binary search for the LUN size.\n";
+//*debug*/sleep(60);
+
         // Retrieve list of luns visible on the slave host
         if (!pCmdDevLUN)
         {
@@ -1096,6 +1103,7 @@ void pipe_driver_subthread::threadRun()
                     (
                         startsWith(commandString,std::string("Go!"))
                         // In "Go!<5,0>"  the <5,0> is the subinterval length as an ivytime::toString() representation - <seconds,nanoseconds>
+                        // In "Go!<5,0>-spinloop" the optional "-spinloop" tells ivyslave workload threads to continuously check for things to do without ever waiting.
                         || 0==std::string("continue").compare(commandString)
                         || 0==std::string("cooldown").compare(commandString)
                         || 0==std::string("stop").compare(commandString)

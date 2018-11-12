@@ -24,11 +24,15 @@
 #include "WorkloadID.h"
 
 
-bool WorkloadID::set(std::string ID)
+bool WorkloadID::set(const std::string& ID)
 {
 	workloadID=ID;
+	ivyscript_hostname.clear();
+	LUN_name.clear();
+	workload_name.clear();
+	isWellFormed=false;
 
-	if (0 == ID.length()) { isWellFormed = false; return isWellFormed; }
+	if (0 == ID.length()) { return isWellFormed; }
 
 	unsigned int cursor=0;
 
@@ -36,21 +40,21 @@ bool WorkloadID::set(std::string ID)
 	{
 		ivyscript_hostname.push_back(ID[cursor]);
 		cursor++;
-		if (cursor >= ID.length())  { isWellFormed = false; return isWellFormed; }
+		if (cursor >= ID.length())  { return isWellFormed; }
 	}
 
 	cursor++;
-	if (cursor >= ID.length())  { isWellFormed = false; return isWellFormed; }
+	if (cursor >= ID.length())  { return isWellFormed; }
 
 	while ('+' != ID[cursor])
 	{
 		LUN_name.push_back(ID[cursor]);
 		cursor++;
-		if (cursor >= ID.length())  { isWellFormed = false; return isWellFormed; }
+		if (cursor >= ID.length())  { return isWellFormed; }
 	}
 
 	cursor++;
-	if (cursor >= ID.length())  { isWellFormed = false; return isWellFormed; }
+	if (cursor >= ID.length())  { return isWellFormed; }
 
 	while ('+' != ID[cursor])
 	{
@@ -62,12 +66,7 @@ bool WorkloadID::set(std::string ID)
 			{
 				isWellFormed = true;
 			}
-			else
-			{
-				isWellFormed = false;
-			}
 			return isWellFormed;
-
 		}
 	}
 
@@ -92,6 +91,31 @@ std::string WorkloadID::getWorkloadPart() const
 	if (isWellFormed) return workload_name;
 	else return std::string("WorkloadID::getWorkloadPart() - WorkloadID is not well-formed - \"") + workloadID + std::string("\"");
 }
+
+std::string WorkloadID::getHostLunPart() const
+{
+	if (isWellFormed) return ivyscript_hostname + std::string("+") + LUN_name;
+	else return std::string("WorkloadID::getHostLun() - WorkloadID is not well-formed - \"") + workloadID + std::string("\"");
+}
+
+
+std::ostream& operator<< (std::ostream& o, const WorkloadID& wID)
+{
+    o << wID.workloadID;
+    return o;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

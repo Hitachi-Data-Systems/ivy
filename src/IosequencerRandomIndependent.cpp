@@ -37,7 +37,6 @@ using namespace std;
 #include "ivyhelpers.h"
 #include "ivytime.h"
 #include "ivydefines.h"
-#include "iosequencer_stuff.h"
 #include "IosequencerInput.h"
 #include "LUN.h"
 #include "Eyeo.h"
@@ -47,6 +46,8 @@ using namespace std;
 #include "IosequencerRandomIndependent.h"
 #include "WorkloadThread.h"
 
+//#define IVYSLAVE_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
+                           // and so you can turn it off and on for each source file.
 
 //
 //	The probability distribution of the time between successive I/O operations for the random, independent
@@ -79,7 +80,11 @@ using namespace std;
 
 bool IosequencerRandomIndependent::generate(Eyeo& slang)
 {
-//*debug*/ log(logfilename,"IosequencerRandomIndependent::generate() - entry.\n");
+#if defined(IVYSLAVE_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
+    o << "Entering IosequencerRandomIndependent::generate() for " << workloadID << " - Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
+
 
 	if (NULL == p_uniform_real_distribution_0_to_1)
 	{
@@ -89,7 +94,6 @@ bool IosequencerRandomIndependent::generate(Eyeo& slang)
 
 	if (!IosequencerRandom::generate(slang))
 		return false;
-//*debug*/ log(logfilename,"IosequencerRandomIndependent::generate() - IosequencerRandom::generate() went OK.\n");
 
 	if (-1 == p_IosequencerInput->IOPS)
 	{	// iorate=max
@@ -106,16 +110,17 @@ bool IosequencerRandomIndependent::generate(Eyeo& slang)
 			ivy_float R=0.0, inter_IO_arrival_time;
 			while (R == 0.0 || R == 1.0) R = (*p_uniform_real_distribution_0_to_1)(deafrangen);  // The "while" was just in case we actually got 0.0 or 1.0
 
-//*debug*/{ostringstream o; o << "IosequencerRandomIndependent::generate() random number from zero to one R=" << R <<  "\n"; log(logfilename, o.str());}
 			inter_IO_arrival_time = - log(1.0-R) / (p_IosequencerInput->IOPS);
 
-//*debug*/{ostringstream o; o << "IosequencerRandomIndependent::generate() inter_IO_arrival_time=" << ivytime(inter_IO_arrival_time).format_as_duration_HMMSSns() <<  "\n"; log(logfilename, o.str());}
 			slang.scheduled_time = previous_scheduled_time + ivytime(inter_IO_arrival_time);
 		}
 		previous_scheduled_time = slang.scheduled_time;
 
 	}
-//*debug*/ { ostringstream o; o << "IosequencerRandomIndependent::generate() - scheduled_time=" << slang.scheduled_time.format_as_datetime_with_ns() << std::endl; log(logfilename,o.str());}
+#if defined(IVYSLAVE_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
+    o << "Exiting IosequencerRandomIndependent::generate() for " << workloadID << " - updated Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
 
 	return true;
 }

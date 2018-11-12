@@ -29,13 +29,13 @@ void skew_LUN::clear()
     workload_skew_weight.clear();
 }
 
-ivy_float skew_LUN::skew_total()
+ivy_float skew_LUN::total_abs_skew()
 {
     ivy_float total {0.0};
 
     for (auto& w: workload_skew_weight)
     {
-        total += w.second;
+        total += abs(w.second);
     }
 
     return total;
@@ -53,12 +53,14 @@ ivy_float skew_LUN::normalized_skew_factor(const std::string& wID)
         throw std::runtime_error(o.str());
     }
 
-    return iter->second / skew_total();
+    return abs(iter->second) / total_abs_skew();
 }
 
 void skew_LUN::push(const std::string& id, ivy_float weight)
 {
     workload_skew_weight[id] = weight;
+    // Here so as to not lose any information
+    // we preserve the sign of the weight.
 }
 
 std::string skew_LUN::toString(std::string indent)
@@ -70,7 +72,7 @@ std::string skew_LUN::toString(std::string indent)
     {
         o << indent << "   " << pear.first << " : skew_weight = " << pear.second << ", normalized_skew_factor = " << normalized_skew_factor(pear.first) << std::endl;
     }
-    o << indent << "skew_total = " << skew_total() <<   " }" << std::endl;
+    o << indent << "total_abs_skew = " << total_abs_skew() <<   " }" << std::endl;
 
     return o.str();
 }

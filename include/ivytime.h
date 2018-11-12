@@ -60,18 +60,20 @@ public:
 	operator long double();
 	operator time_t();
 
-	std::string format_as_duration_HMMSSns();
-	std::string format_as_duration_HMMSS();
-	std::string format_as_datetime();
-	std::string format_as_datetime_with_ns();
-	std::string format_with_ms(int decimal_places=6);
+	std::string format_as_duration_HMMSSns() const;
+	std::string format_as_duration_HMMSS() const;
+	std::string format_as_datetime() const;
+	std::string format_as_datetime_with_ns() const;
+    std::string format_with_ms(int decimal_places=6) const;
+	std::string format_as_hex_dot_hex() const;
+
 	void setToNow();
-	void waitUntilThisTime();
-	uint64_t Milliseconds();
+	void waitUntilThisTime() const;
+	uint64_t Milliseconds() const;
 	void roundUpToStartOfMinute();
 	void setFromNanoseconds(uint64_t Nanoseconds);
-	uint64_t getAsNanoseconds();
-	long double getlongdoubleseconds();
+	uint64_t getAsNanoseconds() const;
+	long double getlongdoubleseconds() const;
 	long double seconds_from_now(); // positive in future, negative in past
 	long double seconds_from(const ivytime& t);
 	    // positive value means starting from "t", we move towards the future to reach my own value.
@@ -79,9 +81,9 @@ public:
 	std::string duration_from_now();
 	std::string duration_from(const ivytime& t);
 
-	std::string toString();
+	std::string toString() const;
 	bool fromString(std::string);
-	bool isValid();
+	bool isValid() const;
 	void normalize(); // fix what may be an invalid representation after an operation such as plus or minus.
     void normalize_round(); // you just keep calling this until isValid()
 

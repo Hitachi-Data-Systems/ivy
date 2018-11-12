@@ -37,7 +37,6 @@ using namespace std;
 #include "ivyhelpers.h"
 #include "ivytime.h"
 #include "ivydefines.h"
-#include "iosequencer_stuff.h"
 #include "IosequencerInput.h"
 #include "LUN.h"
 #include "Eyeo.h"
@@ -45,12 +44,21 @@ using namespace std;
 #include "Iosequencer.h"
 #include "IosequencerSequential.h"
 #include "WorkloadThread.h"
+#include "TestLUN.h"
 
 extern std::string printable_ascii;
 extern bool ivyslave_wrapping;
 
+//#define IVYSLAVE_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
+                           // and so you can turn it off and on for each source file.
+
 bool IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
+#if defined(IVYSLAVE_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
+    o << "Entering IosequencerSequential::setFrom_IosequencerInput() for " << workloadID; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
+
 	if (!Iosequencer::setFrom_IosequencerInput(p_i_i)) return false;
 
 	lastIOblockNumber = -1 + coverageStartBlock + (long long int) (p_IosequencerInput->seqStartFractionOfCoverage * (ivy_float) numberOfCoverageBlocks);
@@ -61,27 +69,32 @@ bool IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
     if (0.0 == p_IosequencerInput->fractionRead)
     {
         // we are writing
-        p_WorkloadThread->sequential_fill_fraction = 0.0;
+        pWorkload->sequential_fill_fraction = 0.0;
         wrapping = true;
     }
     else
     {
         // we are reading
-        p_WorkloadThread->sequential_fill_fraction = 1.0;
+        pWorkload->sequential_fill_fraction = 1.0;
         wrapping = false;
     }
 	return true;
 }
 
 
-bool IosequencerSequential::generate(Eyeo& slang) {
+bool IosequencerSequential::generate(Eyeo& slang)
+{
+#if defined(IVYSLAVE_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
+    o << "Entering IosequencerSequential::generate() for " << workloadID << " - initial Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
 
-	slang.resetForNextIO();
+	Iosequencer::generate(slang); // Increments the I/O sequence number. Resets Eyeo for next I/O.  Always returns true.
 
 	// we assume that eyeocb.data already points to the Eyeo object
 	// and that eyeocb.aio_buf already points to a page-aligned I/O buffer
 
-	slang.eyeocb.aio_fildes = p_iosequencer_stuff->fd;
+	slang.eyeocb.aio_fildes = pTestLUN->fd;
 
 	lastIOblockNumber++;
 
@@ -91,11 +104,11 @@ bool IosequencerSequential::generate(Eyeo& slang) {
         if (blocks_generated >= numberOfCoverageBlocks)
         {
             wrapping = false;
-            p_WorkloadThread -> sequential_fill_fraction = 1.0;
+            pWorkload -> sequential_fill_fraction = 1.0;
         }
         else
         {
-            p_WorkloadThread -> sequential_fill_fraction = ( (ivy_float) blocks_generated ) / ( (ivy_float) numberOfCoverageBlocks );
+            pWorkload -> sequential_fill_fraction = ( (ivy_float) blocks_generated ) / ( (ivy_float) numberOfCoverageBlocks );
         }
     }
 
@@ -105,7 +118,7 @@ bool IosequencerSequential::generate(Eyeo& slang) {
 	}
 	slang.eyeocb.aio_offset = p_IosequencerInput->blocksize_bytes * lastIOblockNumber;
 
-	slang.eyeocb.aio_nbytes = p_IosequencerInput->blocksize_bytes;
+	//slang.eyeocb.aio_nbytes was set when Eyeos were built for the Workload.
 	slang.start_time=0;
 	slang.end_time=0;
 	slang.return_value=-2;
@@ -144,6 +157,11 @@ bool IosequencerSequential::generate(Eyeo& slang) {
 		}
 		previous_scheduled_time = slang.scheduled_time;
 	}
+
+#if defined(IVYSLAVE_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
+    o << "Entering IosequencerSequential::generate() for " << workloadID << " - updated Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
 
 	return true;
 }

@@ -182,6 +182,7 @@ void prepare_dedupe()
 
                     p_host->commandListOfWorkloadIDs.workloadIDs.clear();
                     p_host->commandListOfWorkloadIDs.workloadIDs.push_back(p_WorkloadTracker->workloadID);
+                    p_host->p_edit_workload_IDs = & p_host->commandListOfWorkloadIDs;
 
                     p_host->commandString=std::string("[EditWorkload]");
                     p_host->commandIosequencerParameters = parms;

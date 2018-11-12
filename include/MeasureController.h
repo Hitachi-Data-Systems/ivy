@@ -95,6 +95,8 @@ public:
 		{throw std::runtime_error("MeasureController::get_measurement_ID_tag() - invalid for this type of DFC");}
 
     std::string test_phase(unsigned int subinterval_index);  // returns warmup/measurement/cooldown
+
+    virtual ~MeasureController();
 };
 
 

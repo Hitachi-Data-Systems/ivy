@@ -17,25 +17,25 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#pragma once
 
-class WorkloadID
+#include "Count_by_workloadID.h"
+
+std::string Count_by_workloadID::toString()
 {
-public:
-// variables
-	std::string workloadID, ivyscript_hostname, LUN_name, workload_name;
-	bool isWellFormed {false};  // set() turns this on if ID looks like "sun159+/dev/sdxy+charlie"
-		// well, at least exactly 2 "+" signs and something non-blank on either side of them.
+    std::ostringstream o;
+    bool need_comma = false;
+    for (auto& pear : carte)
+    {
+        if (need_comma) { o << ", ";}
+        need_comma = true;
+        o << pear.first << " (" << pear.second.count << ")";
+    }
+    return o.str();
+}
 
-// methods
-	bool set(const std::string& workloadID); // true if workloadID is well-formed.
-	WorkloadID (std::string ID) { set(ID); return; }
-	WorkloadID(){}
-	std::string getHostPart() const;
-	std::string getLunPart() const;
-	std::string getWorkloadPart() const;
-	std::string getHostLunPart() const;
-};
 
-std::ostream& operator<< (std::ostream&, const WorkloadID&);
-
+void Count_by_workloadID::clear()
+{
+    carte.clear();
+    return;
+}

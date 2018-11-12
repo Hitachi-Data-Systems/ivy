@@ -46,7 +46,7 @@ public:
 
 // methods
 	Subsystem(std::string sn); // Note constructor leaves LUNpointers empty
-	~Subsystem();
+	virtual ~Subsystem();
 
 	virtual std::string type();
 
@@ -125,7 +125,7 @@ public:
 	std::string type() override;
 	void gather() override;
 	Hitachi_RAID_subsystem(std::string serial_number, LUN* pL);
-	~Hitachi_RAID_subsystem();
+	virtual ~Hitachi_RAID_subsystem();
 //	void add(LUN*) override;
 
 	ivy_float get_wp(const std::string& CLPR, int subinterval);  // throws std::invalid_argument

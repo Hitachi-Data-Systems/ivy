@@ -19,13 +19,620 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #include "Workload.h"
+#include "ivyslave.h"
+#include "Iosequencer.h"
+#include "IosequencerRandom.h"
+#include "IosequencerRandomIndependent.h"
+#include "IosequencerRandomSteady.h"
+#include "IosequencerSequential.h"
+
+//#define IVYSLAVE_TRACE
+// IVYSLAVE_TRACE defined here in this source file rather than globally in ivydefines.h so that
+//  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
+//  - you can turn on tracing separately for each class in its own source file.
 
 Workload::Workload()
 {
-    //ctor
+    p_current_subinterval      = & (subinterval_array[0]);
+    p_current_IosequencerInput = & (subinterval_array[0].input);
+    p_current_SubintervalOutput= & (subinterval_array[0].output);
 }
 
 Workload::~Workload()
 {
-    //dtor
+    delete p_my_iosequencer;
+    for (auto& pEyeo : allEyeosThatExist) delete pEyeo;
 }
+
+
+void Workload::prepare_to_run()
+{
+#if defined(IVYSLAVE_TRACE)
+    { workload_callcount_prepare_to_run++; if (workload_callcount_prepare_to_run <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_prepare_to_run << ") "
+        << "            Entering Workload::prepare_to_run()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
+
+    if (subinterval_array[0].input.fractionRead == 1.0)
+    {
+        have_writes = false;
+        doing_dedupe = false;
+    }
+    else
+    {
+        have_writes = true;
+        pat = subinterval_array[0].input.pat;
+        compressibility = subinterval_array[0].input.compressibility;
+
+        if ( subinterval_array[0].input.dedupe == 1.0 )
+        {
+            doing_dedupe=false;
+            block_seed = ( (uint64_t) std::hash<std::string>{}(workloadID.workloadID) ) ^ ivyslave.test_start_time.getAsNanoseconds();
+        }
+        else
+        {
+            doing_dedupe=true;
+            threads_in_workload_name = (pattern_float_type) subinterval_array[0].input.threads_in_workload_name;
+            serpentine_number = 1.0 + ( (pattern_float_type) subinterval_array[0].input.this_thread_in_workload );
+            serpentine_number -= threads_in_workload_name; // this is because we increment the serpentine number by threads_in_workload before using it.
+            serpentine_multiplier =
+                ( 1.0 - ( (pattern_float_type)  subinterval_array[0].input.fractionRead ) )
+                /       ( (pattern_float_type)  subinterval_array[0].input.dedupe );
+
+            pattern_seed = subinterval_array[0].input.pattern_seed;
+            pattern_number = 0;
+        }
+    }
+
+    write_io_count = 0;
+
+    subinterval_array[0].output.clear();  // later if energetic figure out if these must already be cleared.
+    subinterval_array[1].output.clear();
+    subinterval_array[0].subinterval_status=subinterval_state::ready_to_run;
+    subinterval_array[1].subinterval_status=subinterval_state::ready_to_run;
+
+    p_current_subinterval       = & (subinterval_array[0]);
+    p_current_IosequencerInput  = & (p_current_subinterval-> input);
+    p_current_SubintervalOutput = & (p_current_subinterval->output);
+
+    if ( p_my_iosequencer != nullptr ) { delete p_my_iosequencer; }
+
+    {
+        const std::string& type = p_current_IosequencerInput->iosequencer_type;
+        if ( type == "random_steady" )
+        {
+            p_my_iosequencer = new IosequencerRandomSteady
+                (pTestLUN->pLUN, pWorkloadThread->slavethreadlogfile, workloadID.workloadID, pWorkloadThread, pTestLUN, this);
+        }
+        else if ( type == "random_independent" )
+        {
+            p_my_iosequencer = new IosequencerRandomIndependent
+                (pTestLUN->pLUN, pWorkloadThread->slavethreadlogfile, workloadID.workloadID, pWorkloadThread, pTestLUN, this);
+        }
+        else if ( type == "sequential" )
+        {
+            p_my_iosequencer = new IosequencerSequential
+                (pTestLUN->pLUN, pWorkloadThread->slavethreadlogfile, workloadID.workloadID, pWorkloadThread, pTestLUN, this);
+        }
+        else
+        {
+            std::ostringstream o; o << "<Error> Workload " << workloadID
+                << " start() - Got a \"Go!\" but the first subinterval\'s IosequencerInput\'s iosequencer_type \""
+                << p_current_IosequencerInput->iosequencer_type << "\" is not one of the available iosequencer types." << std::endl
+                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+            pWorkloadThread->dying_words = o.str();
+            log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
+            pWorkloadThread->state=ThreadState::died;
+            pWorkloadThread->slaveThreadConditionVariable.notify_all();
+            exit(-1);
+        }
+    }
+
+    if (!p_my_iosequencer->setFrom_IosequencerInput(p_current_IosequencerInput))
+    {
+        std::ostringstream o; o << "<Error> Workload " << workloadID
+            << " start() - call to iosequencer::setFrom_IosequencerInput() failed." << std::endl
+            << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+        pWorkloadThread->dying_words = o.str();
+        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
+        pWorkloadThread->state=ThreadState::died;
+        pWorkloadThread->slaveThreadConditionVariable.notify_all();
+        exit(-1);
+    }
+}
+
+
+void Workload::build_Eyeos()
+{
+#if defined(IVYSLAVE_TRACE)
+    { workload_callcount_build_Eyeos++; if (workload_callcount_build_Eyeos <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_build_Eyeos << ") "
+        << "            Entering Workload::build_Eyeos()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
+
+    for (auto& pEyeo : allEyeosThatExist) delete pEyeo;
+
+    allEyeosThatExist.clear();
+
+    while (0 < freeStack.size()) freeStack.pop(); // stacks curiously don't hve a clear() method.
+
+    precomputeQ.clear();
+
+    while (postprocessQ.size() > 0) postprocessQ.pop();
+
+    running_IOs.clear();
+
+    cancelled_IOs=0;
+
+    precomputedepth = 2 * p_current_IosequencerInput->maxTags;
+    EyeoCount = 2 * (precomputedepth + p_current_IosequencerInput->maxTags);  // the 2x is a postprocess queue allowance
+
+    for (int i=allEyeosThatExist.size() ; i < EyeoCount; i++)
+    {
+        Eyeo* pEyeo = new Eyeo(this);
+        allEyeosThatExist.push_back(pEyeo);
+        freeStack.push(pEyeo);
+    }
+    int rounded_up_to_4KiB_blocksize = p_current_IosequencerInput->blocksize_bytes;
+
+    while (0 != (rounded_up_to_4KiB_blocksize % 4096)) rounded_up_to_4KiB_blocksize++;
+
+    long int buffer_pool_size = 4095 + EyeoCount*rounded_up_to_4KiB_blocksize;
+
+    if (routine_logging)
+    {
+        std::ostringstream o;
+        o << "For workload " << workloadID
+            << ", getting I/O buffer memory for Eyeos.  blksize= " << p_current_IosequencerInput->blocksize_bytes
+            << ", rounded_up_to_4KiB_blocksize = " << rounded_up_to_4KiB_blocksize << ", number of Eyeos = " << allEyeosThatExist.size()
+            << ", memory allocation size for Eyeos with an extra 4095 bytes for alignment padding is " << buffer_pool_size << std::endl;
+        log(pWorkloadThread->slavethreadlogfile,o.str());
+    }
+
+    try
+    {
+        ewe_neek.reset( new unsigned char[buffer_pool_size] );
+    }
+    catch(const std::bad_alloc& e)
+    {
+        pWorkloadThread->state=ThreadState::died;
+        pWorkloadThread->dying_words = std::string("<Error> WorkloadThread.cpp - out of memory making I/O buffer pool - ") + e.what() + std::string("\n");
+        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
+        return;
+    }
+
+    if (!ewe_neek)
+    {
+        pWorkloadThread->dying_words = "<Error> WorkloadThread.cpp out of memory making I/O buffer pool\n";
+        pWorkloadThread->state=ThreadState::died;
+        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
+        pWorkloadThread->slaveThreadConditionVariable.notify_all();
+        return;
+    }
+
+    void* vp = (void*) ewe_neek.get();
+
+    uint64_t aio_buf_cursor = (uint64_t) vp;
+
+    while (0 != (aio_buf_cursor % 4096)) aio_buf_cursor++;
+        // In the event that the memory we got didn't start on a 4 KiB boundary,
+        // we bump up the cursor until we are on a 4 KiB boundary to lay out the first I/O buffer.
+
+    for (auto& pEyeo : allEyeosThatExist)
+    {
+        pEyeo->eyeocb.aio_buf    = aio_buf_cursor;
+        pEyeo->eyeocb.aio_nbytes = p_current_IosequencerInput->blocksize_bytes;
+
+        aio_buf_cursor += rounded_up_to_4KiB_blocksize;
+            // successive aio_buf values start on 4 KiB boundaries.
+    }
+
+    return;
+}
+
+
+
+void Workload::switchover()
+{
+#if defined(IVYSLAVE_TRACE)
+    { workload_callcount_switchover++; if (workload_callcount_switchover <= FIRST_FEW_CALLS)
+        {
+            ivytime n; n.setToNow();
+            ivytime seconds_ivytime = n - ivyslave.test_start_time;
+
+            long double cumulative_launches_per_second = ((long double) workload_cumulative_launch_count)
+               / seconds_ivytime.getlongdoubleseconds();
+
+            std::ostringstream o;
+            o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_switchover << ") "
+                << "            Entering Workload::switchover() - subinterval_number " << subinterval_number
+                << " workload_cumulative_launch_count = " << workload_cumulative_launch_count
+                << " doing " << cumulative_launches_per_second << " cumulative I/O launches per second"
+                << ".";
+            log(pWorkloadThread->slavethreadlogfile,o.str());
+        }
+    }
+#endif
+
+    subinterval_array[currentSubintervalIndex].subinterval_status=subinterval_state::ready_to_send;
+
+    if (0 == currentSubintervalIndex)
+    {
+        currentSubintervalIndex = 1; otherSubintervalIndex = 0;
+    } else {
+        currentSubintervalIndex = 0; otherSubintervalIndex = 1;
+    }
+    p_current_subinterval       = & subinterval_array[currentSubintervalIndex];
+    p_current_IosequencerInput  = & (p_current_subinterval-> input);
+    p_current_SubintervalOutput = & (p_current_subinterval->output);
+
+    subinterval_number++;
+
+    return;
+}
+
+
+unsigned int /* number of I/Os popped and processed.  */
+    Workload::pop_and_process_an_Eyeo()
+{
+#if defined(IVYSLAVE_TRACE)
+    { workload_callcount_pop_and_process_an_Eyeo++; if (workload_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_pop_and_process_an_Eyeo << ") "
+        << "            Entering Workload::pop_and_process_an_Eyeo()."; } }
+#endif
+
+	if (postprocessQ.size()==0) return 0;
+
+	// collect I/O statistics / trace data for an I/O
+	Eyeo* p_dun;
+	p_dun=postprocessQ.front();
+	postprocessQ.pop();
+
+	ivy_float service_time_seconds, response_time_seconds, submit_time_seconds, running_time_seconds;
+
+	bool have_response_time;
+
+	if (ivytime(0) == p_dun->scheduled_time)
+	{  // to avoid confusion, we do not post "application level" response time statistics if iorate==max.
+		have_response_time = false;
+		response_time_seconds = -1.0;
+	}
+	else
+	{
+		have_response_time = true;
+		response_time_seconds = (ivytime(p_dun->end_time - p_dun->scheduled_time).getlongdoubleseconds());
+	}
+
+	if ( ivytime(0) == p_dun->start_time
+	  || ivytime(0) == p_dun->running_time
+	  || ivytime(0) == p_dun->end_time
+	  || p_dun->scheduled_time > p_dun->start_time
+	  || p_dun->start_time     > p_dun->running_time
+	  || p_dun->running_time   > p_dun->end_time
+	  )
+    {
+        std::ostringstream o;
+        o << "<Error> Internal programming error. Source code reference " << __FILE__ << " line " << __LINE__ << std::endl
+            << "When harvesting an I/O completion event and posting its measurements" << std::endl
+            << "One of the following timestamps was missing or they were out of order." << std::endl
+            << "I/O scheduled time = " << p_dun->scheduled_time.format_as_datetime_with_ns()
+            << "start time         = " << p_dun->start_time.format_as_duration_HMMSSns() << std::endl
+            << "running time       = " << p_dun->running_time.format_as_duration_HMMSSns() << std::endl
+            << "end time           = " << p_dun->end_time.format_as_duration_HMMSSns() << std::endl
+
+            << ", have_response_time = ";
+        if (have_response_time)
+        {
+            o << "true, response_time_seconds = " << response_time_seconds ;
+        }
+        else
+        {
+            o << "false";
+        }
+        o << std::endl;
+        pWorkloadThread->dying_words = o.str();
+        pWorkloadThread->state = ThreadState::died;
+		log(pWorkloadThread->slavethreadlogfile,o.str());
+		pWorkloadThread->ivyslave_main_posted_command = false;
+        pWorkloadThread->slaveThreadConditionVariable.notify_all();
+        exit(-1);
+    }
+
+	service_time_seconds = (ivytime(p_dun->end_time     - p_dun->start_time).getlongdoubleseconds());
+	submit_time_seconds  = (ivytime(p_dun->running_time - p_dun->start_time).getlongdoubleseconds());
+	running_time_seconds = (ivytime(p_dun->end_time     - p_dun->running_time).getlongdoubleseconds());
+
+	// NOTE:  The breakdown of bytes_transferred (MB/s) follows service time.
+
+
+	if ( p_current_IosequencerInput->blocksize_bytes == (unsigned int) p_dun->return_value) {
+
+		int rs, rw, bucket;
+
+		if (p_my_iosequencer->isRandom())
+		{
+			rs = 0;
+		}
+		else
+		{
+			rs = 1;
+		}
+
+		if (IOCB_CMD_PREAD==p_dun->eyeocb.aio_lio_opcode)
+		{
+			rw=0;
+		}
+		else
+		{
+			rw=1;
+		}
+
+		bucket = Accumulators_by_io_type::get_bucket_index( service_time_seconds );
+
+		p_current_SubintervalOutput->u.a.service_time.rs_array[rs][rw][bucket].push(service_time_seconds);
+		p_current_SubintervalOutput->u.a.bytes_transferred.rs_array[rs][rw][bucket].push(p_current_IosequencerInput->blocksize_bytes);
+
+		bucket = Accumulators_by_io_type::get_bucket_index( submit_time_seconds );
+		p_current_SubintervalOutput->u.a.submit_time.rs_array[rs][rw][bucket].push(submit_time_seconds);
+
+		bucket = Accumulators_by_io_type::get_bucket_index( running_time_seconds );
+		p_current_SubintervalOutput->u.a.running_time.rs_array[rs][rw][bucket].push(running_time_seconds);
+
+		if (have_response_time)
+		{
+			bucket = Accumulators_by_io_type::get_bucket_index( response_time_seconds );
+
+			p_current_SubintervalOutput->u.a.response_time.rs_array[rs][rw][bucket].push(response_time_seconds);
+		}
+	}
+	else
+	{
+		ioerrorcount++;
+		if ( p_dun->return_value < 0 )
+		{
+		    if (p_dun->return_value == -1)
+		    {
+                std::ostringstream o;
+                o << "<Warning> Thread for core " << pWorkloadThread->core << "  " << workloadID << " - I/O failed return code = " << p_dun->return_value << ", errno = " << errno << " - " << strerror(errno) << p_dun->toString() << std::endl;
+
+                pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
+
+                log(pWorkloadThread->slavethreadlogfile,o.str());
+                    // %%%%%%%%%%%%%%% come back here later and decide if we want to re-drive failing I/Os, keeping track of the original I/O start time so we record the total respone time for all attempts.
+            }
+            else
+            {
+                int err = -p_dun->return_value;
+                std::ostringstream o;
+                o << "<Warning> Thread for core " << pWorkloadThread->core << "  " << workloadID << " - I/O failed return code = " << p_dun->return_value
+                    << " (" << strerror(err) << ") " << p_dun->toString() << std::endl;
+
+                pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
+
+                log(pWorkloadThread->slavethreadlogfile,o.str());
+                    // %%%%%%%%%%%%%%% come back here later and decide if we want to re-drive failing I/Os, keeping track of the original I/O start time so we record the total respone time for all attempts.
+            }
+		} else {
+			std::ostringstream o;
+			o << "<Warning> Thread for core " << pWorkloadThread->core << "  " << workloadID << "- I/O only transferred " << p_dun->return_value << " out of requested " << p_current_IosequencerInput->blocksize_bytes << std::endl;
+
+            pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
+
+			log(pWorkloadThread->slavethreadlogfile,o.str());
+		}
+	}
+
+	freeStack.push(p_dun);
+
+#ifdef IVYSLAVE_TRACE
+    if (workload_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS)
+    {
+        std::ostringstream o;
+        o << "(core" << pWorkloadThread->core << '-' << workloadID << ") =|= popped and processed " << p_dun->thumbnail();
+        log(pWorkloadThread->slavethreadlogfile,o.str());
+    }
+#endif
+
+	return 1;
+}
+
+
+Eyeo* Workload::front_launchable_IO(const ivytime& now)
+{
+#if defined(IVYSLAVE_TRACE)
+    { workload_callcount_front_launchable_IO++; if (workload_callcount_front_launchable_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_front_launchable_IO << ") "
+        << ")             Entering Workload::front_launchable_IO(" << now.format_as_datetime_with_ns() << ") " << brief_status(); log(pWorkloadThread->slavethreadlogfile,o.str()); }
+    pTestLUN->abort_if_queue_depths_corrupted("Workload::front_launchable_IO",workload_callcount_front_launchable_IO); }
+#endif
+
+    if (workload_queue_depth > p_current_IosequencerInput->maxTags)
+    {
+        std::ostringstream o;
+        o << "<Error> Internal programming error. Source code reference " << __FILE__ << " line " << __LINE__ << std::endl
+            << "At entry to Workload::front_launchable_IO(const ivytime& now = " << now.format_as_datetime_with_ns()
+            << ") for Workload = " << workloadID << " workload_queue_depth = " << workload_queue_depth
+            << " is greater than p_current_IosequencerInput->maxTags = " << p_current_IosequencerInput->maxTags
+            << "." << std::endl;
+        pWorkloadThread->dying_words = o.str();
+        pWorkloadThread->state = ThreadState::died;
+		log(pWorkloadThread->slavethreadlogfile,o.str());
+		pWorkloadThread->ivyslave_main_posted_command = false;
+        pWorkloadThread->slaveThreadConditionVariable.notify_all();
+        exit(-1);
+    }
+
+    if (workload_queue_depth == p_current_IosequencerInput->maxTags) return nullptr;
+
+    if (precomputeQ.size() == 0) return nullptr;
+
+    Eyeo* pEyeo = precomputeQ.front();
+
+    if (pEyeo->scheduled_time > now) return nullptr;
+
+#ifdef IVYSLAVE_TRACE
+    if (workload_callcount_front_launchable_IO <= FIRST_FEW_CALLS)
+    {
+        std::ostringstream o;
+        o << "(core" << pWorkloadThread->core << '-' << workloadID << ") =|= front launchable is  " << pEyeo->thumbnail();
+        log(pWorkloadThread->slavethreadlogfile,o.str());
+    }
+#endif
+
+    return pEyeo;
+}
+
+
+void Workload::load_IOs_to_LaunchPad()
+{
+#if defined(IVYSLAVE_TRACE)
+    { workload_callcount_load_IOs_to_LaunchPad++; if (workload_callcount_load_IOs_to_LaunchPad <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_load_IOs_to_LaunchPad << ") "
+        << "            Entering Workload::load_IOs_to_LaunchPad() " << brief_status(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
+
+    if (is_IOPS_max_with_positive_skew() && hold_back_this_time()) return;
+        // If there's nobody behind, a workload thread with IOPS=max
+        // Then gets to load a "batch" of I/Os, as many as fit within that
+        // workload's maxTags setting, thus was thought to be more
+        // efficient than doing the merge one I/O at a time.
+
+    ivytime now; now.setToNow();
+
+    if (pTestLUN->launch_count >= MAX_IOS_LAUNCH_AT_ONCE) return;
+
+    unsigned int available_launch_slots = p_current_IosequencerInput->maxTags - workload_queue_depth;
+
+    for (unsigned int i = 0; i < available_launch_slots; i++)
+    {
+        Eyeo* pEyeo = front_launchable_IO(now);
+
+        if (pEyeo == nullptr) return;
+
+        pTestLUN->pop_front_to_LaunchPad(this);
+
+#ifdef IVYSLAVE_TRACE
+        if (workload_callcount_load_IOs_to_LaunchPad <= FIRST_FEW_CALLS)
+        {
+            std::ostringstream o;
+            o << "(core" << pWorkloadThread->core << '-' << workloadID << ") =|= loading to LaunchPad " << pEyeo->thumbnail();
+            log(pWorkloadThread->slavethreadlogfile,o.str());
+        }
+#endif
+
+    }
+
+    return;
+}
+
+unsigned int Workload::generate_an_IO()
+{
+#if defined(IVYSLAVE_TRACE)
+    { workload_callcount_generate_an_IO++; if (workload_callcount_generate_an_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
+    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_generate_an_IO << ") "
+        << "            Entering Workload::generate_an_IO() " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
+#endif
+
+    if (precomputeQ.size() >= precomputedepth) return 0;
+
+    if (pWorkloadThread->cooldown) return 0;
+
+    if (0.0 == p_current_IosequencerInput->IOPS) return 0;
+
+    ivytime now; now.setToNow();
+
+    if (precomputeQ.size() > 0 && (now + ivytime(PRECOMPUTE_HORIZON_SECONDS)) < precomputeQ.back()->scheduled_time ) return 0; // if we are already that much ahead of now.
+
+    // precompute an I/O
+    if (freeStack.empty())
+    {
+        std::ostringstream o; o << "<Error> Internal programming error - freeStack is empty - can\'t precompute - at "
+            << __FILE__ << " line " << __LINE__ << std::endl;
+        pWorkloadThread->dying_words = o.str();
+        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
+        for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); close(pTestLUN->event_fd); }
+        pWorkloadThread->state = ThreadState::died;
+        pWorkloadThread->slaveThreadConditionVariable.notify_all();
+        exit(-1);
+        // should not occur unless there's a design fault or maybe if CPU-bound
+    }
+
+    Eyeo* p_Eyeo = freeStack.top();
+
+    freeStack.pop();
+
+    // deterministic generation of "seed" for this I/O.
+    if (have_writes)
+    {
+        if (doing_dedupe)
+        {
+            serpentine_number += threads_in_workload_name;
+            uint64_t new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
+            while (pattern_number < new_pattern_number)
+            {
+                xorshift64star(pattern_seed);
+                pattern_number++;
+            }
+            block_seed = pattern_seed ^ pattern_number;
+        }
+        else
+        {
+            xorshift64star(block_seed);
+        }
+    }
+
+    // now need to call the iosequencer function to populate this Eyeo.
+    if (!p_my_iosequencer->generate(*p_Eyeo)) {
+        std::ostringstream o; o << "<Error> Internal programming error - iosequencer::generate() failed - at " << __FILE__ << " line " << __LINE__ << std::endl;
+        pWorkloadThread->dying_words = o.str();
+        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
+        for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); close(pTestLUN->event_fd); }
+        pWorkloadThread->state = ThreadState::died;
+        pWorkloadThread->slaveThreadConditionVariable.notify_all();
+        exit(-1);
+    }
+    precomputeQ.push_back(p_Eyeo);
+
+#ifdef IVYSLAVE_TRACE
+    if (workload_callcount_generate_an_IO <= FIRST_FEW_CALLS)
+    {
+        std::ostringstream o;
+        o << "(core" << pWorkloadThread->core << '-' << workloadID << ") =|= generated " << p_Eyeo->thumbnail();
+        log(pWorkloadThread->slavethreadlogfile,o.str());
+    }
+#endif
+
+
+    return 1;
+}
+
+
+std::string Workload::brief_status()
+{
+    std::ostringstream o;
+    o << "Workload = "     << workloadID
+        << ", preQ = "     << precomputeQ.size()
+        << ", running = "  << running_IOs.size()
+        << ", postQ = "    << postprocessQ.size()
+        << ", WQ = "  << workload_queue_depth
+        << ", TLQ = "  << pTestLUN->testLUN_queue_depth
+        << ", WTQ = "  << pTestLUN->pWorkloadThread->workload_thread_queue_depth
+        << ", WMQ = "  << workload_max_queue_depth
+        << ", TLMQ = "  << pTestLUN->testLUN_max_queue_depth
+        << ", WTMQ = "  << pTestLUN->pWorkloadThread->workload_thread_max_queue_depth
+        << ", I/Os = " <<  workload_cumulative_launch_count
+        ;
+    return o.str();
+}
+
+
+
+
+
+
+
+
+
+
+
+

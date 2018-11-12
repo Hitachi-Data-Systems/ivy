@@ -43,6 +43,7 @@
 					<Add directory="parser/include" />
 					<Add directory="../LUN_discovery/include" />
 					<Add directory="ivy/include" />
+					<Add directory="/usr/include" />
 				</Compiler>
 				<Linker>
 					<Add option="-pthread -lrt" />
@@ -170,6 +171,7 @@
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-std=c++14" />
+			<Add option="-fPIC" />
 			<Add option="-g" />
 			<Add directory="src" />
 			<Add directory="include" />
@@ -195,6 +197,9 @@
 		</Unit>
 		<Unit filename="include/AttributeNameCombo.h">
 			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/Count_by_workloadID.h">
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/Eyeo.h">
@@ -394,10 +399,6 @@
 			<Option target="ivymaster" />
 			<Option target="test_hosts_list" />
 		</Unit>
-		<Unit filename="include/iosequencer_stuff.h">
-			<Option target="ivymaster" />
-			<Option target="ivyslave" />
-		</Unit>
 		<Unit filename="include/ivy_engine.h">
 			<Option target="ivymaster" />
 		</Unit>
@@ -548,6 +549,9 @@
 		</Unit>
 		<Unit filename="src/AttributeNameCombo.cpp">
 			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/Count_by_workloadID.cpp">
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/Eyeo.cpp">
@@ -785,8 +789,8 @@
 			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="src/ivylinuxcpubusy.cpp">
-			<Option target="ivymaster" />
 			<Option target="ivyslave" />
+			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/ivyslave.cpp">
 			<Option target="ivyslave" />
