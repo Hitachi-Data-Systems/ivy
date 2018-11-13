@@ -196,21 +196,6 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
     //         a nonzero value, then a read(2) returns 8 bytes containing
     //         the value 1, and the counter's value is decremented by 1.
 
-    event_fd = eventfd(0, /* EFD_CLOEXEC | EFD_SEMAPHORE | */ EFD_NONBLOCK );
-
-    if (event_fd == -1)
-	{
-        std::ostringstream o;
-        o << "<Error> Internal programming error.  Failed trying to create eventfd for TestLUN"
-            << " - errno = " << errno << " " << strerror(errno) << std::endl
-            << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-        pWorkloadThread->state=ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
-	}
-
     int rc;
 	act=0;  // must be set to zero otherwise io_setup() will fail with return code 22 - invalid parameter.
 
@@ -230,7 +215,9 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 	if (routine_logging)
 	{
         std::ostringstream o;
-        o << "TestLUN::prepare_linux_AIO_driver_to_start() done - LUN opended with fd = " << fd << ", aio context successfully constructed, with event fd = " << event_fd << ".\n";
+        o << "TestLUN::prepare_linux_AIO_driver_to_start() done - LUN opened with fd = " << fd
+            << ", aio context successfully constructed, sharing eventfd = " << pWorkloadThread->event_fd
+            << " and epoll fd " << pWorkloadThread->epoll_fd << "." << std::endl;
         log(pWorkloadThread->slavethreadlogfile,o.str());
 	}
 
@@ -397,8 +384,7 @@ void TestLUN::pop_front_to_LaunchPad(Workload* pWorkload)
 
     pEyeo->start_time=now;
 
-    //io_set_eventfd(&(pEyeo->eyeocb),event_fd);
-    pEyeo->eyeocb.aio_resfd = event_fd;
+    pEyeo->eyeocb.aio_resfd = pWorkloadThread->event_fd;
     pEyeo->eyeocb.aio_flags = pEyeo->eyeocb.aio_flags | IOCB_FLAG_RESFD;
 
 #ifdef IVYSLAVE_TRACE
@@ -493,7 +479,7 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
             <<  " at " << __FILE__ << " line " << __LINE__ << std::endl;
         pWorkloadThread->dying_words = o.str();
         log(pWorkloadThread->slavethreadlogfile,o.str());
-        io_destroy(act); close(fd); close(event_fd);
+        io_destroy(act); close(fd); close(pWorkloadThread->event_fd); close(pWorkloadThread->epoll_fd);
         pWorkloadThread->state=ThreadState::died;
         pWorkloadThread->slaveThreadConditionVariable.notify_all();
         exit(-1);
@@ -586,7 +572,7 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
                 ;
             pWorkloadThread->dying_words = o.str();
             log(pWorkloadThread->slavethreadlogfile,o.str());
-            io_destroy(act); close(fd); close(event_fd);
+            io_destroy(act); close(fd); close(pWorkloadThread->event_fd); close(pWorkloadThread->epoll_fd);
             pWorkloadThread->state = ThreadState::died;
             pWorkloadThread->slaveThreadConditionVariable.notify_all();
             exit(-1);
@@ -760,7 +746,8 @@ void TestLUN::catch_in_flight_IOs()
                 << " at " << __FILE__ << " line " << __LINE__ ;
             pWorkloadThread->dying_words= o.str();
             log(pWorkloadThread->slavethreadlogfile,o.str());
-            for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); close(pTestLUN->event_fd); }
+            for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
+            close(pWorkloadThread->event_fd);
             close(pWorkloadThread->epoll_fd);
             pWorkloadThread->state = ThreadState::died;
             pWorkloadThread->slaveThreadConditionVariable.notify_all();
@@ -793,7 +780,8 @@ void TestLUN::catch_in_flight_IOs()
                     ;
                 pWorkloadThread->dying_words = o.str();
                 log(pWorkloadThread->slavethreadlogfile,o.str());
-                for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); close(pTestLUN->event_fd); }
+                for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
+                close(pWorkloadThread->event_fd);
                 close(pWorkloadThread->epoll_fd);
                 pWorkloadThread->state = ThreadState::died;
                 pWorkloadThread->slaveThreadConditionVariable.notify_all();
@@ -810,7 +798,9 @@ void TestLUN::catch_in_flight_IOs()
                     <<  ".  Occurred  at " << __FILE__ << " line " << __LINE__ ;
                 pWorkloadThread->dying_words= o.str();
                 log(pWorkloadThread->slavethreadlogfile,o.str());
-                for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); close(pTestLUN->event_fd); }
+                for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
+                close(pWorkloadThread->event_fd);
+                close(pWorkloadThread->epoll_fd);
                 pWorkloadThread->state = ThreadState::died;
                 pWorkloadThread->slaveThreadConditionVariable.notify_all();
                 exit(-1);

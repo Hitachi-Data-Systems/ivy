@@ -456,7 +456,7 @@ void ivytime::setToNow() {
 	return;
 }
 uint64_t ivytime::Milliseconds() const {
-	return (((uint64_t)t.tv_sec)*1000) + (((uint64_t)t.tv_nsec)/1000);
+	return (((uint64_t)t.tv_sec)*1000) + (((uint64_t)t.tv_nsec)/1000000);
 }
 
 void ivytime::roundUpToStartOfMinute() {

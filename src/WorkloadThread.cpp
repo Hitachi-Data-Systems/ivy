@@ -323,6 +323,21 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
         set_all_queue_depths_to_zero();
 
+        event_fd = eventfd(0, EFD_NONBLOCK );
+
+        if (event_fd == -1)
+        {
+            std::ostringstream o;
+            o << "<Error> Internal programming error.  Failed trying to create eventfd for core " << core << "\'s thread."
+                << " - errno = " << errno << " " << strerror(errno) << std::endl
+                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+            dying_words = o.str();
+            log(slavethreadlogfile,dying_words);
+            state=ThreadState::died;
+            slaveThreadConditionVariable.notify_all();
+            exit(-1);
+        }
+
 		epoll_fd = epoll_create(1 /* "size" ignored since Linux kernel 2.6.8 */ );
 		if (epoll_fd == -1)
         {
@@ -332,38 +347,40 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             die_saying(o.str());
         }
 
+        memset(&(epoll_ev),0,sizeof(epoll_ev));
+        epoll_ev.data.ptr = (void*) this;
+        epoll_ev.events = EPOLLIN | EPOLLET | EPOLLOUT;
+
+        int rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, event_fd, &epoll_ev);
+        if (rc == -1)
+        {
+            std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - epoll_ctl failed trying to add an event - "
+                << std::strerror(errno) << std::endl
+                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+            die_saying(o.str());
+        }
+
+        if (routine_logging)
+        {
+            std::ostringstream o;
+            o << "Thread for core " << core << " - eventfd = " << event_fd << " and epoll fd is " << epoll_fd << std::endl;
+            log(slavethreadlogfile,o.str());
+        }
+
         for (auto& pTestLUN : pTestLUNs)
         {
             pTestLUN->prepare_linux_AIO_driver_to_start();
-            pTestLUN->event_fd = eventfd(0,EFD_NONBLOCK);  // int eventfd(unsigned int initval, int flags);
-            if (pTestLUN->event_fd == -1)
-            {
-                std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - failed trying to create eventfd for a TestLUN fd - "
-                    << std::strerror(errno) << std::endl
-                    << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                die_saying(o.str());
-            }
-            memset(&(pTestLUN->epoll_ev),0,sizeof(pTestLUN->epoll_ev));
-            pTestLUN->epoll_ev.data.ptr = (void*) pTestLUN;
-            pTestLUN->epoll_ev.events = EPOLLIN | EPOLLET | EPOLLOUT;
-
-            int rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pTestLUN->event_fd, &pTestLUN->epoll_ev);
-            if (rc == -1)
-            {
-                std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - epoll_ctl failed trying to add an event - "
-                    << std::strerror(errno) << std::endl
-                    << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                die_saying(o.str());
-            }
         }
 
         if (p_epoll_events != nullptr) delete[] p_epoll_events;
 
-        p_epoll_events = new epoll_event[pTestLUNs.size()]; // throws on failure.
+        p_epoll_events = new epoll_event[1]; // throws on failure.
 
 		state=ThreadState::running;
 
         if (routine_logging) log(slavethreadlogfile,"Finished initialization and now about to start running subintervals.");
+
+/*debug*/debug_epoll_count = 0;
 
         // indent level in loop waiting for run commands
 
@@ -579,6 +596,8 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                         log(slavethreadlogfile,o.str());
                     }
 
+                    close_all_fds();
+
                     ivyslave_main_posted_command = false;
 
                     state=ThreadState::waiting_for_command;
@@ -691,11 +710,17 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         //   - end of subinterval
         //   - time to start next scheduled I/O over my TestLUNs, if there is a scheduled (not IOPS=max) I/O.
 
+        if (ivyslave.spinloop) goto top_of_loop;
+
+
+
         ivytime next_overall_io = ivytime(0);
 
         for (auto& pTestLUN : pTestLUNs)
         {
             ivytime next_this_LUN = pTestLUN->next_scheduled_io();
+
+//{if (debug_epoll_count++ < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: next I/O for " << pTestLUN->host_plus_lun << " is " << next_this_LUN.format_as_datetime_with_ns(); if (ivytime(0) != next_this_LUN) { ivytime dur =  next_this_LUN - now; o << " which is " << dur.format_as_duration_HMMSSns() << " from now."; } log(slavethreadlogfile,o.str()); }}
 
             if (next_overall_io == ivytime(0))
             {
@@ -706,6 +731,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                 next_overall_io = next_this_LUN;
             }
         }
+//{if (debug_epoll_count < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: next overall I/O is " << next_overall_io.format_as_datetime_with_ns() << ", subinterval end = " << thread_view_subinterval_end.format_as_datetime_with_ns(); log(slavethreadlogfile,o.str()); }}
 
         ivytime wait_until_this_time = thread_view_subinterval_end;
 
@@ -724,12 +750,13 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         {
             wait_duration = wait_until_this_time - now;
         }
-
-        if (ivyslave.spinloop) goto top_of_loop;
+//{if (debug_epoll_count < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: wait duration is " << wait_duration.format_as_duration_HMMSSns(); log(slavethreadlogfile,o.str()); }}
 
         int wait_ms = static_cast<int>(wait_duration.Milliseconds());
 
-        int epoll_rc = epoll_wait(epoll_fd, p_epoll_events, pTestLUNs.size(), wait_ms);
+//{if (debug_epoll_count < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: wait milliseconds is " << wait_ms; log(slavethreadlogfile,o.str()); }}
+
+        int epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, wait_ms);
 
         if (epoll_rc < 0)
         {
@@ -738,18 +765,6 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                 << " return code = " << epoll_rc << " - " << strerror(errno)
                 << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
             die_saying(o.str());
-        }
-
-        if (epoll_rc > 0)
-        {
-            epoll_event* p_ee = p_epoll_events;
-
-            for ( int i = 0; i < epoll_rc; i++ )
-            {
-               TestLUN* pTestLUN = (TestLUN*) p_ee->data.ptr;
-               pTestLUN->reap_IOs();
-               p_ee++;
-            }
         }
 
         goto top_of_loop;
@@ -861,6 +876,87 @@ unsigned int WorkloadThread::reap_IOs()
 #endif
 
     unsigned int n {0};
+
+    uint64_t eventfd_counter_value {0};
+
+    // The way the eventfd / epoll thing works is that
+    // an eventfd is a file descriptor connected to an
+    // underlying unsigned 64 bit counter.
+
+    // We "tag" each I/O with the eventfd, so that when the I/O
+    // completes, this causes the uint64_t number 1 will be written
+    // to the eventfd's "file", which increments the 64 bit counter
+    // by that number 1.
+
+    // Thus the value of the 64 bit unsigned int represents
+    // the number of I/Os that have completed since the counter
+    // was last reset to zero.
+
+    // The eventfd file descriptor is readable if the underlying
+    // counter is non-zero.
+
+    // Then we use epoll to wait until the eventfd becomes
+    // readable, meaning that a new I/O completion event
+    // is ready to be harvested.
+
+    // Here we read the 8-byte value from the counter,
+    // which also atomically then sets the underlying
+    // counter to zero.
+
+    // We throw away the counter value that we read
+    // using the eventfd, because all we want to do
+    // is to reset the counter to zero before doing
+    // the AIO getevents calls for each TestLUN,
+    // so that we won't lose track of any new
+    // pending I/O completion events that arrive
+    // after we reset the counter.
+
+
+    // This next bit writing the number 1 (one) to the eventfd's "file" was put in before reading from the eventfd to reset it,
+    // because without writing to the eventfd first, reading from an eventfd failed saying 11 - resource temporarily unavailable.
+//
+//    bool written_to_eventfd {false};
+//
+//    if (! written_to_eventfd)
+//    {
+//        written_to_eventfd = true;
+//
+//        uint64_t one64bit {1};
+//        int eventfd_write_rc = write(event_fd, &one64bit, 8);
+//        if (eventfd_write_rc != 8)
+//        {
+//            std::ostringstream o;
+//            o << "<Error> Internal programming error - in WorkloadThread, failed trying to write to the 64 bit unsigned counter value underlying my eventfd which is " << event_fd << "." << std::endl
+//                << "Return value from writing 8 byte counter should have been 8.  Instead, it was " << eventfd_write_rc << ", with errno = " << errno << " (" << strerror(errno) << ")." << std::endl;
+//
+//            int flags = fcntl(event_fd, F_GETFD, 0);
+//
+//            o << "Return value from fcntl(event_fd = " << event_fd << ", F_GETFD, 0) was " << flags;
+//
+//            if (flags != 0) o << " with errno " << errno << " - " << strerror(errno);
+//
+//            o << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
+//            die_saying(o.str());
+//        }
+//    }
+
+    int eventfd_read_rc = read(event_fd, &eventfd_counter_value, 8);
+
+    if ((eventfd_read_rc != 8) && (!(eventfd_read_rc == -1 && errno == 11))) // eventfd is non-blocking, and if the counter is zero, it's not readable, and you get return code -1 with errno 11
+    {
+        std::ostringstream o;
+        o << "<Error> Internal programming error - in WorkloadThread, failed trying to read the 64 bit unsigned counter value underlying my eventfd which is " << event_fd << "." << std::endl
+            << "Return value from reading 8 byte counter should have been 8.  Instead, it was " << eventfd_read_rc << ", with errno = " << errno << " (" << strerror(errno) << ")." << std::endl;
+
+        int flags = fcntl(event_fd, F_GETFD, 0);
+
+        o << "Return value from fcntl(event_fd = " << event_fd << ", F_GETFD, 0) was " << flags;
+
+        if (flags != 0) o << " with errno " << errno << " - " << strerror(errno);
+
+        o << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
+        die_saying(o.str());
+    }
 
     while (true)
     {
@@ -1088,6 +1184,17 @@ void WorkloadThread::post_Warning_for_main_thread_to_say(const std::string& msg)
         std::lock_guard<std::mutex> lk_guard(*p_ivyslave_main_mutex);
         ivyslave.workload_thread_warning_messages.push_back(s);
     }
+}
+
+void WorkloadThread::close_all_fds()
+{
+    for (auto& pTestLUN : pTestLUNs)
+    {
+        io_destroy(pTestLUN->act);
+        close(pTestLUN->fd);
+    }
+    close(epoll_fd);
+    close(event_fd);
 }
 
 #ifdef IVYSLAVE_TRACE

@@ -119,8 +119,6 @@ public:
 
 	int fd {-1};
 
-	int event_fd {-1};
-
 	struct io_event ReapHeap[MAX_IOEVENTS_REAP_AT_ONCE];
 
 	Eyeo* LaunchPad[MAX_IOS_LAUNCH_AT_ONCE];
@@ -149,8 +147,6 @@ public:
     //       uint32_t     events;      /* Epoll events */
     //       epoll_data_t data;        /* User data variable */
     //   };
-
-    struct epoll_event epoll_ev;
 
 #ifdef IVYSLAVE_TRACE
     unsigned int sum_of_maxTags_callcount {0};

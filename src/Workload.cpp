@@ -550,7 +550,9 @@ unsigned int Workload::generate_an_IO()
             << __FILE__ << " line " << __LINE__ << std::endl;
         pWorkloadThread->dying_words = o.str();
         log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-        for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); close(pTestLUN->event_fd); }
+        for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
+        close(pWorkloadThread->event_fd);
+        close(pWorkloadThread->epoll_fd);
         pWorkloadThread->state = ThreadState::died;
         pWorkloadThread->slaveThreadConditionVariable.notify_all();
         exit(-1);
@@ -586,7 +588,9 @@ unsigned int Workload::generate_an_IO()
         std::ostringstream o; o << "<Error> Internal programming error - iosequencer::generate() failed - at " << __FILE__ << " line " << __LINE__ << std::endl;
         pWorkloadThread->dying_words = o.str();
         log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-        for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); close(pTestLUN->event_fd); }
+        for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
+        close(pWorkloadThread->event_fd);
+        close(pWorkloadThread->epoll_fd);
         pWorkloadThread->state = ThreadState::died;
         pWorkloadThread->slaveThreadConditionVariable.notify_all();
         exit(-1);

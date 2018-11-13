@@ -2183,8 +2183,6 @@ ivy_engine::go(const std::string& parameters)
     have_measure = false;
     have_workload = false;
     have_RAID_subsystem = false;
-//    have_within = false;
-//    have_max_above_or_below = false;
 
     goStatementsSeen++;
 

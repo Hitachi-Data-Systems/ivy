@@ -34,7 +34,7 @@
 
 #include "ivyslave.h"
 
-#define IVYSLAVE_TRACE
+//#define IVYSLAVE_TRACE
 // IVYSLAVE_TRACE defined here in this source file rather than globally in ivydefines.h so that
 //  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
 //  - you can turn on tracing separately for each class in its own source file.
@@ -512,9 +512,12 @@ bool IvySlave::waitForSubintervalEndThenHarvest()
 		return false;
  	}
 
-#ifdef IVY_TRACE_CPU_BUSY
- 	{ std::ostringstream o; o << "struct avgcpubusypercent :" << cpubusysummary.toString() << std::endl; o << cpubusydetail << std::endl;log(slavelogfile, o.str()); }
-#endif // IVY_TRACE_CPU_BUSY
+    if (routine_logging)
+ 	{
+ 	    std::ostringstream o;
+ 	    o << "struct avgcpubusypercent :" << cpubusysummary.toString() << std::endl;
+ 	    o << cpubusydetail << std::endl;log(slavelogfile, o.str());
+    }
 
 	say(std::string("[CPU]")+cpubusysummary.toString());
 
@@ -944,7 +947,7 @@ void IvySlave::create_workload()
 
     pWorkload->pTestLUN = pTestLUN;
 
-    log_iosequencer_settings("debug: at end of create_workload:");
+    //log_iosequencer_settings("debug: at end of create_workload:");
 
 
     say("<OK>");
@@ -1150,10 +1153,10 @@ void IvySlave::delete_workload()
 
 void IvySlave::go()
 {
-//#if defined(IVYSLAVE_TRACE)
+#if defined(IVYSLAVE_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvySlave::go()."; log(slavelogfile,o.str()); } }
     log_iosequencer_settings("debug: entry to go():");
-//#endif
+#endif
 
     std::string dash_spinloop {"-spinloop"};
 

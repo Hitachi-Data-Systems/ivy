@@ -30,6 +30,7 @@
 #include <set>
 #include <sys/eventfd.h>
 #include <sys/epoll.h>
+#include <fcntl.h>
 
 #include "pattern.h"
 #include "Subinterval.h"
@@ -112,9 +113,13 @@ public:
     std::vector<TestLUN*>::iterator pTestLUN_generate_bookmark;
     std::vector<TestLUN*>::iterator pTestLUN_start_IOs_bookmark;
 
+    int event_fd {-1};
     int epoll_fd {-1};
     epoll_event* p_epoll_events {nullptr};
     epoll_event ep_event;
+    struct epoll_event epoll_ev;
+
+/*debug*/ unsigned int debug_epoll_count {0};
 
 //    int subinterval_number_wt {-1};
     int thread_view_subinterval_number {-1};
@@ -156,6 +161,8 @@ public:
     void set_all_queue_depths_to_zero();
     void post_Error_for_main_thread_to_say(const std::string&);
     void post_Warning_for_main_thread_to_say(const std::string&);
+
+    void close_all_fds();
 
 #ifdef IVYSLAVE_TRACE
     void log_bookmark_counters();
