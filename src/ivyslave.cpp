@@ -389,6 +389,10 @@ int main(int argc, char* argv[])
 			p_WorkloadThread->subinterval_array[0].input.fromString(createThreadParameters,slavelogfile);
 			p_WorkloadThread->subinterval_array[1].input.fromString(createThreadParameters,slavelogfile);
 
+			//ivy_float target_dedupe = p_WorkloadThread->subinterval_array[0].input.dedupe;
+			//p_WorkloadThread->dedupe_regulator = new DedupePatternRegulator(target_dedupe);
+                        //log(p_WorkloadThread->slavethreadlogfile, p_WorkloadThread->dedupe_regulator->logmsg());
+
 			// Invoke thread
 			p_WorkloadThread->std_thread=std::thread(invokeThread,p_WorkloadThread);
 
@@ -706,7 +710,21 @@ int main(int argc, char* argv[])
                                 ( 1.0 - ( (pattern_float_type)  pear.second->subinterval_array[0].input.fractionRead ) )
                                 /       ( (pattern_float_type)  pear.second->subinterval_array[0].input.dedupe );
 
-                            pear.second->pattern_seed = pear.second->subinterval_array[0].input.pattern_seed;
+                            //universal fixed seed or random
+                            bool use_universal_seed {true};
+                            if (use_universal_seed)
+                            {
+                                WorkloadID wid(pear.first);
+                                //pear.second->block_seed = ((uint64_t) std::hash<std::string>{}(pear.first));
+                                pear.second->block_seed = ((uint64_t) std::hash<std::string>{}(wid.getLunPart()));
+                                pear.second->pattern_seed = universal_seed ^ pear.second->block_seed;
+                                //pear.second->pattern_seed = universal_seed;
+                                //pear.second->block_seed = pear.second->pattern_seed;
+                            } else
+                            {
+                                pear.second->block_seed = ( (uint64_t) std::hash<std::string>{}(pear.first) ) ^ test_start_time.getAsNanoseconds();
+                                pear.second->pattern_seed = pear.second->subinterval_array[0].input.pattern_seed;
+                            }
                             pear.second->pattern_number = 0;
                         }
                     }

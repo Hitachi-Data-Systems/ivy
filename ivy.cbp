@@ -163,13 +163,14 @@
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;ivyenglib" />
+			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;ivyenglib;" />
 			<Add alias="allall" targets="ivymaster;ivyslave;clear_hung_ivy_threads;csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
 			<Add alias="csv_utilities" targets="csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-std=c++14" />
+			<Add option="-fPIC" />
 			<Add option="-g" />
 			<Add directory="src" />
 			<Add directory="include" />
@@ -194,6 +195,10 @@
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/AttributeNameCombo.h">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/DedupePatternRegulator.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
@@ -547,6 +552,10 @@
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/AttributeNameCombo.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/DedupePatternRegulator.cpp">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>

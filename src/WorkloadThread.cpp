@@ -59,7 +59,10 @@
 #include "IosequencerRandomIndependent.h"
 #include "IosequencerSequential.h"
 
+#include "DedupePatternRegulator.h"
+
 extern bool routine_logging;
+static uint64_t offset;
 
 
 // for some strange reason, there's no header file for these system call wrapper functions
@@ -122,7 +125,7 @@ std::ostream& operator<< (std::ostream& o, const ThreadState s)
 
 
 WorkloadThread::WorkloadThread(std::string wID, LUN* pL, long long int lastLBA, std::string parms, std::mutex* p_imm)
-        : workloadID(wID), pLUN(pL), maxLBA(lastLBA), iosequencerParameters(parms), p_ivyslave_main_mutex(p_imm)
+        : workloadID(wID), pLUN(pL), maxLBA(lastLBA), iosequencerParameters(parms), dedupe_regulator(nullptr), p_ivyslave_main_mutex(p_imm)
 {}
 
 std::string threadStateToString (const ThreadState ts)
@@ -344,6 +347,35 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             slaveThreadConditionVariable.notify_all();
 			return;
 		}
+                dedupe_regulator = new DedupePatternRegulator(subinterval_array[0].input.dedupe, pattern_seed);
+                log(slavethreadlogfile, dedupe_regulator->logmsg());
+
+                if (p_my_iosequencer->isRandom())
+                {
+                    if (dedupe_regulator->decide_reuse())
+                    {
+                        ostringstream o;
+                        std::pair<uint64_t, uint64_t> align_pattern;
+                        align_pattern = dedupe_regulator->reuse_seed();
+                        pattern_seed = align_pattern.first;
+                        pattern_alignment = align_pattern.second;
+                        offset = pattern_alignment;
+                        pattern_number = pattern_alignment;
+                        o << "workloadthread - Reuse pattern seed " << pattern_seed <<  " Offset: " << offset << std::endl;
+                        log(slavethreadlogfile, o.str());
+                    } else
+                    {
+                        ostringstream o;
+                        pattern_seed = dedupe_regulator->random_seed();
+                        o << "workloadthread - use Random pattern seed " << pattern_seed <<  std::endl;
+                        log(slavethreadlogfile, o.str());
+                    }
+                } else
+                {
+                    ostringstream o;
+                    o << "Sequential workloadthread - Reuse pattern seed " << pattern_seed <<  std::endl;
+                    log(slavethreadlogfile, o.str());
+                }
 
 		prepare_linux_AIO_driver_to_start();
 
@@ -868,6 +900,11 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
     if (routine_logging) {std::ostringstream o; o << "WorkloadThread::linux_AIO_driver_run_subinterval() running subinterval which will end at " << subinterval_ending_time.format_as_datetime_with_ns() << std::endl; log(slavethreadlogfile,o.str());}
 
+        int dedupe_count = 0;
+        //int extra_count = 0;
+        ivy_float target_dedupe = subinterval_array[0].input.dedupe;
+        ivy_float modified_dedupe_factor = 1.0;
+        dedupeunits = p_current_IosequencerInput->blocksize_bytes / 8192;
 	while (true) {
 		now.setToNow();
 
@@ -1139,19 +1176,58 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 			Eyeo* p_Eyeo = freeStack.top();
 			freeStack.pop();
 
+            std::ostringstream o;
             // deterministic generation of "seed" for this I/O.
             if (have_writes)
             {
                 if (doing_dedupe)
                 {
-                    serpentine_number += threads_in_workload_name;
-                    uint64_t new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
-                    while (pattern_number < new_pattern_number)
+                    bool old_method {false};
+                    if (old_method)
                     {
-                        xorshift64star(pattern_seed);
-                        pattern_number++;
+                        serpentine_number += threads_in_workload_name;
+                        uint64_t new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
+                        while (pattern_number < new_pattern_number)
+                        {
+                            xorshift64star(pattern_seed);
+                            pattern_number++;
+                        }
+                        block_seed = pattern_seed ^ pattern_number;
+                    } else
+                    {   // new method
+
+                        int bsindex = 0;
+                        int dedupeunitsvar = dedupeunits;
+                        while (dedupeunitsvar-- > 0)
+                        {
+                            std::ostringstream o;
+
+                        if (dedupe_count == 0) {
+                            modified_dedupe_factor = dedupe_regulator->dedupe_distribution(target_dedupe, p_my_iosequencer->isRandom());
+                            dedupe_count = (uint64_t) modified_dedupe_factor;
+                            o << "modified_dedupe_factor: " << modified_dedupe_factor << std::endl;
+                            //log(slavethreadlogfile,o.str());
+                        }
+
+                        if (dedupe_count == modified_dedupe_factor)
+                        {
+                            int count = dedupe_count;
+                            while (count > 0)
+                            {
+                                xorshift64star(pattern_seed);
+                                pattern_number++;
+                                count--;
+                            }
+                        }
+                        block_seed = pattern_seed ^ pattern_number;
+                        last_block_seeds[bsindex++] = block_seed;
+                        dedupe_count--;
+#if 0
+            o << "bsindex: " << bsindex << " dedupe_count: " << dedupe_count << " pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
+            log(slavethreadlogfile,o.str());
+#endif
+                        }
                     }
-                    block_seed = pattern_seed ^ pattern_number;
                 }
                 else
                 {
@@ -1159,6 +1235,12 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                 }
             }
 
+            spectrum = dedupe_regulator->get_spectrum();
+            bias = false;
+#if 0
+            o << "slang bias: " << bias << " pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
+            log(slavethreadlogfile,o.str());
+#endif
 			// now need to call the iosequencer function to populate this Eyeo.
 			if (!p_my_iosequencer->generate(*p_Eyeo)) {
 				std::ostringstream o; o << "<Error> iosequencer::generate() failed - at " << __FILE__ << " line " << __LINE__ << std::endl;

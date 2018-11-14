@@ -31,6 +31,7 @@
 
 #include "pattern.h"
 #include "Subinterval.h"
+#include "DedupePatternRegulator.h"
 
 typedef long double pattern_float_type ;
 
@@ -66,6 +67,7 @@ public:
 	long long int maxLBA;
 	iosequencer_stuff iosequencer_variables;
 	std::string iosequencerParameters; // just used to print a descriptive line when the thread fires up.
+	DedupePatternRegulator *dedupe_regulator;
 	std::mutex* p_ivyslave_main_mutex;
 
 	std::thread std_thread;
@@ -110,6 +112,8 @@ public:
 	SubintervalOutput* p_other_SubintervalOutput;
 
 	Iosequencer* p_my_iosequencer;
+	bool bias;
+	uint64_t spectrum;
 
 	std::list<Eyeo*> allEyeosThatExist;
 
@@ -167,8 +171,11 @@ public:
 
     pattern pat;
     uint64_t pattern_number;
+    uint64_t pattern_alignment;
     uint64_t pattern_seed;
     uint64_t block_seed;
+    uint64_t last_block_seeds[32];
+    uint8_t dedupeunits;
 
     uint64_t write_io_count;
 
@@ -180,7 +187,7 @@ public:
 
 //methods
 	WorkloadThread(std::string /*workloadID*/, LUN*, long long int /*lastLBA*/, std::string /*parms*/, std::mutex*);
-	inline ~WorkloadThread() {};
+	inline ~WorkloadThread() {if (dedupe_regulator != nullptr) delete dedupe_regulator;}
 
     uint64_t xorshift1024star();
 

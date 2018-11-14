@@ -22,7 +22,7 @@
 #include <array>
 #include <string>
 
-const std::string ivy_version {"2.03.01"};
+const std::string ivy_version {"3.00.00"};
 
 //using ivy_int = long long int; using ivy_float = long double;
   using ivy_int =      long int; using ivy_float =      double;
@@ -77,6 +77,8 @@ const std::string ivy_version {"2.03.01"};
 #define path_separator (std::string("/"))
 
 #define sector_size_bytes (512)
+
+#define universal_seed 1234567
 
 // go statement universal parameters
 #define subinterval_seconds_default_int 5

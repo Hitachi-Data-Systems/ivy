@@ -172,6 +172,8 @@ void Eyeo::generate_pattern()
     unsigned int word_index;
     char* past_buf;
     char* p_word;
+    int bsindex = 0;
+    int count = 0;
 
     pWorkloadThread->write_io_count++;
 
@@ -184,6 +186,8 @@ void Eyeo::generate_pattern()
 
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
+                if (i % 1024 == 0)
+                    pWorkloadThread->block_seed = pWorkloadThread->last_block_seeds[bsindex++];
                 xorshift64star(pWorkloadThread->block_seed);
                 (*(p_uint64 + i)) = pWorkloadThread->block_seed;
             }
@@ -196,6 +200,8 @@ void Eyeo::generate_pattern()
 
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
+                if (i % 1024 == 0)
+                    pWorkloadThread->block_seed = pWorkloadThread->last_block_seeds[bsindex++];
                 xorshift64star(pWorkloadThread->block_seed);
 
                 d = pWorkloadThread->block_seed;
@@ -227,6 +233,8 @@ void Eyeo::generate_pattern()
 
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
+                if (i % 1024 == 0)
+                    pWorkloadThread->block_seed = pWorkloadThread->last_block_seeds[bsindex++];
                 xorshift64star(pWorkloadThread->block_seed);
                 (*(p_uint64 + i)) = pWorkloadThread->block_seed;
             }
@@ -245,16 +253,20 @@ void Eyeo::generate_pattern()
 
             p_c = (char*)eyeocb.aio_buf;
             past_buf = ((char*) eyeocb.aio_buf)+blocksize;
+            count = 0;
             while(p_c < past_buf)
             {
+                if (count % 1024 == 0)
+                    pWorkloadThread->block_seed = pWorkloadThread->last_block_seeds[bsindex++];
                 xorshift64star(pWorkloadThread->block_seed);
                 word_index = pWorkloadThread->block_seed % unique_word_count;
                 p_word = unique_words[word_index];
                 while ( (*p_word) && (p_c < past_buf) )
                 {
                     *p_c++ = *p_word++;
+                    count++;
                 }
-                if (p_c < past_buf) {*p_c++ = ' ';}
+                if (p_c < past_buf) {*p_c++ = ' '; count++;}
             }
 
             break;
