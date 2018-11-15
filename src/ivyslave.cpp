@@ -331,14 +331,16 @@ int IvySlave::main(int argc, char* argv[])
 	getline.set_fd(0); // reading from stdin
 	getline.set_logfilename(slavelogfile);
 
-	ivytime ten_seconds = ivytime(10);
+	ivytime one_hour = ivytime(60*60);
+        // one hour so that if ivyslave somehow would wait forever, this makes it explode after an hour.
+        // Ivyslave gets a command every subinterval, so this would limit subinterval_seconds to one hour.
 
 	while(!std::cin.eof())
 	{
 		// get commands from ivymaster
 
 		//std::getline(std::cin,input_line);
-		input_line = getline.real_get_line_from_pipe(ten_seconds,"ivyslave reading a line from ivy", false);
+		input_line = getline.real_get_line_from_pipe(one_hour,"ivyslave reading a line from ivy", false);
 
 		lasttime.setToNow();
 
