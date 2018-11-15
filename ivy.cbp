@@ -18,6 +18,7 @@
 					<Add directory="include" />
 					<Add directory="parser/include" />
 					<Add directory="parser/lexyacc" />
+					<Add directory="ivy/include" />
 				</Compiler>
 				<Linker>
 					<Add option="-pthread -lrt" />
@@ -445,6 +446,9 @@
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
+		<Unit filename="include/pipe_line_reader.h">
+			<Option target="ivyslave" />
+		</Unit>
 		<Unit filename="include/run_subinterval_sequence.h">
 			<Option target="ivymaster" />
 			<Option target="ivyslave" />
@@ -828,6 +832,9 @@
 		</Unit>
 		<Unit filename="src/pipe_driver_subthread.cpp">
 			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/pipe_line_reader.cpp">
+			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/prepare_dedupe.cpp">
 			<Option target="ivymaster" />

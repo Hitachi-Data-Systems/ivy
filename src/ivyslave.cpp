@@ -33,6 +33,7 @@
 #include <sys/types.h>
 
 #include "ivyslave.h"
+#include "pipe_line_reader.h"
 
 //#define IVYSLAVE_TRACE
 // IVYSLAVE_TRACE defined here in this source file rather than globally in ivydefines.h so that
@@ -324,10 +325,21 @@ int IvySlave::main(int argc, char* argv[])
     disco.discover();
 
 	if(std::cin.eof()) {log("std::cin.eof()\n",slavelogfile); return 0;}
+
+	pipe_line_reader getline {};
+
+	getline.set_fd(0); // reading from stdin
+	getline.set_logfilename(slavelogfile);
+
+	ivytime ten_seconds = ivytime(10);
+
 	while(!std::cin.eof())
 	{
 		// get commands from ivymaster
-		std::getline(std::cin,input_line);
+
+		//std::getline(std::cin,input_line);
+		input_line = getline.real_get_line_from_pipe(ten_seconds,"ivyslave reading a line from ivy", false);
+
 		lasttime.setToNow();
 
         if (last_message_time == ivytime(0))

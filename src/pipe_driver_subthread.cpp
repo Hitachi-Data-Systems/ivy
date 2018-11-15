@@ -430,7 +430,7 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
 
     if ( next_char_from_slave_buf >= bytes_last_read_from_slave )
     {
-        last_read_from_pipe=read_from_pipe(timeout);
+        last_read_from_pipe = read_from_pipe(timeout);
         if (!last_read_from_pipe)
         {
             std::ostringstream o;
@@ -793,6 +793,86 @@ void pipe_driver_subthread::threadRun()
         close(pipe_driver_subthread_to_slave_pipe[PIPE_READ]);
         close(slave_to_pipe_driver_subthread_pipe[PIPE_WRITE]);
 
+        int original_pipe_capacity = fcntl(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE],F_GETPIPE_SZ);
+
+        if (original_pipe_capacity < 0)
+        {
+            ostringstream logmsg;
+            logmsg << "<Error> Failed getting original capacity of pipe from pipe_driver_subthread to ivyslave."
+                "  errno = " << errno << " - " << strerror(errno) << std::endl;
+            log(logfilename, logmsg.str());
+            close(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE]);
+            close(slave_to_pipe_driver_subthread_pipe[PIPE_READ]);
+            {
+                std::lock_guard<std::mutex> lk_guard(master_slave_lk);
+                startupComplete=true;
+                startupSuccessful=false;
+                commandErrorMessage = logmsg.str();
+                dead=true;
+            }
+            master_slave_cv.notify_all();
+
+            return;
+        }
+
+        if (routine_logging)
+        {
+            std::ostringstream x;
+            x << "Original capacity of pipe to ivyslave is " << original_pipe_capacity << std::endl;
+            log(logfilename, x.str());
+        }
+
+        int resize_pipe_rc = fcntl(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE],F_SETPIPE_SZ, 128*1024);
+
+        if (resize_pipe_rc < 0)
+        {
+            ostringstream logmsg;
+            logmsg << "<Error> Failed setting capacity of pipe from pipe_driver_subthread to ivyslave to the value 128 Ki8."
+                "  errno = " << errno << " - " << strerror(errno) << std::endl;
+            log(logfilename, logmsg.str());
+            close(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE]);
+            close(slave_to_pipe_driver_subthread_pipe[PIPE_READ]);
+            {
+                std::lock_guard<std::mutex> lk_guard(master_slave_lk);
+                startupComplete=true;
+                startupSuccessful=false;
+                commandErrorMessage = logmsg.str();
+                dead=true;
+            }
+            master_slave_cv.notify_all();
+
+            return;
+        }
+
+        int updated_pipe_capacity = fcntl(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE],F_GETPIPE_SZ);
+
+        if (updated_pipe_capacity < 0)
+        {
+            ostringstream logmsg;
+            logmsg << "<Error> Failed getting updated capacity of pipe from pipe_driver_subthread to ivyslave."
+                "  errno = " << errno << " - " << strerror(errno) << std::endl;
+            log(logfilename, logmsg.str());
+            close(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE]);
+            close(slave_to_pipe_driver_subthread_pipe[PIPE_READ]);
+            {
+                std::lock_guard<std::mutex> lk_guard(master_slave_lk);
+                startupComplete=true;
+                startupSuccessful=false;
+                commandErrorMessage = logmsg.str();
+                dead=true;
+            }
+            master_slave_cv.notify_all();
+
+            return;
+        }
+
+        if (routine_logging)
+        {
+            std::ostringstream x;
+            x << "Updated capacity of pipe to ivyslave is " << updated_pipe_capacity << std::endl;
+            log(logfilename, x.str());
+        }
+
         // ready for interaction with the remote slave
         int flags = fcntl(slave_to_pipe_driver_subthread_pipe[PIPE_READ], F_GETFL, 0);
         if (fcntl(slave_to_pipe_driver_subthread_pipe[PIPE_READ], F_SETFL, flags | O_NONBLOCK))
@@ -905,8 +985,8 @@ void pipe_driver_subthread::threadRun()
         log(logfilename, std::string("remote slave said its hostname is \"")+hostname+std::string("\"."));
 
 
-//*debug*/std::cout << "debug: waiting 60 seconds to allow showluns.sh run with another ivy hammering a lun, slowing the binary search for the LUN size.\n";
-//*debug*/sleep(60);
+/*debug*/std::cout << "debug: waiting 60 seconds to allow showluns.sh run with another ivy hammering a lun, slowing the binary search for the LUN size.\n";
+/*debug*/sleep(60);
 
         // Retrieve list of luns visible on the slave host
         if (!pCmdDevLUN)

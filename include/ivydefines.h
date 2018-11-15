@@ -34,7 +34,6 @@ const std::string ivy_version {"3.00.00"};
 #define IVY_CMDDEV_EXECUTABLE std::string("ivy_cmddev")
 #define default_outputFolderRoot "."
 #define SLAVEUSERID "root"
-#define MINBUFSIZE 4096
 #define MAX_MAXTAGS 8192
 #define BUF_ALIGNMENT_BOUNDARY_SIZE 4096
 #define MAX_IOS_LAUNCH_AT_ONCE 128
@@ -61,7 +60,7 @@ const std::string ivy_version {"3.00.00"};
 // When the test is complete, ivymaster uses an scp command to copy the log files back to the ivymaster host along with everything else.
 
 //      IVYMAXMSGSIZE size of send/receive buffers between master and slave
-#define IVYMAXMSGSIZE (32*1024)
+#define IVYMAXMSGSIZE ((128*1024)-sizeof(uint32_t))
 
 #define MAXWAITFORIVYCMDDEV 5
 

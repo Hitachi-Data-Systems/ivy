@@ -80,7 +80,7 @@ std::string GetStdoutFromCommand(std::string cmd) {  // DOES NOT CHECK IF COMMAN
 
     std::string data;
     FILE * stream;
-    const int max_buffer = 4096;
+    const int max_buffer = 64 * 1024;
     char buffer[max_buffer];
     //cmd.append(" 2>&1");
 
