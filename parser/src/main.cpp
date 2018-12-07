@@ -310,6 +310,8 @@ int main(int argc, char* argv[])
         log(m_s.masterlogfile, o.str());
     }
 
+    if (m_s.iosequencer_template_was_used) { m_s.print_iosequencer_template_deprecated_msg(); }
+
     std::pair<bool,std::string> strc = m_s.shutdown_subthreads();
 
     {

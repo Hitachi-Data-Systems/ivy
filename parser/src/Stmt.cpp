@@ -208,6 +208,9 @@ bool Stmt_set_iosequencer_template::execute()
     std::pair<bool,std::string> rc = m_s.set_iosequencer_template(iogen,parameters);
     if (!rc.first) p_Ivy_pgm->error(rc.second);
 
+    m_s.iosequencer_template_was_used = true;
+    m_s.print_iosequencer_template_deprecated_msg();
+
     return false;
 }
 

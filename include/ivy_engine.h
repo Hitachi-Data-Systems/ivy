@@ -378,7 +378,11 @@ public:
 
     bool last_command_was_stop {false};
 
+    bool iosequencer_template_was_used {false};
+
 // methods
+
+    void print_iosequencer_template_deprecated_msg();
 	void kill_subthreads_and_exit();
 	void error(std::string);
 	std::pair<bool, std::string> make_measurement_rollup_CPU(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);

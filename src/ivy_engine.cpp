@@ -3702,7 +3702,29 @@ void ivy_engine::print_latency_csvfiles()
     }
 }
 
+void ivy_engine::print_iosequencer_template_deprecated_msg()
+{
+    std::string m { R"(
 
+*********************************************************************************************
+*                                                                                           *
+*   NOTE: I/O sequencer templates were used.  (In ivyscript "[SetIosequencerTemplate]".)    *
+*                                                                                           *
+*         The use of I/O sequencer templates is deprecated meaning that it still works,     *
+*         but users should switch instead to using "edit rollup" to set parameters across   *
+*         a group of workloads after they have been created.                                *
+*                                                                                           *
+*         At some point in the future, I/O sequencer templates will be removed from ivy.    *
+*                                                                                           *
+*********************************************************************************************
+
+)"};
+
+    std::cout << m;
+    log (masterlogfile,m);
+
+    return;
+}
 
 
 
