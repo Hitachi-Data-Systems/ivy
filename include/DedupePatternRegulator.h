@@ -31,31 +31,16 @@ public:
     ~DedupePatternRegulator();
 
     // return rounded dedupe factor resets state
-    inline ivy_float dedupe_distribution(ivy_float target_dedupe, bool is_random)
+    inline ivy_float dedupe_distribution(ivy_float target_dedupe)
     {
-#if 0
         if (pos < unique_percentage)
             state = 1;
         else if (pos < (unique_percentage + high_percentage))
             state = target + spread;
-        //else
-            //state = target + spread;
-            //state = floor(target_dedupe);
-            //state = target;
-#endif
-        if (pos < high_percentage)
-            state = target + spread;
-        else if (pos < (high_percentage + unique_percentage))
-            state = 1;
         else
-            //state = target;
             state = target + spread;
 
-        if (!is_random)
-           pos = (pos + 1) % 100;
-        else
-           pos = (pos + 1) % 100;
-           //pos = (pos + 1) % high_percentage;
+        pos = (pos + 1) % 100;
 
         return (ivy_float) state;
     }
@@ -68,6 +53,7 @@ public:
     uint32_t get_high_percentage() {return high_percentage;}
 
     std::string logmsg();
+    const uint64_t pattern_number_reuse_threshold {50000};
 private:
     std::string generate_seeds();
     void record_seed(uint64_t, uint64_t);

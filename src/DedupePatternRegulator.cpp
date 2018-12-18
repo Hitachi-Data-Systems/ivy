@@ -144,8 +144,7 @@ void DedupePatternRegulator::record_seed(uint64_t seed, uint64_t pattern_number)
 bool DedupePatternRegulator::decide_reuse()
 {
     int toss = 0;
-    //bool reuse {false};
-    bool reuse {true};
+    bool reuse {false};
 
     // decide based on reuse probability
     toss = (*p_reuse_distribution)(defrangen);
@@ -177,7 +176,6 @@ std::pair<uint64_t, uint64_t> DedupePatternRegulator::reuse_seed()
 
     assert(seed_pod.size() != 0);
     seed = seed_pod[index % seed_pod.size()];
-    //seed = seed_pod[0];
 
     return std::make_pair(seed.first, seed.second);
 }

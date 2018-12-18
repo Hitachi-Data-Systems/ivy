@@ -1195,6 +1195,25 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                         block_seed = pattern_seed ^ pattern_number;
                     } else
                     {   // new method
+                        if (p_my_iosequencer->isRandom())
+                        {
+                            //if (pattern_number > 100000)
+                            if (pattern_number > dedupe_regulator->pattern_number_reuse_threshold)
+                            {
+                                if (dedupe_regulator->decide_reuse())
+                                {
+                                    ostringstream o;
+                                    std::pair<uint64_t, uint64_t> align_pattern;
+                                    align_pattern = dedupe_regulator->reuse_seed();
+                                    pattern_seed = align_pattern.first;
+                                    pattern_alignment = align_pattern.second;
+                                    offset = pattern_alignment;
+                                    pattern_number = pattern_alignment;
+                                    o << "workloadthread - Reset pattern seed " << pattern_seed <<  " Offset: " << offset << std::endl;
+                                    log(slavethreadlogfile, o.str());
+                                }
+                            }
+                        }
 
                         int bsindex = 0;
                         int dedupeunitsvar = dedupeunits;
@@ -1202,29 +1221,29 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                         {
                             std::ostringstream o;
 
-                        if (dedupe_count == 0) {
-                            modified_dedupe_factor = dedupe_regulator->dedupe_distribution(target_dedupe, p_my_iosequencer->isRandom());
-                            dedupe_count = (uint64_t) modified_dedupe_factor;
-                            o << "modified_dedupe_factor: " << modified_dedupe_factor << std::endl;
-                            //log(slavethreadlogfile,o.str());
-                        }
-
-                        if (dedupe_count == modified_dedupe_factor)
-                        {
-                            int count = dedupe_count;
-                            while (count > 0)
-                            {
-                                xorshift64star(pattern_seed);
-                                pattern_number++;
-                                count--;
+                            if (dedupe_count == 0) {
+                                modified_dedupe_factor = dedupe_regulator->dedupe_distribution(target_dedupe);
+                                dedupe_count = (uint64_t) modified_dedupe_factor;
+                                o << "modified_dedupe_factor: " << modified_dedupe_factor << std::endl;
+                                //log(slavethreadlogfile,o.str());
                             }
-                        }
-                        block_seed = pattern_seed ^ pattern_number;
-                        last_block_seeds[bsindex++] = block_seed;
-                        dedupe_count--;
+
+                            if (dedupe_count == modified_dedupe_factor)
+                            {
+                                int count = dedupe_count;
+                                while (count > 0)
+                                {
+                                    xorshift64star(pattern_seed);
+                                    pattern_number++;
+                                    count--;
+                                }
+                            }
+                            block_seed = pattern_seed ^ pattern_number;
+                            last_block_seeds[bsindex++] = block_seed;
+                            dedupe_count--;
 #if 0
-            o << "bsindex: " << bsindex << " dedupe_count: " << dedupe_count << " pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
-            log(slavethreadlogfile,o.str());
+                            o << "bsindex: " << bsindex << " dedupe_count: " << dedupe_count << " pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
+                            log(slavethreadlogfile,o.str());
 #endif
                         }
                     }
