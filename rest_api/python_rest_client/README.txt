@@ -10,7 +10,7 @@ Requirements
 This library requires the use of python 3.6 or later and the third-party
 Python library/modules, such as:  "json", "requests", "jsonschema", "uuid", "sys"
 
-Ivy version 2.01.01 is required.
+Ivy version 02.02.00 is required.
 
 By default Ivy REST API is accessible at port 9000.
 

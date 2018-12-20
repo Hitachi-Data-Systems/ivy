@@ -59,6 +59,7 @@ class ivy_engine {
 // One static copy of this exists in the ivymaster main thread, but it is made external
 // and all code in the ivymaster executable gets access via linkage editor.
 public:
+    std::string ivyscript_filename;
     std::string path_to_ivy_executable;
 
 	// There is one instance of this in the ivy main thread, but

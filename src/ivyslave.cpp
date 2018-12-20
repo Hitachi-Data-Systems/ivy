@@ -397,6 +397,7 @@ int IvySlave::main(int argc, char* argv[])
 			else
 			{
 				say("[LUN]<eof>");
+
 #ifdef IVYSLAVE_TRACE
                 {
                     std::ostringstream o;

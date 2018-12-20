@@ -77,6 +77,23 @@ RestHandler::RestHandler()
     m_csvquery_listener.support(methods::DEL,
         std::bind(&RestCsvqueryUri::handle_delete, m_csvquery, std::placeholders::_1));
 
+    // URI: /ivy_engine/logs
+    m_logs = new RestLogsUri(m_logs_listener);
+    m_logs_listener.support(methods::POST,
+        std::bind(&RestLogsUri::handle_post, m_logs, std::placeholders::_1));
+
+    m_logs_listener.support(methods::GET,
+        std::bind(&RestLogsUri::handle_get, m_logs, std::placeholders::_1));
+
+    m_logs_listener.support(methods::PUT,
+        std::bind(&RestLogsUri::handle_put, m_logs, std::placeholders::_1));
+
+    m_logs_listener.support(methods::PATCH,
+        std::bind(&RestLogsUri::handle_patch, m_logs, std::placeholders::_1));
+
+    m_logs_listener.support(methods::DEL,
+        std::bind(&RestLogsUri::handle_delete, m_logs, std::placeholders::_1));
+
     // URI: /ivy_engine/sessions
     m_sessions = new RestSessionsUri(m_sessions_listener);
     m_sessions_listener.support(methods::POST,
@@ -101,6 +118,7 @@ RestHandler::RestHandler()
         m_workloads_listener.open().wait();
         m_rollups_listener.open().wait();
         m_csvquery_listener.open().wait();
+        m_logs_listener.open().wait();
         m_sessions_listener.open().wait();
     }
     catch (std::exception const & e)
@@ -127,6 +145,7 @@ void RestHandler::wait_and_serve()
 
 void RestHandler::shutdown()
 {
+    m_s.overall_success = true;
     m_rest_handler_done = true;
     m_rest_handler_cv.notify_all();
 }

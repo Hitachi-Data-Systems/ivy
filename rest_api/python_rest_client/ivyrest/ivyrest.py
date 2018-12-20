@@ -4,9 +4,9 @@ import uuid
 import sys
 import jsonschema
 from jsonschema import validate
+import atexit
 
-
-class IvyRestClient(object):
+class IvyObj(object):
     """ 
     :param target: IP address or domain name of the target arrays management interface.
     :type target: str
@@ -31,7 +31,7 @@ class IvyRestClient(object):
     :type request_kwargs: dict, optional
     """ 
 
-    def __init__(self, target, port=9000, username=None, password=None, api_token=None,
+    def __init__(self, target="localhost", port=9000, username=None, password=None, api_token=None,
                  rest_version=None, verify_https=False, ssl_cert=None,
                  user_agent="Mozilla/5.0", request_kwargs=None):
 
@@ -42,6 +42,7 @@ class IvyRestClient(object):
         #    raise ValueError(
         #        "Specify only API token or both username and password.")
 
+        atexit.register(self.exit)
         self._cookies = {}
         self._target = target
         self._port = port
@@ -165,18 +166,20 @@ class IvyRestClient(object):
                 "parameters" : { "$ref": "#/definitions/ioparametersschema" }
 	    }
         },
-        "outputfolderschema":  {
-            "outputfolder": { "type": "string" }
-        },
-        "testnameschema":  {
-            "testname": { "type": "string" }
+        "loggingchema":  {
+            "type": "object", 
+	    "properties": {
+                "logname": { "type": "string" },
+                "message": { "type": "string" },
+	    "required": ["logname", "message"]
+	    }
         },
         "hostsstatementschema":  {
             "type": "object", 
 	    "properties": {
-                "Hosts" : { "$ref": "#/definitions/hostlistschema" },
-                "Select" : { "$ref": "#/definitions/selectschema" },
-	    "required": ["Hosts", "Select"]
+                "hosts" : { "$ref": "#/definitions/hostlistschema" },
+                "select" : { "$ref": "#/definitions/selectschema" },
+	    "required": ["hosts", "select"]
             }
         },
         "setiosequencertemplateschema": {
@@ -185,21 +188,21 @@ class IvyRestClient(object):
         "createworkloadschema":  {
             "type": "object", 
 	    "properties": {
-                "workload": { "type": "string" },
+                "name": { "type": "string" },
                 "select" : { "$ref": "#/definitions/selectschema" },
                 "iosequencer": { "type": {
                                     "enum": [ "random_steady", "random_independent", "sequential"]}},
                 "parameters" : { "$ref": "#/definitions/ioparametersschema" }
 	    },
-	    "required": ["workload"]
+	    "required": ["name"]
         },
         "deleteworkloadschema":  {
             "type": "object", 
 	    "properties": {
-                "workload": { "type": "string" },
+                "name": { "type": "string" },
                 "select" : { "$ref": "#/definitions/selectschema" }
 	    },
-	    "required": ["workload"]
+	    "required": ["name"]
         },
         "createrollupschema":  {
             "type": "object", 
@@ -302,7 +305,12 @@ class IvyRestClient(object):
                              "service_time_seconds", "response_time_seconds"]
                 }},
                 "accuracy_plus_minus": { "type": "string" },
-                "timeout_seconds": { "type": "string" },
+                "timeout_seconds": { 
+                    "anyof": [
+                        { "type": "integer" },
+                        { "type": "string" }
+                    ]
+	        },
                 "max_wp": { "$ref": "#/definitions/percentageschema" },
                 "min_wp": { "$ref": "#/definitions/percentageschema" },
                 "max_wp_change": { "$ref": "#/definitions/percentageschema" },
@@ -366,6 +374,7 @@ class IvyRestClient(object):
         { "$ref": "#/definitions/sessionsschema" },
         { "$ref": "#/definitions/gostatementschema" },
         { "$ref": "#/definitions/configschema" },
+        { "$ref": "#/definitions/loggingschema" },
         { "$ref": "#/definitions/csvquerychema" }
     ]
 }
@@ -480,7 +489,7 @@ class IvyRestClient(object):
     def create_workload(self, **kwargs):
         payload = dict(kwargs)
         print(payload)
-        ret = self._request("POST", "/ivy_engine/workloads/1/a/2/b/3", data=payload)
+        ret = self._request("POST", "/ivy_engine/workloads", data=payload)
         self._last_result = ret['retval']
         return ret
 
@@ -516,8 +525,13 @@ class IvyRestClient(object):
             self._end_session()
             sys.exit()
 
-    def last_result(self):
-        return self._last_result
+#    def last_result(self):
+#        return self._last_result
+
+    def output_folder_root(self):
+        ret = self._request("GET", "/ivy_engine?output_folder_root=true")
+        print(ret)
+        return ret['status']
 
     def test_folder(self):
         ret = self._request("GET", "/ivy_engine?test_folder=true")
@@ -526,6 +540,36 @@ class IvyRestClient(object):
 
     def test_name(self):
         ret = self._request("GET", "/ivy_engine?test_name=true")
+        print(ret)
+        return ret['status']
+
+    def output_folder_root(self):
+        ret = self._request("GET", "/ivy_engine?output_folder_root=true")
+        print(ret)
+        return ret['status']
+
+    def masterlogfile(self):
+        ret = self._request("GET", "/ivy_engine?masterlogfile=true")
+        print(ret)
+        return str(ret['status'])
+
+    def last_result(self):
+        ret = self._request("GET", "/ivy_engine?last_result=true")
+        print(ret)
+        return ret['status']
+
+    def step_NNNN(self):
+        ret = self._request("GET", "/ivy_engine?step_NNNN=true")
+        print(ret)
+        return ret['status']
+
+    def step_name(self):
+        ret = self._request("GET", "/ivy_engine?step_name=true")
+        print(ret)
+        return ret['status']
+
+    def step_folder(self):
+        ret = self._request("GET", "/ivy_engine?step_folder=true")
         print(ret)
         return ret['status']
 
@@ -573,6 +617,15 @@ class IvyRestClient(object):
         print(ret)
         return ret['status']
 
+    def log(self, log_file, log_message):
+        payload = dict()
+        payload['logname'] = log_file
+        payload['message'] = log_message
+        print(payload)
+        ret = self._request("PUT", "/ivy_engine/logs", data=payload)
+        print(ret)
+        return ret['status']
+
     def go(self, **kwargs):
         payload = dict(kwargs)
         print(payload)
@@ -587,3 +640,7 @@ class IvyRestClient(object):
 
     def get_subsystem_list(self):
         return self._request("GET", "/ivy_engine?subsystems=true")
+
+    def show_rollup_structure(self):
+        ret = self._request("GET", "/ivy_engine/rollups")
+        return ret['status']

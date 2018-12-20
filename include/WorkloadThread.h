@@ -34,6 +34,7 @@
 
 #include "pattern.h"
 #include "Subinterval.h"
+#include "DedupePatternRegulator.h"
 
 enum class ThreadState
 {
@@ -121,7 +122,6 @@ public:
 
 /*debug*/ unsigned int debug_epoll_count {0};
 
-//    int subinterval_number_wt {-1};
     int thread_view_subinterval_number {-1};
 
     unsigned int workload_thread_queue_depth {0};
@@ -139,7 +139,8 @@ public:
 
 //methods
 	WorkloadThread(std::mutex*,unsigned int /*core*/);
-    inline ~WorkloadThread() {};
+
+	inline ~WorkloadThread() {}
 
     uint64_t xorshift1024star();
 

@@ -60,13 +60,12 @@
 #include "IosequencerSequential.h"
 #include "ivyslave.h"
 #include "TestLUN.h"
+#include "DedupePatternRegulator.h"
 
 //#define IVYSLAVE_TRACE
 // IVYSLAVE_TRACE defined here in this source file rather than globally in ivydefines.h so that
 //  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
 //  - you can turn on tracing separately for each class in its own source file.
-
-//#define TRACE_SUBINTERVAL_THUMBNAILS
 
 extern bool routine_logging;
 
@@ -115,8 +114,7 @@ std::ostream& operator<< (std::ostream& o, const ThreadState& s)
 
 
 WorkloadThread::WorkloadThread(std::mutex* p_imm, unsigned int c)
-    : p_ivyslave_main_mutex(p_imm), core(c)
-{}
+    : p_ivyslave_main_mutex(p_imm), core(c) {}
 
 std::string threadStateToString (const ThreadState ts)
 {
@@ -298,6 +296,40 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 pear.second.workload_cumulative_launch_count = 0;
                 pear.second.workload_weighted_IOPS_max_skew_progress = 0.0;
 
+                if (pear.second.dedupe_regulator != nullptr) { delete pear.second.dedupe_regulator; }
+                pear.second.dedupe_regulator = new DedupePatternRegulator(pear.second.subinterval_array[0].input.dedupe, pear.second.pattern_seed);
+                log(slavethreadlogfile, pear.second.dedupe_regulator->logmsg());
+
+                if (pear.second.p_my_iosequencer->isRandom())
+                {
+                    if (pear.second.dedupe_regulator->decide_reuse())
+                    {
+                        ostringstream o;
+                        uint64_t offset;
+
+                        std::pair<uint64_t, uint64_t> align_pattern;
+                        align_pattern = pear.second.dedupe_regulator->reuse_seed();
+                        pear.second.pattern_seed = align_pattern.first;
+                        pear.second.pattern_alignment = align_pattern.second;
+                        offset = pear.second.pattern_alignment;
+                        pear.second.pattern_number = pear.second.pattern_alignment;
+                        o << "Workload - Reuse pattern seed " << pear.second.pattern_seed <<  " Offset: " << offset << std::endl;
+                        log(slavethreadlogfile, o.str());
+                    } else
+                    {
+                        ostringstream o;
+                        pear.second.pattern_seed = pear.second.dedupe_regulator->random_seed();
+                        o << "Workload- use Random pattern seed " << pear.second.pattern_seed <<  std::endl;
+                        log(slavethreadlogfile, o.str());
+                    }
+                } else
+                {
+                    ostringstream o;
+                    o << "Sequential workloadthread - Reuse pattern seed " << pear.second.pattern_seed <<  std::endl;
+                    log(slavethreadlogfile, o.str());
+                }
+
+
 #ifdef IVYSLAVE_TRACE
                 pear.second.workload_callcount_prepare_to_run = 0;
                 pear.second.workload_callcount_build_Eyeos = 0;
@@ -316,6 +348,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 #endif
             }
 		}
+
 
 		dispatching_latency_seconds.clear();
         lock_aquisition_latency_seconds.clear();

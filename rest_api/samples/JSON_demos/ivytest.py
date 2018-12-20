@@ -1,13 +1,11 @@
 import ivyrest
-import requests
-import time
 
 # In step 0, we measure max IOPS.
 #      -This yields the "high_IOPS" and the "high_target".
 # In step 1, we run at 1% of the max IOPS.
 #      -This yields the "low_IOPS" and the "high_target".
 
-ivy = ivyrest.IvyRestClient("172.17.19.159", user_agent="Mozilla/5.0")
+ivy = ivyrest.IvyObj()
 
 # Hosts + LUN discovery
 
@@ -25,12 +23,12 @@ print(ivy.test_name())
 summary_filename = ivy.test_folder() + "/all/" + ivy.test_name() + ".all=all.summary.csv";
 print(summary_filename)
 
-ivy.hosts_luns(Hosts = host_list, Select = select_list)
+ivy.hosts_luns(hosts = host_list, select = select_list)
 print(ivy.last_result())
 
 # Create Workload
 params = {
-'workload' : 'steady',
+'name' : 'steady',
 'iosequencer' : 'random_steady',
 'IOPS' : 'max',
 'fractionRead' : 80,
@@ -51,7 +49,7 @@ ivy.set_io_sequencer_template(**ioparams)
 ###ivy.set_io_sequencer_template(iosequencer = "random_steady", parameters = "fractionRead=80%, blocksize=4KiB, IOPS=max, maxtags=128")
 
 ivy.create_workload(**params)
-### ivy.create_workload (workload = "steady", select = "", iosequencer = "random_steady", parameters = "fractionRead=80%, blocksize=4KiB, IOPS=max, maxtags=128")
+### ivy.create_workload (name = "steady", select = "", iosequencer = "random_steady", parameters = "fractionRead=80%, blocksize=4KiB, IOPS=max, maxtags=128")
 
 # Step 0
 goparams_step0 = {
@@ -77,7 +75,7 @@ high_target = '70%'
 result0 = '\n********** step 0 high_IOPS = ' + high_IOPS + ", high_target = " + high_target + ' **********\n\n'
 print(result0)
 
-# TBD - log(masterlogfile(),s);
+ivy.log(ivy.masterlogfile(),result0);
 
 # ==================================================
 # In step 1, we run at 1% of the max IOPS to measure "low_target"
@@ -148,5 +146,3 @@ print(fifty_percent_IOPS)
 
 result2 = '\n********** step 2 result - IOPS at 50% MP_core busy =  ' + fifty_percent_IOPS + '\n**********\n\n'
 print(result2)
-
-ivy.exit()

@@ -58,7 +58,6 @@ Eyeo::Eyeo(Workload* pw) : pWorkload(pw)
 // This is because we get the memory for the buffer pool in one big piece for each Workload's Eyeos.
 
 	eyeocb.aio_data=(uint64_t) this; // see if this works ... yes
-
 }
 
 ivytime Eyeo::since_start_time() // returns ivytime(0) if start_time is not in the past
@@ -225,6 +224,8 @@ void Eyeo::generate_pattern()
     unsigned int word_index;
     char* past_buf;
     char* p_word;
+    int bsindex = 0;
+    int count = 0;
 
     pWorkload->write_io_count++;
 
@@ -237,6 +238,10 @@ void Eyeo::generate_pattern()
 
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
+                if (pWorkload->doing_dedupe && i % 1024 == 0)
+                {
+                    pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                }
                 xorshift64star(pWorkload->block_seed);
                 (*(p_uint64 + i)) = pWorkload->block_seed;
             }
@@ -249,6 +254,8 @@ void Eyeo::generate_pattern()
 
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
+                if (pWorkload->doing_dedupe && i % 1024 == 0)
+                    pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
                 xorshift64star(pWorkload->block_seed);
 
                 d = pWorkload->block_seed;
@@ -280,6 +287,8 @@ void Eyeo::generate_pattern()
 
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
+                if (pWorkload->doing_dedupe && i % 1024 == 0)
+                    pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
                 xorshift64star(pWorkload->block_seed);
                 (*(p_uint64 + i)) = pWorkload->block_seed;
             }
@@ -298,16 +307,20 @@ void Eyeo::generate_pattern()
 
             p_c = (char*)eyeocb.aio_buf;
             past_buf = ((char*) eyeocb.aio_buf)+blocksize;
+            count = 0;
             while(p_c < past_buf)
             {
+                if (pWorkload->doing_dedupe && count % 1024 == 0)
+                    pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
                 xorshift64star(pWorkload->block_seed);
                 word_index = pWorkload->block_seed % unique_word_count;
                 p_word = unique_words[word_index];
                 while ( (*p_word) && (p_c < past_buf) )
                 {
                     *p_c++ = *p_word++;
+                    count++;
                 }
-                if (p_c < past_buf) {*p_c++ = ' ';}
+                if (p_c < past_buf) {*p_c++ = ' '; count++;}
             }
 
             break;

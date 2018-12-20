@@ -1,3 +1,23 @@
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
+//All Rights Reserved.
+//
+//   Licensed under the Apache License, Version 2.0 (the "License"); you may
+//   not use this file except in compliance with the License. You may obtain
+//   a copy of the License at
+//
+//         http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+//   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+//   License for the specific language governing permissions and limitations
+//   under the License.
+//
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
+
 #include "RestHandler.h"
 #include "ivy_engine.h"
 #include "rapidjson/filereadstream.h"
@@ -134,18 +154,20 @@ std::string JSON_SCHEMA = R"( {
                 "parameters" : { "$ref": "#/definitions/ioparametersschema" }
 	    }
         },
-        "outputfolderschema":  {
-            "outputfolder": { "type": "string" }
-        },
-        "testnameschema":  {
-            "testname": { "type": "string" }
+        "loggingchema":  {
+            "type": "object", 
+	    "properties": {
+                "logname": { "type": "string" },
+                "message": { "type": "string" },
+	    "required": ["logname", "message"]
+	    }
         },
         "hostsstatementschema":  {
             "type": "object", 
 	    "properties": {
-                "Hosts" : { "$ref": "#/definitions/hostlistschema" },
-                "Select" : { "$ref": "#/definitions/selectschema" },
-	    "required": ["outputfolder", "testname", "Hosts", "Select"]
+                "hosts" : { "$ref": "#/definitions/hostlistschema" },
+                "select" : { "$ref": "#/definitions/selectschema" },
+	    "required": ["hosts", "select"]
             }
         },
         "setiosequencertemplateschema": {
@@ -154,21 +176,21 @@ std::string JSON_SCHEMA = R"( {
         "createworkloadschema":  {
             "type": "object", 
 	    "properties": {
-                "workload": { "type": "string" },
+                "name": { "type": "string" },
                 "select" : { "$ref": "#/definitions/selectschema" },
                 "iosequencer": { "type": {
                                     "enum": [ "random_steady", "random_independent", "sequential"]}},
                 "parameters" : { "$ref": "#/definitions/ioparametersschema" }
 	    },
-	    "required": ["workload"]
+	    "required": ["name"]
         },
         "deleteworkloadschema":  {
             "type": "object", 
 	    "properties": {
-                "workload": { "type": "string" },
+                "name": { "type": "string" },
                 "select" : { "$ref": "#/definitions/selectschema" }
 	    },
-	    "required": ["workload"]
+	    "required": ["name"]
         },
         "createrollupschema":  {
             "type": "object", 
@@ -271,7 +293,12 @@ std::string JSON_SCHEMA = R"( {
                              "service_time_seconds", "response_time_seconds"]
                 }},
                 "accuracy_plus_minus": { "type": "string" },
-                "timeout_seconds": { "type": "string" },
+                "timeout_seconds": { 
+                    "anyof": [
+                        { "type": "integer" },
+                        { "type": "string" }
+                    ]
+	        },
                 "max_wp": { "$ref": "#/definitions/percentageschema" },
                 "min_wp": { "$ref": "#/definitions/percentageschema" },
                 "max_wp_change": { "$ref": "#/definitions/percentageschema" },
@@ -335,6 +362,7 @@ std::string JSON_SCHEMA = R"( {
         { "$ref": "#/definitions/sessionsschema" },
         { "$ref": "#/definitions/gostatementschema" },
         { "$ref": "#/definitions/configschema" },
+        { "$ref": "#/definitions/loggingschema" },
         { "$ref": "#/definitions/csvquerychema" }
     ]
 })";

@@ -63,6 +63,9 @@ RestRollupsUri::handle_get(http_request request)
     http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
+
+    resultstr = m_s.show_rollup_structure();
+
     make_response(response, resultstr, result);
     request.reply(response);
     return;

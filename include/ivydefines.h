@@ -78,6 +78,8 @@ const std::string ivy_version {"3.00.00"};
 
 #define sector_size_bytes (512)
 
+#define universal_seed 1234567
+
 // go statement universal parameters
 #define subinterval_seconds_default_int 5
 #define subinterval_seconds_default std::string("5")

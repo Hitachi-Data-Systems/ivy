@@ -1,9 +1,10 @@
 #include "RestHandler.h"
 #include "ivy_engine.h"
-#include "rapidjson/document.h"  
-#include "rapidjson/schema.h"  
+#include "rapidjson/document.h"
+#include "rapidjson/schema.h"
 
 extern ivy_engine m_s;
+extern std::string ivy_engine_get(std::string);
 
 void
 RestEngineUri::handle_post(http_request request)
@@ -42,7 +43,7 @@ RestEngineUri::handle_post(http_request request)
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
     std::cout << "JSON:\n" << json << std::endl;
 
-    rapidjson::Document document; 
+    rapidjson::Document document;
     if (document.Parse(json).HasParseError())
     {
         rc = 1;
@@ -58,23 +59,21 @@ RestEngineUri::handle_post(http_request request)
     std::string select_str;
     std::string hosts_list;
 
-    const Value& hosts = document["Hosts"];
-    json_to_host_list(hosts, hosts_list); 
+    const Value& hosts = document["hosts"];
+    json_to_host_list(hosts, hosts_list);
 
-    const Value& select = document["Select"];
-    json_to_select_str(select, select_str); 
+    const Value& select = document["select"];
+    json_to_select_str(select, select_str);
 
     // Execute Ivy Engine command
     if (rc == 0)
     {
         std::unique_lock<std::mutex> u_lk(goStatementMutex);
-        m_s.shutdown_subthreads(); // reset before each run
 
         std::string outputfolder = m_s.get("output_folder_root").second;
         std::string testname = m_s.get("test_name").second;
-        //std::string testname = "MP_50";
-        //m_s.startup(outputfolder->value.GetString(), testname->value.GetString(), "", hosts_list, select_str);
-        result = m_s.startup(outputfolder, testname, "", hosts_list, select_str);
+
+        result = m_s.startup(outputfolder, testname, m_s.ivyscript_filename, hosts_list, select_str);
     }
 
     http_response response(status_codes::OK);
@@ -94,9 +93,8 @@ RestEngineUri::handle_get(http_request request)
     bool get_subsystems {false};
 
     uri req_uri = request.absolute_uri();
-    
-    std::map<utility::string_t, utility::string_t>  qmap = req_uri.split_query(req_uri.query());
 
+    std::map<utility::string_t, utility::string_t>  qmap = req_uri.split_query(req_uri.query());
     for (auto& kv : qmap)
     {
         std::cout << "key: " << kv.first << ", value: " << kv.second << std::endl;
@@ -106,15 +104,12 @@ RestEngineUri::handle_get(http_request request)
             get_luns = true;
         else if (kv.first == "subsystems" && kv.second == "true")
             get_subsystems = true;
-        else if (kv.first == "test_folder" || kv.first == "test_name")
+        else
         {
-                if (kv.first == "test_folder")
-                    resultstr = m_s.outputFolderRoot + "/" + m_s.testName;
-                else
-                    resultstr = m_s.testName;
+                resultstr = ivy_engine_get(kv.first);
                 std::cout << "resultstr = " << resultstr << std::endl;
 
-                make_response(response, resultstr, result); 
+                make_response(response, resultstr, result);
                 request.reply(response);
                 return;
         }
@@ -138,8 +133,8 @@ RestEngineUri::handle_get(http_request request)
     {
         rapidjson::Value val((*iter).c_str(), jsonDoc.GetAllocator());
         hosts_array.PushBack(val, allocator);
-    } 
-    } 
+    }
+    }
 
     // LUNS
     // allDiscoveredLUNs, availableTestLUNs, commandDeviceLUNs;
@@ -149,20 +144,20 @@ RestEngineUri::handle_get(http_request request)
     {
         rapidjson::Value val((*it)->toString().c_str(), jsonDoc.GetAllocator());
         allluns_array.PushBack(val, allocator);
-    } 
+    }
 
     for (auto it = m_s.availableTestLUNs.LUNpointers.begin(); it != m_s.availableTestLUNs.LUNpointers.end(); ++it)
     {
         rapidjson::Value val((*it)->toString().c_str(), jsonDoc.GetAllocator());
         testluns_array.PushBack(val, allocator);
-    } 
+    }
 
     for (auto it = m_s.commandDeviceLUNs.LUNpointers.begin(); it != m_s.commandDeviceLUNs.LUNpointers.end(); ++it)
     {
         rapidjson::Value val((*it)->toString().c_str(), jsonDoc.GetAllocator());
         cmdluns_array.PushBack(val, allocator);
-    } 
-    } 
+    }
+    }
 
     // Subsystems list
     if (get_subsystems)
@@ -171,7 +166,7 @@ RestEngineUri::handle_get(http_request request)
         //std::cout << kv.first << " has value " << kv.second << std::endl;
         rapidjson::Value val(kv.first.c_str(), jsonDoc.GetAllocator());
         subsystems_array.PushBack(val, allocator);
-    } 
+    }
     }
 
     if (get_hosts) jsonDoc.AddMember("Hosts", hosts_array, allocator);
@@ -216,7 +211,7 @@ RestEngineUri::handle_put(http_request request)
                     m_s.testName = kv.second;
 
                 http_response response(status_codes::OK);
-                make_response(response, resultstr, result); 
+                make_response(response, resultstr, result);
                 request.reply(response);
                 return;
             }
@@ -229,7 +224,7 @@ RestEngineUri::handle_put(http_request request)
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
     std::cout << "JSON:\n" << json << std::endl;
 
-    rapidjson::Document document; 
+    rapidjson::Document document;
     if (document.Parse(json).HasParseError())
     {
         rc = 1;
@@ -239,8 +234,10 @@ RestEngineUri::handle_put(http_request request)
     rapidjson::SchemaValidator validator(*_schema);
     if (!document.Accept(validator)) {
         rc = 1;
+
         resultstr += get_schema_validation_error(&validator);
     }
+
 
     rapidjson::Value::MemberIterator step = document.FindMember("stepname");
     rapidjson::Value::MemberIterator warmup = document.FindMember("warmup_seconds");
@@ -249,6 +246,9 @@ RestEngineUri::handle_put(http_request request)
     rapidjson::Value::MemberIterator measure = document.FindMember("measure");
     rapidjson::Value::MemberIterator accuracy = document.FindMember("accuracy_plus_minus");
     rapidjson::Value::MemberIterator timeout_seconds = document.FindMember("timeout_seconds");
+    rapidjson::Value::MemberIterator max_wp = document.FindMember("max_wp");
+    rapidjson::Value::MemberIterator min_wp = document.FindMember("min_wp");
+    rapidjson::Value::MemberIterator max_wp_change = document.FindMember("max_wp_change");
     rapidjson::Value::MemberIterator dfc = document.FindMember("dfc");
     rapidjson::Value::MemberIterator low_IOPS = document.FindMember("low_IOPS");
     rapidjson::Value::MemberIterator low_target = document.FindMember("low_target");
@@ -269,7 +269,19 @@ RestEngineUri::handle_put(http_request request)
     if (accuracy != document.MemberEnd())
         parameters << ", accuracy_plus_minus=\"" << accuracy->value.GetString() << "\"";
     if (timeout_seconds != document.MemberEnd())
-        parameters << ", timeout_seconds=\"" << timeout_seconds->value.GetString() << "\"";
+    {
+        if (timeout_seconds->value.IsString())
+            parameters << ", timeout_seconds=\"" << timeout_seconds->value.GetString() << "\"";
+        else
+            parameters << ", timeout_seconds=\"" << timeout_seconds->value.GetInt() << "\"";
+    }
+    if (max_wp != document.MemberEnd())
+        parameters << ", max_wp=\"" << max_wp->value.GetString() << "\"";
+    if (min_wp != document.MemberEnd())
+        parameters << ", min_wp=\"" << min_wp->value.GetString() << "\"";
+    if (max_wp_change != document.MemberEnd())
+        parameters << ", max_wp_change=\"" << max_wp_change->value.GetString() << "\"";
+
     if (dfc != document.MemberEnd())
         parameters << ", dfc=" << dfc->value.GetString();
 
@@ -298,7 +310,7 @@ RestEngineUri::handle_put(http_request request)
     //resultstr += result.second;
 
     http_response response(status_codes::OK);
-    make_response(response, resultstr, result); 
+    make_response(response, resultstr, result);
     request.reply(response);
 }
 
@@ -306,7 +318,7 @@ void
 RestEngineUri::handle_patch(http_request request)
 {
     std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
-    http_response response(status_codes::OK); 
+    http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
     make_response(response, resultstr, result);
@@ -317,7 +329,7 @@ void
 RestEngineUri::handle_delete(http_request request)
 {
     std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
-    http_response response(status_codes::OK); 
+    http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
     make_response(response, resultstr, result);

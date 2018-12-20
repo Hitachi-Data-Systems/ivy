@@ -27,6 +27,7 @@
 #include "IosequencerInput.h"
 #include "WorkloadID.h"
 #include "TestLUN.h"
+#include "DedupePatternRegulator.h"
 
 //#define IVYSLAVE_TRACE
 
@@ -53,7 +54,7 @@ public:
 	IosequencerInput*  p_current_IosequencerInput;
 	SubintervalOutput* p_current_SubintervalOutput;
 
-		std::string iosequencerParameters; // just used to print a descriptive line when the thread fires up.
+	std::string iosequencerParameters; // just used to print a descriptive line when the thread fires up.
 
 	ivytime nextIO_schedule_time;  // 0 means means right away.  (This is initialized later.)
 
@@ -96,6 +97,10 @@ public:
 
 	std::string hostname;
 
+	DedupePatternRegulator *dedupe_regulator;
+	bool bias;
+	uint64_t spectrum;
+
     bool doing_dedupe;
     bool have_writes;
     ivy_float compressibility;
@@ -106,9 +111,12 @@ public:
 
     pattern pat;
     uint64_t pattern_number;
+    uint64_t pattern_alignment;
     uint64_t pattern_seed;
     uint64_t block_seed;
-
+    uint64_t last_block_seeds[32];
+    uint8_t dedupeunits;
+    static uint64_t offset;
     uint64_t write_io_count;
 
     uint64_t iops_max_io_count {0};

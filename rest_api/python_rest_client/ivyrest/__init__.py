@@ -1,2 +1,2 @@
-from .ivyrest import IvyRestClient
+from .ivyrest import IvyObj
 

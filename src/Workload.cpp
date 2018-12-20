@@ -42,6 +42,7 @@ Workload::~Workload()
 {
     delete p_my_iosequencer;
     for (auto& pEyeo : allEyeosThatExist) delete pEyeo;
+    if (dedupe_regulator != nullptr) delete dedupe_regulator;
 }
 
 
@@ -582,6 +583,14 @@ unsigned int Workload::generate_an_IO()
             xorshift64star(block_seed);
         }
     }
+
+    spectrum = dedupe_regulator->get_spectrum();
+    bias = false;
+
+#if 0
+    o << "slang bias: " << bias << " pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
+    log(slavethreadlogfile,o.str());
+#endif
 
     // now need to call the iosequencer function to populate this Eyeo.
     if (!p_my_iosequencer->generate(*p_Eyeo)) {

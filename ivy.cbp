@@ -165,7 +165,7 @@
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;" />
+			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;ivyenglib;" />
 			<Add alias="allall" targets="ivymaster;ivyslave;clear_hung_ivy_threads;csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
 			<Add alias="csv_utilities" targets="csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
 		</VirtualTargets>
@@ -201,6 +201,10 @@
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/Count_by_workloadID.h">
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="include/DedupePatternRegulator.h">
+			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="include/Eyeo.h">
@@ -556,6 +560,10 @@
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/Count_by_workloadID.cpp">
+			<Option target="ivyslave" />
+		</Unit>
+		<Unit filename="src/DedupePatternRegulator.cpp">
+			<Option target="ivymaster" />
 			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/Eyeo.cpp">
