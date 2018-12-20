@@ -985,8 +985,8 @@ void pipe_driver_subthread::threadRun()
         log(logfilename, std::string("remote slave said its hostname is \"")+hostname+std::string("\"."));
 
 
-/*debug*/std::cout << "debug: waiting 60 seconds to allow showluns.sh run with another ivy hammering a lun, slowing the binary search for the LUN size.\n";
-/*debug*/sleep(60);
+//*debug*/std::cout << "debug: waiting 60 seconds to allow showluns.sh run with another ivy hammering a lun, slowing the binary search for the LUN size.\n";
+//*debug*/sleep(60);
 
         // Retrieve list of luns visible on the slave host
         if (!pCmdDevLUN)
