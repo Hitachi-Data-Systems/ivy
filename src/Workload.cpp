@@ -36,6 +36,8 @@ Workload::Workload()
     p_current_subinterval      = & (subinterval_array[0]);
     p_current_IosequencerInput = & (subinterval_array[0].input);
     p_current_SubintervalOutput= & (subinterval_array[0].output);
+    p_my_iosequencer = nullptr; 
+    dedupe_regulator = nullptr;
 }
 
 Workload::~Workload()
