@@ -564,6 +564,7 @@ unsigned int Workload::generate_an_IO()
 
     freeStack.pop();
 
+#if 0
     // deterministic generation of "seed" for this I/O.
     if (have_writes)
     {
@@ -583,13 +584,89 @@ unsigned int Workload::generate_an_IO()
             xorshift64star(block_seed);
         }
     }
+#endif
 
-    spectrum = dedupe_regulator->get_spectrum();
-    bias = false;
+    std::ostringstream o;
+    // deterministic generation of "seed" for this I/O.
+    if (have_writes)
+    {
+        if (doing_dedupe)
+        {
+            bool old_method {false};
+            if (old_method)
+            {
+                serpentine_number += threads_in_workload_name;
+                uint64_t new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
+                while (pattern_number < new_pattern_number)
+                {
+                    xorshift64star(pattern_seed);
+                    pattern_number++;
+                }
+                block_seed = pattern_seed ^ pattern_number;
+            } else
+            {   // new method
+                if (p_my_iosequencer->isRandom())
+                {
+                    if (pattern_number > dedupe_regulator->pattern_number_reuse_threshold)
+                    {
+                        if (dedupe_regulator->decide_reuse())
+                        {
+                            ostringstream o;
+                            std::pair<uint64_t, uint64_t> align_pattern;
+                            align_pattern = dedupe_regulator->reuse_seed();
+                            pattern_seed = align_pattern.first;
+                            pattern_alignment = align_pattern.second;
+                            pattern_number = pattern_alignment;
+                            o << "workloadthread - Reset pattern seed " << pattern_seed <<  " Offset: " << pattern_alignment << std::endl;
+                            log(pWorkloadThread->slavethreadlogfile, o.str());
+                        }
+                    }
+                }
+
+                dedupeunits = p_current_IosequencerInput->blocksize_bytes / 8192;
+
+                int bsindex = 0;
+                int dedupeunitsvar = dedupeunits;
+                while (dedupeunitsvar-- > 0)
+                {
+                    std::ostringstream o;
+
+                    if (dedupe_count == 0) {
+                        modified_dedupe_factor = dedupe_regulator->dedupe_distribution();
+                        dedupe_count = (uint64_t) modified_dedupe_factor;
+                        o << "modified_dedupe_factor: " << modified_dedupe_factor << std::endl;
+                        //log(pWorkloadThread->slavethreadlogfile,o.str());
+                    }
+
+                    if (dedupe_count == modified_dedupe_factor)
+                    {
+                        int count = dedupe_count;
+                        while (count > 0)
+                        {
+                            xorshift64star(pattern_seed);
+                            pattern_number++;
+                            count--;
+                        }
+                    }
+                    block_seed = pattern_seed ^ pattern_number;
+                    last_block_seeds[bsindex++] = block_seed;
+                    dedupe_count--;
+#if 0
+                    o << "bsindex: " << bsindex << " dedupe_count: " << dedupe_count << " pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
+                    log(pWorkloadThread->slavethreadlogfile,o.str());
+#endif
+                }
+            }
+        }
+        else
+        {
+            xorshift64star(block_seed);
+        }
+    }
 
 #if 0
-    o << "slang bias: " << bias << " pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
-    log(slavethreadlogfile,o.str());
+    o << "pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
+    log(pWorkloadThread->slavethreadlogfile,o.str());
 #endif
 
     // now need to call the iosequencer function to populate this Eyeo.
