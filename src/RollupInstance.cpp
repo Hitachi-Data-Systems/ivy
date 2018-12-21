@@ -1098,11 +1098,11 @@ void RollupInstance::print_by_subinterval_header()
     o << "ivy version,build date,";
     if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
     o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
-    if (m_s.ivymaster_RMLIB_threads.size()>0) { o << Test_config_thumbnail::csv_headers(); }
+    if (m_s.haveCmdDev) { o << Test_config_thumbnail::csv_headers(); }
     o << IosequencerInputRollup::CSVcolumnTitles();
     o << avgcpubusypercent::csvTitles();
 
-    if (m_s.ivymaster_RMLIB_threads.size()>0)
+    if (m_s.haveCmdDev)
     {
         o << subsystem_summary_data::csvHeadersPartOne();
         o << ",host IOPS per drive,host decimal MB/s per drive,application service time Littles law q depth per drive";
@@ -1111,7 +1111,7 @@ void RollupInstance::print_by_subinterval_header()
 
     o << SubintervalOutput::csvTitles();
 
-    if (m_s.ivymaster_RMLIB_threads.size()>0)
+    if (m_s.haveCmdDev)
     {
         o << subsystem_summary_data::csvHeadersPartTwo();
         o << subsystem_summary_data::csvHeadersPartOne( "non-participating ");
@@ -1210,7 +1210,7 @@ void RollupInstance::print_subinterval_csv_line(
 
     csvline << ',' << rollupInstanceID;
 
-    if (m_s.ivymaster_RMLIB_threads.size()>0) { csvline << test_config_thumbnail.csv_columns(); }
+    if (m_s.haveCmdDev) { csvline << test_config_thumbnail.csv_columns(); }
 
     csvline << subintervals.sequence[i].inputRollup.CSVcolumnValues(true); // true shows how many occurences of each value, false shows "multiple"
 
@@ -1229,7 +1229,7 @@ void RollupInstance::print_subinterval_csv_line(
 
     ivy_float seconds = subintervals.sequence[m_s.rollups.current_index()].durationSeconds();
 
-    if (m_s.ivymaster_RMLIB_threads.size() > 0)
+    if (m_s.haveCmdDev)
     {
         csvline << subsystem_data_by_subinterval[i].csvValuesPartOne(1);
 
@@ -1309,7 +1309,7 @@ void RollupInstance::print_subinterval_csv_line(
 
     csvline << subintervals.sequence[i].outputRollup.csvValues( seconds );
 
-    if (m_s.ivymaster_RMLIB_threads.size() > 0)
+    if (m_s.haveCmdDev)
     {
         csvline << subsystem_data_by_subinterval[i].csvValuesPartTwo();
         csvline << m_s.rollups.not_participating[i].csvValuesPartOne();
@@ -1433,11 +1433,11 @@ void RollupInstance::print_measurement_summary_csv_line()
 
                 o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,valid or invalid,invalid reason,Rollup Type,Rollup Instance";
 
-                if (m_s.ivymaster_RMLIB_threads.size()>0) { o << test_config_thumbnail.csv_headers(); }
+                if (m_s.haveCmdDev) { o << test_config_thumbnail.csv_headers(); }
                 o << IosequencerInputRollup::CSVcolumnTitles();
                 o << m_s.measurement_rollup_CPU.csvTitles();
 
-                if (m_s.ivymaster_RMLIB_threads.size()>0)
+                if (m_s.haveCmdDev)
                 {
                     o << subsystem_summary_data::csvHeadersPartOne();
                     o << ",host IOPS per drive,host decimal MB/s per drive, application service time Littles law q depth per drive";
@@ -1448,7 +1448,7 @@ void RollupInstance::print_measurement_summary_csv_line()
                 o << ",plus minus series statistical confidence";
 
                 o << SubintervalOutput::csvTitles(true);
-                if (m_s.ivymaster_RMLIB_threads.size()>0)
+                if (m_s.haveCmdDev)
                 {
                     o << subsystem_summary_data::csvHeadersPartTwo();
                     o << subsystem_summary_data::csvHeadersPartOne("non-participating ");
@@ -1534,7 +1534,7 @@ void RollupInstance::print_measurement_summary_csv_line()
             csvline << ',' << pRollupType->attributeNameCombo.attributeNameComboID;
             csvline << ',' << rollupInstanceID ; // rollupInstanceID;
 
-            if (m_s.ivymaster_RMLIB_threads.size()>0) { csvline << test_config_thumbnail.csv_columns(); }
+            if (m_s.haveCmdDev) { csvline << test_config_thumbnail.csv_columns(); }
 
             csvline << measurementRollup.inputRollup.CSVcolumnValues(true);
                 // true shows how many occurences of each value, false shows "multiple"
@@ -1549,7 +1549,7 @@ void RollupInstance::print_measurement_summary_csv_line()
                 csvline << m_s.measurement_rollup_CPU.csvValuesAvgOverHosts();
             }
 
-            if (m_s.ivymaster_RMLIB_threads.size()>0)
+            if (m_s.haveCmdDev)
             {
                 csvline << measurement_subsystem_data.csvValuesPartOne( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
 
@@ -1580,7 +1580,7 @@ void RollupInstance::print_measurement_summary_csv_line()
                 {
                     ivy_float seconds = measurementRollup.durationSeconds();
 
-                    if (m_s.ivymaster_RMLIB_threads.size()>0)
+                    if (m_s.haveCmdDev)
                     {
                         // print the comparisions between application & subsystem IOPS, MB/s, service time
 
@@ -1640,7 +1640,7 @@ void RollupInstance::print_measurement_summary_csv_line()
 
                     csvline << measurementRollup.outputRollup.csvValues(seconds,&(measurementRollup),m_s.non_random_sample_correction_factor);
 
-                    if (m_s.ivymaster_RMLIB_threads.size() > 0)
+                    if (m_s.haveCmdDev)
                     {
                         csvline << measurement_subsystem_data.csvValuesPartTwo( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
                         csvline << m_s.rollups.not_participating_measurement.csvValuesPartOne(   m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
