@@ -56,6 +56,7 @@ DedupePatternRegulator:: DedupePatternRegulator(ivy_float dedupe, uint64_t seed)
     target = ceil(dedupe);
     spread = 8; // default
 
+
     reuse_probability = 1.0 - (1.0/dedupe);
     target_probability = 0.0;
 
@@ -70,6 +71,7 @@ DedupePatternRegulator:: DedupePatternRegulator(ivy_float dedupe, uint64_t seed)
     event_span = unique_percentage + (target + spread) * high_percentage;
 
     max_seeds_in_pod = 32;
+    pattern_number_reuse_threshold = (1.0 - reuse_probability) * 200000;
 
     std::hash<std::string> string_hash;
 

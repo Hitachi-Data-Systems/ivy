@@ -116,7 +116,9 @@ public:
     uint64_t block_seed;
     uint64_t last_block_seeds[32];
     uint8_t dedupeunits;
-    static uint64_t offset;
+    int dedupe_count;
+    ivy_float modified_dedupe_factor;
+
     uint64_t write_io_count;
 
     uint64_t iops_max_io_count {0};
