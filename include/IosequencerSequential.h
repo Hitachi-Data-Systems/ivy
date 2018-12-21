@@ -23,7 +23,7 @@ class IosequencerSequential : public Iosequencer {
 public:
 	IosequencerSequential(LUN* pL, std::string lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
 	    : Iosequencer(pL, lf, wID, pWT, p_tl, p_w) {}
-    virtual ~IosequencerSequential(){}
+    ~IosequencerSequential(){ std::ostringstream o; o << "^^^^^^^debug ~IosequencerSequential() at this = " << this; log(pWorkloadThread->slavethreadlogfile, o.str()); }
 	bool generate(Eyeo&) override;
 	bool setFrom_IosequencerInput(IosequencerInput*);
 	bool isRandom() { return false; }

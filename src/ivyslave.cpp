@@ -398,7 +398,7 @@ int IvySlave::main(int argc, char* argv[])
 			{
 				say("[LUN]<eof>");
 
-#ifdef IVYSLAVE_TRACE
+//#ifdef IVYSLAVE_TRACE
                 {
                     std::ostringstream o;
                     o << "<Warning> ivyslave pid is " << getpid() << ", and";
@@ -406,7 +406,7 @@ int IvySlave::main(int argc, char* argv[])
                     o << "." << std::endl;
                     say(o.str());
                 }
-#endif
+//#endif
 			}
 		}
 		// end of send LUN

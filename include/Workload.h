@@ -58,7 +58,7 @@ public:
 
 	ivytime nextIO_schedule_time;  // 0 means means right away.  (This is initialized later.)
 
-	Iosequencer* p_my_iosequencer;
+	Iosequencer* p_my_iosequencer {nullptr};
 
     ivy_float sequential_fill_fraction {1.0};
     // IogeneratorSequential for writes sets this to a value expressing the progress from 0.0 to 1.0

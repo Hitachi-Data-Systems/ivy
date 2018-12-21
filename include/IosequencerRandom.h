@@ -35,7 +35,7 @@ protected:
 public:
 	IosequencerRandom(LUN* pL, std::string lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
 	    : Iosequencer(pL, lf, wID, pWT, p_tl, p_w) {}
-    virtual ~IosequencerRandom(){}
+    ~IosequencerRandom() { std::ostringstream o; o << "^^^^^^^debug ~IosequencerRandom() at this = " << this; log(pWorkloadThread->slavethreadlogfile, o.str()); }
 	virtual std::string instanceType()=0;
 	virtual bool isRandom()=0;  // This is used to plug the I/O statistics into "random" and "sequential" categories.
 	bool setFrom_IosequencerInput(IosequencerInput*);
