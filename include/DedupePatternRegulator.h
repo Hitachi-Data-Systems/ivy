@@ -33,12 +33,12 @@ public:
     // return rounded dedupe factor resets state
     inline ivy_float dedupe_distribution()
     {
-        if (pos < unique_percentage)
+        if (pos < high_percentage)
+            state = target + spread;
+        else if (pos < (high_percentage + unique_percentage))
             state = 1;
-        else if (pos < (unique_percentage + high_percentage))
-            state = target + spread;
         else
-            state = target + spread;
+            state = target;
 
         pos = (pos + 1) % 100;
 

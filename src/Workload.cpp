@@ -578,28 +578,6 @@ unsigned int Workload::generate_an_IO()
 
     freeStack.pop();
 
-#if 0
-    // deterministic generation of "seed" for this I/O.
-    if (have_writes)
-    {
-        if (doing_dedupe)
-        {
-            serpentine_number += threads_in_workload_name;
-            uint64_t new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
-            while (pattern_number < new_pattern_number)
-            {
-                xorshift64star(pattern_seed);
-                pattern_number++;
-            }
-            block_seed = pattern_seed ^ pattern_number;
-        }
-        else
-        {
-            xorshift64star(block_seed);
-        }
-    }
-#endif
-
     std::ostringstream o;
     // deterministic generation of "seed" for this I/O.
     if (have_writes)
@@ -632,7 +610,7 @@ unsigned int Workload::generate_an_IO()
                             pattern_alignment = align_pattern.second;
                             pattern_number = pattern_alignment;
                             o << "workloadthread - Reset pattern seed " << pattern_seed <<  " Offset: " << pattern_alignment << std::endl;
-                            log(pWorkloadThread->slavethreadlogfile, o.str());
+                            //log(pWorkloadThread->slavethreadlogfile, o.str());
                         }
                     }
                 }
@@ -648,8 +626,10 @@ unsigned int Workload::generate_an_IO()
                     if (dedupe_count == 0) {
                         modified_dedupe_factor = dedupe_regulator->dedupe_distribution();
                         dedupe_count = (uint64_t) modified_dedupe_factor;
+#if 0
                         o << "modified_dedupe_factor: " << modified_dedupe_factor << std::endl;
                         //log(pWorkloadThread->slavethreadlogfile,o.str());
+#endif
                     }
 
                     if (dedupe_count == modified_dedupe_factor)
@@ -728,15 +708,3 @@ std::string Workload::brief_status()
         ;
     return o.str();
 }
-
-
-
-
-
-
-
-
-
-
-
-

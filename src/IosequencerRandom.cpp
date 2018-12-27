@@ -223,6 +223,7 @@ bool IosequencerRandom::generate(Eyeo& slang)
 
 	slang.eyeocb.aio_offset = (p_IosequencerInput->blocksize_bytes) * current_block;
 	// slang.eyeocb.aio_nbytes was set when I/Os were built for the Workload
+	slang.eyeocb.aio_nbytes = p_IosequencerInput->blocksize_bytes;
 	slang.scheduled_time=ivytime(0);
 	slang.start_time=0;
 	slang.end_time=0;

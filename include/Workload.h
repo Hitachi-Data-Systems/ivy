@@ -97,9 +97,7 @@ public:
 
 	std::string hostname;
 
-	DedupePatternRegulator *dedupe_regulator;
-	bool bias;
-	uint64_t spectrum;
+    DedupePatternRegulator *dedupe_regulator;
 
     bool doing_dedupe;
     bool have_writes;
@@ -114,7 +112,7 @@ public:
     uint64_t pattern_alignment;
     uint64_t pattern_seed;
     uint64_t block_seed;
-    uint64_t last_block_seeds[32];
+    uint64_t last_block_seeds[128]; // array of 8KiB pattern block_seeds to span upto 1 MiB xfer block_size
     uint8_t dedupeunits;
     int dedupe_count;
     ivy_float modified_dedupe_factor;
