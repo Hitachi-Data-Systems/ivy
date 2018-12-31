@@ -74,7 +74,7 @@ DedupePatternRegulator:: DedupePatternRegulator(ivy_float dedupe, uint64_t seed)
 
     // dedupe dependent threshold to keep pattern numbers in the range [0..pattern_number_reuse_threshold]
     if (target_dedupe < 2.0)
-        pattern_number_reuse_threshold = (1.0 - reuse_probability) * 70000;
+        pattern_number_reuse_threshold = (1.0 - reuse_probability) * 100000;
     else if (target_dedupe > 10.0)
         pattern_number_reuse_threshold = (1.0 - reuse_probability) * 65000;
     else
