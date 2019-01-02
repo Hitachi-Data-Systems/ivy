@@ -235,7 +235,68 @@ bool IosequencerRandom::generate(Eyeo& slang)
         slang.generate_pattern();
     }
 
+    if ((slang.eyeocb.aio_offset + p_IosequencerInput->blocksize_bytes) > pTestLUN->LUN_size_bytes)
+    {
+        std::ostringstream o;
+        o << "<Error> Internal programming error - IosequencerRandom::generate() - I/O offset from beginning of LUN = " << slang.eyeocb.aio_offset
+            << " plus blocksize = " << p_IosequencerInput->blocksize_bytes << " is past the end of the LUN, whose size in bytes is " << pTestLUN->LUN_size_bytes << std::endl
+            << "TestLUN members - maxLBA = " << pTestLUN->maxLBA
+            << ", LUN_size_bytes = " << pTestLUN->LUN_size_bytes
+            << ", sector_size = " << pTestLUN->sector_size
+            << ", launch_count = " << pTestLUN->launch_count
+            << std::endl
+            << "IosequencerRandom - hot_zone_coverageStartBlock = " << hot_zone_coverageStartBlock
+            << ", hot_zone_coverageEndBlock = " << hot_zone_coverageEndBlock
+            << ", hot_zone_numberOfCoverageBlocks = " << hot_zone_numberOfCoverageBlocks
+            << std::endl
+            << "Iosequencer - coverageStartLBA = " << coverageStartLBA
+            << ", coverageEndLBA = " << coverageEndLBA
+            << ", numberOfCoverageLBAs = " << numberOfCoverageLBAs
+            << ", coverageStartBlock = " << coverageStartBlock
+            << ", coverageEndBlock = " << coverageEndBlock
+            << ", numberOfCoverageBlocks = " << numberOfCoverageBlocks
+            << std::endl;
+        log(logfilename,o.str());
+        std::cout << o.str();
+        exit(-1);
+    }
+
 	return true;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

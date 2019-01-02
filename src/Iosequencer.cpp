@@ -68,10 +68,11 @@ bool Iosequencer::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 
 	// This base class function should be called first from every eponymous derived class functions;
 
-	long long int number_of_potential_coverage_sectors = (pTestLUN->LUN_size_bytes / pTestLUN->sector_size) - 1; // i.e. maxLBA which is the number of sectors not including sector 0.
+	long long int number_of_potential_coverage_sectors = (pTestLUN->LUN_size_bytes / pTestLUN->sector_size) - 1;
+	    // i.e. maxLBA which is the number of sectors not including sector 0.
 
 	coverageStartLBA = 1 + p_IosequencerInput->volCoverageFractionStart*number_of_potential_coverage_sectors;
-	coverageEndLBA = 1 + p_IosequencerInput->volCoverageFractionEnd*number_of_potential_coverage_sectors;
+	coverageEndLBA   =     p_IosequencerInput->volCoverageFractionEnd  *number_of_potential_coverage_sectors;
 	numberOfCoverageLBAs = 1 + coverageEndLBA - coverageStartLBA;
 
 	if (0 != (p_IosequencerInput->blocksize_bytes % pTestLUN->sector_size))
@@ -86,7 +87,7 @@ bool Iosequencer::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 	}
 	long long int number_of_potential_coverage_blocks = (pTestLUN->LUN_size_bytes / p_IosequencerInput->blocksize_bytes) - 1;
 	coverageStartBlock = 1 + p_IosequencerInput->volCoverageFractionStart*number_of_potential_coverage_blocks;
-	coverageEndBlock = 1 + p_IosequencerInput->volCoverageFractionEnd*number_of_potential_coverage_blocks;
+	coverageEndBlock   =     p_IosequencerInput->volCoverageFractionEnd  *number_of_potential_coverage_blocks;
 	numberOfCoverageBlocks = 1 + coverageEndBlock - coverageStartBlock;
 
 	previous_scheduled_time = ivytime(0);
