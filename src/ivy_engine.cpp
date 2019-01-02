@@ -2162,7 +2162,7 @@ ivy_engine::go(const std::string& parameters)
         log(ivy_engine_logfile,o.str());
     }
 
-/*debug*/std::string debug_console_input; static bool have_already_waited {false}; if (!have_already_waited) { std::cout << "debug: pausing while you could attach a debugger - hit return to resume." << std::endl; std::getline(std::cin,debug_console_input); } have_already_waited = true;
+//*debug*/std::string debug_console_input; static bool have_already_waited {false}; if (!have_already_waited) { std::cout << "debug: pausing while you could attach a debugger - hit return to resume." << std::endl; std::getline(std::cin,debug_console_input); } have_already_waited = true;
 
     std::pair<bool,std::string> rc {};
 
