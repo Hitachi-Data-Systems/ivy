@@ -54,6 +54,8 @@ void usage_message(char* argv_0)
         << "     Turns on logging of routine events." << std::endl << std::endl
         << "-no_cmd"<< std::endl
         << "     Don\'t use any command devices." << std::endl << std::endl
+        << "-spinloop" << std::endl
+        << "     Used to make test host code continually check for work to do without ever waiting." << std::endl << std::endl
         << "-trace_lexer or -l" << std::endl
         << "     Log routine events and trace the \"lexer\" which breaks down the .ivyscript program into \"tokens\"." << std::endl << std::endl
         << "-trace_parser or -p" << std::endl
