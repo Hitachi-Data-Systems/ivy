@@ -36,7 +36,7 @@
 #include "ivyhelpers.h"
 #include "ivylinuxcpubusy.h"
 #include "Subinterval_CPU.h"
-#include "ivyslave.h"
+#include "ivydriver.h"
 
 // In the code below, it is taken as given that the number of cores does not change while running the program.
 // Thus when we copy or when we set new values and there is an existing set of counters for each core, we assume

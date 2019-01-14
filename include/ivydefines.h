@@ -30,7 +30,7 @@ const std::string ivy_version {"3.00.01"};
 #include "pattern.h"
 
 #define SHOWLUNS_CMD std::string("showluns.sh")
-#define IVYSLAVE_EXECUTABLE std::string("ivyslave")
+#define IVYDRIVER_EXECUTABLE std::string("ivydriver")
 #define IVY_CMDDEV_EXECUTABLE std::string("ivy_cmddev")
 #define default_outputFolderRoot "."
 #define SLAVEUSERID "root"
@@ -40,23 +40,23 @@ const std::string ivy_version {"3.00.01"};
 #define MAX_IOEVENTS_REAP_AT_ONCE 128
 #define MAXWAITFORINITALPROMPT 120
 #define PRECOMPUTE_HORIZON_SECONDS 0.5
-// When ivyslave runs on a test host, it temporarily writes its log files to the following
-// folder location.  Then once ivyslave has exited, the ivy master thread copies the log files
-// to the master host logs subfolder for the run, and deletes the temporary log files on the ivyslave host.
-// But if something blows up and the ivyslave log files don't get moved to the master host,
-// this is where you will find them on the ivyslave host:
+// When ivydriver runs on a test host, it temporarily writes its log files to the following
+// folder location.  Then once ivydriver has exited, the ivy master thread copies the log files
+// to the master host logs subfolder for the run, and deletes the temporary log files on the ivydriver host.
+// But if something blows up and the ivydriver log files don't get moved to the master host,
+// this is where you will find them on the ivydriver host:
 
-#define IVYSLAVELOGFOLDERROOT "/var"
-// This root folder must already exist when ivyslave fires up.
+#define IVYDRIVERLOGFOLDERROOT "/var"
+// This root folder must already exist when ivydriver fires up.
 
-//#define IVYSLAVELOGFOLDER "/ivyslave_logs"
-#define IVYSLAVELOGFOLDER "/ivyslave_debug"
-// This subfolder of the ivyslave log root folder will be created if it doesn't already exist
+//#define IVYDRIVERLOGFOLDER "/ivydriver_logs"
+#define IVYDRIVERLOGFOLDER "/ivydriver_debug"
+// This subfolder of the ivydriver log root folder will be created if it doesn't already exist
 
-// Then any log files called "ivyslave.hostname.log.*" are deleted if they already exists in this folder.
+// Then any log files called "ivydriver.hostname.log.*" are deleted if they already exists in this folder.
 // The hostname here is what ivymaster told us our hostname was.
-// This lets us create two ivyslave instances like "192.168.1.1" and "barney" whose log files won't step on each other.
-// After the ivyslave main thread logs to ivyslave.hostname.log.txt, and the subthreads log to ivyslave.hostname.log.threadID_with_underscores.txt.
+// This lets us create two ivydriver instances like "192.168.1.1" and "barney" whose log files won't step on each other.
+// After the ivydriver main thread logs to ivydriver.hostname.log.txt, and the subthreads log to ivydriver.hostname.log.threadID_with_underscores.txt.
 // When the test is complete, ivymaster uses an scp command to copy the log files back to the ivymaster host along with everything else.
 
 //      IVYMAXMSGSIZE size of send/receive buffers between master and slave

@@ -31,7 +31,7 @@
 #include "ivydefines.h"
 #include "ivytime.h"
 
-//#define IVYSLAVE_TRACE
+//#define IVYDRIVER_TRACE
 
 extern bool routine_logging;
 
@@ -58,10 +58,10 @@ class TestLUN
     // attribute name - attribute value pairs as populated using
     // the output csv file from showluns.sh.
 
-    // Ivyslave builds those LUNs when it fires up and discovers its LUNs.
+    // Ivydriver builds those LUNs when it fires up and discovers its LUNs.
 
     // Back in "ivy" on the central host, for each test host the same LUNs
-    // are first reconstitued from what ivyslave sent, and then
+    // are first reconstitued from what ivydriver sent, and then
     // if there's a command device connector running, these
     // LUNs are augmented with information from the subsystem configuration
     // including things you get indirectly, like what's the drive_type for a DP-vol?
@@ -69,7 +69,7 @@ class TestLUN
     // and then capture what we need from the pool volumes like drive type
     // as attributes of a LUN.
 
-    // Back on ivyslave, we have the original set of those LUNs built with
+    // Back on ivydriver, we have the original set of those LUNs built with
     // SCSI Inquiry attribute values, the ones that we sent up to the master host.
 
     // A "TestLUN" by contrast is only concerned with Workloads mapped to a
@@ -148,7 +148,7 @@ public:
     //       epoll_data_t data;        /* User data variable */
     //   };
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     unsigned int sum_of_maxTags_callcount {0};
     unsigned int open_fd_callcount {0};
     unsigned int prepare_linux_AIO_driver_to_start_callcount {0};

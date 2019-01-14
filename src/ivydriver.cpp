@@ -17,7 +17,7 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-// ivyslave.cpp
+// ivydriver.cpp
 
 //#include <csignal>
 #include <signal.h>
@@ -32,16 +32,16 @@
 
 #include <sys/types.h>
 
-#include "ivyslave.h"
+#include "ivydriver.h"
 #include "pipe_line_reader.h"
 
-//#define IVYSLAVE_TRACE
-// IVYSLAVE_TRACE defined here in this source file rather than globally in ivydefines.h so that
+//#define IVYDRIVER_TRACE
+// IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
 //  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
 //  - you can turn on tracing separately for each class in its own source file.
 
 
-IvySlave ivyslave;
+IvyDriver ivydriver;
 
 bool routine_logging;
 
@@ -52,14 +52,14 @@ void invokeThread(WorkloadThread* T)
 	T->WorkloadThreadRun();
 }
 
-void IvySlave::say(std::string s)
+void IvyDriver::say(std::string s)
 {
     {
         // This is a bit lame, not ensuring that <Warning> messages are "said"
         // immediately by the main thread when a subthread issues a <Warning> message,
         // but at least we say them first when we go to say something else;
 
-        std::lock_guard<std::mutex> lk_guard(ivyslave_main_mutex);
+        std::lock_guard<std::mutex> lk_guard(ivydriver_main_mutex);
 
         for (auto& e : workload_thread_error_messages)
         {
@@ -76,19 +76,19 @@ void IvySlave::say(std::string s)
 
  	if (s.length()==0 || s[s.length()-1] != '\n') s.push_back('\n');
 
-    if (ivyslave.last_message_time == ivytime(0))
+    if (ivydriver.last_message_time == ivytime(0))
     {
-        ivyslave.last_message_time.setToNow();
+        ivydriver.last_message_time.setToNow();
     }
     else
     {
         ivytime now, delta;
 
         now.setToNow();
-        delta = now - ivyslave.last_message_time;
-        ivyslave.last_message_time = now;
+        delta = now - ivydriver.last_message_time;
+        ivydriver.last_message_time = now;
 
-    	if (routine_logging) log(ivyslave.slavelogfile,format_utterance("Slave", s, delta));
+    	if (routine_logging) log(ivydriver.slavelogfile,format_utterance("Slave", s, delta));
     }
 
 	std::cout << s << std::flush;
@@ -96,10 +96,10 @@ void IvySlave::say(std::string s)
 }
 
 
-void IvySlave::killAllSubthreads()
+void IvyDriver::killAllSubthreads()
 {
-#if defined(IVYSLAVE_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "Entering IvySlave::killAllSubthreads()."; log(slavelogfile, o.str()); } }
+#if defined(IVYDRIVER_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "Entering IvyDriver::killAllSubthreads()."; log(slavelogfile, o.str()); } }
 #endif
 
 	for (auto& pear : all_workload_threads)
@@ -119,11 +119,11 @@ void IvySlave::killAllSubthreads()
         else
 		{
 			std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
-			pear.second->ivyslave_main_posted_command=true;
-			pear.second->ivyslave_main_says=MainThreadCommand::die;
+			pear.second->ivydriver_main_posted_command=true;
+			pear.second->ivydriver_main_says=MainThreadCommand::die;
 			if (routine_logging)
 			{
-			    log(pear.second->slavethreadlogfile,"[logged here by ivyslave main thread] ivyslave main thread posted \"die\" command.");
+			    log(pear.second->slavethreadlogfile,"[logged here by ivydriver main thread] ivydriver main thread posted \"die\" command.");
             }
 		}
 		pear.second->slaveThreadConditionVariable.notify_all();
@@ -147,14 +147,14 @@ void IvySlave::killAllSubthreads()
 
 int main(int argc, char* argv[])
 {
-    return ivyslave.main(argc, argv);
+    return ivydriver.main(argc, argv);
 }
 
 void sig_handler(int sig, siginfo_t *p_siginfo, void *context);
 
 
 
-int IvySlave::main(int argc, char* argv[])
+int IvyDriver::main(int argc, char* argv[])
 {
     struct sigaction sigactshun;
     memset(&sigactshun, 0, sizeof(sigactshun));
@@ -187,37 +187,37 @@ int IvySlave::main(int argc, char* argv[])
 
 	struct stat struct_stat;
 
-    if( stat(IVYSLAVELOGFOLDERROOT,&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
+    if( stat(IVYDRIVERLOGFOLDERROOT,&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
     {
         //  folder doesn't already exist or it's not a directory
-        std::cout << "<Error> " << "ivyslave log folder root \"" << IVYSLAVELOGFOLDERROOT << "\" doesn\'t exist or is not a folder." << std::endl;
+        std::cout << "<Error> " << "ivydriver log folder root \"" << IVYDRIVERLOGFOLDERROOT << "\" doesn\'t exist or is not a folder." << std::endl;
         return -1;
     }
 
-    // In the next bit where we create the subfolder of IVYSLAVELOGFOLDERROOT, we use a semaphore
-    // because if you are testing with two aliases for the same test host, only one ivyslave main thread
+    // In the next bit where we create the subfolder of IVYDRIVERLOGFOLDERROOT, we use a semaphore
+    // because if you are testing with two aliases for the same test host, only one ivydriver main thread
     // should be creating the subfolder.
 
-    sem_t* p_semaphore = sem_open("/ivyslave_log_subfolder_create", O_CREAT,S_IRWXG|S_IRWXO|S_IRWXU,0);
+    sem_t* p_semaphore = sem_open("/ivydriver_log_subfolder_create", O_CREAT,S_IRWXG|S_IRWXO|S_IRWXU,0);
 
     if (SEM_FAILED == p_semaphore)
     {
         std::ostringstream o;
-        o << "<Error> Failed trying to open semaphore to create ivyslave log subfolder.  errno = " << errno
+        o << "<Error> Failed trying to open semaphore to create ivydriver log subfolder.  errno = " << errno
             << " - " << std::strerror(errno) << " at " << __FILE__  << " line " << __LINE__ << "." << std::endl;
         std::cout << o.str();
         return -1;
     }
     else
     {
-        if( stat(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER ,&struct_stat) )
+        if( stat(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER ,&struct_stat) )
         {
             //  folder doesn't already exist
             int rc;
-            if ((rc = mkdir(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER, S_IRWXU | S_IRWXG | S_IRWXO)))
+            if ((rc = mkdir(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER, S_IRWXU | S_IRWXG | S_IRWXO)))
             {
                 std::ostringstream o;
-                o << "<Error> Failed trying to create ivyslave log folder \"" << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "\" - "
+                o << "<Error> Failed trying to create ivydriver log folder \"" << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "\" - "
                     << "mkdir() return code " << rc << ", errno = " << errno << " " << std::strerror(errno) << std::endl;
                 std::cout << o.str();
                 return -1;
@@ -227,21 +227,21 @@ int IvySlave::main(int argc, char* argv[])
         sem_close(p_semaphore);
     }
 
-    if( stat(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER,&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
+    if( stat(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER,&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
     {
             //  folder doesn't already exist or it's not a directory
-        std::cout << "<Error> " << "ivyslave log folder \"" << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "\" doesn\'t exist or is not a folder." << std::endl;
+        std::cout << "<Error> " << "ivydriver log folder \"" << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "\" doesn\'t exist or is not a folder." << std::endl;
         return -1;
     }
 
-	std::string erase_earlier_log_files( std::string("rm -f ") + std::string(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.") + hostname + std::string("*") );
+	std::string erase_earlier_log_files( std::string("rm -f ") + std::string(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER) + std::string("/log.ivydriver.") + hostname + std::string("*") );
 	system(erase_earlier_log_files.c_str());
 
-    slavelogfile = std::string(IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER) + std::string("/log.ivyslave.") + hostname + std::string(".txt");
+    slavelogfile = std::string(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER) + std::string("/log.ivydriver.") + hostname + std::string(".txt");
 
     {
         std::ostringstream o;
-        o << "ivyslave version " << ivy_version << " build date " << IVYBUILDDATE << " starting." << std::endl;
+        o << "ivydriver version " << ivy_version << " build date " << IVYBUILDDATE << " starting." << std::endl;
         log(slavelogfile,o.str());
     }
 
@@ -262,17 +262,17 @@ int IvySlave::main(int argc, char* argv[])
 
     for (unsigned int core = 0; core < cores; core++)
     {
-        if (core == 0) { continue; } // leave core 0 free for ivyslave
+        if (core == 0) { continue; } // leave core 0 free for ivydriver
             // Come back here and maybe leave another core free in case this test host is also the master host ..... XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-        WorkloadThread* p_WorkloadThread = new WorkloadThread(&ivyslave_main_mutex,core);
+        WorkloadThread* p_WorkloadThread = new WorkloadThread(&ivydriver_main_mutex,core);
 
         all_workload_threads[core]=p_WorkloadThread;
 
         {
             std::ostringstream o;
 
-            o << IVYSLAVELOGFOLDERROOT << IVYSLAVELOGFOLDER << "/log.ivyslave." << hostname << ".core_" << core;
+            o << IVYDRIVERLOGFOLDERROOT << IVYDRIVERLOGFOLDER << "/log.ivydriver." << hostname << ".core_" << core;
 
             o << ".txt";
 
@@ -290,7 +290,7 @@ int IvySlave::main(int argc, char* argv[])
                        [&p_WorkloadThread] { return p_WorkloadThread->state == ThreadState::waiting_for_command; }))
             {
                 std::ostringstream o;
-                o << "<Error> ivyslave waited more than one second for workload thread for core \""
+                o << "<Error> ivydriver waited more than one second for workload thread for core \""
                     << core << "\" to start up." << std::endl
                     << "Source code reference " << __FILE__ << " line " << __LINE__ << std::endl;
                 say(o.str());
@@ -332,15 +332,15 @@ int IvySlave::main(int argc, char* argv[])
 	getline.set_logfilename(slavelogfile);
 
 	ivytime one_hour = ivytime(60*60);
-        // one hour so that if ivyslave somehow would wait forever, this makes it explode after an hour.
-        // Ivyslave gets a command every subinterval, so this would limit subinterval_seconds to one hour.
+        // one hour so that if ivydriver somehow would wait forever, this makes it explode after an hour.
+        // Ivydriver gets a command every subinterval, so this would limit subinterval_seconds to one hour.
 
 	while(!std::cin.eof())
 	{
 		// get commands from ivymaster
 
 		//std::getline(std::cin,input_line);
-		input_line = getline.real_get_line_from_pipe(one_hour,"ivyslave reading a line from ivy", false);
+		input_line = getline.real_get_line_from_pipe(one_hour,"ivydriver reading a line from ivy", false);
 
 		lasttime.setToNow();
 
@@ -384,7 +384,7 @@ int IvySlave::main(int argc, char* argv[])
 				if (!pLUN->loadcsvline(header_line,disco_line,slavelogfile))
 				{
 					std::ostringstream o;
-					o << "<Error> Ivyslave main thread failed trying to load a LUN lister csv file line into a LUN object.  csv header line = \""
+					o << "<Error> Ivydriver main thread failed trying to load a LUN lister csv file line into a LUN object.  csv header line = \""
 					<< header_line << "\", data line = \"" << disco_line << "\"." << std::endl ;
 					log(slavelogfile,o.str());
 					say (o.str());
@@ -398,10 +398,10 @@ int IvySlave::main(int argc, char* argv[])
 			{
 				say("[LUN]<eof>");
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
                 {
                     std::ostringstream o;
-                    o << "<Warning> ivyslave pid is " << getpid() << ", and";
+                    o << "<Warning> ivydriver pid is " << getpid() << ", and";
                     for (auto& pear : all_workload_threads) {o << " core " << pear.second->core << "\'s tid is " << pear.second->my_tid;}
                     o << "." << std::endl;
                     say(o.str());
@@ -441,7 +441,7 @@ int IvySlave::main(int argc, char* argv[])
 		}
 		else
 		{
-			log(slavelogfile,std::string("ivyslave received command from ivymaster \"") + input_line + std::string("\" that was not recognized.  Aborting.\n"));
+			log(slavelogfile,std::string("ivydriver received command from ivymaster \"") + input_line + std::string("\" that was not recognized.  Aborting.\n"));
 			killAllSubthreads();
 			return 0;
 		}
@@ -454,28 +454,28 @@ int IvySlave::main(int argc, char* argv[])
 };
 
 
-bool IvySlave::waitForSubintervalEndThenHarvest()
+bool IvyDriver::waitForSubintervalEndThenHarvest()
 {
-#if defined(IVYSLAVE_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "Entering IvySlave::waitForSubintervalEndThenHarvest()."; log(slavelogfile, o.str()); } }
+#if defined(IVYDRIVER_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "Entering IvyDriver::waitForSubintervalEndThenHarvest()."; log(slavelogfile, o.str()); } }
 #endif
 
     // wait for subinterval ending time
 
     ivytime now; now.setToNow();
-    if (now > ivyslave_view_subinterval_end)
+    if (now > ivydriver_view_subinterval_end)
 	{
         std::ostringstream o;
-        o << "<Error> " << __FILE__ << " line " << __LINE__   << " - subinterval_seconds too short - ivymaster told ivyslave main thread to wait for the end of the subinterval and then harvest results, but subinterval was already over.";
+        o << "<Error> " << __FILE__ << " line " << __LINE__   << " - subinterval_seconds too short - ivymaster told ivydriver main thread to wait for the end of the subinterval and then harvest results, but subinterval was already over.";
         o << "  This can also be caused if an ivy command device is on a subsystem port that is saturated with other (ivy) activity, making communication with the command device run very slowly.";
-        o << "ivyslave_view_subinterval_end = " << ivyslave_view_subinterval_end.format_as_datetime_with_ns() << ", now = " << now.format_as_datetime_with_ns();
+        o << "ivydriver_view_subinterval_end = " << ivydriver_view_subinterval_end.format_as_datetime_with_ns() << ", now = " << now.format_as_datetime_with_ns();
         say(o.str());
 		killAllSubthreads();
 		return false;
  	}
 
 	try {
-		ivyslave_view_subinterval_end.waitUntilThisTime();
+		ivydriver_view_subinterval_end.waitUntilThisTime();
 	}
 	catch (std::exception& e)
 	{
@@ -503,7 +503,7 @@ bool IvySlave::waitForSubintervalEndThenHarvest()
 	if ( 0 != rc )
 	{
 		std::ostringstream o;
-		o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): getprocstat(&interval_end_CPU, slavelogfile) call to get subinterval ending CPU counters failed.\n";
+		o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivydriver main thread routine waitForSubintervalEndThenHarvest(): getprocstat(&interval_end_CPU, slavelogfile) call to get subinterval ending CPU counters failed.\n";
 		say(o.str());
 		killAllSubthreads();
 		return false;
@@ -521,7 +521,7 @@ bool IvySlave::waitForSubintervalEndThenHarvest()
 	))
 	{
         std::ostringstream o;
-        o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): computecpubusy() call to get subinterval ending CPU % busies failed.";
+        o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivydriver main thread routine waitForSubintervalEndThenHarvest(): computecpubusy() call to get subinterval ending CPU % busies failed.";
         say(o.str());
 		killAllSubthreads();
 		return false;
@@ -554,7 +554,7 @@ bool IvySlave::waitForSubintervalEndThenHarvest()
 
         ivytime thread_limit_time = limit_time;
 
-        if (MainThreadCommand::stop == pear.second->ivyslave_main_says)
+        if (MainThreadCommand::stop == pear.second->ivydriver_main_says)
         {
             // when we are stopping, we need some extra time in the last subinterval to handle catching in-flight I/Os
             // and in any case, there is no problem if it takes somewhat longer as there is no deadline - no next subinterval.
@@ -568,7 +568,7 @@ bool IvySlave::waitForSubintervalEndThenHarvest()
             std::ostringstream o;
             o << "<Error> Excessive latency over 1/4 of the way through the next subinterval for workload thread for core "
                 << pear.first << " to post results from the previous subinterval at "
-                << __FILE__ << " line " << __LINE__ << " in ivyslave main thread routine waitForSubintervalEndThenHarvest()." << std::endl;
+                << __FILE__ << " line " << __LINE__ << " in ivydriver main thread routine waitForSubintervalEndThenHarvest()." << std::endl;
             say(o.str());
             killAllSubthreads();
             return false;
@@ -584,12 +584,12 @@ bool IvySlave::waitForSubintervalEndThenHarvest()
                 std::unique_lock<std::mutex> slavethread_lk(wlt.slaveThreadMutex);
 
                 if (!wlt.slaveThreadConditionVariable.wait_for(slavethread_lk, time_to_limit,
-                           [&wlt] { return wlt.ivyslave_main_posted_command == false; }))  // WorkloadThread turns this off when switching to a new subingerval
+                           [&wlt] { return wlt.ivydriver_main_posted_command == false; }))  // WorkloadThread turns this off when switching to a new subingerval
                 {
                     std::ostringstream o;
                     o << "<Error> Excessive latency over 1/4 of the way through the next subinterval for workload thread for core "
                         << pear.first << " to post results from the previous subinterval at "
-                        << __FILE__ << " line " << __LINE__ << " in ivyslave main thread routine waitForSubintervalEndThenHarvest()." << std::endl;
+                        << __FILE__ << " line " << __LINE__ << " in ivydriver main thread routine waitForSubintervalEndThenHarvest()." << std::endl;
                     say(o.str());
                     log(slavelogfile, o.str());
                     slavethread_lk.unlock();
@@ -631,7 +631,7 @@ bool IvySlave::waitForSubintervalEndThenHarvest()
                             {
                                 std::ostringstream o;
                                 o << "<Error> Internal programming error at " << __FILE__ << " line " << __LINE__
-                                    << " - ivyslave main thread routine waitForSubintervalEndThenHarvest(): "
+                                    << " - ivydriver main thread routine waitForSubintervalEndThenHarvest(): "
                                     << " WorkloadThread for core " << wlt.core
                                     << " workload ID " << workloadID
                                     << " interlocked at subinterval end, but WorkloadThread hadn\'t marked subinterval ready-to-send.";
@@ -713,8 +713,8 @@ bool IvySlave::waitForSubintervalEndThenHarvest()
 		otherSubinterval = 1;
 	}
 
-	ivyslave_view_subinterval_start = ivyslave_view_subinterval_start + subinterval_duration;
-	ivyslave_view_subinterval_end   = ivyslave_view_subinterval_end   + subinterval_duration;
+	ivydriver_view_subinterval_start = ivydriver_view_subinterval_start + subinterval_duration;
+	ivydriver_view_subinterval_end   = ivydriver_view_subinterval_end   + subinterval_duration;
 	// These are just used to print a message without looking into a particular WorkloadThread.
 
 	return true;
@@ -722,10 +722,10 @@ bool IvySlave::waitForSubintervalEndThenHarvest()
 // end of waitForSubintervalEndThenHarvest()
 
 
-void IvySlave::distribute_TestLUNs_over_cores()
+void IvyDriver::distribute_TestLUNs_over_cores()
 {
-#if defined(IVYSLAVE_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "IvySlave::distribute_TestLUNs_over_cores()."; log(slavelogfile,o.str()); } }
+#if defined(IVYDRIVER_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "IvyDriver::distribute_TestLUNs_over_cores()."; log(slavelogfile,o.str()); } }
 #endif
 
     for (auto& pear : all_workload_threads)
@@ -838,10 +838,10 @@ void IvySlave::distribute_TestLUNs_over_cores()
 }
 
 
-void IvySlave::create_workload()
+void IvyDriver::create_workload()
 {
-#if defined(IVYSLAVE_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvySlave::create_workload()."; log(slavelogfile,o.str()); } }
+#if defined(IVYDRIVER_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvyDriver::create_workload()."; log(slavelogfile,o.str()); } }
 #endif
 
     // We get "[CreateWorkload] myhostname+/dev/sdxy+workload_name [Parameters] subinterval_input.toString()
@@ -970,10 +970,10 @@ void IvySlave::create_workload()
     return;
 }
 
-void IvySlave::edit_workload()
+void IvyDriver::edit_workload()
 {
-#if defined(IVYSLAVE_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "IvySlave::edit_workload()."; log(slavelogfile,o.str()); } }
+#if defined(IVYDRIVER_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "IvyDriver::edit_workload()."; log(slavelogfile,o.str()); } }
 #endif
     // We get "[EditWorkload] <myhostname+/dev/sdxy+workload_name, myhostname+/dev/sdxz+workload_name> [Parameters] IOPS = *1.25
 
@@ -1026,7 +1026,7 @@ void IvySlave::edit_workload()
         if (testLUNs.end() == it)
         {
             std::ostringstream o;
-            o << "<Error> ivyslave for host \"" << hostname << "\""
+            o << "<Error> ivydriver for host \"" << hostname << "\""
                 << " - [EditWorkload] no such WorkloadID \"" << wID.workloadID << "\""
                 << " - did not find TestLUN \"" << host_plus_lun << "\"." << std::endl
                 << "Source code reference line " << __LINE__ << " of " << __FILE__ << ".\n";
@@ -1042,7 +1042,7 @@ void IvySlave::edit_workload()
         if (w_itr == pTestLUN->workloads.end())
         {
             std::ostringstream o;
-            o << "<Error> ivyslave for host \"" << hostname << "\""
+            o << "<Error> ivydriver for host \"" << hostname << "\""
                 << " - [EditWorkload] no such WorkloadID \"" << wID.workloadID << "\""
                 << " within TestLUN \"" << host_plus_lun << "\"." << std::endl
                 << "Source code reference line " << __LINE__ << " of " << __FILE__ << ".\n";
@@ -1100,10 +1100,10 @@ void IvySlave::edit_workload()
     say("<OK>");
 }
 
-void IvySlave::delete_workload()
+void IvyDriver::delete_workload()
 {
-#if defined(IVYSLAVE_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";  o << "Entering IvySlave::delete_workload()."; log(slavelogfile,o.str()); } }
+#if defined(IVYDRIVER_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";  o << "Entering IvyDriver::delete_workload()."; log(slavelogfile,o.str()); } }
 #endif
 
     // We get "[DeleteWorkload]myhostname+/dev/sdxy+workload_name"
@@ -1117,7 +1117,7 @@ void IvySlave::delete_workload()
     if (!wid.set(remainder))
     {
         std::ostringstream o;
-        o << "<Error> at ivyslave [DeleteWorkload] failed - WorkloadID \"" << remainder << "\" is not well-formed like \"myhostname+/dev/sdxy+workload_name\"." << std::endl;
+        o << "<Error> at ivydriver [DeleteWorkload] failed - WorkloadID \"" << remainder << "\" is not well-formed like \"myhostname+/dev/sdxy+workload_name\"." << std::endl;
         say(o.str());
         killAllSubthreads();
         exit(-1);
@@ -1166,10 +1166,10 @@ void IvySlave::delete_workload()
     say("<OK>");
 }
 
-void IvySlave::go()
+void IvyDriver::go()
 {
-#if defined(IVYSLAVE_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvySlave::go()."; log(slavelogfile,o.str()); } }
+#if defined(IVYDRIVER_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvyDriver::go()."; log(slavelogfile,o.str()); } }
     log_iosequencer_settings("debug: entry to go():");
 #endif
 
@@ -1210,8 +1210,8 @@ void IvySlave::go()
         exit(-1);
     }
 
-    ivyslave_view_subinterval_start = test_start_time;
-    ivyslave_view_subinterval_end = test_start_time + subinterval_duration;
+    ivydriver_view_subinterval_start = test_start_time;
+    ivydriver_view_subinterval_end = test_start_time + subinterval_duration;
 
     harvest_subinterval_number = 0;
     harvest_start = test_start_time;
@@ -1221,7 +1221,7 @@ void IvySlave::go()
 
     if (0!=getprocstat(&interval_start_CPU,slavelogfile))
     {
-        say("<Error> ivyslave main thread: procstatcounters::read_CPU_counters() call to get first subinterval starting CPU counters failed.");
+        say("<Error> ivydriver main thread: procstatcounters::read_CPU_counters() call to get first subinterval starting CPU counters failed.");
     }
 
     for (auto& pear : workload_threads)
@@ -1240,9 +1240,9 @@ void IvySlave::go()
                 exit(-1);
             }
 
-            wrkldThread.ivyslave_main_posted_command = true;
-            wrkldThread.ivyslave_main_says = MainThreadCommand::start;
-            log(wrkldThread.slavethreadlogfile,"[logged here by ivyslave main thread] ivyslave main thread posted \"start\" command.");
+            wrkldThread.ivydriver_main_posted_command = true;
+            wrkldThread.ivydriver_main_says = MainThreadCommand::start;
+            log(wrkldThread.slavethreadlogfile,"[logged here by ivydriver main thread] ivydriver main thread posted \"start\" command.");
 
             wrkldThread.cooldown = false;
             wrkldThread.slaveThreadConditionVariable.notify_all();
@@ -1259,11 +1259,11 @@ void IvySlave::go()
             // Wait for the workload thread to have consumed the "start" command
             // then post a "keep going" command
             std::unique_lock<std::mutex> u_lk(pear.second->slaveThreadMutex);
-            while (true == pear.second->ivyslave_main_posted_command)        // should have a timeout?? How long?
+            while (true == pear.second->ivydriver_main_posted_command)        // should have a timeout?? How long?
                 pear.second->slaveThreadConditionVariable.wait(u_lk);
-            pear.second->ivyslave_main_posted_command=true;
-            pear.second->ivyslave_main_says=MainThreadCommand::keep_going;
-            if (routine_logging) { log(pear.second->slavethreadlogfile,"[logged here by ivyslave main thread] ivyslave main thread posted \"keep_going\" command."); }
+            pear.second->ivydriver_main_posted_command=true;
+            pear.second->ivydriver_main_says=MainThreadCommand::keep_going;
+            if (routine_logging) { log(pear.second->slavethreadlogfile,"[logged here by ivydriver main thread] ivydriver main thread posted \"keep_going\" command."); }
         }
         pear.second->slaveThreadConditionVariable.notify_all();
     }
@@ -1271,10 +1271,10 @@ void IvySlave::go()
     say("<OK>");
 }
 
-void IvySlave::continue_or_cooldown()
+void IvyDriver::continue_or_cooldown()
 {
-#if defined(IVYSLAVE_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvySlave::continue_or_cooldown()."; log(slavelogfile,o.str()); } }
+#if defined(IVYDRIVER_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvyDriver::continue_or_cooldown()."; log(slavelogfile,o.str()); } }
 #endif
 
     if (0 == input_line.compare(std::string("cooldown")))
@@ -1306,14 +1306,14 @@ void IvySlave::continue_or_cooldown()
             // At this point, ivy master has made any modifications to the input parameters for the next subinterval
             // and the "other" subsystem has been harvested and we need to turn it around to get ready to run
 
-            pear.second->ivyslave_main_posted_command=true;
-            pear.second->ivyslave_main_says=MainThreadCommand::keep_going;
+            pear.second->ivydriver_main_posted_command=true;
+            pear.second->ivydriver_main_says=MainThreadCommand::keep_going;
             pear.second->cooldown = cooldown_flag;
 
             if (routine_logging)
             {
                 std::ostringstream o;
-                o << "[logged here by ivyslave main thread] ivyslave main thread posted \"keep_going\" command with cooldown_flag = "
+                o << "[logged here by ivydriver main thread] ivydriver main thread posted \"keep_going\" command with cooldown_flag = "
                     << (cooldown_flag ? "true" : "false") << ".";
                 log(pear.second->slavethreadlogfile,o.str());
             }
@@ -1324,10 +1324,10 @@ void IvySlave::continue_or_cooldown()
 }
 
 
-void IvySlave::stop()
+void IvyDriver::stop()
 {
-#if defined(IVYSLAVE_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvySlave::stop()."; log(slavelogfile,o.str()); } }
+#if defined(IVYDRIVER_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvyDriver::stop()."; log(slavelogfile,o.str()); } }
 #endif
     for (auto& pear : workload_threads)
     {
@@ -1347,9 +1347,9 @@ void IvySlave::stop()
             // at this point, what we do is copy the input parameters from the running subinterval
             // to the other one, to get it ready for the next test run as if the thread had just been created
 
-            pear.second->ivyslave_main_posted_command=true;
-            pear.second->ivyslave_main_says=MainThreadCommand::stop;
-            log(pear.second->slavethreadlogfile,"[logged here by ivyslave main thread] ivyslave main thread posted \"stop\" command.");
+            pear.second->ivydriver_main_posted_command=true;
+            pear.second->ivydriver_main_says=MainThreadCommand::stop;
+            log(pear.second->slavethreadlogfile,"[logged here by ivydriver main thread] ivydriver main thread posted \"stop\" command.");
         }
         pear.second->slaveThreadConditionVariable.notify_all();
     }
@@ -1491,7 +1491,7 @@ past_si_code:
     {
         case SIGINT:
             o << "Control-C was pressed." << std::endl;
-            log(ivyslave.slavelogfile, o.str());
+            log(ivydriver.slavelogfile, o.str());
             _exit(0);
 
         case SIGCHLD:
@@ -1529,12 +1529,12 @@ past_si_code:
             break;
 
         case SIGHUP:
-            if (pid == tid) // if I'm ivyslave main thread
+            if (pid == tid) // if I'm ivydriver main thread
             {
                 std::ostringstream o;
                 o << "<Error> Connection from ivy master host was broken.";
-                log(ivyslave.slavelogfile, o.str());
-                ivyslave.killAllSubthreads();
+                log(ivydriver.slavelogfile, o.str());
+                ivydriver.killAllSubthreads();
                 exit(-1);
             }
             break;
@@ -1543,21 +1543,21 @@ past_si_code:
             break;
 
         case SIGSEGV:
-            log(ivyslave.slavelogfile, o.str());
+            log(ivydriver.slavelogfile, o.str());
             _exit(0);
 
     }
 
-    log (ivyslave.slavelogfile,o.str());
+    log (ivydriver.slavelogfile,o.str());
     return;
 }
 
 
 
-void IvySlave::log_TestLUN_ownership()
+void IvyDriver::log_TestLUN_ownership()
 {
-#if defined(IVYSLAVE_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "IvySlave::log_TestLUN_ownership()."; log(slavelogfile,o.str()); } }
+#if defined(IVYDRIVER_TRACE)
+    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "IvyDriver::log_TestLUN_ownership()."; log(slavelogfile,o.str()); } }
 #endif
 
     std::ostringstream o;
@@ -1602,14 +1602,14 @@ void IvySlave::log_TestLUN_ownership()
 
     o << "Total assignments: " << testLUN_count << " TestLUNs and " << workload_count << " Workloads." << std::endl;
 
-    o << "This compares with ivyslave having " << testLUNs.size() << " TestLUNs." << std::endl;
+    o << "This compares with ivydriver having " << testLUNs.size() << " TestLUNs." << std::endl;
 
     log(slavelogfile,o.str());
 }
 
 
 
-void IvySlave::log_iosequencer_settings(const std::string& s)
+void IvyDriver::log_iosequencer_settings(const std::string& s)
 {
     std::ostringstream o;
 

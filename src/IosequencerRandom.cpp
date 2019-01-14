@@ -46,13 +46,13 @@ using namespace std;
 #include "WorkloadThread.h"
 #include "TestLUN.h"
 
-//#define IVYSLAVE_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
+//#define IVYDRIVER_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
                            // and so you can turn it off and on for each source file.
 
 bool IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
 //*debug*/ log(logfilename,std::string("IosequencerRandom::setFrom_IosequencerInput() - entry.\n"));
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::setFrom_IosequencerInput() for " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
@@ -73,7 +73,7 @@ bool IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 
 bool IosequencerRandom::set_hot_zone_parameters (IosequencerInput *p_ii)
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::set_hot_zone_parameters() for " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
@@ -109,7 +109,7 @@ bool IosequencerRandom::set_hot_zone_parameters (IosequencerInput *p_ii)
 
 bool IosequencerRandom::generate(Eyeo& slang)
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::generate() for " << workloadID << " - Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 

@@ -58,12 +58,12 @@
 #include "IosequencerRandomSteady.h"
 #include "IosequencerRandomIndependent.h"
 #include "IosequencerSequential.h"
-#include "ivyslave.h"
+#include "ivydriver.h"
 #include "TestLUN.h"
 #include "DedupePatternRegulator.h"
 
-//#define IVYSLAVE_TRACE
-// IVYSLAVE_TRACE defined here in this source file rather than globally in ivydefines.h so that
+//#define IVYDRIVER_TRACE
+// IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
 //  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
 //  - you can turn on tracing separately for each class in its own source file.
 
@@ -114,7 +114,7 @@ std::ostream& operator<< (std::ostream& o, const ThreadState& s)
 
 
 WorkloadThread::WorkloadThread(std::mutex* p_imm, unsigned int c)
-    : p_ivyslave_main_mutex(p_imm), core(c) {}
+    : p_ivydriver_main_mutex(p_imm), core(c) {}
 
 std::string threadStateToString (const ThreadState ts)
 {
@@ -165,15 +165,15 @@ void WorkloadThread::WorkloadThreadRun()
 //   The workload thread is initially in "waiting for command" state.
 //
 //   In the outer "waiting for command" loop we wait indefinitely for
-//   ivyslave to set "ivyslave_main_posted_command" to the value true.
+//   ivydriver to set "ivydriver_main_posted_command" to the value true.
 //
-//   Before turning on the "ivyslave_main_posted_command" flag and notifying,
-//   ivyslave sets the actual command value into a MainThreadCommand enum class
-//   variable called "ivyslave_main_says".
+//   Before turning on the "ivydriver_main_posted_command" flag and notifying,
+//   ivydriver sets the actual command value into a MainThreadCommand enum class
+//   variable called "ivydriver_main_says".
 //
 //   The MainThreadCommand enum class has four values, "start", "keep_going", "stop", and "die".
 //
-//       When the workload thread wakes up and sees that ivyslave_main_posted_command == true, we first turn it off for next time.
+//       When the workload thread wakes up and sees that ivydriver_main_posted_command == true, we first turn it off for next time.
 //
 //       In this outer loop, there are only two commands that are recognized
 //       "die" (nicely), and "start" the first subinterval running.
@@ -202,7 +202,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
 	state = ThreadState::waiting_for_command;
 
-	slaveThreadConditionVariable.notify_all();   // ivyslave waits for the thread to be in waiting for command state.
+	slaveThreadConditionVariable.notify_all();   // ivydriver waits for the thread to be in waiting for command state.
 
 	while (true) // loop that waits for "run" commands
 	{
@@ -212,13 +212,13 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 		    // runs with lock held
 
 			std::unique_lock<std::mutex> wkld_lk(slaveThreadMutex);
-			while (!ivyslave_main_posted_command) slaveThreadConditionVariable.wait(wkld_lk);
+			while (!ivydriver_main_posted_command) slaveThreadConditionVariable.wait(wkld_lk);
 
-			if (routine_logging) log(slavethreadlogfile,std::string("Received command from host - ") + mainThreadCommandToString(ivyslave_main_says));
+			if (routine_logging) log(slavethreadlogfile,std::string("Received command from host - ") + mainThreadCommandToString(ivydriver_main_says));
 
-			ivyslave_main_posted_command=false;
+			ivydriver_main_posted_command=false;
 
-			switch (ivyslave_main_says)
+			switch (ivydriver_main_says)
 			{
 				case MainThreadCommand::start :
 				{
@@ -248,7 +248,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
         thread_view_subinterval_number = -1;
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
         wt_callcount_linux_AIO_driver_run_subinterval = 0;
         wt_callcount_cancel_stalled_IOs = 0;
         wt_callcount_start_IOs = 0;
@@ -263,7 +263,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 		    pTestLUN->testLUN_furthest_behind_weighted_IOPS_max_skew_progress = 0.0;
 		    pTestLUN->launch_count = 0;
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
             pTestLUN->sum_of_maxTags_callcount = 0;
             pTestLUN->open_fd_callcount = 0;
             pTestLUN->prepare_linux_AIO_driver_to_start_callcount = 0;
@@ -330,7 +330,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 }
 
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
                 pear.second.workload_callcount_prepare_to_run = 0;
                 pear.second.workload_callcount_build_Eyeos = 0;
                 pear.second.workload_callcount_switchover = 0;
@@ -425,20 +425,20 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
             if (thread_view_subinterval_number == 0)
             {
-                thread_view_subinterval_start = ivyslave.test_start_time;
+                thread_view_subinterval_start = ivydriver.test_start_time;
             }
             else
             {
                 thread_view_subinterval_start = thread_view_subinterval_end;
             }
-            thread_view_subinterval_end = thread_view_subinterval_start + ivyslave.subinterval_duration;
+            thread_view_subinterval_end = thread_view_subinterval_start + ivydriver.subinterval_duration;
 
             if (routine_logging){
                 std::ostringstream o;
                 o << "core " << core << ": Top of subinterval " << thread_view_subinterval_number
                 << " " << thread_view_subinterval_start.format_as_datetime_with_ns()
                 << " to " << thread_view_subinterval_end.format_as_datetime_with_ns()
-                << " with subinterval_duration = " << ivyslave.subinterval_duration.format_as_duration_HMMSSns()
+                << " with subinterval_duration = " << ivydriver.subinterval_duration.format_as_duration_HMMSSns()
                 << std::endl;
                     log(slavethreadlogfile,o.str());
             }
@@ -507,11 +507,11 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             }
             else
             {
-                switchover_begin = ivyslave.ivyslave_view_subinterval_end;
+                switchover_begin = ivydriver.ivydriver_view_subinterval_end;
 
                 before_getting_lock.setToNow();
 
-                dispatch_time = before_getting_lock - ivyslave.ivyslave_view_subinterval_end;
+                dispatch_time = before_getting_lock - ivydriver.ivydriver_view_subinterval_end;
 
                 dispatching_latency_seconds.push(dispatch_time.getlongdoubleseconds());
             }
@@ -538,11 +538,11 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                 lock_aquisition_latency_seconds.push(lock_aquire_time.getlongdoubleseconds());
 
-                ivyslave_main_posted_command=false; // for next time
+                ivydriver_main_posted_command=false; // for next time
 
                 // we still have the lock
 
-                if (MainThreadCommand::die == ivyslave_main_says)
+                if (MainThreadCommand::die == ivydriver_main_says)
                 {
                     dying_words = "WorkloadThread dutifully dying upon command.\n";
                     if (routine_logging) log(slavethreadlogfile,dying_words);
@@ -564,7 +564,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                                 Workload& w = peach.second;
                                 std::ostringstream o;
                                 o << "Workload " << w.workloadID
-                                << "output summary " << w.p_current_SubintervalOutput->thumbnail(ivyslave.subinterval_duration)
+                                << "output summary " << w.p_current_SubintervalOutput->thumbnail(ivydriver.subinterval_duration)
                                 << " - input " << w.p_current_IosequencerInput->toString() << std::endl;
                                 log(slavethreadlogfile, o.str());
                             }
@@ -578,7 +578,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             // indent level in loop running subintervals
                 // indent level in locked section at subinterval switchover
 
-                if (MainThreadCommand::stop == ivyslave_main_says)
+                if (MainThreadCommand::stop == ivydriver_main_says)
                 {
                     if (routine_logging) log(slavethreadlogfile,std::string("WorkloadThread stopping at end of subinterval.\n"));
 
@@ -631,7 +631,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                     close_all_fds();
 
-                    ivyslave_main_posted_command = false;
+                    ivydriver_main_posted_command = false;
 
                     state=ThreadState::waiting_for_command;
                     wkld_lk.unlock();
@@ -645,10 +645,10 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             // indent level in loop running subintervals
                 // indent level in locked section at subinterval switchover
 
-				if (MainThreadCommand::keep_going != ivyslave_main_says)
+				if (MainThreadCommand::keep_going != ivydriver_main_says)
 				{
 				    std::ostringstream o; o <<" <Error> WorkloadThread only looks for \"stop\" or \"keep_going\" commands at end of subinterval.  Received "
-				        << mainThreadCommandToString(ivyslave_main_says) << ".  Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
+				        << mainThreadCommandToString(ivydriver_main_says) << ".  Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
 					wkld_lk.unlock();
 				    die_saying(o.str());
 				}
@@ -692,7 +692,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 bool WorkloadThread::linux_AIO_driver_run_subinterval()
 // see also https://code.google.com/p/kernel/wiki/AIOUserGuide
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { wt_callcount_linux_AIO_driver_run_subinterval++; if (wt_callcount_linux_AIO_driver_run_subinterval <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << core << ':' << wt_callcount_linux_AIO_driver_run_subinterval << ") ";
     o << "Entering WorkloadThread::linux_AIO_driver_run_subinterval()."; log(slavethreadlogfile,o.str()); } }
@@ -743,7 +743,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         //   - end of subinterval
         //   - time to start next scheduled I/O over my TestLUNs, if there is a scheduled (not IOPS=max) I/O.
 
-        if (ivyslave.spinloop) goto top_of_loop;
+        if (ivydriver.spinloop) goto top_of_loop;
 
 
 
@@ -803,7 +803,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         goto top_of_loop;
     }
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     log_bookmark_counters();
 #endif
 
@@ -813,7 +813,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
 void WorkloadThread::cancel_stalled_IOs()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { wt_callcount_cancel_stalled_IOs++; if (wt_callcount_cancel_stalled_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << core << ':' << wt_callcount_cancel_stalled_IOs << ") ";
     o << "Entering WorkloadThread::cancel_stalled_IOs()."; log(slavethreadlogfile,o.str()); } }
@@ -842,7 +842,7 @@ void WorkloadThread::cancel_stalled_IOs()
 
 unsigned int WorkloadThread::start_IOs()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { wt_callcount_start_IOs++; if (wt_callcount_start_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << core << ':' << wt_callcount_start_IOs << ") ";
     o << "Entering WorkloadThread::start_IOs().";log(slavethreadlogfile,o.str()); } }
@@ -852,7 +852,7 @@ unsigned int WorkloadThread::start_IOs()
 
     std::vector<TestLUN*>::iterator it = pTestLUN_start_IOs_bookmark;
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     (*it)->start_IOs_bookmark_count++;
 #endif
 
@@ -862,7 +862,7 @@ unsigned int WorkloadThread::start_IOs()
     {
         TestLUN* pTestLUN = *it;
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
         pTestLUN->start_IOs_body_count++;
 #endif
 
@@ -894,7 +894,7 @@ unsigned int WorkloadThread::start_IOs()
 
 unsigned int WorkloadThread::reap_IOs()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { wt_callcount_reap_IOs++; if (wt_callcount_reap_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << core << ':' << wt_callcount_reap_IOs << ") ";
     o << "Entering WorkloadThread::reap_IOs()."; log(slavethreadlogfile,o.str()); } }
@@ -904,7 +904,7 @@ unsigned int WorkloadThread::reap_IOs()
 
     std::vector<TestLUN*>::iterator itr = pTestLUN_reap_IOs_bookmark;
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     (*itr)->reap_IOs_bookmark_count++;
 #endif
 
@@ -995,7 +995,7 @@ unsigned int WorkloadThread::reap_IOs()
     {
         TestLUN* pTestLUN = *itr;
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
         pTestLUN->reap_IOs_body_count++;
 #endif
 
@@ -1023,7 +1023,7 @@ unsigned int WorkloadThread::reap_IOs()
 
 unsigned int WorkloadThread::pop_and_process_an_Eyeo()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { wt_callcount_pop_and_process_an_Eyeo++; if (wt_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << core << ':' << wt_callcount_pop_and_process_an_Eyeo << ") ";
     o << "Entering WorkloadThread::pop_and_process_an_Eyeo()."; log(slavethreadlogfile,o.str()); } }
@@ -1033,7 +1033,7 @@ unsigned int WorkloadThread::pop_and_process_an_Eyeo()
 
     std::vector<TestLUN*>::iterator it = pTestLUN_pop_bookmark;
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     (*it)->pop_n_p_bookmark_count++;
 #endif
     unsigned int n {0};
@@ -1042,7 +1042,7 @@ unsigned int WorkloadThread::pop_and_process_an_Eyeo()
     {
         TestLUN* pTestLUN = (*it);
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
         pTestLUN->pop_n_p_body_count++;
 #endif
 
@@ -1067,7 +1067,7 @@ unsigned int WorkloadThread::pop_and_process_an_Eyeo()
 
 unsigned int WorkloadThread::generate_an_IO()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { wt_callcount_generate_an_IO++; if (wt_callcount_generate_an_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << core << ':' << wt_callcount_generate_an_IO << ") ";
     o << "Entering WorkloadThread::generate_an_IO()."; log(slavethreadlogfile,o.str()); } }
@@ -1077,7 +1077,7 @@ unsigned int WorkloadThread::generate_an_IO()
 
     auto it = pTestLUN_generate_bookmark;
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     (*it)->generate_bookmark_count++;
 #endif
 
@@ -1087,7 +1087,7 @@ unsigned int WorkloadThread::generate_an_IO()
     {
         TestLUN* pTestLUN = (*it);
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
         pTestLUN->generate_body_count++;
 #endif
 
@@ -1112,13 +1112,13 @@ unsigned int WorkloadThread::generate_an_IO()
 
 void WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { wt_callcount_catch_in_flight_IOs_after_last_subinterval++; if (wt_callcount_catch_in_flight_IOs_after_last_subinterval <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << core << ':' << wt_callcount_catch_in_flight_IOs_after_last_subinterval << ") ";
     o << "Entering WorkloadThread::catch_in_flight_IOs_after_last_subinterval() for core " << core << "."; log(slavethreadlogfile,o.str()); } }
 #endif
 
-    ivytime half_a_subinterval = ivytime(ivyslave.subinterval_duration.getlongdoubleseconds() / 2.0);
+    ivytime half_a_subinterval = ivytime(ivydriver.subinterval_duration.getlongdoubleseconds() / 2.0);
 
     ivytime limit_time;
     limit_time.setToNow();
@@ -1198,8 +1198,8 @@ void WorkloadThread::post_Error_for_main_thread_to_say(const std::string& msg)
     else                   { s = e + msg; }
 
     {
-        std::lock_guard<std::mutex> lk_guard(*p_ivyslave_main_mutex);
-        ivyslave.workload_thread_error_messages.push_back(s);
+        std::lock_guard<std::mutex> lk_guard(*p_ivydriver_main_mutex);
+        ivydriver.workload_thread_error_messages.push_back(s);
     }
 }
 
@@ -1214,8 +1214,8 @@ void WorkloadThread::post_Warning_for_main_thread_to_say(const std::string& msg)
     else                   { s = w + msg; }
 
     {
-        std::lock_guard<std::mutex> lk_guard(*p_ivyslave_main_mutex);
-        ivyslave.workload_thread_warning_messages.push_back(s);
+        std::lock_guard<std::mutex> lk_guard(*p_ivydriver_main_mutex);
+        ivydriver.workload_thread_warning_messages.push_back(s);
     }
 }
 
@@ -1230,7 +1230,7 @@ void WorkloadThread::close_all_fds()
     close(event_fd);
 }
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
 void WorkloadThread::log_bookmark_counters()
 {
     std::ostringstream o;

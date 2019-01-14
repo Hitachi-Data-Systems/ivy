@@ -29,7 +29,7 @@
 #include "TestLUN.h"
 #include "DedupePatternRegulator.h"
 
-//#define IVYSLAVE_TRACE
+//#define IVYDRIVER_TRACE
 
 typedef long double pattern_float_type;
 
@@ -127,7 +127,7 @@ public:
     uint64_t workload_cumulative_launch_count {0};
     ivy_float workload_weighted_IOPS_max_skew_progress {0.0};
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     unsigned int workload_callcount_prepare_to_run {0};
     unsigned int workload_callcount_build_Eyeos {0};
     unsigned int workload_callcount_switchover {0};

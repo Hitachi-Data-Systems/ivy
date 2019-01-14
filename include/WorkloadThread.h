@@ -64,7 +64,7 @@ public:
 // variables
     std::string slavethreadlogfile {};
 
-	std::mutex* p_ivyslave_main_mutex;
+	std::mutex* p_ivydriver_main_mutex;
 
 	pid_t my_pid;
 	pid_t my_tid;
@@ -84,9 +84,9 @@ public:
 	std::mutex slaveThreadMutex;
 	std::condition_variable slaveThreadConditionVariable;
 
-	bool ivyslave_main_posted_command = false;
+	bool ivydriver_main_posted_command = false;
 
-	MainThreadCommand ivyslave_main_says {MainThreadCommand::die};
+	MainThreadCommand ivydriver_main_says {MainThreadCommand::die};
 
 	ThreadState state {ThreadState::initial};
 
@@ -127,7 +127,7 @@ public:
     unsigned int workload_thread_queue_depth {0};
     unsigned int workload_thread_max_queue_depth {0};
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     unsigned int wt_callcount_linux_AIO_driver_run_subinterval {0};
     unsigned int wt_callcount_cancel_stalled_IOs {0};
     unsigned int wt_callcount_start_IOs {0};
@@ -145,7 +145,7 @@ public:
     uint64_t xorshift1024star();
 
 	std::string stateToString();
-	std::string ivyslave_main_saysToString();
+	std::string ivydriver_main_saysToString();
 	void WorkloadThreadRun();
 	bool linux_AIO_driver_run_subinterval();
 	void catch_in_flight_IOs_after_last_subinterval();
@@ -165,7 +165,7 @@ public:
 
     void close_all_fds();
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     void log_bookmark_counters();
 #endif
 

@@ -302,7 +302,7 @@ int main (int argc, char* argv[])
 	}
 
 	{
-		// make a line just like we get from ivyslave
+		// make a line just like we get from ivydriver
 		ostringstream o;
 		o << "<" << createThreadKey << ">"
 			<< a.toString()

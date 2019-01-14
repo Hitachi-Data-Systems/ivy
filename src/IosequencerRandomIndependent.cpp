@@ -46,7 +46,7 @@ using namespace std;
 #include "IosequencerRandomIndependent.h"
 #include "WorkloadThread.h"
 
-//#define IVYSLAVE_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
+//#define IVYDRIVER_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
                            // and so you can turn it off and on for each source file.
 
 //
@@ -80,7 +80,7 @@ using namespace std;
 
 bool IosequencerRandomIndependent::generate(Eyeo& slang)
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
     o << "Entering IosequencerRandomIndependent::generate() for " << workloadID << " - Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
@@ -117,7 +117,7 @@ bool IosequencerRandomIndependent::generate(Eyeo& slang)
 		previous_scheduled_time = slang.scheduled_time;
 
 	}
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
     o << "Exiting IosequencerRandomIndependent::generate() for " << workloadID << " - updated Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif

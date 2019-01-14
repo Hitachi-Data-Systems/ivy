@@ -33,8 +33,8 @@
 					<Add before="touch include/ivybuilddate.h" />
 				</ExtraCommands>
 			</Target>
-			<Target title="ivyslave">
-				<Option output="bin/ivyslave" prefix_auto="1" extension_auto="1" />
+			<Target title="ivydriver">
+				<Option output="bin/ivydriver" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
@@ -165,8 +165,8 @@
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="all" targets="ivymaster;ivyslave;clear_hung_ivy_threads;ivyenglib;" />
-			<Add alias="allall" targets="ivymaster;ivyslave;clear_hung_ivy_threads;csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
+			<Add alias="all" targets="ivymaster;ivydriver;clear_hung_ivy_threads;ivyenglib;" />
+			<Add alias="allall" targets="ivymaster;ivydriver;clear_hung_ivy_threads;csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
 			<Add alias="csv_utilities" targets="csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
 		</VirtualTargets>
 		<Compiler>
@@ -186,88 +186,88 @@
 		</Linker>
 		<Unit filename="../LUN_discovery/include/printableAndHex.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="../LUN_discovery/src/printableAndHex.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/Accumulators_by_io_type.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/AttributeNameCombo.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/Count_by_workloadID.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/DedupePatternRegulator.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/Eyeo.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/GatherData.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/HM800_tables.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/Iosequencer.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/IosequencerInput.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/IosequencerInputRollup.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/IosequencerRandom.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/IosequencerRandomIndependent.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/IosequencerRandomSteady.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/IosequencerSequential.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/JSON_select.h">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/LDEVset.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="test_LDEVset" />
 		</Unit>
 		<Unit filename="include/LUN.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/LUNpointerList.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/LeastSquaresLine.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/ListOfNameEqualsValueList.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/ListOfWorkloadIDs.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/MeasureController.h">
 			<Option target="ivymaster" />
@@ -277,11 +277,11 @@
 		</Unit>
 		<Unit filename="include/NameEqualsValueList.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/ParameterValueLookupTable.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/RestBaseUri.h">
 			<Option target="ivymaster" />
@@ -309,79 +309,79 @@
 		</Unit>
 		<Unit filename="include/RollupInstance.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/RollupSet.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/RollupType.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/RunningStat.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/SequenceOfSubintervalRollup.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/Subinterval.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/SubintervalOutput.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/SubintervalRollup.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/Subinterval_CPU.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/Subinterval_detail_line.h">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/Subsystem.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/TestLUN.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/Test_config_thumbnail.h">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/Workload.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/WorkloadID.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/WorkloadThread.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/WorkloadTracker.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/WorkloadTrackerPointerList.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/WorkloadTrackers.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/aio_abi.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/csvfile.h">
 			<Option target="ivymaster" />
@@ -398,7 +398,7 @@
 		</Unit>
 		<Unit filename="include/discover_luns.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/hosts_list.h">
 			<Option target="ivymaster" />
@@ -409,15 +409,18 @@
 		</Unit>
 		<Unit filename="include/ivybuilddate.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/ivydefines.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
+		</Unit>
+		<Unit filename="include/ivydriver.h">
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/ivyhelpers.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="csv_rows" />
 			<Option target="csv_header_columns" />
 			<Option target="csv_columns_in_row" />
@@ -431,42 +434,39 @@
 		</Unit>
 		<Unit filename="include/ivylinuxcpubusy.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
-		</Unit>
-		<Unit filename="include/ivyslave.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/ivytime.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="clear_hung_ivy_threads" />
 			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="include/pattern.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/pipe_driver_subthread.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/pipe_line_reader.h">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/run_subinterval_sequence.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/skew_weight.h">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="include/studentsTdistribution.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="include/subsystem_summary_data.h">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="parser/include/Arg.h">
 			<Option target="ivymaster" />
@@ -553,21 +553,21 @@
 		</Unit>
 		<Unit filename="src/Accumulators_by_io_type.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/AttributeNameCombo.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/Count_by_workloadID.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/DedupePatternRegulator.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/Eyeo.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/GatherData.cpp">
 			<Option target="ivymaster" />
@@ -576,39 +576,39 @@
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/Iosequencer.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/IosequencerInput.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/IosequencerInputRollup.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/IosequencerRandom.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/IosequencerRandomIndependent.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/IosequencerRandomSteady.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/IosequencerSequential.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/JSON_select.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/LDEVset.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="test_LDEVset" />
 		</Unit>
 		<Unit filename="src/LUN.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/LUNpointerList.cpp">
 			<Option target="ivymaster" />
@@ -618,7 +618,7 @@
 		</Unit>
 		<Unit filename="src/ListOfWorkloadIDs.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/MeasureController.cpp">
 			<Option target="ivymaster" />
@@ -666,11 +666,11 @@
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/Subinterval.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/SubintervalOutput.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/SubintervalRollup.cpp">
 			<Option target="ivymaster" />
@@ -679,28 +679,28 @@
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/TestLUN.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/Test_config_thumbnail.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/Workload.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/WorkloadID.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/WorkloadThread.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/WorkloadTracker.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/WorkloadTrackerPointerList.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/clear_hung_ivy_threads.cpp">
 			<Option target="clear_hung_ivy_threads" />
@@ -758,7 +758,7 @@
 		</Unit>
 		<Unit filename="src/discover_luns.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/hosts/hosts.l">
 			<Option compile="1" />
@@ -783,9 +783,12 @@
 		<Unit filename="src/ivy_engine_startup.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="src/ivydriver.cpp">
+			<Option target="ivydriver" />
+		</Unit>
 		<Unit filename="src/ivyhelpers.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="clear_hung_ivy_threads" />
 			<Option target="csv_rows" />
 			<Option target="csv_header_columns" />
@@ -801,15 +804,12 @@
 			<Option target="remove_empty_columns" />
 		</Unit>
 		<Unit filename="src/ivylinuxcpubusy.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="ivymaster" />
-		</Unit>
-		<Unit filename="src/ivyslave.cpp">
-			<Option target="ivyslave" />
 		</Unit>
 		<Unit filename="src/ivytime.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 			<Option target="clear_hung_ivy_threads" />
 			<Option target="csv_rows" />
 			<Option target="csv_header_columns" />
@@ -833,7 +833,7 @@
 		</Unit>
 		<Unit filename="src/pattern.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/pipe_driver_gather.cpp">
 			<Option target="ivymaster" />
@@ -842,7 +842,7 @@
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/pipe_line_reader.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/prepare_dedupe.cpp">
 			<Option target="ivymaster" />
@@ -872,7 +872,7 @@
 		</Unit>
 		<Unit filename="src/studentsTdistribution.cpp">
 			<Option target="ivymaster" />
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/subsystem_summary_data.cpp">
 			<Option target="ivymaster" />
@@ -896,7 +896,7 @@
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="src/unique_words.cpp">
-			<Option target="ivyslave" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Extensions>
 			<code_completion />

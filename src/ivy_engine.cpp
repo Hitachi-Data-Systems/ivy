@@ -360,11 +360,11 @@ void ivy_engine::kill_subthreads_and_exit()
 void ivy_engine::write_clear_script()
 {
     // This writes a script to invoke the "clear_hung_ivy_threads" executable on this ivy master host,
-    // as well as once for each distinct IP address for ivyslave hosts.
+    // as well as once for each distinct IP address for ivydriver hosts.
 
     std::string my_IP;
 
-    std::map<std::string,std::string> other_ivyslave_hosts; // <IP address, ivyscript hostname>
+    std::map<std::string,std::string> other_ivydriver_hosts; // <IP address, ivyscript hostname>
 
     const unsigned int max_hostnamesize = 100;
     char my_hostname[max_hostnamesize];
@@ -454,7 +454,7 @@ void ivy_engine::write_clear_script()
         if (p_hostent == NULL)
         {
             std::ostringstream o;
-            o << method << "Unable to get IP address for ivyslave host (\"" << slavehost << "\"." << std::endl;
+            o << method << "Unable to get IP address for ivydriver host (\"" << slavehost << "\"." << std::endl;
             o << "Failed trying to build " << scriptname << std::endl;
             std::cout << o.str();
             log(masterlogfile, o.str());
@@ -466,7 +466,7 @@ void ivy_engine::write_clear_script()
         if (p_hostent->h_addrtype != AF_INET)
         {
             std::ostringstream o;
-            o << method << "For ivyslave host \"" << slavehost << "\", address is not AF_INET, not an internet IP address." << std::endl;
+            o << method << "For ivydriver host \"" << slavehost << "\", address is not AF_INET, not an internet IP address." << std::endl;
             o << "Failed trying to build " << scriptname << std::endl;
             std::cout << o.str();
             log(masterlogfile, o.str());
@@ -479,11 +479,11 @@ void ivy_engine::write_clear_script()
         {
             std::ostringstream o;
             o << inet_ntoa( *p_in_addr);
-            std::string ivyslave_IP = o.str();
-            auto it = other_ivyslave_hosts.find(ivyslave_IP);
-            if ( (0 != my_IP.compare(ivyslave_IP)) && (it == other_ivyslave_hosts.end()) )
+            std::string ivydriver_IP = o.str();
+            auto it = other_ivydriver_hosts.find(ivydriver_IP);
+            if ( (0 != my_IP.compare(ivydriver_IP)) && (it == other_ivydriver_hosts.end()) )
             {
-                other_ivyslave_hosts[ivyslave_IP] = slavehost;
+                other_ivydriver_hosts[ivydriver_IP] = slavehost;
                 oaf << std::endl
                     << "echo" << std::endl
                     << "echo -----------------------------" << std::endl
@@ -495,7 +495,7 @@ void ivy_engine::write_clear_script()
             }
             else
             {
-                oaf << "# duplicate ivyslave host " << slavehost << " ( " << ivyslave_IP << " )" << std::endl;
+                oaf << "# duplicate ivydriver host " << slavehost << " ( " << ivydriver_IP << " )" << std::endl;
             }
         }
     }
@@ -1309,7 +1309,7 @@ ivy_engine::createWorkload(
 
 	// The same WorkloadID in text form is used as the lookup key
 	//	- in ivymaster to lookup a WorkloadTracker object
-	//	- in ivyslave to lookup an I/O driver subthread
+	//	- in ivydriver to lookup an I/O driver subthread
 
 	// sun159+/dev/sdc+poink
 
@@ -1831,22 +1831,22 @@ ivy_engine::edit_rollup(const std::string& rollupText, const std::string& origin
 			}
 		}
 
-		// We make a ListOfWorkloadIDs for each test host, as this has the toString() and fromString() methods to send over the pipe to ivyslave at the other end;
+		// We make a ListOfWorkloadIDs for each test host, as this has the toString() and fromString() methods to send over the pipe to ivydriver at the other end;
 		// Then on the other end these are also the keys for looking up the iosequencer threads to post the parameter updates to.
 
 //   XXXXXXX  And we are going to need to add "shorthand" for ranges of LDEVs, or hostnames, or PGs, ...
 
 		// Then once we have the map ListOfWorkloadIDs[ivyscript_hostname] all built successfully
-		// before we start sending any updates to ivyslave hosts we first apply the parameter updates
+		// before we start sending any updates to ivydriver hosts we first apply the parameter updates
 		// on the local copy we keep of the "next" subinterval IosequencerInput objects.
 
 		// We fail out with an error message if there is any problem applying the parameters locally.
 
 		// Then when we know that these particular parameters apply successfully to these particular WorkloadIDs,
-		// and we do local applys in parallel, of course, only then do we send the command to ivyslave to
+		// and we do local applys in parallel, of course, only then do we send the command to ivydriver to
 		// update parameters.
 
-		// We send out exactly the same command whether ivyslave is running or whether it's stopped waiting for commands.
+		// We send out exactly the same command whether ivydriver is running or whether it's stopped waiting for commands.
 		// - if it's running, the parameters will be applied to both the running IosequencerInput and the non-running one.
 		// - if it's stopped, the parameters will be applied to both subinterval objects which will be subintervals 0 and 1.
 
@@ -3231,12 +3231,12 @@ ivy_engine::shutdown_subthreads()
 	{
 		{
 			std::ostringstream o;
-			o << "scp " << SLAVEUSERID << '@' << host << ":" << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << host << "* " << testFolder << "/logs";
+			o << "scp " << SLAVEUSERID << '@' << host << ":" << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "/log.ivydriver." << host << "* " << testFolder << "/logs";
 			if (0 == system(o.str().c_str()))
 			{
 				log(masterlogfile,std::string("success: ")+o.str()+std::string("\n"));
 				std::ostringstream rm;
-				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << host << "*";
+				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "/log.ivydriver." << host << "*";
 				if (0 == system(rm.str().c_str()))
 					log(masterlogfile,std::string("success: ")+rm.str()+std::string("\n"));
 				else

@@ -53,7 +53,7 @@ public:
 // The reason this overrides the "timeout" setting is that it makes sequential_fill=on
 // easier / more reliable to use.
 
-// When ivyslave gets "go", it resets to false "wrapping".
+// When ivydriver gets "go", it resets to false "wrapping".
 //
 // Each IosequencerSequential instance keeps separate boolean flags to track
 // whether they have wrapped around yet separately for wrapping around max_LBA

@@ -17,7 +17,7 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-// ivyslave.h
+// ivydriver.h
 
 
 #include <algorithm>
@@ -78,9 +78,9 @@ void initialize_io_time_clip_levels(); // see Accumulators_by_io_type.cpp
 extern std::string printable_ascii;
 extern bool routine_logging;
 
-struct IvySlave
+struct IvyDriver
 {
-        // There is one external instance "ivyslave" of this class
+        // There is one external instance "ivydriver" of this class
         // that is visible both to the main thread and to WorkloadThreads.
 
         // It's the main thread that builds and owns the Workload-TestLUN data
@@ -95,10 +95,10 @@ struct IvySlave
 
         // Thus there is a hierarchy:
 
-        //   There is one externally visible instance of IvySlave called ivyslave.
-        //        ivyslave has WorkloadThreads, one per core.
+        //   There is one externally visible instance of IvyDriver called ivydriver.
+        //        ivydriver has WorkloadThreads, one per core.
         //            a WorkloadThread has an assigned set of pointers to TestLUNs
-        //        ivyslave has a map of TestLUNs which each have one or more Workloads.
+        //        ivydriver has a map of TestLUNs which each have one or more Workloads.
 
         // WorkloadThreads are only used during a "go" and then only if they have any assigned TestLUNs.
 
@@ -109,7 +109,7 @@ struct IvySlave
 
     std::string hostname;
 
-    std::mutex ivyslave_main_mutex;
+    std::mutex ivydriver_main_mutex;
 
     std::map<unsigned int,WorkloadThread*> all_workload_threads {};
 
@@ -122,8 +122,8 @@ struct IvySlave
     ivytime
         test_start_time,
         subinterval_duration,
-        ivyslave_view_subinterval_start,
-        ivyslave_view_subinterval_end,
+        ivydriver_view_subinterval_start,
+        ivydriver_view_subinterval_end,
         lasttime;
 
     int
@@ -204,11 +204,11 @@ struct IvySlave
     void log_iosequencer_settings(const std::string&);
 };
 
-extern struct IvySlave ivyslave;
+extern struct IvyDriver ivydriver;
 
 
 
-// ivyslave gets commands from pipe_driver_subthread:
+// ivydriver gets commands from pipe_driver_subthread:
 //
 // "[Die, Earthling!]" kills all workload subthreads and says dying words for any "died" or "normally_exited" threads
 //      - we say "[what?]" followed by a line for each "died" or "normally_exited" with last_words.
@@ -240,9 +240,9 @@ extern struct IvySlave ivyslave;
 //        Then we send up the sequential progres line and the latencies line.
 //
 // "Go!" followed by subintervalseconds as ivytime.toString() format: <seconds,nanoseconds>
-//     We get the workload thread look and post "ivyslave posted command" "start" and drop the lock
-//     Then we wait for the workload thread to turn off "ivyslave posted command",
-//     then when we have the lock, we post "keep_going", and turn on ivyslave posted command.
+//     We get the workload thread look and post "ivydriver posted command" "start" and drop the lock
+//     Then we wait for the workload thread to turn off "ivydriver posted command",
+//     then when we have the lock, we post "keep_going", and turn on ivydriver posted command.
 //     This is how the workload threads keep running at the end of the first subinterval.
 //
 // "continue" or "cooldown"
@@ -266,14 +266,14 @@ extern struct IvySlave ivyslave;
 
 //There are three views of subinterval numbers and starting/ending times:
 //
-//    - The ivyslave_view is for the purposes of the ivyslave main thread.
+//    - The ivydriver_view is for the purposes of the ivydriver main thread.
 //
-//        - for example, "test start time" is an ivyslave_view item, that is
+//        - for example, "test start time" is an ivydriver_view item, that is
 //          referenced by all threads.
 //
-//        - ivyslave_view subinterval numbers and times are what you typically
-//          use in ivyslave main thread log messages, and would reflect
-//          where the ivyslave main thread was in the subinterval cycle.
+//        - ivydriver_view subinterval numbers and times are what you typically
+//          use in ivydriver main thread log messages, and would reflect
+//          where the ivydriver main thread was in the subinterval cycle.
 //
 //    - The thread_view is for the purposes of a WorkloadThread.
 //

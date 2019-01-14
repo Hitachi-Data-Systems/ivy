@@ -141,7 +141,7 @@ std::pair<bool /*success*/, std::string /* message */>
     if (!routine_logging)
     {
         std::ostringstream o;
-        o << "For logging of routine (non-error) events, and to record the conversation with each ivyslave/ivy_cmddev, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n";
+        o << "For logging of routine (non-error) events, and to record the conversation with each ivydriver/ivy_cmddev, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n";
         log(masterlogfile,o.str());
     }
 
@@ -270,7 +270,7 @@ std::pair<bool /*success*/, std::string /* message */>
     {
         std::ostringstream o;
         o << std::endl << "Note:" << std::endl
-            << "Sometimes the ssh command to start up ivyslave on a test host can take a long time when waiting for DNS timeouts.  "
+            << "Sometimes the ssh command to start up ivydriver on a test host can take a long time when waiting for DNS timeouts.  "
             << "This can be speeded up by editing /etc/nsswitch.conf / resolv.conf to use /etc/hosts first, or options for the sshd daemon can be edited; search for \"ssh login timeout\"." << std::endl << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
@@ -304,9 +304,9 @@ std::pair<bool /*success*/, std::string /* message */>
                 else
                 {
                     std::ostringstream o;
-                    o << "Aborting - unsuccessful startup for ivyslave on host " << pear.first << ".  Reason: \"" << pear.second->commandErrorMessage << "\"." << std::endl;
+                    o << "Aborting - unsuccessful startup for ivydriver on host " << pear.first << ".  Reason: \"" << pear.second->commandErrorMessage << "\"." << std::endl;
                     o << std::endl << "Usually if try to run ivy again, it will work the next time.  Don\'t know why this happens." << std::endl;
-                    o << std::endl << "Run the \"clear_hung_ivy_threads.sh\" script to clear any hung ivy / ivyslave / ivy_cmddev threads on the ivy master host and all test hosts." << std::endl;
+                    o << std::endl << "Run the \"clear_hung_ivy_threads.sh\" script to clear any hung ivy / ivydriver / ivy_cmddev threads on the ivy master host and all test hosts." << std::endl;
                     std::cout << o.str();
                     log(masterlogfile,o.str());
                     u_lk.unlock();
@@ -458,7 +458,7 @@ std::pair<bool /*success*/, std::string /* message */>
     // Which means - for each Hitachi RAID subsystem, use the first command device
     // in commandDeviceLUNs that leads to that subsystem and start an
     // pipe_driver_subthread, which fires up the ivy_cmddev executable remotely via ssh
-    // communicating via stdin/stdout pipes the same way we communicate with remote ivyslave instances.
+    // communicating via stdin/stdout pipes the same way we communicate with remote ivydriver instances.
 
     for (auto& pear : subsystems)
     {

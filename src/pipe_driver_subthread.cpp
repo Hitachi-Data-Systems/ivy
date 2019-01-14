@@ -108,7 +108,7 @@ void pipe_driver_subthread::send_and_get_OK(std::string s, const ivytime timeout
     if (0 != std::string("<OK>").compare(r))
     {
         std::ostringstream o;
-        o << "For host " << ivyscript_hostname << ", sent command \"" << s << "\" to ivyslave, and was expecting ivyslave to respond with <OK> but instead got \"" << r << "\".";
+        o << "For host " << ivyscript_hostname << ", sent command \"" << s << "\" to ivydriver, and was expecting ivydriver to respond with <OK> but instead got \"" << r << "\".";
         throw std::runtime_error(o.str());
     }
     return;
@@ -142,7 +142,7 @@ std::string pipe_driver_subthread::send_and_clip_response_upto(std::string s, st
     if ( r.length() < pattern.length() )
     {
         std::ostringstream o;
-        o << "For host " << ivyscript_hostname << ", sent command \"" << s << "\" to ivyslave, and was expecting the ivyslave response to contain \"" << pattern << "\" but instead got \"" << r << "\".";
+        o << "For host " << ivyscript_hostname << ", sent command \"" << s << "\" to ivydriver, and was expecting the ivydriver response to contain \"" << pattern << "\" but instead got \"" << r << "\".";
         throw std::runtime_error(o.str());
     }
 
@@ -158,7 +158,7 @@ std::string pipe_driver_subthread::send_and_clip_response_upto(std::string s, st
     }
     {
         std::ostringstream o;
-        o << "For host " << ivyscript_hostname << ", sent command \"" << s << "\" to ivyslave, and was expecting the ivyslave response to contain \"" << pattern << "\" but instead got \"" << r << "\".";
+        o << "For host " << ivyscript_hostname << ", sent command \"" << s << "\" to ivydriver, and was expecting the ivydriver response to contain \"" << pattern << "\" but instead got \"" << r << "\".";
         throw std::runtime_error(o.str());
     }
     return ""; //paranoia in case compiler complains
@@ -182,14 +182,14 @@ void pipe_driver_subthread::send_string(std::string s)
     if (-1 == rc)
     {
         ostringstream o;
-        o << "For host " << ivyscript_hostname << ", write() for string into pipe to ivyslave failed errno = " << errno << " - " << strerror(errno) << std::endl;
+        o << "For host " << ivyscript_hostname << ", write() for string into pipe to ivydriver failed errno = " << errno << " - " << strerror(errno) << std::endl;
         throw std::runtime_error(o.str());
     }
 
     if ( s.length() != ((unsigned int) rc) )
     {
         ostringstream o;
-        o << "For host " << ivyscript_hostname << ", write() for string into pipe to ivyslave only wrote " << rc << " bytes out of " << s.length() << "." << std::endl;
+        o << "For host " << ivyscript_hostname << ", write() for string into pipe to ivydriver only wrote " << rc << " bytes out of " << s.length() << "." << std::endl;
         throw std::runtime_error(o.str());
     }
 
@@ -337,7 +337,7 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
             {
                 ostringstream logmsg;
                 logmsg << "For host " << ivyscript_hostname << ", timeout (" << timeout.format_as_duration_HMMSSns()
-                << ") reading from pipe to remotely executing ivyslave instance.  "
+                << ") reading from pipe to remotely executing ivydriver instance.  "
                 << "start=" << start.format_as_datetime_with_ns() << ", now=" << now.format_as_datetime_with_ns()
                     << "  " << __FILE__ << " line " << __LINE__;
                 log(logfilename,logmsg.str());
@@ -481,15 +481,15 @@ std::string pipe_driver_subthread::get_line_from_pipe
     bool reading_echo_line
 )
 {
-    // This is a wrapper around the "real" get_line_from_pipe() that checks for when what ivyslave says starts with "<Error>".
+    // This is a wrapper around the "real" get_line_from_pipe() that checks for when what ivydriver says starts with "<Error>".
 
-    // If what ivyslave says starts with <Error>, in order to be able to catch multi-line error messages,
-    // then we keep additional reading lines from ivyslave if they are ready within .25 second.
+    // If what ivydriver says starts with <Error>, in order to be able to catch multi-line error messages,
+    // then we keep additional reading lines from ivydriver if they are ready within .25 second.
 
     // On seeing <Error>, after echoing the host it came from and the message itself to the console and the master log and the host log,
     // the pipe_driver subthread needs to signal ivymaster that an error has been logged and that it (ivymaster main thread) needs to kill all subtasks and exit.
 
-    // If what ivyslave says starts with <Warning> then we echo the line to the console and the log with the host it came from but
+    // If what ivydriver says starts with <Warning> then we echo the line to the console and the log with the host it came from but
     // then just loop back and read another line transparently to the caller.
 
     std::string s;
@@ -527,7 +527,7 @@ void pipe_driver_subthread::kill_ssh_and_harvest()
 void pipe_driver_subthread::orderSlaveToDie()
 {
     std::string response;
-    std::string result {"ivyslave exited upon command\n"};
+    std::string result {"ivydriver exited upon command\n"};
     try
     {
         response = send_and_clip_response_upto("[Die, Earthling!]\n", "[what?]", ivytime(5));
@@ -610,7 +610,7 @@ void pipe_driver_subthread::threadRun()
 
     // if parent - adjust piping for parent and wait for child to say something.
     //           - judge whether we are logged OK or not somehow.  Maybe we need a successful login prompt reference string that you could scrape.
-    //           - send a command line to fire up ivyslave
+    //           - send a command line to fire up ivydriver
     //           - wait (with timeout) for slave to emit an error message or report ready for duty.
     //           - send slave the starting / ending times.
     //           - send slave the LUN names
@@ -653,7 +653,7 @@ void pipe_driver_subthread::threadRun()
         }
         else
         {
-            logmsg << " to run ivyslave.";
+            logmsg << " to run ivydriver.";
         }
         log(logfilename, logmsg.str());
     }
@@ -735,7 +735,7 @@ void pipe_driver_subthread::threadRun()
             hitachi_product = pCmdDevLUN->attribute_value("Hitachi Product");
             {
                 ostringstream fn;
-                fn << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/log.ivyslave." << ivyscript_hostname << ".ivy_cmddev." << p_Hitachi_RAID_subsystem->serial_number << ".txt";
+                fn << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "/log.ivydriver." << ivyscript_hostname << ".ivy_cmddev." << p_Hitachi_RAID_subsystem->serial_number << ".txt";
                 remote_logfilename = fn.str();
             }
             if (routine_logging)
@@ -754,7 +754,7 @@ void pipe_driver_subthread::threadRun()
         }
         else
         {
-            cmd = m_s.path_to_ivy_executable + IVYSLAVE_EXECUTABLE;
+            cmd = m_s.path_to_ivy_executable + IVYDRIVER_EXECUTABLE;
             arg = ivyscript_hostname;
             {
                 ostringstream execl_cmd;
@@ -798,7 +798,7 @@ void pipe_driver_subthread::threadRun()
         if (original_pipe_capacity < 0)
         {
             ostringstream logmsg;
-            logmsg << "<Error> Failed getting original capacity of pipe from pipe_driver_subthread to ivyslave."
+            logmsg << "<Error> Failed getting original capacity of pipe from pipe_driver_subthread to ivydriver."
                 "  errno = " << errno << " - " << strerror(errno) << std::endl;
             log(logfilename, logmsg.str());
             close(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE]);
@@ -818,7 +818,7 @@ void pipe_driver_subthread::threadRun()
         if (routine_logging)
         {
             std::ostringstream x;
-            x << "Original capacity of pipe to ivyslave is " << original_pipe_capacity << std::endl;
+            x << "Original capacity of pipe to ivydriver is " << original_pipe_capacity << std::endl;
             log(logfilename, x.str());
         }
 
@@ -827,7 +827,7 @@ void pipe_driver_subthread::threadRun()
         if (resize_pipe_rc < 0)
         {
             ostringstream logmsg;
-            logmsg << "<Error> Failed setting capacity of pipe from pipe_driver_subthread to ivyslave to the value 128 Ki8."
+            logmsg << "<Error> Failed setting capacity of pipe from pipe_driver_subthread to ivydriver to the value 128 Ki8."
                 "  errno = " << errno << " - " << strerror(errno) << std::endl;
             log(logfilename, logmsg.str());
             close(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE]);
@@ -849,7 +849,7 @@ void pipe_driver_subthread::threadRun()
         if (updated_pipe_capacity < 0)
         {
             ostringstream logmsg;
-            logmsg << "<Error> Failed getting updated capacity of pipe from pipe_driver_subthread to ivyslave."
+            logmsg << "<Error> Failed getting updated capacity of pipe from pipe_driver_subthread to ivydriver."
                 "  errno = " << errno << " - " << strerror(errno) << std::endl;
             log(logfilename, logmsg.str());
             close(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE]);
@@ -869,7 +869,7 @@ void pipe_driver_subthread::threadRun()
         if (routine_logging)
         {
             std::ostringstream x;
-            x << "Updated capacity of pipe to ivyslave is " << updated_pipe_capacity << std::endl;
+            x << "Updated capacity of pipe to ivydriver is " << updated_pipe_capacity << std::endl;
             log(logfilename, x.str());
         }
 
@@ -966,7 +966,7 @@ void pipe_driver_subthread::threadRun()
                 std::ostringstream o;
                 o << "<Error> Remote ";
                 if (pCmdDevLUN) o << "ivy_cmddev";
-                else            o << "ivyslave";
+                else            o << "ivydriver";
                 o << " startup failure, saying \"" << prompt << "\"." << std::endl;
 
                 log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
@@ -998,7 +998,7 @@ void pipe_driver_subthread::threadRun()
             catch (std::runtime_error& reex)
             {
                 std::ostringstream o;
-                o << "\"send LUN header\" command sent to ivyslave failed saying \"" << reex.what() << "\"." << std::endl;
+                o << "\"send LUN header\" command sent to ivydriver failed saying \"" << reex.what() << "\"." << std::endl;
                 log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                 kill_ssh_and_harvest();
                 commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1017,7 +1017,7 @@ void pipe_driver_subthread::threadRun()
                 catch (std::runtime_error& reex)
                 {
                     std::ostringstream o;
-                    o << "\"send LUN\" command sent to ivyslave failed saying \"" << reex.what() << "\"." << std::endl;
+                    o << "\"send LUN\" command sent to ivydriver failed saying \"" << reex.what() << "\"." << std::endl;
                     log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                     kill_ssh_and_harvest();
                     commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1106,7 +1106,7 @@ void pipe_driver_subthread::threadRun()
                 // end of processing command device commands
 
                 else
-                // process commands to interact with a remote ivyslave instance
+                // process commands to interact with a remote ivydriver instance
                 {
                     if (0==std::string("[CreateWorkload]").compare(commandString))
                     {
@@ -1183,7 +1183,7 @@ void pipe_driver_subthread::threadRun()
                     (
                         startsWith(commandString,std::string("Go!"))
                         // In "Go!<5,0>"  the <5,0> is the subinterval length as an ivytime::toString() representation - <seconds,nanoseconds>
-                        // In "Go!<5,0>-spinloop" the optional "-spinloop" tells ivyslave workload threads to continuously check for things to do without ever waiting.
+                        // In "Go!<5,0>-spinloop" the optional "-spinloop" tells ivydriver workload threads to continuously check for things to do without ever waiting.
                         || 0==std::string("continue").compare(commandString)
                         || 0==std::string("cooldown").compare(commandString)
                         || 0==std::string("stop").compare(commandString)
@@ -1211,7 +1211,7 @@ void pipe_driver_subthread::threadRun()
                             ivytime latency = now - before_sending_command;
                             std::ostringstream o;
                             o << "At "<< latency.format_as_duration_HMMSSns() << " after sending \"" << commandString
-                                << "\" to ivyslave - did not get OK - failed failed saying \"" << reex.what() << "\"." << std::endl;
+                                << "\" to ivydriver - did not get OK - failed failed saying \"" << reex.what() << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1220,10 +1220,10 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
-                        ivytime ivyslave_said_OK;
-                        ivyslave_said_OK.setToNow();
+                        ivytime ivydriver_said_OK;
+                        ivydriver_said_OK.setToNow();
 
-                        ivytime latency = ivyslave_said_OK - before_sending_command;
+                        ivytime latency = ivydriver_said_OK - before_sending_command;
 
                         if (latency.getlongdoubleseconds() > (0.25 *m_s.subinterval_seconds))
                         {
@@ -1232,7 +1232,7 @@ void pipe_driver_subthread::threadRun()
                             o
                                 << " for host " << ivyscript_hostname
                                 << " the response \"OK\" was received with a latency of " << latency.format_as_duration_HMMSSns()
-                                << " after sending \"" << commandString << "\" to ivyslave"
+                                << " after sending \"" << commandString << "\" to ivydriver"
                                 << " at " << before_sending_command.format_as_datetime_with_ns() << "."
                                 << "  The OK response was received after more than 1/4 of subinterval_seconds."
                                 << std::endl;
@@ -1262,7 +1262,7 @@ void pipe_driver_subthread::threadRun()
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "Sending \"get subinterval result\" to ivyslave failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "Sending \"get subinterval result\" to ivydriver failed failed saying \"" << reex.what() << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1374,7 +1374,7 @@ void pipe_driver_subthread::threadRun()
                             {
                                 std::ostringstream o;
                                 o << "<Error> Subinterval length parameter subinterval_seconds may be too short.  For host " << ivyscript_hostname
-                                    << ", ivyslave received a workload thread detail line for the previous subinterval over one subinterval late." << std::endl;
+                                    << ", ivydriver received a workload thread detail line for the previous subinterval over one subinterval late." << std::endl;
                                 o << "This can also be caused if an ivy command device is on a subsystem port that is saturated with other (ivy) activity, making communication with the command device run very slowly." << std::endl;
 
                                 o << "now: "  << now.format_as_datetime_with_ns() << std::endl;
@@ -1649,7 +1649,7 @@ void pipe_driver_subthread::threadRun()
                         {
                             std::ostringstream o;
                             o << "<Error> Subinterval length parameter subinterval_seconds may be too short.  For host " << ivyscript_hostname
-                                << ", ivyslave received a workload thread detail line for the previous subinterval after the current subinterval was already over." << std::endl;
+                                << ", ivydriver received a workload thread detail line for the previous subinterval after the current subinterval was already over." << std::endl;
                             o << "This can also be caused if an ivy command device is on a subsystem port that is saturated with other (ivy) activity, making communication with the command device run very slowly." << std::endl;
                             o << "now: "  << now.format_as_datetime_with_ns() << std::endl;
                             o << m_s.subintervalStart.format_as_datetime_with_ns()
@@ -1695,9 +1695,9 @@ void pipe_driver_subthread::threadRun()
                         master_slave_cv.notify_all();
                         return;
                     }
-                    // end - processing ivyslave command
+                    // end - processing ivydriver command
                 }
-                // end of ivyslave command processing
+                // end of ivydriver command processing
 
                 commandComplete=true;
             }
@@ -1732,7 +1732,7 @@ void pipe_driver_subthread::threadRun()
         // Once our work is complete, we issue an scp command to copy the logs back from the remote host.
 
         std::ostringstream copycmd;
-        copycmd << "/usr/bin/scp " << IVYSLAVELOGFOLDERROOT IVYSLAVELOGFOLDER << "/ivyslave." << ivyscript_hostname << ".log* " << m_s.testFolder;
+        copycmd << "/usr/bin/scp " << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "/ivydriver." << ivyscript_hostname << ".log* " << m_s.testFolder;
         log(logfilename, std::string("copying logs from remote host \"")+copycmd.str()+std::string("\"\n"));
         if ( 0 == system(copycmd.str().c_str()) )
         {

@@ -47,14 +47,14 @@ using namespace std;
 #include "TestLUN.h"
 
 extern std::string printable_ascii;
-extern bool ivyslave_wrapping;
+extern bool ivydriver_wrapping;
 
-//#define IVYSLAVE_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
+//#define IVYDRIVER_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
                            // and so you can turn it off and on for each source file.
 
 bool IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
     o << "Entering IosequencerSequential::setFrom_IosequencerInput() for " << workloadID; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
@@ -84,7 +84,7 @@ bool IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 
 bool IosequencerSequential::generate(Eyeo& slang)
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
     o << "Entering IosequencerSequential::generate() for " << workloadID << " - initial Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
@@ -158,7 +158,7 @@ bool IosequencerSequential::generate(Eyeo& slang)
 		previous_scheduled_time = slang.scheduled_time;
 	}
 
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
     o << "Entering IosequencerSequential::generate() for " << workloadID << " - updated Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif

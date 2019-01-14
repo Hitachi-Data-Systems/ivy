@@ -39,7 +39,7 @@ discovered_LUNs::discovered_LUNs() {
 	//showluns_output="";
 }
 
-std::string get_ivyslave_path_part()
+std::string get_ivydriver_path_part()
 {
 #define MAX_FULLY_QUALIFIED_PATHNAME 511
     const size_t pathname_max_length_with_null = MAX_FULLY_QUALIFIED_PATHNAME + 1;
@@ -55,7 +55,7 @@ std::string get_ivyslave_path_part()
 
     fully_qualified = pathname_char;
 
-    std::string path_part_regex_string { R"ivy((.*/)(ivyslave[^/]*))ivy" };
+    std::string path_part_regex_string { R"ivy((.*/)(ivydriver[^/]*))ivy" };
     std::regex path_part_regex( path_part_regex_string );
 
     std::smatch entire_match;
@@ -72,7 +72,7 @@ std::string get_ivyslave_path_part()
 
 
 void discovered_LUNs::discover() {
-	showluns_output=GetStdoutFromCommand(get_ivyslave_path_part() + SHOWLUNS_CMD);
+	showluns_output=GetStdoutFromCommand(get_ivydriver_path_part() + SHOWLUNS_CMD);
 }
 
 discovered_LUNs::discovered_LUNs(std::string showluns_output) {

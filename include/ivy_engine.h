@@ -99,13 +99,13 @@ public:
 		// object and adds it to the end of "cpu_by_subinterval" which is stored here so that both
 		// the ivymaster main thread and the subthreads for each test host can access and modify it.
 
-		// At "Go" time and at the end of a subinterval, ivyslave captures Linux host CPU busy cumulative counters.
+		// At "Go" time and at the end of a subinterval, ivydriver captures Linux host CPU busy cumulative counters.
 
-		// At the end of every subinterval, ivyslave sends to ivymaster a package consisting
+		// At the end of every subinterval, ivydriver sends to ivymaster a package consisting
 		// of a CPU busy line, lines for each workload showing WorkloadID, input parameter data,
 		// and accumulated output data followed by an ending marker line.
 
-		// On the ivymaster host, as each ivyslave_hostname_thread receives a CPU data line from their remote ivyslave host,
+		// On the ivymaster host, as each ivydriver_hostname_thread receives a CPU data line from their remote ivydriver host,
 		// it gets the master lock and goes into ivy_engine and adds the CPU busy data for that host into
 		// the current Subinterval_CPU object put in cpu_by_subinterval by the ivymaster main thread at the top
 		// of the subinterval.

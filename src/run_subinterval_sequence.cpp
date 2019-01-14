@@ -225,7 +225,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     // On the other end, iosequencer threads are waiting to start.  This is because when you first
     // create the thread, it sets up the first two subintervals with the parameters specified,
-    // and then when a subinterval sequence ends, once ivyslave stops upon command and sends the last
+    // and then when a subinterval sequence ends, once ivydriver stops upon command and sends the last
     // subinterval detail lines, it will set up the first two subintervals to have identical subinterval
     // input parameters to the last completed subinterval.  This is a starting point for any ModifyWorkload
     // commands that may follow.
@@ -291,7 +291,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 // timed out.
 
                 std::ostringstream o;
-                o << "<Error> Timed out waiting to get acknowledgement from ivyslave of Go! - host " << pear.first
+                o << "<Error> Timed out waiting to get acknowledgement from ivydriver of Go! - host " << pear.first
                     << " at line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
                 log(m_s.masterlogfile,o.str());
                 m_s.kill_subthreads_and_exit();
@@ -391,7 +391,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     // timed out.
 
                     std::ostringstream o;
-                    o << "<Error> Timed out waiting to get acknowledgement from ivyslave of command \"" << pear.second->commandString
+                    o << "<Error> Timed out waiting to get acknowledgement from ivydriver of command \"" << pear.second->commandString
                         << "\" - host " << pear.first << std::endl
                         << "Source code reference line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
                     log(m_s.masterlogfile,o.str());
@@ -836,7 +836,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             pear.second->master_slave_cv.notify_all();
         }
 
-        // Wait for all ivyslaves to confirm continue, cooldown, or stop receipt
+        // Wait for all ivydrivers to confirm continue, cooldown, or stop receipt
         for (auto& pear : m_s.host_subthread_pointers)
         {
             {

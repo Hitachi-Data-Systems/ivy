@@ -26,7 +26,7 @@ class WorkloadID;
 
 class ListOfWorkloadIDs
 {
-	// this makes it easy to send a list of WorkloadIDs in text form over the ivymaster-ivyslave pipe.
+	// this makes it easy to send a list of WorkloadIDs in text form over the ivymaster-ivydriver pipe.
 private:
 	bool valid; // retains return code from last call to fromString()
 

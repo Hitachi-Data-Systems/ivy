@@ -52,22 +52,22 @@
 //      including transforming counter value deltas over successive gathers into rates.
 //
 //
-// commands for ivyslave
+// commands for ivydriver
 //
 // - "[CreateWorkload]"
-//      We send to ivyslave and wait for it to say OK
+//      We send to ivydriver and wait for it to say OK
 //
 // - "[EditWorkload]"
-//      We send to ivyslave and wait for it to say OK
+//      We send to ivydriver and wait for it to say OK
 //
 // - "[DeleteWorkload]"
-//      We send to ivyslave and wait for it to say OK
+//      We send to ivydriver and wait for it to say OK
 //
 // - "Go!<5,0>    - subinterval_seconds as seconds and nanoseconds.
 // - "continue"
 // - "cooldown"
 // - "stop"
-//      For each of these, we send to ivyslave and wait for it to say OK,
+//      For each of these, we send to ivydriver and wait for it to say OK,
 //      which means that the command has been delivered to all workload threads.
 //      Then we measure the times from the beginning of the subinterval
 //      that we received the OK.
@@ -152,7 +152,7 @@ private:
 
 public:
 	std::string extra_from_last_time{""};  // Used by get_line_from_pipe() to store
-	                                              // characters received from the ivyslave main thread that
+	                                              // characters received from the ivydriver main thread that
 	                                              // were past the end of the current line as marked by '\n'.
     std::string lun_csv_header;
 	std::ostringstream lun_csv_body;
@@ -169,7 +169,7 @@ public:
     std::map<std::string /* edit workload command text */, ListOfWorkloadIDs>
     workloads_by_text;
         // This is used to save up what we are later going to send.
-        // This minimizes the number of interlocks with ivyslave.
+        // This minimizes the number of interlocks with ivydriver.
     ListOfWorkloadIDs* p_edit_workload_IDs {nullptr};
 	ivytime commandStart, commandFinish;
 	std::string commandErrorMessage;
@@ -208,7 +208,7 @@ public:
 
 
 // ivy_cmddev variables:
-	LUN* pCmdDevLUN {nullptr};  // Non-null value says to run ivy_cmddev vs. running ivyslave.
+	LUN* pCmdDevLUN {nullptr};  // Non-null value says to run ivy_cmddev vs. running ivydriver.
 	Hitachi_RAID_subsystem* p_Hitachi_RAID_subsystem;
 
 	std::string cmddev_command {""};
@@ -225,7 +225,7 @@ public:
 	ivytime complete { ivytime(0) };
 	ivytime duration; // most recent "gather" duration.
 	ivytime time_in_hand_before_subinterval_end;
-        // This is the amount of time from when we receive the OK from ivyslave that all workload threads have
+        // This is the amount of time from when we receive the OK from ivydriver that all workload threads have
         // been posted with the "Go!" / "continue" / "cooldown" / "stop" command
         // until the end of the subinterval.
     std::vector<long double> gather_times_seconds;
@@ -235,6 +235,6 @@ public:
 	void process_ivy_cmddev_response(GatherData& gd, ivytime start); // throws std::invalid_argument, std::runtime_error
     void pipe_driver_gather(std::unique_lock<std::mutex>&);
     void process_cmddev_commands(std::unique_lock<std::mutex>&);
-    void process_ivyslave_commands(std::unique_lock<std::mutex>&);
+    void process_ivydriver_commands(std::unique_lock<std::mutex>&);
 };
 

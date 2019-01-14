@@ -34,7 +34,7 @@ public:
 		// (or to be running momentarily) remotely has two main jobs in life
 			// - Serve as a test bed for every parameter change update so that we can verify
 			//   that they apply cleanly to the iosequencer_input object for all target workload
-			//   before we start sending out the update to ivyslave remotes hosts.
+			//   before we start sending out the update to ivydriver remotes hosts.
 
 			// - Enable commands changing parameter values relative to their current values.
 			//   "increase IOPS by 20%

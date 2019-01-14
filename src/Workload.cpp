@@ -19,15 +19,15 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #include "Workload.h"
-#include "ivyslave.h"
+#include "ivydriver.h"
 #include "Iosequencer.h"
 #include "IosequencerRandom.h"
 #include "IosequencerRandomIndependent.h"
 #include "IosequencerRandomSteady.h"
 #include "IosequencerSequential.h"
 
-//#define IVYSLAVE_TRACE
-// IVYSLAVE_TRACE defined here in this source file rather than globally in ivydefines.h so that
+//#define IVYDRIVER_TRACE
+// IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
 //  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
 //  - you can turn on tracing separately for each class in its own source file.
 
@@ -36,7 +36,7 @@ Workload::Workload()
     p_current_subinterval      = & (subinterval_array[0]);
     p_current_IosequencerInput = & (subinterval_array[0].input);
     p_current_SubintervalOutput= & (subinterval_array[0].output);
-    p_my_iosequencer = nullptr; 
+    p_my_iosequencer = nullptr;
     dedupe_regulator = nullptr;
 }
 
@@ -50,7 +50,7 @@ Workload::~Workload()
 
 void Workload::prepare_to_run()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { workload_callcount_prepare_to_run++; if (workload_callcount_prepare_to_run <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_prepare_to_run << ") "
         << "            Entering Workload::prepare_to_run()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
@@ -70,7 +70,7 @@ void Workload::prepare_to_run()
         if ( subinterval_array[0].input.dedupe == 1.0 )
         {
             doing_dedupe=false;
-            block_seed = ( (uint64_t) std::hash<std::string>{}(workloadID.workloadID) ) ^ ivyslave.test_start_time.getAsNanoseconds();
+            block_seed = ( (uint64_t) std::hash<std::string>{}(workloadID.workloadID) ) ^ ivydriver.test_start_time.getAsNanoseconds();
         }
         else
         {
@@ -159,7 +159,7 @@ void Workload::prepare_to_run()
 
 void Workload::build_Eyeos()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { workload_callcount_build_Eyeos++; if (workload_callcount_build_Eyeos <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_build_Eyeos << ") "
         << "            Entering Workload::build_Eyeos()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
@@ -249,11 +249,11 @@ void Workload::build_Eyeos()
 
 void Workload::switchover()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { workload_callcount_switchover++; if (workload_callcount_switchover <= FIRST_FEW_CALLS)
         {
             ivytime n; n.setToNow();
-            ivytime seconds_ivytime = n - ivyslave.test_start_time;
+            ivytime seconds_ivytime = n - ivydriver.test_start_time;
 
             long double cumulative_launches_per_second = ((long double) workload_cumulative_launch_count)
                / seconds_ivytime.getlongdoubleseconds();
@@ -290,7 +290,7 @@ void Workload::switchover()
 unsigned int /* number of I/Os popped and processed.  */
     Workload::pop_and_process_an_Eyeo()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { workload_callcount_pop_and_process_an_Eyeo++; if (workload_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_pop_and_process_an_Eyeo << ") "
         << "            Entering Workload::pop_and_process_an_Eyeo()."; } }
@@ -348,7 +348,7 @@ unsigned int /* number of I/Os popped and processed.  */
         pWorkloadThread->dying_words = o.str();
         pWorkloadThread->state = ThreadState::died;
 		log(pWorkloadThread->slavethreadlogfile,o.str());
-		pWorkloadThread->ivyslave_main_posted_command = false;
+		pWorkloadThread->ivydriver_main_posted_command = false;
         pWorkloadThread->slaveThreadConditionVariable.notify_all();
         exit(-1);
     }
@@ -439,7 +439,7 @@ unsigned int /* number of I/Os popped and processed.  */
 
 	freeStack.push(p_dun);
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     if (workload_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS)
     {
         std::ostringstream o;
@@ -454,7 +454,7 @@ unsigned int /* number of I/Os popped and processed.  */
 
 Eyeo* Workload::front_launchable_IO(const ivytime& now)
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { workload_callcount_front_launchable_IO++; if (workload_callcount_front_launchable_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_front_launchable_IO << ") "
         << ")             Entering Workload::front_launchable_IO(" << now.format_as_datetime_with_ns() << ") " << brief_status(); log(pWorkloadThread->slavethreadlogfile,o.str()); }
@@ -472,7 +472,7 @@ Eyeo* Workload::front_launchable_IO(const ivytime& now)
         pWorkloadThread->dying_words = o.str();
         pWorkloadThread->state = ThreadState::died;
 		log(pWorkloadThread->slavethreadlogfile,o.str());
-		pWorkloadThread->ivyslave_main_posted_command = false;
+		pWorkloadThread->ivydriver_main_posted_command = false;
         pWorkloadThread->slaveThreadConditionVariable.notify_all();
         exit(-1);
     }
@@ -485,7 +485,7 @@ Eyeo* Workload::front_launchable_IO(const ivytime& now)
 
     if (pEyeo->scheduled_time > now) return nullptr;
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     if (workload_callcount_front_launchable_IO <= FIRST_FEW_CALLS)
     {
         std::ostringstream o;
@@ -500,7 +500,7 @@ Eyeo* Workload::front_launchable_IO(const ivytime& now)
 
 void Workload::load_IOs_to_LaunchPad()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { workload_callcount_load_IOs_to_LaunchPad++; if (workload_callcount_load_IOs_to_LaunchPad <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_load_IOs_to_LaunchPad << ") "
         << "            Entering Workload::load_IOs_to_LaunchPad() " << brief_status(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
@@ -526,7 +526,7 @@ void Workload::load_IOs_to_LaunchPad()
 
         pTestLUN->pop_front_to_LaunchPad(this);
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
         if (workload_callcount_load_IOs_to_LaunchPad <= FIRST_FEW_CALLS)
         {
             std::ostringstream o;
@@ -542,7 +542,7 @@ void Workload::load_IOs_to_LaunchPad()
 
 unsigned int Workload::generate_an_IO()
 {
-#if defined(IVYSLAVE_TRACE)
+#if defined(IVYDRIVER_TRACE)
     { workload_callcount_generate_an_IO++; if (workload_callcount_generate_an_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
     o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_generate_an_IO << ") "
         << "            Entering Workload::generate_an_IO() " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
@@ -677,7 +677,7 @@ unsigned int Workload::generate_an_IO()
     }
     precomputeQ.push_back(p_Eyeo);
 
-#ifdef IVYSLAVE_TRACE
+#ifdef IVYDRIVER_TRACE
     if (workload_callcount_generate_an_IO <= FIRST_FEW_CALLS)
     {
         std::ostringstream o;
