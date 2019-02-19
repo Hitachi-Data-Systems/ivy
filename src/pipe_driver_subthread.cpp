@@ -310,6 +310,7 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
             ostringstream logmsg;
             logmsg << "<Warning> For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe() - child has exited."
             << "  pid = " << ssh_pid << ", after waitpid(ssh_pid, &pid_status, WNOHANG), pid_status = 0x" << std::hex << std::uppercase << pid_status;
+            m_s.warning_messages.push_back(logmsg.str());
             log(logfilename,logmsg.str());
             // return false;  - Commented out to see if this can occur spuriously 2016-09-25
         }
@@ -503,6 +504,7 @@ std::string pipe_driver_subthread::get_line_from_pipe
                 << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl << std::endl
                 << "<Warning>[from " << ivyscript_hostname << "]" << s.substr(9,s.size()-9) << std::endl << std::endl
                 << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl << std::endl;
+            m_s.warning_messages.push_back(o.str());
             log (logfilename, o.str());
             log (m_s.masterlogfile, o.str());
             std::cout << o.str();

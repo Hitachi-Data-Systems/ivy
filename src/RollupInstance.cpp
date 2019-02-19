@@ -327,6 +327,7 @@ ivy_float RollupInstance::get_focus_metric(unsigned int subinterval_number)
                 o   << "<Warning> RollupInstance::get_focus_metric( unsigned int subinterval_number = " << subinterval_number
                     << " ) - returning -1.0 because subsystem element \"" << m_s.subsystem_element << "\" not found for this subinterval." << std::endl
                     << "Available elements for this subinterval are: "; for (auto& pear : subsystem_data.data) o << " \"" << pear.first << "\" "; o << std::endl;
+                m_s.warning_messages.push_back(o.str());
                 std::cout << o.str();
                 log(m_s.masterlogfile, o.str());
                 return -1.0;
@@ -339,7 +340,7 @@ ivy_float RollupInstance::get_focus_metric(unsigned int subinterval_number)
                 o  << "<Warning> RollupInstance::get_focus_metric( unsigned int subinterval_number = " << subinterval_number
                    << ") - subsystem data this subinterval for element \"" << m_s.subsystem_element << "\" did not have \"" << m_s.element_metric << "\" metric." << std::endl;
                 o << "Available metrics for this element are: "; for (auto& pear : element_it->second) o << " \"" << pear.first << "\" "; o << std::endl;
-                std::cout << o.str();
+                m_s.warning_messages.push_back(o.str());std::cout << o.str();
                 log(m_s.masterlogfile, o.str());
                 return -1.0;
             }
@@ -419,6 +420,7 @@ void RollupInstance::perform_PID()
             << ", instead PID new IOPS clamped at the minimum " << std::fixed << std::setprecision(2) << per_instance_low_IOPS
             << " calculated as the PID \"min_IOPS\" setting divided by the number of instances in the rollup we are performing PID on."
             << std::endl << std::endl;
+        m_s.warning_messages.push_back(o.str());
         std::cout << o.str();
         log(m_s.masterlogfile,o.str());
 
@@ -434,6 +436,7 @@ void RollupInstance::perform_PID()
             << ", instead new PID new IOPS clamped at the maximum " << std::fixed << std::setprecision(2) << per_instance_max_IOPS
             << " calculated as the optional PID \"max_IOPS\" setting if present, otherwise the high_IOPS setting, divided by the number of instances in the rollup we are performing PID on."
             << std::endl << std::endl;
+        m_s.warning_messages.push_back(o.str());
         std::cout << o.str();
         log(m_s.masterlogfile,o.str());
 
@@ -801,6 +804,7 @@ std::pair<bool,ivy_float> RollupInstance::isValidMeasurementStartingFrom(unsigne
         std::ostringstream o;
         o << "<Warning> in RollupInstance::isValidMeasurementStartingFrom( n = " << n << " ).  Last subinterval is " << (focus_metric_vector.size()-1) << "." << std::endl
             << "Average over sample set is zero, so we can\'t perform the measurement validation calculation which divides by the average over the sample set.  Number of samples in set is " << sample.count() << "." << std::endl;
+        m_s.warning_messages.push_back(o.str());
         log (m_s.masterlogfile,o.str());
         return std::make_pair(false,-1);
     }

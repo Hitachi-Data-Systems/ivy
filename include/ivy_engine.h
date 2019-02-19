@@ -381,6 +381,8 @@ public:
 
     bool iosequencer_template_was_used {false};
 
+    std::list<std::string> warning_messages {};
+
 // methods
 
     void print_iosequencer_template_deprecated_msg();

@@ -258,7 +258,8 @@ void RollupType::rebuild()
                     {
                         std::ostringstream o;
                         o << "<Warning> RollupType::rebuild(), when putting in HM800 MP_core and MP# parameters, did not find sub_model \"" << sub_model << "\" in HM800_MPU_map." << std::endl;
-                        if (routine_logging) {std::cout << o.str();}
+                        m_s.warning_messages.push_back(o.str());
+                        std::cout << o.str();
                         log(m_s.masterlogfile,o.str());
                     }
                     else
@@ -268,7 +269,8 @@ void RollupType::rebuild()
                         {
                             std::ostringstream o;
                             o << "<Warning> RollupType::rebuild(), when putting in HM800 MP_core and MP# parameters, did not find MPU \"" << MPU << "\" for sub_model \"" << sub_model << "\" in HM800_MPU_map." << std::endl;
-                            if (routine_logging) { std::cout << o.str(); }
+                            m_s.warning_messages.push_back(o.str());
+                            std::cout << o.str();
                             log(m_s.masterlogfile,o.str());
                         }
                         else

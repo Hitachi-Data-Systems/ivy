@@ -333,8 +333,16 @@ int main(int argc, char* argv[])
     {
 
         std::ostringstream o;
-        o << std::endl << std::endl << "********* ivy run complete.  Total run time " << duration.format_as_duration_HMMSS() << " for test name \"" << m_s.testName << "\" *********" << std::endl << std::endl;
-        o << m_s.step_times.str();
+
+        o << m_s.step_times.str() << std::endl;
+
+        o << std::endl << std::endl << "********* ivy run complete.  Total run time " << duration.format_as_duration_HMMSS()
+            << " for test name \"" << m_s.testName << "\" *********" << std::endl << std::endl;
+        for (auto s : m_s.warning_messages)
+        {
+            o << s << std::endl;
+        }
+
         std::cout << o.str();
         log(m_s.masterlogfile, o.str());
     }
