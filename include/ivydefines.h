@@ -60,8 +60,8 @@ const std::string ivy_version {"3.00.02"};
 // When the test is complete, ivymaster uses an scp command to copy the log files back to the ivymaster host along with everything else.
 
 //      IVYMAXMSGSIZE size of send/receive buffers between master and slave
-#define IVYMAXMSGSIZE ((128*1024)-sizeof(uint32_t))
-
+#define IVYMAXMSGSIZE ((1024*1024)-sizeof(uint32_t))
+#define MAXSAYATONCE (4095)
 #define MAXWAITFORIVYCMDDEV 5
 
 #define IO_TIME_LIMIT_SECONDS (30.0)

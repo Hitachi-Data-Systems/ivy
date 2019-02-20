@@ -138,16 +138,14 @@ public:
     std::string get_line_from_pipe // this is a wrapper around real_get_line_from_pipe to filter <Warning> and to catch <Error>
     (
         ivytime timeout,
-        std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
-        bool reading_echo_line = false
+        std::string description // Used when there is some sort of failure to construct an error message written to the log file.
     );
 
 private:
     std::string real_get_line_from_pipe
     (
         ivytime timeout,
-        std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
-        bool reading_echo_line
+        std::string description // Used when there is some sort of failure to construct an error message written to the log file.
     );
 
 public:
@@ -199,7 +197,8 @@ public:
 	void orderSlaveToDie();
 	void kill_ssh_and_harvest();
 	void harvest_pid();
-	void send_string(std::string s); // throws std::runtime_error
+	void send_string(std::string s); // throws std::runtime_error   // breaks lines up if they are longer than 4095
+	void real_send_string(std::string s); // throws std::runtime_error
 	void send_and_get_OK(std::string s, const ivytime timeout);// throws std::runtime_error
 	void send_and_get_OK(std::string s);// throws std::runtime_error
 	std::string send_and_clip_response_upto(std::string s, std::string pattern, const ivytime timeout);// throws std::runtime_error

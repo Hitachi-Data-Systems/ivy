@@ -166,6 +166,31 @@ std::string pipe_driver_subthread::send_and_clip_response_upto(std::string s, st
 
 void pipe_driver_subthread::send_string(std::string s)
 {
+    if (s.size() <= MAXSAYATONCE)
+    {
+        real_send_string(s);
+        return;
+    }
+
+    // Now we break the line up into smaller pieces, with one or more full size "frag=> ..... <=" lines, followed a "last=> .... <=" line
+    // The frag=> and <= together with a line end consume 9 characters.
+
+    while (s.size() > (MAXSAYATONCE - 9))
+    {
+        real_send_string( std::string("frag=>") + s.substr(0,(MAXSAYATONCE - 9)) + std::string("<="));
+        s.erase(0,(MAXSAYATONCE - 9));
+    }
+
+    rtrim(s);
+
+    real_send_string( std::string("last=>") + s + std::string("<="));
+
+    return;
+}
+
+
+void pipe_driver_subthread::real_send_string(std::string s)
+{
     rtrim(s);
     s+='\n';  // put a line end on it if it didn't already have one
 
@@ -206,18 +231,6 @@ void pipe_driver_subthread::send_string(std::string s)
         last_message_time = now;
 
         if (routine_logging) { log(logfilename, format_utterance("Master",s,delta)); }
-    }
-
-    // With ssh, we hear back an echo of what we typed.  So we read from the pipe to eat the echo.
-    std::string echo = get_line_from_pipe(m_s.subintervalLength, std::string("reading echo of what we just said."), /*reading_echo_line*/ true);
-
-// /*debug*/ log(logfilename, std::string("Echo line was \"")+echo+std::string("\"\n"));
-
-    rtrim(s);
-    rtrim(echo);
-    if (0 != s.compare(echo))
-    {
-        throw std::runtime_error("Echo line didn't match what we sent.");
     }
 
     return;
@@ -416,8 +429,7 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
 std::string pipe_driver_subthread::real_get_line_from_pipe
 (
     ivytime timeout,
-    std::string description, // passed by reference to called routines to receive an error message when called function returns "false"
-    bool reading_echo_line
+    std::string description // passed by reference to called routines to receive an error message when called function returns "false"
 )
 {
     std::string s;
@@ -470,7 +482,7 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
         delta = now - last_message_time;
         last_message_time = now;
 
-        if ( trace_evaluate || (routine_logging && !reading_echo_line)) { log(logfilename, format_utterance(" Slave",s,delta)); }
+        if ( trace_evaluate || routine_logging) { log(logfilename, format_utterance(" Slave",s,delta)); }
     }
     return s;
 }
@@ -478,8 +490,7 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
 std::string pipe_driver_subthread::get_line_from_pipe
 (
     ivytime timeout,
-    std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
-    bool reading_echo_line
+    std::string description // Used when there is some sort of failure to construct an error message written to the log file.
 )
 {
     // This is a wrapper around the "real" get_line_from_pipe() that checks for when what ivydriver says starts with "<Error>".
@@ -496,7 +507,7 @@ std::string pipe_driver_subthread::get_line_from_pipe
     std::string s;
     while (true)  // we only ever loop back to the beginning after processing a <Warning> line
     {
-        s = real_get_line_from_pipe(timeout,description,reading_echo_line);
+        s = real_get_line_from_pipe(timeout,description);
         if (startsWith(s, std::string("<Warning>")))
         {
             std::ostringstream o;

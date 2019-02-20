@@ -167,6 +167,12 @@ int IvyDriver::main(int argc, char* argv[])
     sigaction(SIGUSR1, &sigactshun, NULL);
     sigaction(SIGTERM, &sigactshun, NULL);
 
+    if (0 != system("stty -echo"))
+    {
+        std::cout << "<Error> Failed turn ing off stdin echo using \"stty -echo\" command.\n";
+        return -1;
+    }
+
 	initialize_io_time_clip_levels();
 
     for (int arg_index = 1 /*skipping executable name*/ ; arg_index < argc ; arg_index++ )
@@ -339,8 +345,7 @@ int IvyDriver::main(int argc, char* argv[])
 	{
 		// get commands from ivymaster
 
-		//std::getline(std::cin,input_line);
-		input_line = getline.real_get_line_from_pipe(one_hour,"ivydriver reading a line from ivy", false);
+		input_line = getline.get_reassembled_line(one_hour,"ivydriver reading a line from ivy");
 
 		lasttime.setToNow();
 

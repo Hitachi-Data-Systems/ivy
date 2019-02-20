@@ -12,7 +12,7 @@
 				<Option working_dir="/home/ivogelesang/Desktop/eraseme" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-log /home/ivogelesang/Desktop/eraseme/segv.ivyscript" />
+				<Option parameters="/home/ivogelesang/Desktop/torque.ivyscript" />
 				<Compiler>
 					<Add option="-pthread" />
 					<Add directory="include" />

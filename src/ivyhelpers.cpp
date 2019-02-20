@@ -63,6 +63,9 @@ std::regex has_trailing_fractional_zeros_regex( R"((([[:digit:]]+)\.([[:digit:]]
 std::regex MMSS_regex( std::string( R"ivy(([[:digit:]]+):((([012345])?[[:digit:]])(\.([[:digit:]])*)?))ivy" ) ); // any number of minutes followed by ':' followed by 00-59 or 0-59.
 std::regex HHMMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:]]):((([012345])?[[:digit:]])(\.([[:digit:]])*)?))ivy" ) ); // any number of hours followed by ':' followed by 00-59 or 0-59 followed by ':' followed by 00-59 or 0-59.
 
+std::regex frag_regex( R"(frag=>(.*)<=[\r\n\t ]*)" );
+std::regex last_regex( R"(last=>(.*)<=[\r\n\t ]*)" );
+
 void format_for_log_trailing_slashr_slashn(std::string s)
 {
 	for (int i = -1 + s.length(); i >= 0 && ('\r' == s[i] || '\n' == s[i]); i--)

@@ -147,8 +147,7 @@ bool pipe_line_reader::read_from_pipe(ivytime timeout)
 std::string pipe_line_reader::real_get_line_from_pipe
 (
     ivytime timeout,
-    std::string description, // passed by reference to called routines to receive an error message when called function returns "false"
-    bool reading_echo_line
+    std::string description // passed by reference to called routines to receive an error message when called function returns "false"
 )
 {
     std::string s;
@@ -192,4 +191,61 @@ std::string pipe_line_reader::real_get_line_from_pipe
     return s;
 }
 
+std::string pipe_line_reader::get_reassembled_line  // reassembles fragmented lines
+(
+    ivytime timeout,
+    std::string description // Used when there is some sort of failure to construct an error message written to the log file.
+)
+{
+    std::string possibly_fragged_line = real_get_line_from_pipe(timeout,description);
+
+    std::smatch fragment_smatch;
+    std::ssub_match fragment_ssub_match;
+
+    if ( ! std::regex_match( possibly_fragged_line, fragment_smatch, frag_regex ) )
+    {
+        return possibly_fragged_line;
+    }
+
+
+    fragment_ssub_match = fragment_smatch[1];
+
+    std::string frag_text = fragment_ssub_match.str();
+
+    std::string accumulated_so_far = frag_text;
+
+    possibly_fragged_line = real_get_line_from_pipe(timeout,description); // second line
+
+    while ( std::regex_match( possibly_fragged_line, fragment_smatch, frag_regex ) )
+    {
+        fragment_ssub_match = fragment_smatch[1];
+
+        frag_text = fragment_ssub_match.str();
+
+        accumulated_so_far += frag_text;
+
+        possibly_fragged_line = real_get_line_from_pipe(timeout,description);
+    }
+
+    if ( ! std::regex_match( possibly_fragged_line, fragment_smatch, last_regex ) )
+    {
+        std::ostringstream o;
+        o << "<Error> When reading a line immediately following a frag=><= line"
+            << ", only more frag=><= lines or a last=><= line are permitted.  "
+            << "Instead, received the " << possibly_fragged_line.size()
+            << " character line \"" << possibly_fragged_line << "\"."
+            << std::endl
+            << "accumulated_so_far = \"" << accumulated_so_far << "\".\n";
+        std::cout << o.str();
+        throw std::runtime_error(o.str());
+    }
+
+    fragment_ssub_match = fragment_smatch[1];
+
+    frag_text = fragment_ssub_match.str();
+
+    accumulated_so_far += frag_text;
+
+    return accumulated_so_far;
+}
 

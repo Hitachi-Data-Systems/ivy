@@ -62,11 +62,17 @@ public:
     void set_fd(int f) { fd = f; }
     void set_logfilename(const std::string& l) { logfilename = l; }
 
+
+    std::string get_reassembled_line  // reassembles fragmented lines
+    (
+        ivytime timeout,
+        std::string description // Used when there is some sort of failure to construct an error message written to the log file.
+    );
+
     std::string real_get_line_from_pipe
     (
         ivytime timeout,
-        std::string description, // Used when there is some sort of failure to construct an error message written to the log file.
-        bool reading_echo_line
+        std::string description // Used when there is some sort of failure to construct an error message written to the log file.
     );
 
     bool read_from_pipe(ivytime timeout);

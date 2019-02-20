@@ -44,6 +44,10 @@ extern std::regex MMSS_regex;
 extern std::regex HHMMSS_regex;
 extern std::regex has_trailing_fractional_zeros_regex;
 
+extern std::regex frag_regex;
+extern std::regex last_regex;
+
+
 extern std::string indent_increment;
 
 void format_for_log_trailing_slashr_slashn(std::string);
