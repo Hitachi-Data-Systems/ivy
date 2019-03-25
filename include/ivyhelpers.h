@@ -154,3 +154,5 @@ std::string byte_as_hex(unsigned char);
 
 std::string left(const std::string&,unsigned int);  // leftmost "n" characters
 std::string right(const std::string&,unsigned int);
+
+std::map<unsigned int /* core */, std::vector<unsigned int /* processor (hyperthread) */>> get_processors_by_core();

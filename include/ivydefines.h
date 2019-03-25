@@ -22,7 +22,7 @@
 #include <array>
 #include <string>
 
-const std::string ivy_version {"3.00.02"};
+const std::string ivy_version {"3.20.00"};
 
 //using ivy_int = long long int; using ivy_float = long double;
   using ivy_int =      long int; using ivy_float =      double;
@@ -49,8 +49,7 @@ const std::string ivy_version {"3.00.02"};
 #define IVYDRIVERLOGFOLDERROOT "/var"
 // This root folder must already exist when ivydriver fires up.
 
-//#define IVYDRIVERLOGFOLDER "/ivydriver_logs"
-#define IVYDRIVERLOGFOLDER "/ivydriver_debug"
+#define IVYDRIVERLOGFOLDER "/ivydriver_logs"
 // This subfolder of the ivydriver log root folder will be created if it doesn't already exist
 
 // Then any log files called "ivydriver.hostname.log.*" are deleted if they already exists in this folder.

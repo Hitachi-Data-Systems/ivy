@@ -147,7 +147,7 @@ void WorkloadThread::WorkloadThreadRun()
 	{
 		std::ostringstream o;
 
-		o<< "WorkloadThreadRun() fireup for core = " << core << "." << std::endl;
+		o<< "WorkloadThreadRun() fireup for core-hyperthread = " << core << "." << std::endl;
 
 		log(slavethreadlogfile,o.str());
 	}

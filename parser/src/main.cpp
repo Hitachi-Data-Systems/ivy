@@ -43,6 +43,7 @@ std::string inter_statement_divider {"==========================================
 bool routine_logging {false};
 bool rest_api {false};
 bool spinloop {false};
+bool hyperthread {false};
 
 void usage_message(char* argv_0)
 {
@@ -54,8 +55,13 @@ void usage_message(char* argv_0)
         << "     Turns on logging of routine events." << std::endl << std::endl
         << "-no_cmd"<< std::endl
         << "     Don\'t use any command devices." << std::endl << std::endl
+        << "-no_ldev"<< std::endl
+        << "     If a command device is being used, don\'t collect LDEV data." << std::endl << std::endl
         << "-spinloop" << std::endl
         << "     Used to make test host code continually check for work to do without ever waiting." << std::endl << std::endl
+        << "-hyperthread" << std::endl
+        << "     Use -hyperthread to have ivydriver start one I/O driving subthread per CPU hyperthread, instead of one per core." << std::endl
+        << "     Core 0 and its hyperthreads are never used for I/O driving subthreads." << std::endl << std::endl
         << "-trace_lexer or -l" << std::endl
         << "     Log routine events and trace the \"lexer\" which breaks down the .ivyscript program into \"tokens\"." << std::endl << std::endl
         << "-trace_parser or -p" << std::endl
@@ -171,22 +177,27 @@ int main(int argc, char* argv[])
     if (argc==1) { usage_message(argv[0]); return -1; }
 
     for (int arg_index = 1 /*skipping executable name*/ ; arg_index < argc ; arg_index++ )
-    {
+    {{  // double braces to be really sure "item" is fresh every time.
         std::string item {argv[arg_index]};
 
-        if (item == "-rest")                           { rest_api = true; continue; }
-        if (item == "-log")                            { routine_logging = true; continue; }
-        if (item == "-t")                              { routine_logging = trace_lexer = trace_parser = trace_evaluate = true; continue; }
-        if (item == "-trace_lexer"    || item == "-l") { routine_logging = trace_lexer = true; continue; }
-        if (item == "-trace_parser"   || item == "-p") { routine_logging = trace_parser = true; continue; }
-        if (item == "-trace_evaluate" || item == "-e") { routine_logging = trace_evaluate = true; continue; }
-        if (item == "-no_cmd")                         { m_s.use_command_device = false; continue; }
-        if (item == "-spinloop")                       { spinloop = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-rest")))           { rest_api = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-log")))            { routine_logging = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-t")))              { routine_logging = trace_lexer = trace_parser = trace_evaluate = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-trace_lexer"))
+         || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-l"))          )    { routine_logging = trace_lexer = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-trace_parser"))
+         || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-p"))           )   { routine_logging = trace_parser = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-trace_evaluate"))
+        ||  stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-e"))             ) { routine_logging = trace_evaluate = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_cmd")))         { m_s.use_command_device = false; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_ldev")))        { m_s.skip_ldev_data = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-spinloop")))       { spinloop = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-hyperthread")))    { hyperthread = true; continue; }
 
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }
 
         ivyscriptFilename = item;
-    }
+    }}
 
     bool is_python_script {false};
     if (endsIn(ivyscriptFilename, ".py"))
@@ -334,10 +345,10 @@ int main(int argc, char* argv[])
 
         std::ostringstream o;
 
-        o << m_s.step_times.str() << std::endl;
+        o << std::endl << "********* ivy run complete." << std::endl <<  m_s.step_times.str();
 
-        o << std::endl << std::endl << "********* ivy run complete.  Total run time " << duration.format_as_duration_HMMSS()
-            << " for test name \"" << m_s.testName << "\" *********" << std::endl << std::endl;
+        o << "********* Total run time    " << duration.format_as_duration_HMMSS()
+            << " for test name \"" << m_s.testName << "\"" << std::endl << std::endl;
         for (auto s : m_s.warning_messages)
         {
             o << s << std::endl;

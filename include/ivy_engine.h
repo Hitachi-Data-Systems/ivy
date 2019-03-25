@@ -76,6 +76,7 @@ public:
     bool overall_success {false};
 
     bool use_command_device {true};
+    bool skip_ldev_data {false};
 
     int harvesting_subinterval;
 
@@ -451,7 +452,7 @@ public:
         std::pair<bool /*true = success*/, std::string /* message */>
     edit_rollup(
         const std::string& rollup_name,        //   serial_number+Port = { 410321+1A, 410321+2A }
-            // all=all gets every workload thread
+            // all=all gets every workload
         const std::string& parameters,
         bool do_not_log_API_call = false);
 

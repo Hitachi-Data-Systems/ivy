@@ -304,6 +304,15 @@ void RollupType::rebuild()
         //            }
         //        }
 
+
+        extern std::map<std::string /* MPU */, std::vector<std::pair<std::string /* MP_core */, std:: string /* MP_number */>>> RAID900_MP_cores_by_MPU;
+//                        "0",
+//                        {
+//                            { "MPU-010-00", "MP#00" },
+//                            { "MPU-010-01", "MP#01" },
+//                            { "MPU-010-02", "MP#02" },
+//                            { "MPU-010-03", "MP#03" },
+
         if ( pWorkloadTracker->workloadLUN.contains_attribute_name("hitachi_product") )
         {
             if ( 0 == std::string("RAID800").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product")) )
@@ -315,7 +324,7 @@ void RollupType::rebuild()
                     if (it == RAID800_MP_cores_by_MPU.end())
                     {
                         std::ostringstream o;
-                        o << "RollupType::rebuild(), when putting in RAID800 MP_core and MP# parameters, did not MPU \"" << MPU << "\" in RAID800_MP_cores_by_MPU." << std::endl;
+                        o << "RollupType::rebuild(), when putting in RAID800 MP_core and MP# parameters, did not find MPU \"" << MPU << "\" in RAID800_MP_cores_by_MPU." << std::endl;
                         std::cout << o.str();
                         m_s.kill_subthreads_and_exit();
                     }
@@ -323,6 +332,33 @@ void RollupType::rebuild()
                     {
                         std::string MP_core = s.substr(0,15);
                         std::string MP_number = s.substr(16,5);
+                        pRollupInstance->config_filter[serial][toLower("MP_core")].insert(MP_core);
+                        pRollupInstance->config_filter[serial][toLower("MP_number")].insert(MP_number);
+                    }
+                }
+            }
+            else if ( 0 == std::string("RAID900").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product"))
+                        || 0 == std::string("RAID900").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product"))
+                        || 0 == std::string("Europa").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product"))
+                        || 0 == std::string("Jupiter").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product"))
+                        || 0 == std::string("Ganymede").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product")))
+            {
+                if (pWorkloadTracker->workloadLUN.contains_attribute_name("MPU"))
+                {
+                    std::string MPU = pWorkloadTracker->workloadLUN.attribute_value("MPU");  // This is a decimal number from 0 to 11
+
+                    auto it = RAID900_MP_cores_by_MPU.find(MPU);
+                    if (it == RAID900_MP_cores_by_MPU.end())
+                    {
+                        std::ostringstream o;
+                        o << "RollupType::rebuild(), when putting in RAID900 MP_core and MP# parameters, did not find MPU \"" << MPU << "\" in RAID900_MP_cores_by_MPU." << std::endl;
+                        std::cout << o.str();
+                        m_s.kill_subthreads_and_exit();
+                    }
+                    for (auto& pear : it->second)
+                    {
+                        std::string MP_core = pear.first;
+                        std::string MP_number = pear.second;
                         pRollupInstance->config_filter[serial][toLower("MP_core")].insert(MP_core);
                         pRollupInstance->config_filter[serial][toLower("MP_number")].insert(MP_number);
                     }

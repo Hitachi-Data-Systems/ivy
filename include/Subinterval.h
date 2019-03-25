@@ -26,7 +26,7 @@
 // Each WorkloadThread has an array of two subinterval objects, each with a SubintervalInput
 // object and a SubintervalOutput object.
 
-// Once the Workload thread is running, it switches back and forth between the two subinterval objects.
+// Once the Workload is running, it switches back and forth between the two subinterval objects.
 
 // When the lock on the WorkloadThread is not held, one of the subintervals is the current running Subinterval,
 // meaning as I/O operations complete, their data are being recorded in the current running Subinterval's

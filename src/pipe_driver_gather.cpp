@@ -153,51 +153,54 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
     getMPbusyTime.push(ivytime(tn_sub_gather_end - gatherStart));
 
     gatherStart.setToNow();
-    try
+    if (!m_s.skip_ldev_data)
     {
-        send_and_get_OK("get LDEVIO");
         try
         {
-            process_ivy_cmddev_response(currentGD, gatherStart);
-        }
-        catch (std::invalid_argument& iaex)
-        {
-            std::ostringstream o;
-            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
-            log(logfilename,o.str());
-            kill_ssh_and_harvest();
-            commandComplete=true;
-            commandSuccess=false;
-            commandErrorMessage = o.str();
-            dead=true;
-            s_lk.unlock();
-            master_slave_cv.notify_all();
-            return;
+            send_and_get_OK("get LDEVIO");
+            try
+            {
+                process_ivy_cmddev_response(currentGD, gatherStart);
+            }
+            catch (std::invalid_argument& iaex)
+            {
+                std::ostringstream o;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                log(logfilename,o.str());
+                kill_ssh_and_harvest();
+                commandComplete=true;
+                commandSuccess=false;
+                commandErrorMessage = o.str();
+                dead=true;
+                s_lk.unlock();
+                master_slave_cv.notify_all();
+                return;
+            }
+            catch (std::runtime_error& reex)
+            {
+                std::ostringstream o;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                log(logfilename,o.str());
+                kill_ssh_and_harvest();
+                commandComplete=true;
+                commandSuccess=false;
+                commandErrorMessage = o.str();
+                dead=true;
+                s_lk.unlock();
+                master_slave_cv.notify_all();
+                return;
+            }
         }
         catch (std::runtime_error& reex)
         {
             std::ostringstream o;
-            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
-            log(logfilename,o.str());
+            o << "\"get LDEVIO\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
             kill_ssh_and_harvest();
-            commandComplete=true;
-            commandSuccess=false;
-            commandErrorMessage = o.str();
-            dead=true;
-            s_lk.unlock();
+            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
             master_slave_cv.notify_all();
             return;
         }
-    }
-    catch (std::runtime_error& reex)
-    {
-        std::ostringstream o;
-        o << "\"get LDEVIO\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
-        log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
-        kill_ssh_and_harvest();
-        commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
-        master_slave_cv.notify_all();
-        return;
     }
 
     tn_sub_gather_end.setToNow();
@@ -429,7 +432,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
                 auto this_MPU_it = this_instance_it->second.find(std::string("MPU"));
                 if (this_MPU_it != this_instance_it->second.end())
                 {
-                    mpu_busy[this_MPU_it->second.value/* MPU as decimal digits HM800: 0-3, RAID800 0-15 */].push(busy_percent);
+                    mpu_busy[this_MPU_it->second.value/* MPU as decimal digits HM800: 0-3, RAID800 0-15, RAID900 0-11 */].push(busy_percent);
                 }
             }
 

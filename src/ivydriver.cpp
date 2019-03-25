@@ -43,7 +43,8 @@
 
 IvyDriver ivydriver;
 
-bool routine_logging;
+bool routine_logging {false};
+bool subthread_per_hyperthread {false};
 
 std::string printable_ascii;
 
@@ -179,13 +180,16 @@ int IvyDriver::main(int argc, char* argv[])
     {
         std::string item {argv[arg_index]};
 
-        if (item == "-log") { routine_logging = true; continue;}
+        if (item == "-log")         { routine_logging = true;           continue;}
+        if (item == "-hyperthread") { subthread_per_hyperthread = true; continue;}
 
         if (arg_index != (argc-1))
         {
             std::cout << argv[0] << " - usage: " << argv[0] << " options <ivyscript_hostname>" << std::endl
-                << " where \"options\" means zero or more of: -log" << std::endl
-                << "and where ivyscript_hostname is either an identifier, a hostname or alias, or is an IPV4 dotted quad." << std::endl;
+                << " where \"options\" means zero or more of: -log -hyperthread" << std::endl
+                << "and where ivyscript_hostname is either an identifier, a hostname or alias, or is an IPV4 dotted quad." << std::endl
+                << std::endl << "-hyperthread means start one I/O driving subthread per hyperthread, instead of one per physical core." << std::endl
+                << "Core 0 and its hyperthreads are never used for driving I/O." << std::endl << std::endl;
                 return -1;
         }
         hostname = item;
@@ -262,23 +266,90 @@ int IvyDriver::main(int argc, char* argv[])
 
     if (routine_logging) {std::ostringstream o; o << "printable_ascii = \"" << printable_ascii << "\"" << std::endl; log(slavelogfile,o.str());}
 
-    unsigned int cores = core_count(slavelogfile);
+    std::vector<std::pair<unsigned int /* core */, unsigned int /* "processor" (hyperthread) */>> hyperthreads_to_start_subthreads_on {};
 
-//*debug*/ log(slavelogfile, "debug: setting cores = 2"); cores = 2;
+    std::map<unsigned int /* core */, std::vector<unsigned int /* processor (hyperthread) */>>  hyperthreads_per_core = get_processors_by_core();
 
-    for (unsigned int core = 0; core < cores; core++)
+
+    //    # cat /proc/cpuinfo | grep 'processor\|core id'
+    //    processor	: 0
+    //    core id		: 0
+    //    processor	: 1
+    //    core id		: 1
+    //    processor	: 2
+    //    core id		: 2
+    //    processor	: 3
+    //    core id		: 3
+    //    processor	: 4
+    //    core id		: 0
+    //    processor	: 5
+    //    core id		: 1
+    //    processor	: 6
+    //    core id		: 2
+    //    processor	: 7
+    //    core id		: 3
+    //    processor	: 8
+    //    core id		: 0
+    //    processor	: 9
+    //    core id		: 1
+    //    processor	: 10
+    //    core id		: 2
+    //    processor	: 11
+    //    core id		: 3
+    //    processor	: 12
+    //    core id		: 0
+    //    processor	: 13
+    //    core id		: 1
+    //    processor	: 14
+    //    core id		: 2
+    //    processor	: 15
+    //    core id		: 3
+
+    //    What we see above is that the hyperthread or "processor" numbers are allocated on a round-robbin
+    //    fashion across the core_ids.  Since all_workload_threads is a map with the hyperthread / processor
+    //    number as the key, when we iterate over all_workload_threads, we iterate over the cores
+    //    on a round-robbin basis.  This means that with the -hyperthread command line option,
+    //    when we map workload LUNs to I/O driving subthreads, we allocate those LUNs round=robbing over the cores.
+
+    //    std::map<unsigned int,WorkloadThread*> all_workload_threads {};
+
+    if (subthread_per_hyperthread)
     {
-        if (core == 0) { continue; } // leave core 0 free for ivydriver
-            // Come back here and maybe leave another core free in case this test host is also the master host ..... XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        for (auto& pear : hyperthreads_per_core)
+        {
+            if (pear.first == 0) continue;  // leave this open for ivydriver master thread, or even the ivy central host subthreads.
+                // Come back here and maybe leave another core free in case this test host is also the master host ..... XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-        WorkloadThread* p_WorkloadThread = new WorkloadThread(&ivydriver_main_mutex,core);
+            for (unsigned int& processor : pear.second)
+            {
+                hyperthreads_to_start_subthreads_on.push_back(std::make_pair(pear.first, processor));
+            }
+        }
+    }
+    else
+    {
+        for (auto& pear : hyperthreads_per_core)
+        {
+            if (pear.first == 0) continue;  // leave this open for ivydriver master thread, or even the ivy central host subthreads.
+                // Come back here and maybe leave another core free in case this test host is also the master host ..... XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-        all_workload_threads[core]=p_WorkloadThread;
+            hyperthreads_to_start_subthreads_on.push_back(std::make_pair(pear.first, pear.second[0]));
+        }
+    }
+
+    for (auto& pear : hyperthreads_to_start_subthreads_on)
+    {
+        unsigned int physical_core = pear.first;
+        unsigned int core_hyperthread = pear.second;
+
+        WorkloadThread* p_WorkloadThread = new WorkloadThread(&ivydriver_main_mutex,core_hyperthread);
+
+        all_workload_threads[core_hyperthread]=p_WorkloadThread;
 
         {
             std::ostringstream o;
 
-            o << IVYDRIVERLOGFOLDERROOT << IVYDRIVERLOGFOLDER << "/log.ivydriver." << hostname << ".core_" << core;
+            o << IVYDRIVERLOGFOLDERROOT << IVYDRIVERLOGFOLDER << "/log.ivydriver." << hostname << ".core_" << physical_core << "_hyperthread_" << core_hyperthread;
 
             o << ".txt";
 
@@ -296,8 +367,8 @@ int IvyDriver::main(int argc, char* argv[])
                        [&p_WorkloadThread] { return p_WorkloadThread->state == ThreadState::waiting_for_command; }))
             {
                 std::ostringstream o;
-                o << "<Error> ivydriver waited more than one second for workload thread for core \""
-                    << core << "\" to start up." << std::endl
+                o << "<Error> ivydriver waited more than one second for workload thread for core "
+                    << physical_core << ", hyperthread " << core_hyperthread <<  " to start up." << std::endl
                     << "Source code reference " << __FILE__ << " line " << __LINE__ << std::endl;
                 say(o.str());
                 log(slavelogfile, o.str());
@@ -310,7 +381,8 @@ int IvyDriver::main(int argc, char* argv[])
 
         cpu_set_t aff_mask;
         CPU_ZERO(&aff_mask);
-        CPU_SET(core, &aff_mask);
+        CPU_SET(core_hyperthread, &aff_mask);
+
         if (0 !=  pthread_setaffinity_np
                     (
                         p_WorkloadThread->std_thread.native_handle()
@@ -321,7 +393,7 @@ int IvyDriver::main(int argc, char* argv[])
         {
             std::ostringstream o;
             o << "<Warning> was unsuccessful to set CPU processor affinity for core "
-                << core << "." << std::endl
+                << physical_core << ", hyperthread " << core_hyperthread << "." << std::endl
                 << "Source code reference " << __FILE__ << " line " << __LINE__ << std::endl;
             say(o.str());
             log(slavelogfile, o.str());
@@ -966,9 +1038,6 @@ void IvyDriver::create_workload()
     pWorkload->subinterval_array[1].input.fromString(newWorkloadParameters,slavelogfile);
 
     pWorkload->pTestLUN = pTestLUN;
-
-    //log_iosequencer_settings("debug: at end of create_workload:");
-
 
     say("<OK>");
 

@@ -93,7 +93,7 @@ using namespace std;
 #define PIPE_WRITE 1
 
 extern bool routine_logging;
-
+extern bool hyperthread;
 extern bool trace_evaluate;
 
 extern std::regex identifier_regex;
@@ -757,12 +757,11 @@ void pipe_driver_subthread::threadRun()
                 o << "execl(\"usr/bin/ssh\", \"ssh\", \"-t\", \"-t\", \"" << login << "\", \"" << cmd << "\", \"-log\", \"" << arg << "\", \""
                     << hitachi_product << "\", \""<< serial << "\", \"" << remote_logfilename << "\")" << std::endl;
                 log(logfilename,o.str());
-
                 execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(), "-log", arg.c_str(), hitachi_product.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
             }
             else
             {
-                execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(),         arg.c_str(), hitachi_product.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
+                execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(), arg.c_str(), hitachi_product.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
             }
         }
         else
@@ -778,11 +777,26 @@ void pipe_driver_subthread::threadRun()
             }
             if (routine_logging)
             {
-                execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-log", arg.c_str(),(char*)NULL);
+                if (hyperthread)
+                {
+                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-log","-hyperthread",arg.c_str(),(char*)NULL);
+                }
+                else
+                {
+                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-log", arg.c_str(),(char*)NULL);
+                }
+
             }
             else
             {
-                execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),        arg.c_str(),(char*)NULL);
+                if (hyperthread)
+                {
+                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-hyperthread",arg.c_str(),(char*)NULL);
+                }
+                else
+                {
+                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),arg.c_str(),(char*)NULL);
+                }
             }
         }
 

@@ -1441,7 +1441,7 @@ ivy_engine::createWorkload(
 
 	{
 		std::ostringstream o;
-		o << "      remote create thread execution time summary: total time " << createWorkloadExecutionTimeSeconds.sum()
+		o << "      remote create workload execution time summary: total time " << createWorkloadExecutionTimeSeconds.sum()
 			<<" seconds - count " <<   createWorkloadExecutionTimeSeconds.count()
 			<< " - average " << createWorkloadExecutionTimeSeconds.avg()
 			<< " seconds - minimum " << createWorkloadExecutionTimeSeconds.min()
@@ -3100,7 +3100,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
     {
         std::ostringstream o;
-        o << "********* " << stepNNNN << " duration " << flight_duration.format_as_duration_HMMSS() << " \"" << stepName << "\"" << std::endl;
+        o << "********* " << stepNNNN << " duration " << flight_duration.format_as_duration_HMMSS() << " for step name \"" << stepName << "\"" << std::endl;
 
         step_times << o.str();
         log(masterlogfile, o.str());

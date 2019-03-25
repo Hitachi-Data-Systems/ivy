@@ -33,7 +33,7 @@ void pipe_driver_subthread::process_cmddev_commands(std::unique_lock<std::mutex>
 
     if (0==std::string("get config").compare(commandString))
     {
-
+//        std::cout << "Getting configuration from " << p_Hitachi_RAID_subsystem->command_device_description << "\n";
         ivytime gatherStart;
         gatherStart.setToNow();
 
@@ -89,6 +89,10 @@ void pipe_driver_subthread::process_cmddev_commands(std::unique_lock<std::mutex>
         ivytime end;
         end.setToNow();
         /* ivytime */ duration = end-start;
+
+//        std::cout << "Configuration gather from " << p_Hitachi_RAID_subsystem->command_device_description << " completed in " << duration.format_as_duration_HMMSSns()<< ".\n";
+//        std::cout << "Post-processing configuration information from " << p_Hitachi_RAID_subsystem->command_device_description << ".\n";
+
 
         // Post process config gather
 

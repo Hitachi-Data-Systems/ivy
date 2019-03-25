@@ -36,16 +36,19 @@ void Test_config_thumbnail::clear()
 
 std::ostream& operator<<(std::ostream& o, const Test_config_thumbnail& tct)
 {
-    o << std::endl << "Host-mapped LDEVs by subsystem and drive type or pool ID:" << std::endl;
-    for (auto& pear : tct.available_LDEVs)
+    if (tct.available_LDEVs.size() > 0)
     {
-        for (auto& peach : pear.second)
+        o << std::endl << "Host-mapped LDEVs by subsystem and drive type or pool ID:" << std::endl;
+        for (auto& pear : tct.available_LDEVs)
         {
-            const std::string& subsystem = pear.first;
-            const std::string& drivetype = peach.first;
-            const LDEVset& lset = peach.second;
+            for (auto& peach : pear.second)
+            {
+                const std::string& subsystem = pear.first;
+                const std::string& drivetype = peach.first;
+                const LDEVset& lset = peach.second;
 
-            o << subsystem << ", " << drivetype << ", LDEVs = " << lset.toString() << " (" << lset.size() << ")"<< std::endl;
+                o << subsystem << ", " << drivetype << ", LDEVs = " << lset.toString() << " (" << lset.size() << ")"<< std::endl;
+            }
         }
     }
 
@@ -72,37 +75,39 @@ std::ostream& operator<<(std::ostream& o, const Test_config_thumbnail& tct)
         o << std::endl;
     }
 
-    o << std::endl << "LDEVs by test host:" << std::endl;
-    for (auto& pear : tct.LDEVs_by_host)
+    if (tct.LDEVs_by_host.size() > 0)
     {
-        for (auto& peach : pear.second)
+        o << std::endl << "LDEVs by test host:" << std::endl;
+        for (auto& pear : tct.LDEVs_by_host)
         {
-            const std::string& host = pear.first;
-            const std::string& subsystem = peach.first;
-            const LDEVset& lset = peach.second;
+            for (auto& peach : pear.second)
+            {
+                const std::string& host = pear.first;
+                const std::string& subsystem = peach.first;
+                const LDEVset& lset = peach.second;
 
-            o << host << ", " << subsystem << ", LDEVs = " << lset.toString() << " (" << lset.size() << ")"<< std::endl;
+                o << host << ", " << subsystem << ", LDEVs = " << lset.toString() << " (" << lset.size() << ")"<< std::endl;
+            }
         }
     }
 
-    o << std::endl << "LDEVs by subsystem port:" << std::endl;
-    for (auto& pear : tct.LDEVs_by_subsystem_port)
+    if (tct.LDEVs_by_subsystem_port.size() > 0)
     {
-        for (auto& peach : pear.second)
+        o << std::endl << "LDEVs by subsystem port:" << std::endl;
+        for (auto& pear : tct.LDEVs_by_subsystem_port)
         {
-            const std::string& subsystem = pear.first;
-            const std::string& port = peach.first;
-            const LDEVset& lset = peach.second;
+            for (auto& peach : pear.second)
+            {
+                const std::string& subsystem = pear.first;
+                const std::string& port = peach.first;
+                const LDEVset& lset = peach.second;
 
-            o << subsystem << ", port = " << port << ", LDEVs = " << lset.toString() << " (" << lset.size() << ")"<< std::endl;
+                o << subsystem << ", port = " << port << ", LDEVs = " << lset.toString() << " (" << lset.size() << ")"<< std::endl;
+            }
         }
     }
 
-    if (tct.pgs_by_subsystem__drive_type__PG_layout.size() == 0)
-    {
-        o << std::endl << "<No drive counts since no RAID_subsystem command devices are available.>" << std::endl << std::endl;
-    }
-    else
+    if (tct.pgs_by_subsystem__drive_type__PG_layout.size() > 0)
     {
         o << std::endl << "Drive counts:" << std::endl;
         for (auto& pear : tct.pgs_by_subsystem__drive_type__PG_layout)
