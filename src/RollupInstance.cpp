@@ -1108,14 +1108,14 @@ void RollupInstance::print_by_subinterval_header()
 
     if (m_s.haveCmdDev)
     {
-        o << subsystem_summary_data::csvHeadersPartOne();
+        if ( ! m_s.no_subsystem_perf ) { o << subsystem_summary_data::csvHeadersPartOne(); }
         o << ",host IOPS per drive,host decimal MB/s per drive,application service time Littles law q depth per drive";
-        o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
+        if ( ! m_s.no_subsystem_perf ) { o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)"; }
     }
 
     o << SubintervalOutput::csvTitles();
 
-    if (m_s.haveCmdDev)
+    if (m_s.haveCmdDev && ! m_s.no_subsystem_perf)
     {
         o << subsystem_summary_data::csvHeadersPartTwo();
         o << subsystem_summary_data::csvHeadersPartOne( "non-participating ");
@@ -1235,7 +1235,7 @@ void RollupInstance::print_subinterval_csv_line(
 
     if (m_s.haveCmdDev)
     {
-        csvline << subsystem_data_by_subinterval[i].csvValuesPartOne(1);
+        if ( ! m_s.no_subsystem_perf ) { csvline << subsystem_data_by_subinterval[i].csvValuesPartOne(1); }
 
 
         unsigned int overall_drive_count = test_config_thumbnail.total_drives();
@@ -1256,6 +1256,7 @@ void RollupInstance::print_subinterval_csv_line(
             csvline << "," << std::fixed << std::setprecision(1) << (st.avg()*iops_per_drive);
         }
 
+        if ( ! m_s.no_subsystem_perf )
         {
             // print the comparisions between application & subsystem IOPS, MB/s, service time
 
@@ -1313,7 +1314,7 @@ void RollupInstance::print_subinterval_csv_line(
 
     csvline << subintervals.sequence[i].outputRollup.csvValues( seconds );
 
-    if (m_s.haveCmdDev)
+    if ( m_s.haveCmdDev && ! m_s.no_subsystem_perf )
     {
         csvline << subsystem_data_by_subinterval[i].csvValuesPartTwo();
         csvline << m_s.rollups.not_participating[i].csvValuesPartOne();
@@ -1443,16 +1444,16 @@ void RollupInstance::print_measurement_summary_csv_line()
 
                 if (m_s.haveCmdDev)
                 {
-                    o << subsystem_summary_data::csvHeadersPartOne();
+                    if (!m_s.no_subsystem_perf) { o << subsystem_summary_data::csvHeadersPartOne(); }
                     o << ",host IOPS per drive,host decimal MB/s per drive, application service time Littles law q depth per drive";
-                    o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
+                    if (!m_s.no_subsystem_perf) { o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";}
                 }
 
                 o << ",non random sample correction factor";
                 o << ",plus minus series statistical confidence";
 
                 o << SubintervalOutput::csvTitles(true);
-                if (m_s.haveCmdDev)
+                if (m_s.haveCmdDev && !m_s.no_subsystem_perf)
                 {
                     o << subsystem_summary_data::csvHeadersPartTwo();
                     o << subsystem_summary_data::csvHeadersPartOne("non-participating ");
@@ -1555,7 +1556,7 @@ void RollupInstance::print_measurement_summary_csv_line()
 
             if (m_s.haveCmdDev)
             {
-                csvline << measurement_subsystem_data.csvValuesPartOne( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
+                if (! m_s.no_subsystem_perf) { csvline << measurement_subsystem_data.csvValuesPartOne( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index ); }
 
                 unsigned int overall_drive_count = test_config_thumbnail.total_drives();
 
@@ -1581,239 +1582,239 @@ void RollupInstance::print_measurement_summary_csv_line()
                 }
             }
 
+            {
+                ivy_float seconds = measurementRollup.durationSeconds();
+
+                if (m_s.haveCmdDev && ! m_s.no_subsystem_perf)
                 {
-                    ivy_float seconds = measurementRollup.durationSeconds();
+                    // print the comparisions between application & subsystem IOPS, MB/s, service time
 
-                    if (m_s.haveCmdDev)
-                    {
-                        // print the comparisions between application & subsystem IOPS, MB/s, service time
+                    ivy_float subsystem_IOPS = measurement_subsystem_data.IOPS();
+                    ivy_float subsystem_decimal_MB_per_second = measurement_subsystem_data.decimal_MB_per_second();
+                    ivy_float subsystem_service_time_ms = measurement_subsystem_data.service_time_ms();
 
-                        ivy_float subsystem_IOPS = measurement_subsystem_data.IOPS();
-                        ivy_float subsystem_decimal_MB_per_second = measurement_subsystem_data.decimal_MB_per_second();
-                        ivy_float subsystem_service_time_ms = measurement_subsystem_data.service_time_ms();
+                    // ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
 
-                        // ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
-
-                        csvline << ','; // subsystem IOPS as % of application IOPS
-                        if (subsystem_IOPS > 0.0)
-                        {
-                            RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
-                            ivy_float application_IOPS = st.count() / seconds;
-                            if (application_IOPS > 0.0)
-                            {
-                                csvline << std::fixed << std::setprecision(3) << (subsystem_IOPS / application_IOPS) * 100.0 << '%';
-                            }
-                        }
-
-                        csvline << ','; // Subsystem MB/s as % of application MB/s
-                        if (subsystem_decimal_MB_per_second > 0.0)
-                        {
-                            RunningStat<ivy_float,ivy_int> bt = measurementRollup.outputRollup.overall_bytes_transferred_RS();
-                            ivy_float application_decimal_MB_per_second = 1E-6 * bt.sum() / seconds;
-                            if (application_decimal_MB_per_second > 0.0)
-                            {
-                                csvline << std::fixed << std::setprecision(3) << (subsystem_decimal_MB_per_second / application_decimal_MB_per_second) * 100.0 << '%';
-                            }
-                        }
-
-                        csvline << ','; // Subsystem service time as % of application service time
-                        if (subsystem_service_time_ms > 0.0)
-                        {
-                            RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
-                            ivy_float application_service_time_ms = 1000.* st.avg();
-                            if (application_service_time_ms > 0.0)
-                            {
-                                csvline << std::fixed << std::setprecision(3) << (subsystem_service_time_ms / application_service_time_ms) * 100.0 << '%';
-                            }
-                        }
-
-                        csvline << ','; // Path latency = application minus subsystem service time (ms)
-                        if (subsystem_service_time_ms > 0.0)
-                        {
-                            RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
-                            ivy_float application_service_time_ms = 1000. * st.avg();
-                            if (application_service_time_ms > 0.0)
-                            {
-                                csvline << std::fixed << std::setprecision(3) << (application_service_time_ms - subsystem_service_time_ms);
-                            }
-                        }
-                    }
-
-                    csvline << "," << m_s.non_random_sample_correction_factor;
-                    csvline << "," << plus_minus_series_confidence_default;
-
-                    csvline << measurementRollup.outputRollup.csvValues(seconds,&(measurementRollup),m_s.non_random_sample_correction_factor);
-
-                    if (m_s.haveCmdDev)
-                    {
-                        csvline << measurement_subsystem_data.csvValuesPartTwo( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
-                        csvline << m_s.rollups.not_participating_measurement.csvValuesPartOne(   m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
-                        csvline << m_s.rollups.not_participating_measurement.csvValuesPartTwo();
-                    }
-
-                    // histograms
+                    csvline << ','; // subsystem IOPS as % of application IOPS
+                    if (subsystem_IOPS > 0.0)
                     {
                         RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
-                        ivy_float total_IOPS = st.count() / seconds;
-
-                        // ",service time true IOPS histogram:";
-                        csvline << "," << m_s.stepName;
-                        for (int i=0; i < io_time_buckets; i++)
+                        ivy_float application_IOPS = st.count() / seconds;
+                        if (application_IOPS > 0.0)
                         {
-                            csvline << ',';
+                            csvline << std::fixed << std::setprecision(3) << (subsystem_IOPS / application_IOPS) * 100.0 << '%';
+                        }
+                    }
+
+                    csvline << ','; // Subsystem MB/s as % of application MB/s
+                    if (subsystem_decimal_MB_per_second > 0.0)
+                    {
+                        RunningStat<ivy_float,ivy_int> bt = measurementRollup.outputRollup.overall_bytes_transferred_RS();
+                        ivy_float application_decimal_MB_per_second = 1E-6 * bt.sum() / seconds;
+                        if (application_decimal_MB_per_second > 0.0)
+                        {
+                            csvline << std::fixed << std::setprecision(3) << (subsystem_decimal_MB_per_second / application_decimal_MB_per_second) * 100.0 << '%';
+                        }
+                    }
+
+                    csvline << ','; // Subsystem service time as % of application service time
+                    if (subsystem_service_time_ms > 0.0)
+                    {
+                        RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
+                        ivy_float application_service_time_ms = 1000.* st.avg();
+                        if (application_service_time_ms > 0.0)
+                        {
+                            csvline << std::fixed << std::setprecision(3) << (subsystem_service_time_ms / application_service_time_ms) * 100.0 << '%';
+                        }
+                    }
+
+                    csvline << ','; // Path latency = application minus subsystem service time (ms)
+                    if (subsystem_service_time_ms > 0.0)
+                    {
+                        RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
+                        ivy_float application_service_time_ms = 1000. * st.avg();
+                        if (application_service_time_ms > 0.0)
+                        {
+                            csvline << std::fixed << std::setprecision(3) << (application_service_time_ms - subsystem_service_time_ms);
+                        }
+                    }
+                }
+
+                csvline << "," << m_s.non_random_sample_correction_factor;
+                csvline << "," << plus_minus_series_confidence_default;
+
+                csvline << measurementRollup.outputRollup.csvValues(seconds,&(measurementRollup),m_s.non_random_sample_correction_factor);
+
+                if (m_s.haveCmdDev && ! m_s.no_subsystem_perf)
+                {
+                    csvline << measurement_subsystem_data.csvValuesPartTwo( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
+                    csvline << m_s.rollups.not_participating_measurement.csvValuesPartOne(   m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
+                    csvline << m_s.rollups.not_participating_measurement.csvValuesPartTwo();
+                }
+
+                // histograms
+                {
+                    RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
+                    ivy_float total_IOPS = st.count() / seconds;
+
+                    // ",service time true IOPS histogram:";
+                    csvline << "," << m_s.stepName;
+                    for (int i=0; i < io_time_buckets; i++)
+                    {
+                        csvline << ',';
+                        RunningStat<ivy_float,ivy_int>
+                        rs  = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
+                        rs += measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
+                        rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
+                        rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
+                        if (rs.count()>0) csvline << ((ivy_float) rs.count() / seconds);
+                    }
+
+                    // ",service time histogram normalized by step total IOPS:";
+                    csvline << "," << m_s.stepName;
+                    for (int i=0; i < io_time_buckets; i++)
+                    {
+                        csvline << ',';
+
+                        if (total_IOPS > 0.)
+                        {
                             RunningStat<ivy_float,ivy_int>
                             rs  = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
                             rs += measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
                             rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
                             rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
-                            if (rs.count()>0) csvline << ((ivy_float) rs.count() / seconds);
+                            if (rs.count()>0) csvline << ( ((ivy_float) rs.count() / seconds) / total_IOPS);
                         }
+                    }
+                    // ",service time histogram scaled by bucket width:";
 
-                        // ",service time histogram normalized by step total IOPS:";
-                        csvline << "," << m_s.stepName;
-                        for (int i=0; i < io_time_buckets; i++)
+                    csvline << "," << m_s.stepName;
+                    for (int i=0; i < io_time_buckets; i++)
+                    {
+                        csvline << ',';
+                        RunningStat<ivy_float,ivy_int>
+                        rs  = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
+                        rs += measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
+                        rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
+                        rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
+                        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                    }
+
+                    // ",service time histogram scaled by bucket width and normalized by step total IOPS:";
+                    csvline << "," << m_s.stepName;
+                    for (int i=0; i < io_time_buckets; i++)
+                    {
+                        csvline << ',';
+
+                        if (total_IOPS > 0.)
                         {
-                            csvline << ',';
-
-                            if (total_IOPS > 0.)
-                            {
-                                RunningStat<ivy_float,ivy_int>
-                                rs  = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
-                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
-                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
-                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
-                                if (rs.count()>0) csvline << ( ((ivy_float) rs.count() / seconds) / total_IOPS);
-                            }
-                        }
-                        // ",service time histogram scaled by bucket width:";
-
-                        csvline << "," << m_s.stepName;
-                        for (int i=0; i < io_time_buckets; i++)
-                        {
-                            csvline << ',';
                             RunningStat<ivy_float,ivy_int>
                             rs  = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
                             rs += measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
                             rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
                             rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
-                            if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
-                        }
-
-                        // ",service time histogram scaled by bucket width and normalized by step total IOPS:";
-                        csvline << "," << m_s.stepName;
-                        for (int i=0; i < io_time_buckets; i++)
-                        {
-                            csvline << ',';
-
-                            if (total_IOPS > 0.)
-                            {
-                                RunningStat<ivy_float,ivy_int>
-                                rs  = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
-                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
-                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
-                                rs += measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
-                                if (rs.count()>0) csvline << ( (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds) / total_IOPS);
-                            }
-                        }
-                        /////////////////////////////////////////////////////////////////////////////////////
-                        // ",submit time true IOPS histogram:";
-                        csvline << "," << m_s.stepName;
-                        for (int i=0; i < io_time_buckets; i++)
-                        {
-                            csvline << ',';
-                            RunningStat<ivy_float,ivy_int>
-                            rs  = measurementRollup.outputRollup.u.a.submit_time.rs_array[0][0][i];
-                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[0][1][i];
-                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][0][i];
-                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][1][i];
-                            if (rs.count()>0) csvline << ((ivy_float) rs.count() / seconds);
-                        }
-
-                        // ",submit time histogram normalized by step total IOPS:";
-                        csvline << "," << m_s.stepName;
-                        for (int i=0; i < io_time_buckets; i++)
-                        {
-                            csvline << ',';
-
-                            if (total_IOPS > 0.)
-                            {
-                                RunningStat<ivy_float,ivy_int>
-                                rs  = measurementRollup.outputRollup.u.a.submit_time.rs_array[0][0][i];
-                                rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[0][1][i];
-                                rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][0][i];
-                                rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][1][i];
-                                if (rs.count()>0) csvline << ( ((ivy_float) rs.count() / seconds) / total_IOPS);
-                            }
-                        }
-                        // ",submit time histogram scaled by bucket width:";
-
-                        csvline << "," << m_s.stepName;
-                        for (int i=0; i < io_time_buckets; i++)
-                        {
-                            csvline << ',';
-                            RunningStat<ivy_float,ivy_int>
-                            rs  = measurementRollup.outputRollup.u.a.submit_time.rs_array[0][0][i];
-                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[0][1][i];
-                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][0][i];
-                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][1][i];
-                            if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
-                        }
-
-                        // ",submit time histogram scaled by bucket width and normalized by step total IOPS:";
-                        csvline << "," << m_s.stepName;
-                        for (int i=0; i < io_time_buckets; i++)
-                        {
-                            csvline << ',';
-
-                            if (total_IOPS > 0.)
-                            {
-                                RunningStat<ivy_float,ivy_int>
-                                rs  = measurementRollup.outputRollup.u.a.submit_time.rs_array[0][0][i];
-                                rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[0][1][i];
-                                rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][0][i];
-                                rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][1][i];
-                                if (rs.count()>0) csvline << ( (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds) / total_IOPS);
-                            }
+                            if (rs.count()>0) csvline << ( (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds) / total_IOPS);
                         }
                     }
                     /////////////////////////////////////////////////////////////////////////////////////
-                    // ",random read service time true IOPS histogram:";
+                    // ",submit time true IOPS histogram:";
                     csvline << "," << m_s.stepName;
                     for (int i=0; i < io_time_buckets; i++)
                     {
                         csvline << ',';
-                        RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
-                        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                        RunningStat<ivy_float,ivy_int>
+                        rs  = measurementRollup.outputRollup.u.a.submit_time.rs_array[0][0][i];
+                        rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[0][1][i];
+                        rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][0][i];
+                        rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][1][i];
+                        if (rs.count()>0) csvline << ((ivy_float) rs.count() / seconds);
                     }
 
-                    // ",random write service time true IOPS histogram:";
+                    // ",submit time histogram normalized by step total IOPS:";
                     csvline << "," << m_s.stepName;
                     for (int i=0; i < io_time_buckets; i++)
                     {
                         csvline << ',';
-                        RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
-                        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
-                    }
 
-                    // ",sequential read service time true IOPS histogram:";
+                        if (total_IOPS > 0.)
+                        {
+                            RunningStat<ivy_float,ivy_int>
+                            rs  = measurementRollup.outputRollup.u.a.submit_time.rs_array[0][0][i];
+                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[0][1][i];
+                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][0][i];
+                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][1][i];
+                            if (rs.count()>0) csvline << ( ((ivy_float) rs.count() / seconds) / total_IOPS);
+                        }
+                    }
+                    // ",submit time histogram scaled by bucket width:";
+
                     csvline << "," << m_s.stepName;
                     for (int i=0; i < io_time_buckets; i++)
                     {
                         csvline << ',';
-                        RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
+                        RunningStat<ivy_float,ivy_int>
+                        rs  = measurementRollup.outputRollup.u.a.submit_time.rs_array[0][0][i];
+                        rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[0][1][i];
+                        rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][0][i];
+                        rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][1][i];
                         if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
                     }
 
-                    // ",sequential write service time true IOPS histogram:";
+                    // ",submit time histogram scaled by bucket width and normalized by step total IOPS:";
                     csvline << "," << m_s.stepName;
                     for (int i=0; i < io_time_buckets; i++)
                     {
                         csvline << ',';
-                        RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
-                        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
-                    }
 
+                        if (total_IOPS > 0.)
+                        {
+                            RunningStat<ivy_float,ivy_int>
+                            rs  = measurementRollup.outputRollup.u.a.submit_time.rs_array[0][0][i];
+                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[0][1][i];
+                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][0][i];
+                            rs += measurementRollup.outputRollup.u.a.submit_time.rs_array[1][1][i];
+                            if (rs.count()>0) csvline << ( (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds) / total_IOPS);
+                        }
+                    }
                 }
+                /////////////////////////////////////////////////////////////////////////////////////
+                // ",random read service time true IOPS histogram:";
+                csvline << "," << m_s.stepName;
+                for (int i=0; i < io_time_buckets; i++)
+                {
+                    csvline << ',';
+                    RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[0][0][i];
+                    if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                }
+
+                // ",random write service time true IOPS histogram:";
+                csvline << "," << m_s.stepName;
+                for (int i=0; i < io_time_buckets; i++)
+                {
+                    csvline << ',';
+                    RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[0][1][i];
+                    if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                }
+
+                // ",sequential read service time true IOPS histogram:";
+                csvline << "," << m_s.stepName;
+                for (int i=0; i < io_time_buckets; i++)
+                {
+                    csvline << ',';
+                    RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[1][0][i];
+                    if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                }
+
+                // ",sequential write service time true IOPS histogram:";
+                csvline << "," << m_s.stepName;
+                for (int i=0; i < io_time_buckets; i++)
+                {
+                    csvline << ',';
+                    RunningStat<ivy_float,ivy_int> rs = measurementRollup.outputRollup.u.a.service_time.rs_array[1][1][i];
+                    if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
+                }
+
+            }
 
 
             {

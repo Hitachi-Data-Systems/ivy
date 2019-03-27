@@ -77,6 +77,7 @@ public:
 
     bool use_command_device {true};
     bool skip_ldev_data {false};
+    bool no_subsystem_perf {false};
 
     int harvesting_subinterval;
 

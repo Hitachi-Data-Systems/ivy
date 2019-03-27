@@ -57,6 +57,9 @@ void usage_message(char* argv_0)
         << "     Don\'t use any command devices." << std::endl << std::endl
         << "-no_ldev"<< std::endl
         << "     If a command device is being used, don\'t collect LDEV data." << std::endl << std::endl
+        << "-no_perf"<< std::endl
+        << "     If a command device is being used, only collect subsystem configuration," << std::endl
+        << "     don\'t collect performance data while ivy is running driving I/O." << std::endl << std::endl
         << "-spinloop" << std::endl
         << "     Used to make test host code continually check for work to do without ever waiting." << std::endl << std::endl
         << "-hyperthread" << std::endl
@@ -193,6 +196,7 @@ int main(int argc, char* argv[])
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_ldev")))        { m_s.skip_ldev_data = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-spinloop")))       { spinloop = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-hyperthread")))    { hyperthread = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_perf")))        { m_s.no_subsystem_perf = true; continue; }
 
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }
 

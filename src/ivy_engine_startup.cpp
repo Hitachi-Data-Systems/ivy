@@ -481,7 +481,7 @@ std::pair<bool /*success*/, std::string /* message */>
 
                     {
                         std::ostringstream o;
-                        o << "command device for " << pL->attribute_value("Hitachi_product") << " " << pL->attribute_value("HDS_product")
+                        o << "Command device for " << pL->attribute_value("Hitachi_product") << " " << pL->attribute_value("HDS_product")
                             <<  " serial number " << pSubsystem->serial_number
                             << " on host = " << pL->attribute_value("ivyscript_hostname")
                             << ", subsystem port = " << pL->attribute_value("port")
@@ -659,7 +659,7 @@ std::pair<bool /*success*/, std::string /* message */>
                             // 2) copy the LDEV's RMLIB attributes to the test LUN.
                             // put a suffix "_RMLIB" if the test LUN already has the attribute name (from the SCSI Inquiry LUN lister tool" showluns.sh").
 
-                            if (0 < pLUN->attribute_value("CLPR").length())
+                            if (0 < pLUN->attribute_value("CLPR").length() && ! m_s.no_subsystem_perf)
                             {
                                 cooldown_WP_watch_set.insert(std::make_pair(pLUN->attribute_value("CLPR"),pSubsystem));
                             }
@@ -857,8 +857,14 @@ std::pair<bool /*success*/, std::string /* message */>
     availableTestLUNs.print_csv_file(atlcsv);
     atlcsv.close();
 
-    if (cooldown_WP_watch_set.size() == 0)
-
+    if (m_s.haveCmdDev && m_s.no_subsystem_perf)
+    {
+        std::ostringstream o;
+        o << "Subsystem performance data collection suppressed by -no_perf command line option." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+    }
+    else if (cooldown_WP_watch_set.size() == 0)
     {
         std::ostringstream o;
         o << "No command devices for RAID_subsystem LDEVs, so cooldown_by_wp settings will not have any effect." << std::endl;
