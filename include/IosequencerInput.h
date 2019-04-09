@@ -42,8 +42,6 @@ public:
 
 		// Note that the maxTags value is set when creating the I/O context.
 		// From then on, nothing examines the value of the maxTags parameter.
-		// If you want to do a series where the maxtags changes from interval to interval,
-		// delete and recreate the workloads each time with the new maxTags value.
 
 	ivy_float
 

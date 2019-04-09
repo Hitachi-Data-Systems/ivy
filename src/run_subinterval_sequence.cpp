@@ -889,8 +889,6 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
           // We now calculate the gather start time near the end of
           // the "next" subinterval, i.e. the one that is actually running.
 
-          // What's a bit tricky is that the Barrier time
-
         ivytime host_sendup_adjustment(0.0);
 
         if (m_s.hostSendupTimeSeconds.count() > 0)

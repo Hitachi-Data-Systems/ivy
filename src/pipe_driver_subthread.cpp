@@ -1306,7 +1306,7 @@ void pipe_driver_subthread::threadRun()
                         if (now > m_s.nextSubintervalEnd)
                         {
                             std::ostringstream o;
-                            o << "<Error> Subinterval length parameter subinterval_seconds may be too short.  For host " << ivyscript_hostname
+                            o << "<Error> Subinterval length parameter \"subinterval_seconds\" may be too short.  For host " << ivyscript_hostname
                                 << ", pipe_driver_subthread received the [CPU] line for the previous subinterval after the current subinterval was already over." << std::endl;
                             o << "  This can also be caused if an ivy command device is on a subsystem port that is saturated with other (ivy) activity, making communication with the command device run very slowly." << std::endl;
 

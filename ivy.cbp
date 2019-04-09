@@ -163,6 +163,11 @@
 					<Add option="-s" />
 				</Linker>
 			</Target>
+			<Target title="ivycore">
+				<Option output="bin/ivycore" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="all" targets="ivymaster;ivydriver;clear_hung_ivy_threads;ivyenglib;" />
@@ -786,6 +791,9 @@
 		<Unit filename="src/ivy_engine_startup.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="src/ivycore.cpp">
+			<Option target="ivycore" />
+		</Unit>
 		<Unit filename="src/ivydriver.cpp">
 			<Option target="ivydriver" />
 		</Unit>
@@ -833,6 +841,24 @@
 		</Unit>
 		<Unit filename="src/memcpy.c">
 			<Option compilerVar="CC" />
+			<Option target="ivymaster" />
+			<Option target="ivydriver" />
+			<Option target="clear_hung_ivy_threads" />
+			<Option target="makedict" />
+			<Option target="csv_rows" />
+			<Option target="csv_header_columns" />
+			<Option target="csv_columns_in_row" />
+			<Option target="csv_column_header" />
+			<Option target="csv_raw_cell_value" />
+			<Option target="csv_cell_value" />
+			<Option target="csv_lookup_column" />
+			<Option target="csv_row" />
+			<Option target="csv_column" />
+			<Option target="testRegex" />
+			<Option target="test_LDEVset" />
+			<Option target="remove_empty_columns" />
+			<Option target="test_hosts_list" />
+			<Option target="test_negative_ivytimes" />
 		</Unit>
 		<Unit filename="src/pattern.cpp">
 			<Option target="ivymaster" />
