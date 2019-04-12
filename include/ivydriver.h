@@ -115,6 +115,10 @@ struct IvyDriver
 
     std::map<unsigned int,WorkloadThread*>     workload_threads {}; // the ones with TestLUNs/Workloads
 
+    std::map<unsigned int, bool> active_cores {};
+        // This is used to filter Linux CPU busy data for only those Linux "processor" numbers (hyperthread numbers)
+        // that have WorkloadThreads on them, and for which the associated WorkloadThread has TestLUNs/Workloads.
+
     std::map<std::string /* host+LUN part of workloadID */, TestLUN>
         testLUNs {};
 

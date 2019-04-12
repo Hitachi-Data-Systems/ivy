@@ -1,7 +1,7 @@
 #include "RestHandler.h"
 #include "ivy_engine.h"
-#include "rapidjson/document.h"  
-#include "rapidjson/schema.h"  
+#include "rapidjson/document.h"
+#include "rapidjson/schema.h"
 
 extern ivy_engine m_s;
 
@@ -10,7 +10,6 @@ RestSessionsUri::handle_post(http_request request)
 {
     std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
     std::cout << request.method() << " : " << request.headers()["Cookie"] << std::endl;
-    int rc = 0;
     std::string resultstr;
     std::pair<bool, std::string> result {true, std::string()};
 
@@ -20,16 +19,14 @@ RestSessionsUri::handle_post(http_request request)
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
     std::cout << "JSON:\n" << json << std::endl;
 
-    rapidjson::Document document; 
+    rapidjson::Document document;
     if (document.Parse(json).HasParseError())
     {
-        rc = 1;
         resultstr += "document invalid";
     }
 
     rapidjson::SchemaValidator validator(*_schema);
     if (!document.Accept(validator)) {
-        rc = 1;
         resultstr += get_schema_validation_error(&validator);
     }
 
@@ -56,7 +53,7 @@ RestSessionsUri::handle_post(http_request request)
     {
         std::unique_lock<std::mutex> u_lk(_session_mutex);
 
-        _active_session_token = api_token->value.GetString(); 
+        _active_session_token = api_token->value.GetString();
         resultstr += _active_session_token;
         _session_state = true;
     }
@@ -70,7 +67,7 @@ void
 RestSessionsUri::handle_get(http_request request)
 {
     std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
-    http_response response(status_codes::OK); 
+    http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
     make_response(response, resultstr, result);
@@ -81,7 +78,7 @@ void
 RestSessionsUri::handle_put(http_request request)
 {
     std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
-    http_response response(status_codes::OK); 
+    http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
     make_response(response, resultstr, result);
@@ -92,7 +89,7 @@ void
 RestSessionsUri::handle_patch(http_request request)
 {
     std::cout << request.method() << " : " << request.absolute_uri().path() << std::endl;
-    http_response response(status_codes::OK); 
+    http_response response(status_codes::OK);
     std::string resultstr("Not Supported");
     std::pair<bool, std::string> result {true, std::string()};
     make_response(response, resultstr, result);
@@ -112,7 +109,7 @@ RestSessionsUri::handle_delete(http_request request)
         RestHandler::shutdown();
     }
 
-    http_response response(status_codes::OK); 
+    http_response response(status_codes::OK);
     std::string resultstr("Done");
     std::pair<bool, std::string> result {true, std::string()};
     make_response(response, resultstr, result);

@@ -167,11 +167,12 @@
 				<Option output="bin/ivycore" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
 			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="all" targets="ivymaster;ivydriver;clear_hung_ivy_threads;ivyenglib;" />
-			<Add alias="allall" targets="ivymaster;ivydriver;clear_hung_ivy_threads;csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
+			<Add alias="allall" targets="ivymaster;ivydriver;clear_hung_ivy_threads;csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;ivycore;" />
 			<Add alias="csv_utilities" targets="csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
 		</VirtualTargets>
 		<Compiler>
@@ -436,6 +437,7 @@
 			<Option target="csv_row" />
 			<Option target="csv_column" />
 			<Option target="remove_empty_columns" />
+			<Option target="ivycore" />
 		</Unit>
 		<Unit filename="include/ivylinuxcpubusy.h">
 			<Option target="ivymaster" />
@@ -446,6 +448,7 @@
 			<Option target="ivydriver" />
 			<Option target="clear_hung_ivy_threads" />
 			<Option target="remove_empty_columns" />
+			<Option target="ivycore" />
 		</Unit>
 		<Unit filename="include/pattern.h">
 			<Option target="ivymaster" />
@@ -813,6 +816,7 @@
 			<Option target="testRegex" />
 			<Option target="test_LDEVset" />
 			<Option target="remove_empty_columns" />
+			<Option target="ivycore" />
 		</Unit>
 		<Unit filename="src/ivylinuxcpubusy.cpp">
 			<Option target="ivydriver" />
@@ -835,30 +839,13 @@
 			<Option target="test_LDEVset" />
 			<Option target="remove_empty_columns" />
 			<Option target="test_negative_ivytimes" />
+			<Option target="ivycore" />
 		</Unit>
 		<Unit filename="src/makedict.cpp">
 			<Option target="makedict" />
 		</Unit>
 		<Unit filename="src/memcpy.c">
 			<Option compilerVar="CC" />
-			<Option target="ivymaster" />
-			<Option target="ivydriver" />
-			<Option target="clear_hung_ivy_threads" />
-			<Option target="makedict" />
-			<Option target="csv_rows" />
-			<Option target="csv_header_columns" />
-			<Option target="csv_columns_in_row" />
-			<Option target="csv_column_header" />
-			<Option target="csv_raw_cell_value" />
-			<Option target="csv_cell_value" />
-			<Option target="csv_lookup_column" />
-			<Option target="csv_row" />
-			<Option target="csv_column" />
-			<Option target="testRegex" />
-			<Option target="test_LDEVset" />
-			<Option target="remove_empty_columns" />
-			<Option target="test_hosts_list" />
-			<Option target="test_negative_ivytimes" />
 		</Unit>
 		<Unit filename="src/pattern.cpp">
 			<Option target="ivymaster" />

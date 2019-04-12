@@ -38,6 +38,8 @@
 #include "Subinterval_CPU.h"
 #include "ivydriver.h"
 
+//#define IVY_LINUX_CPU_BUSY_DETAIL
+
 // In the code below, it is taken as given that the number of cores does not change while running the program.
 // Thus when we copy or when we set new values and there is an existing set of counters for each core, we assume
 // that we still have the same number of cores and the per-core objects are reused.
@@ -55,7 +57,7 @@ linuxcpucounters::linuxcpucounters(linuxcpucounters& other)
 	virtualguest=other.virtualguest;
 }
 
-void linuxcpucounters::copy(linuxcpucounters& other)
+void linuxcpucounters::copy(const linuxcpucounters& other)
 {
 	user=other.user;
 	nice=other.nice;
@@ -68,19 +70,6 @@ void linuxcpucounters::copy(linuxcpucounters& other)
 	virtualguest=other.virtualguest;
 }
 
-linuxcpucounters::linuxcpucounters()
-{
-	user=0;
-	nice=0;
-	system=0;
-	idle=0;
-	iowait=0;
-	irq=0;
-	softirq=0;
-	stealtime=0;
-	virtualguest=0;
-}
-
 std::string linuxcpucounters::toString()
 {
     std::ostringstream o;
@@ -90,56 +79,33 @@ std::string linuxcpucounters::toString()
 }
 
 
-procstatcounters::~procstatcounters() {
-	while (eachcore.size()>0) {
-		linuxcpucounters* p = eachcore.front();
-		eachcore.pop_front();
-		delete p;
-	}
-};
-
-void procstatcounters::copyFrom(struct procstatcounters& other, std::string when, std::string logfile)
+void procstatcounters::copy(const procstatcounters& other)
 {
-
-	if (0 == eachcore.size())
-		for (auto& p_linuxcpucounters: other.eachcore)
-		{
-			eachcore.push_back(new linuxcpucounters(*p_linuxcpucounters));
-		}
-	else
-	{
-		std::list<linuxcpucounters*>::iterator it=eachcore.begin();
-		std::list<linuxcpucounters*>::iterator other_it=other.eachcore.begin();
-		while (other.eachcore.end() != other_it)
-		{
-			(*it)->copy(**other_it);
-			it++; other_it++;
-		}
-	}
-	overall.copy(other.overall);
 	t = other.t;
+
+	overall.copy(other.overall);
+
+    eachcore.clear();
+
+    for (const auto& pear : other.eachcore)
+    {
+        struct linuxcpucounters* p = new linuxcpucounters(*pear.second);
+        eachcore[pear.first] = p;
+    }
 }
 
 std::string procstatcounters::toString()
 {
     std::ostringstream o;
     o << "procstatcounters { t = " << t.format_as_datetime_with_ns() << ", overall = " << overall.toString() << std::endl;
-    int core =0;
-    for (auto& p : eachcore)
+
+    for (auto& pear : eachcore)
     {
-        o << "   core " << core << ": " << p->toString() << std::endl;
-        core++;
+        o << "   core " << pear.first << ": " << pear.second->toString() << std::endl;
     }
+
     return o.str();
 }
-
-cpubusypercent::~cpubusypercent() {
-	while (eachcore.size()>0) {
-		struct linuxcpubusypercent* p = eachcore.front();
-		eachcore.pop_front();
-		delete p;
-	}
-};
 
 void avgcpubusypercent::clear()
 {
@@ -157,11 +123,19 @@ void avgcpubusypercent::clear()
 	mincore_user = 0.;
 	maxcore_user = 0.;
 
-}
-
-avgcpubusypercent::avgcpubusypercent()
-{
-	clear();
+	activecores = 0;
+	sum_activecores_total = 0.;
+	avg_activecore_total = 0.;
+	min_activecore_total = 0.;
+	max_activecore_total = 0.;
+	sum_activecores_system = 0.;
+	avg_activecore_system = 0.;
+	min_activecore_system = 0.;
+	max_activecore_system = 0.;
+	sum_activecores_user = 0.;
+	avg_activecore_user = 0.;
+	min_activecore_user = 0.;
+	max_activecore_user = 0.;
 }
 
 void	avgcpubusypercent::add(const avgcpubusypercent& other)
@@ -204,13 +178,53 @@ void	avgcpubusypercent::add(const avgcpubusypercent& other)
 		if (mincore_user > other.mincore_user) mincore_user = other.mincore_user;
 		if (maxcore_user < other.maxcore_user) maxcore_user = other.maxcore_user;
 	}
+
+	if (0 == activecores)
+	{
+		activecores = other.activecores;
+
+		sum_activecores_total = other.sum_activecores_total;
+		avg_activecore_total = other.avg_activecore_total;
+		min_activecore_total = other.min_activecore_total;
+		max_activecore_total = other.max_activecore_total;
+
+		sum_activecores_system = other.sum_activecores_system;
+		avg_activecore_system = other.avg_activecore_system;
+		min_activecore_system = other.min_activecore_system;
+		max_activecore_system = other.max_activecore_system;
+
+		sum_activecores_user = other.sum_activecores_user;
+		avg_activecore_user = other.avg_activecore_user;
+		min_activecore_user = other.min_activecore_user;
+		max_activecore_user = other.max_activecore_user;
+	}
+	else if (0 != other.activecores)
+	{
+		activecores += other.activecores;
+
+		sum_activecores_total += other.sum_activecores_total;
+		avg_activecore_total = sum_activecores_total/((ivy_float)activecores);
+		if (min_activecore_total > other.min_activecore_total) min_activecore_total = other.min_activecore_total;
+		if (max_activecore_total < other.max_activecore_total) max_activecore_total = other.max_activecore_total;
+
+		sum_activecores_system += other.sum_activecores_system;
+		avg_activecore_system = sum_activecores_system/((ivy_float)activecores);
+		if (min_activecore_system > other.min_activecore_system) min_activecore_system = other.min_activecore_system;
+		if (max_activecore_system < other.max_activecore_system) max_activecore_system = other.max_activecore_system;
+
+		sum_activecores_user += other.sum_activecores_user;
+		avg_activecore_user = sum_activecores_user / ((ivy_float)activecores);
+		if (min_activecore_user > other.min_activecore_user) min_activecore_user = other.min_activecore_user;
+		if (max_activecore_user < other.max_activecore_user) max_activecore_user = other.max_activecore_user;
+	}
 }
 
 
 std::string avgcpubusypercent::toString()
 {
 	std::ostringstream o;
-	o<<"<" << cores
+	o <<"<"
+	<< cores
 	<< "," << sumcores_total
 	<< "," << avgcore_total
 	<< "," << mincore_total
@@ -223,6 +237,19 @@ std::string avgcpubusypercent::toString()
 	<< "," << avgcore_user
 	<< "," << mincore_user
 	<< "," << maxcore_user
+	<< "," << activecores
+	<< "," << sum_activecores_total
+	<< "," << avg_activecore_total
+	<< "," << min_activecore_total
+	<< "," << max_activecore_total
+	<< "," << sum_activecores_system
+	<< "," << avg_activecore_system
+	<< "," << min_activecore_system
+	<< "," << max_activecore_system
+	<< "," << sum_activecores_user
+	<< "," << avg_activecore_user
+	<< "," << min_activecore_user
+	<< "," << max_activecore_user
 	<< ">";
 	return o.str();
 }
@@ -232,37 +259,94 @@ bool avgcpubusypercent::fromString(std::string s)
 	std::istringstream is(s);
 	char c;
 	is >> c; if (is.fail() || ('<' != c)) {clear(); return false;}
+
 	is >> cores; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> sumcores_total; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> sumcores_total; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> avgcore_total; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> avgcore_total; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> mincore_total ; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> mincore_total ; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> maxcore_total; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> maxcore_total; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> sumcores_system; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> sumcores_system; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> avgcore_system; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> avgcore_system; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> mincore_system ; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> mincore_system ; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> maxcore_system; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> maxcore_system; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> sumcores_user; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> sumcores_user; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> avgcore_user; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> avgcore_user; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> mincore_user ; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> mincore_user ; if (is.fail()) {clear(); return false;}
 	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> maxcore_user; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> maxcore_user; if (is.fail()) {clear(); return false;}
+
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> activecores; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> sum_activecores_total; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> avg_activecore_total; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> min_activecore_total ; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> max_activecore_total; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> sum_activecores_system; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> avg_activecore_system; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> min_activecore_system ; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> max_activecore_system; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> sum_activecores_user; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> avg_activecore_user; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> min_activecore_user ; if (is.fail()) {clear(); return false;}
+	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+	is >> max_activecore_user; if (is.fail()) {clear(); return false;}
+
 	is >> c; if (is.fail() || ('>' != c)) {clear(); return false;}
 	is >> c; if (!is.fail()) {clear(); return false;}
 	return true;
 }
 
+
 // read linux's /proc/stat to get overall system CPU usage info
+
+
+//    $ cat /proc/stat
+//    cpu  167898 1946 24030 7415559 20916 0 366 0 0 0
+//    cpu0 10200 334 1474 461689 683 0 93 0 0 0
+//    cpu1 11449 246 1794 462755 836 0 40 0 0 0
+//    cpu2 9561 356 1280 465095 759 0 21 0 0 0
+//    cpu3 8280 308 1341 466634 533 0 14 0 0 0
+//    cpu4 19825 29 2505 454051 601 0 20 0 0 0
+//    cpu5 17670 98 2472 456428 363 0 19 0 0 0
+//    cpu6 19337 191 2295 454959 256 0 13 0 0 0
+//    cpu7 22097 277 2524 451753 311 0 22 0 0 0
+//    cpu8 4797 0 853 471095 208 0 6 0 0 0
+//    cpu9 5220 2 1012 469995 932 0 2 0 0 0
+//    cpu10 4789 39 780 471329 221 0 2 0 0 0
+//    cpu11 4784 2 866 471381 130 0 30 0 0 0
+//    cpu12 7066 0 1011 468544 299 0 55 0 0 0
+//    cpu13 6321 1 1162 469520 161 0 3 0 0 0
+//    cpu14 5769 2 951 470307 137 0 4 0 0 0
+//    cpu15 10725 52 1701 450017 14479 0 15 0 0 0
+//    intr 7139097 1012304 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 30 57 0 0 0 16477 0 0 0 0 0 0 0 0 0 0 74580 0 0 1 75995 6291 12929 7280 2606 2609 61621 11141 0 0 1 15344 2596 2582 2534 2371 2371 2371 2371 0 0 2371 2371 2371 2371 2371 2371 2371 2371 0 0 2371 2371 2371 2371 2371 2371 2371 2371 35 221 0 4 0 0 35 745 0 4 0 0 2 0 2 0 2 0 2 2 2 2 2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+//    ctxt 14904001
+//    btime 1555006116
+//    processes 5629
+//    procs_running 2
+//    procs_blocked 0
+//    softirq 4483094 10 2615773 975 370196 87400 0 17513 797030 0 594197
 
 int getprocstat(struct procstatcounters* psc, const std::string logfilename ){
         // read /proc/stat to get cpu usage counters for overall and for each core
@@ -274,39 +358,27 @@ int getprocstat(struct procstatcounters* psc, const std::string logfilename ){
 		return -1;
 	}
 	std::string inputline;
-	std::string cpuname;
+	unsigned int cpu_number;
 	int line=0;
-
-	std::list<linuxcpucounters*>::iterator it = psc->eachcore.begin();
-
-	bool creating;
-	if (psc->eachcore.size() == 0)
-		creating=true;
-	else
-		creating=false;
 
 	while (procstat.good()){
 		getline(procstat,inputline);
 		if (!procstat.good()) break;
 		line++;
 		trim(inputline); // removes whitespace at beginning and end
-//{
-//ostringstream o; o << std::endl << "getprocstat() input line " << line << " " << inputline << std::endl;
-//fileappend(logfilename,o.str());
-//}
+
 		if (1==line) {
 			if (inputline.substr(0,4)!=std::string("cpu ")) {
 				fileappend(logfilename,"first line from /proc/stat was not overall cpu line.\n");
 				procstat.close();
 				return -1;
 			}
-			std::istringstream iss(inputline);
-			iss >> cpuname
-				>> psc->overall.user >> psc->overall.nice >> psc->overall.system
+			std::istringstream iss(inputline.substr(4,inputline.size()-4));
+			iss >> psc->overall.user >> psc->overall.nice >> psc->overall.system
 				>> psc->overall.idle >> psc->overall.iowait >> psc->overall.irq
 				>> psc->overall.softirq >> psc->overall.stealtime >> psc->overall.virtualguest;
 		} else {
-			if (2<line) {
+			if (1<line) {
 				if (inputline.substr(0,5)==std::string("intr ")) {
 					procstat.close();
 					return 0;
@@ -318,29 +390,33 @@ int getprocstat(struct procstatcounters* psc, const std::string logfilename ){
 				return -1;
 			}
 			{
-				std::istringstream iss(inputline);
-				struct linuxcpucounters* p = new struct linuxcpucounters;
-				if (creating)
+				std::istringstream iss(inputline.substr(3,inputline.size()-3));
+
+				iss >> cpu_number;
+				if(iss.fail())
 				{
-					p = new linuxcpucounters;
-					psc->eachcore.push_back(p);
+				    std::ostringstream o; o << "<Error> internal error - in getprocstat(), failed reading cpu number in what is supposed to be a cpu detail line - \""
+				        << inputline << "\".  Occurred at " << __FILE__ << " line " << __LINE__ << ".";
+                    fileappend (logfilename,o.str());
+                    return -1;
 				}
-				else
-				{
-					p = (*it);
-					it++;
-				}
-				iss >> cpuname
-					>> p->user >> p->nice >> p->system
+
+                struct linuxcpucounters* p;
+
+                std::map<unsigned int /*processor number*/, struct linuxcpucounters*>::iterator it = psc->eachcore.find(cpu_number);
+
+                if (it == psc->eachcore.end())
+                {
+                    psc->eachcore[cpu_number] = p = new struct linuxcpucounters();
+                }
+                else
+                {
+                    p = it->second;
+                }
+
+				iss	>> p->user >> p->nice >> p->system
 					>> p->idle >> p->iowait >> p->irq
 					>> p->softirq >> p->stealtime >> p->virtualguest;
-//{
-//ostringstream o; o << "getprocstat() pushing back cpuname=" << cpuname
-//<< ", user=" << std::fixed << std::dec << p->user << " 0x" << std::fixed << std::hex << p->user
-//<< ", system=" << std::fixed << std::dec << p->user << " 0x" << std::fixed << std::hex << p->user
-//<< std::endl;
-//fileappend(logfilename,o.str());
-//}
 			}
 		}
 	}
@@ -349,106 +425,146 @@ int getprocstat(struct procstatcounters* psc, const std::string logfilename ){
 	return -1;
 }
 
+
+
+
 int computecpubusy(
-        // compute cpu busy % from counter values in jiffies at begin/end of interval
-        struct procstatcounters* psc1, // counters at start of interval
-        struct procstatcounters* psc2, // counters at end of interval
-        struct cpubusypercent* cpubusydetail, // this gets filled in as output
-        struct avgcpubusypercent* cpubusysummary, // this gets filled in as output
+    // compute cpu busy % from counter values in jiffies at begin/end of interval
+    struct procstatcounters* psc1, // counters at start of interval
+    struct procstatcounters* psc2, // counters at end of interval
+    struct cpubusypercent* p_cpubusydetail, // this gets filled in as output
+    struct avgcpubusypercent* p_cpubusysummary, // this gets filled in as output
+    std::map<unsigned int,bool>& active_hyperthreads,
 	const std::string logfilename
 ){
-        ivy_float duration_seconds=psc2->t.getlongdoubleseconds() - psc1->t.getlongdoubleseconds();
-//{
-//ostringstream o; o<<"computecpubusy() duration is " << duration_seconds << " seconds." << std::endl;
-//fileappend(logfilename,o.str());
-//}
+    ivy_float duration_seconds=psc2->t.getlongdoubleseconds() - psc1->t.getlongdoubleseconds();
+
 	if (psc1->eachcore.size()==0 || psc1->eachcore.size()!=psc2->eachcore.size()) {
 		{std::ostringstream o; o<< "Starting procstatcounters is size " << (psc1->eachcore).size() << ", ending procstatcounters is size " << (psc2->eachcore).size() << ".\n"; fileappend(logfilename,o.str());}
 		fileappend(logfilename,"computecpubusy(): number of cores was zero or number of cores at beginning and end not the same.\n");
 		return -1;
 	}
-	if (cpubusydetail->eachcore.size()!=0) {
+	if (p_cpubusydetail->eachcore.size()!=0) {
 		fileappend(logfilename,"computecpubusy(): cpubusydetail was not empty to start.\n");
 		return -1;
 	}
 	int jiffiespersecond=sysconf(_SC_CLK_TCK);
-//{
-//ostringstream o; o<<"computecpubusy() sysconf(_SC_CLK_TCK) returned " << jiffiespersecond << " jiffies per second." << std::endl;
-//fileappend(logfilename,o.str());
-//}
-	if (-1==jiffiespersecond) {
+
+	if (-1==jiffiespersecond)
+	{
 		fileappend(logfilename,std::string("computecpubusy(): sysconf(_SC_CLK_TCK) failed.\n"));
 		return -1;
 	}
 	double secondsperjiffy=1.0/((double)jiffiespersecond);
-	cpubusydetail->overall.user        =100.*((double)(psc2->overall.user        -psc1->overall.user        ))*secondsperjiffy / duration_seconds;
-	cpubusydetail->overall.nice        =100.*((double)(psc2->overall.nice        -psc1->overall.nice        ))*secondsperjiffy / duration_seconds;
-	cpubusydetail->overall.system      =100.*((double)(psc2->overall.system      -psc1->overall.system      ))*secondsperjiffy / duration_seconds;
-	cpubusydetail->overall.idle        =100.*((double)(psc2->overall.idle        -psc1->overall.idle        ))*secondsperjiffy / duration_seconds;
-	cpubusydetail->overall.iowait      =100.*((double)(psc2->overall.iowait      -psc1->overall.iowait      ))*secondsperjiffy / duration_seconds;
-	cpubusydetail->overall.irq         =100.*((double)(psc2->overall.irq         -psc1->overall.irq         ))*secondsperjiffy / duration_seconds;
-	cpubusydetail->overall.softirq     =100.*((double)(psc2->overall.softirq     -psc1->overall.softirq     ))*secondsperjiffy / duration_seconds;
-	cpubusydetail->overall.stealtime   =100.*((double)(psc2->overall.stealtime   -psc1->overall.stealtime   ))*secondsperjiffy / duration_seconds;
-	cpubusydetail->overall.virtualguest=100.*((double)(psc2->overall.virtualguest-psc1->overall.virtualguest))*secondsperjiffy / duration_seconds;
-	std::list<struct linuxcpucounters*>::iterator psc1iter=psc1->eachcore.begin();
-	std::list<struct linuxcpucounters*>::iterator psc2iter=psc2->eachcore.begin();
-	for (;psc1iter!=psc1->eachcore.end();psc1iter++,psc2iter++){
-		struct linuxcpubusypercent* p = new struct linuxcpubusypercent;
-		p->user        =100.*((double)((*psc2iter)->user        -(*psc1iter)->user        ))*secondsperjiffy/duration_seconds;
-		p->nice        =100.*((double)((*psc2iter)->nice        -(*psc1iter)->nice        ))*secondsperjiffy/duration_seconds;
-		p->system      =100.*((double)((*psc2iter)->system      -(*psc1iter)->system      ))*secondsperjiffy/duration_seconds;
-		p->idle        =100.*((double)((*psc2iter)->idle        -(*psc1iter)->idle        ))*secondsperjiffy/duration_seconds;
-		p->iowait      =100.*((double)((*psc2iter)->iowait      -(*psc1iter)->iowait      ))*secondsperjiffy/duration_seconds;
-		p->irq         =100.*((double)((*psc2iter)->irq         -(*psc1iter)->irq         ))*secondsperjiffy/duration_seconds;
-		p->softirq     =100.*((double)((*psc2iter)->softirq     -(*psc1iter)->softirq     ))*secondsperjiffy/duration_seconds;
-		p->stealtime   =100.*((double)((*psc2iter)->stealtime   -(*psc1iter)->stealtime   ))*secondsperjiffy/duration_seconds;
-		p->virtualguest=100.*((double)((*psc2iter)->virtualguest-(*psc1iter)->virtualguest))*secondsperjiffy/duration_seconds;
-		cpubusydetail->eachcore.push_back(p);
+	p_cpubusydetail->overall.user        =100.*((double)(psc2->overall.user        -psc1->overall.user        ))*secondsperjiffy / duration_seconds;
+	p_cpubusydetail->overall.nice        =100.*((double)(psc2->overall.nice        -psc1->overall.nice        ))*secondsperjiffy / duration_seconds;
+	p_cpubusydetail->overall.system      =100.*((double)(psc2->overall.system      -psc1->overall.system      ))*secondsperjiffy / duration_seconds;
+	p_cpubusydetail->overall.idle        =100.*((double)(psc2->overall.idle        -psc1->overall.idle        ))*secondsperjiffy / duration_seconds;
+	p_cpubusydetail->overall.iowait      =100.*((double)(psc2->overall.iowait      -psc1->overall.iowait      ))*secondsperjiffy / duration_seconds;
+	p_cpubusydetail->overall.irq         =100.*((double)(psc2->overall.irq         -psc1->overall.irq         ))*secondsperjiffy / duration_seconds;
+	p_cpubusydetail->overall.softirq     =100.*((double)(psc2->overall.softirq     -psc1->overall.softirq     ))*secondsperjiffy / duration_seconds;
+	p_cpubusydetail->overall.stealtime   =100.*((double)(psc2->overall.stealtime   -psc1->overall.stealtime   ))*secondsperjiffy / duration_seconds;
+	p_cpubusydetail->overall.virtualguest=100.*((double)(psc2->overall.virtualguest-psc1->overall.virtualguest))*secondsperjiffy / duration_seconds;
+
+	for (auto& pear : psc1->eachcore)
+	{
+		unsigned int processor = pear.first;
+
+		struct linuxcpubusypercent* p = &(p_cpubusydetail->eachcore[processor]);
+		struct linuxcpucounters* p1 = (psc1->eachcore)[processor];
+		struct linuxcpucounters* p2 = (psc2->eachcore)[processor];
+		p->user        =100.*((double)(p2->user        -p1->user        ))*secondsperjiffy/duration_seconds;
+		p->nice        =100.*((double)(p2->nice        -p1->nice        ))*secondsperjiffy/duration_seconds;
+		p->system      =100.*((double)(p2->system      -p1->system      ))*secondsperjiffy/duration_seconds;
+		p->idle        =100.*((double)(p2->idle        -p1->idle        ))*secondsperjiffy/duration_seconds;
+		p->iowait      =100.*((double)(p2->iowait      -p1->iowait      ))*secondsperjiffy/duration_seconds;
+		p->irq         =100.*((double)(p2->irq         -p1->irq         ))*secondsperjiffy/duration_seconds;
+		p->softirq     =100.*((double)(p2->softirq     -p1->softirq     ))*secondsperjiffy/duration_seconds;
+		p->stealtime   =100.*((double)(p2->stealtime   -p1->stealtime   ))*secondsperjiffy/duration_seconds;
+		p->virtualguest=100.*((double)(p2->virtualguest-p1->virtualguest))*secondsperjiffy/duration_seconds;
 	}
-	cpubusysummary->cores=cpubusydetail->eachcore.size();
+	p_cpubusysummary->cores=p_cpubusydetail->eachcore.size();
 
-	cpubusysummary->sumcores_total = cpubusydetail->overall.user + cpubusydetail->overall.system;
-	cpubusysummary->avgcore_total = cpubusysummary->sumcores_total/cpubusysummary->cores;
+	p_cpubusysummary->sumcores_total = p_cpubusydetail->overall.user + p_cpubusydetail->overall.system;
+	p_cpubusysummary->avgcore_total = p_cpubusysummary->sumcores_total/p_cpubusysummary->cores;
 
-	cpubusysummary->sumcores_system = cpubusydetail->overall.system;
-	cpubusysummary->avgcore_system = cpubusydetail->overall.system/cpubusysummary->cores;
+	p_cpubusysummary->sumcores_system = p_cpubusydetail->overall.system;
+	p_cpubusysummary->avgcore_system = p_cpubusydetail->overall.system/p_cpubusysummary->cores;
 
-	cpubusysummary->sumcores_user = cpubusydetail->overall.user;
-	cpubusysummary->avgcore_user = cpubusydetail->overall.user/cpubusysummary->cores;
+	p_cpubusysummary->sumcores_user = p_cpubusydetail->overall.user;
+	p_cpubusysummary->avgcore_user = p_cpubusydetail->overall.user/p_cpubusysummary->cores;
 
-	for (std::list<struct linuxcpubusypercent*>::iterator it=cpubusydetail->eachcore.begin();it!=cpubusydetail->eachcore.end();it++) {
-		double total = (*it)->user+(*it)->system;
-		if (it==cpubusydetail->eachcore.begin()){
-			cpubusysummary->mincore_total = total;
-			cpubusysummary->maxcore_total = total;
-			cpubusysummary->mincore_system= (*it)->system;
-			cpubusysummary->maxcore_system= (*it)->system;
-			cpubusysummary->mincore_user  = (*it)->user;
-			cpubusysummary->maxcore_user  = (*it)->user;
-//{
-//std::ostringstream o; o<<"First pass cores=" << cpubusysummary->cores << std::endl
-//<< ", sumcores_total=" << cpubusysummary->sumcores_total << ", avgcore_total=" << cpubusysummary->avgcore_total << std::endl
-//<< ", sumcores_system=" << cpubusysummary->sumcores_system << ", avgcore_system=" << cpubusysummary->avgcore_system << std::endl
-//<< ", sumcores_user=" << cpubusysummary->sumcores_user << ", avgcore_user=" << cpubusysummary->avgcore_user << std::endl
-//<< "mincore_total=" << cpubusysummary->mincore_total << ", maxcore_total=" << cpubusysummary->maxcore_total << std::endl
-//<< ", mincore_system=" << cpubusysummary->mincore_system << ", maxcore_system=" << cpubusysummary->maxcore_system << std::endl
-//<< ", mincore_user=" << cpubusysummary->mincore_user << ", maxcore_user=" << cpubusysummary->maxcore_user << std::endl;
-//fileappend(logfilename,o.str());
-//}
+	bool firstpass {true};
+
+	bool firstactive {true};
+
+	p_cpubusysummary->activecores = 0;
+
+	p_cpubusysummary->sum_activecores_total = 0;
+	p_cpubusysummary->sum_activecores_system = 0;
+	p_cpubusysummary->sum_activecores_user = 0;
+
+	p_cpubusysummary->avg_activecore_total = 0;
+	p_cpubusysummary->avg_activecore_system = 0;
+	p_cpubusysummary->avg_activecore_user = 0;
+
+	for (auto& pear : p_cpubusydetail->eachcore)
+	{
+		double total = pear.second.user + pear.second.system;
+
+		if (firstpass)
+		{
+		    firstpass = false;
+			p_cpubusysummary->mincore_total = total;
+			p_cpubusysummary->maxcore_total = total;
+			p_cpubusysummary->mincore_system= pear.second.system;
+			p_cpubusysummary->maxcore_system= pear.second.system;
+			p_cpubusysummary->mincore_user  = pear.second.user;
+			p_cpubusysummary->maxcore_user  = pear.second.user;
 		} else {
-			if (total<cpubusysummary->mincore_total)cpubusysummary->mincore_total=total;
-			if (total>cpubusysummary->maxcore_total)cpubusysummary->maxcore_total=total;
-			if ((*it)->system<cpubusysummary->mincore_system)cpubusysummary->mincore_system=(*it)->system;
-			if ((*it)->system>cpubusysummary->maxcore_system)cpubusysummary->maxcore_system=(*it)->system;
-			if ((*it)->user<cpubusysummary->mincore_user)cpubusysummary->mincore_user=(*it)->user;
-			if ((*it)->user>cpubusysummary->maxcore_user)cpubusysummary->maxcore_user=(*it)->user;
-//{
-//std::ostringstream o; o<<"subsequent pass " << std::endl
-//<< "mincore_total=" << cpubusysummary->mincore_total << ", maxcore_total=" << cpubusysummary->maxcore_total << std::endl
-//<< ", mincore_system=" << cpubusysummary->mincore_system << ", maxcore_system=" << cpubusysummary->maxcore_system << std::endl
-//<< ", mincore_user=" << cpubusysummary->mincore_user << ", maxcore_user=" << cpubusysummary->maxcore_user << std::endl;
-//fileappend(logfilename,o.str());
-//}
+			if (total<p_cpubusysummary->mincore_total)                p_cpubusysummary->mincore_total   = total;
+			if (total>p_cpubusysummary->maxcore_total)                p_cpubusysummary->maxcore_total   = total;
+			if (pear.second.system < p_cpubusysummary->mincore_system)p_cpubusysummary->mincore_system  = pear.second.system;
+			if (pear.second.system > p_cpubusysummary->maxcore_system)p_cpubusysummary->maxcore_system  = pear.second.system;
+			if (pear.second.user < p_cpubusysummary->mincore_user)    p_cpubusysummary->mincore_user    = pear.second.user;
+			if (pear.second.user > p_cpubusysummary->maxcore_user)    p_cpubusysummary->maxcore_user    = pear.second.user;
+		}
+
+
+		if (active_hyperthreads[pear.first])
+		{
+		    p_cpubusysummary->activecores++;
+
+		    p_cpubusysummary->sum_activecores_total += total;
+		    p_cpubusysummary->sum_activecores_system += pear.second.system;
+		    p_cpubusysummary->sum_activecores_user += pear.second.user;
+
+		    p_cpubusysummary->avg_activecore_total  = p_cpubusysummary->sum_activecores_total  / ((double) p_cpubusysummary->activecores);
+		    p_cpubusysummary->avg_activecore_system = p_cpubusysummary->sum_activecores_system / ((double) p_cpubusysummary->activecores);
+		    p_cpubusysummary->avg_activecore_user   = p_cpubusysummary->sum_activecores_user   / ((double) p_cpubusysummary->activecores);
+
+		    if (firstactive)
+		    {
+		        firstactive = false;
+
+                p_cpubusysummary->min_activecore_total  = total;
+                p_cpubusysummary->min_activecore_system = pear.second.system;
+                p_cpubusysummary->min_activecore_user   = pear.second.user;
+
+                p_cpubusysummary->max_activecore_total  = total;
+                p_cpubusysummary->max_activecore_system = pear.second.system;
+                p_cpubusysummary->max_activecore_user   = pear.second.user;
+		    }
+		    else
+		    {
+                if (p_cpubusysummary->min_activecore_total  > total)              p_cpubusysummary->min_activecore_total  = total;
+                if (p_cpubusysummary->min_activecore_system > pear.second.system) p_cpubusysummary->min_activecore_system = pear.second.system;
+                if (p_cpubusysummary->min_activecore_user   > pear.second.user)   p_cpubusysummary->min_activecore_user   = pear.second.user;;
+
+                if (p_cpubusysummary->max_activecore_total  < total)              p_cpubusysummary->max_activecore_total  = total;
+                if (p_cpubusysummary->max_activecore_system < pear.second.system) p_cpubusysummary->max_activecore_system = pear.second.system;
+                if (p_cpubusysummary->max_activecore_user   < pear.second.user)   p_cpubusysummary->max_activecore_user   = pear.second.user;
+		    }
 		}
 	}
 	return 0;
@@ -460,15 +576,17 @@ int computecpubusy(
 	(
 		",test host cores"
 		",test host avg core CPU % busy"
+		",test host active cores"
+		",test host active core CPU % busy"
 #ifdef IVY_LINUX_CPU_BUSY_DETAIL
-		",test host min core total CPU % busy"
-		",test host max core total CPU % busy"
-		",test host avg core system CPU % busy"
-		",test host min core system CPU % busy"
-		",test host max core system CPU % busy"
-		",test host avg core user CPU % busy"
-		",test host min core user CPU % busy"
-		",test host max core user CPU % busy"
+		",test host min active core total CPU % busy"
+		",test host max active core total CPU % busy"
+		",test host avg active core system CPU % busy"
+		",test host min active core system CPU % busy"
+		",test host max active core system CPU % busy"
+		",test host avg active core user CPU % busy"
+		",test host min active core user CPU % busy"
+		",test host max active core user CPU % busy"
 #endif // IVY_LINUX_CPU_BUSY_DETAIL
 	);
 }
@@ -483,18 +601,19 @@ std::string avgcpubusypercent::csvValues(int number_of_subintervals)
 		return o.str();
 	}
 
-	ivy_float n = (ivy_float) number_of_subintervals;
 	o 	<< (cores/number_of_subintervals)
-		<< ',' << std::fixed << std::setprecision(1) << (avgcore_total/n) << "%"
+		<< ',' << std::fixed << std::setprecision(1) << avgcore_total << "%"
+		<< ',' << (activecores/number_of_subintervals)
+		<< ',' << std::fixed << std::setprecision(1) << avg_activecore_total << "%"
 #ifdef IVY_LINUX_CPU_BUSY_DETAIL
-		<< ',' << std::fixed << std::setprecision(1) << (mincore_total/n) << "%"
-		<< ',' << std::fixed << std::setprecision(1) << (maxcore_total/n) << "%"
-		<< ',' << std::fixed << std::setprecision(1) << (avgcore_system/n) << "%"
-		<< ',' << std::fixed << std::setprecision(1) << (mincore_system/n) << "%"
-		<< ',' << std::fixed << std::setprecision(1) << (maxcore_system/n) << "%"
-		<< ',' << std::fixed << std::setprecision(1) << (avgcore_user/n) << "%"
-		<< ',' << std::fixed << std::setprecision(1) << (mincore_user/n) << "%"
-		<< ',' << std::fixed << std::setprecision(1) << (maxcore_user/n) << "%"
+		<< ',' << std::fixed << std::setprecision(1) << min_activecore_total << "%"
+		<< ',' << std::fixed << std::setprecision(1) << max_activecore_total << "%"
+		<< ',' << std::fixed << std::setprecision(1) << avg_activecore_system << "%"
+		<< ',' << std::fixed << std::setprecision(1) << min_activecore_system << "%"
+		<< ',' << std::fixed << std::setprecision(1) << max_activecore_system << "%"
+		<< ',' << std::fixed << std::setprecision(1) << avg_activecore_user << "%"
+		<< ',' << std::fixed << std::setprecision(1) << min_activecore_user << "%"
+		<< ',' << std::fixed << std::setprecision(1) << max_activecore_user << "%"
 #endif // IVY_LINUX_CPU_BUSY_DETAIL
 		;
 	return o.str();
@@ -630,11 +749,9 @@ std::ostream& operator<<(std::ostream&o, const struct cpubusypercent& c)
 {
     o << "overall: " << c.overall << std::endl;
 
-    unsigned int i {0};
-
-    for (struct linuxcpubusypercent* p : c.eachcore)
+    for (const auto& pear : c.eachcore)
     {
-        o << "core " << i++ << ": " << *p << std::endl;
+        o << "core " << pear.first << ": " << pear.second << std::endl;
     }
 
     return o;

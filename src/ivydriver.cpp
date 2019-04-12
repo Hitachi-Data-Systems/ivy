@@ -270,6 +270,12 @@ int IvyDriver::main(int argc, char* argv[])
 
     std::map<unsigned int /* core */, std::vector<unsigned int /* processor (hyperthread) */>>  hyperthreads_per_core = get_processors_by_core();
 
+    // The really weird thing I saw on one host is that core_id 7 was missing, whilst the "processor" numbers (hyperthread numbers) had no gaps, and jumped over core_id 7.
+
+
+    // the size of active_cores never changes, but every time we redistribute TestLUNs over WorkloadThreads,
+    // we first clear all the entries false and then turn on only those processor numbers that have WorkloadThreads on them which own TestLUNs.
+
 
     //    # cat /proc/cpuinfo | grep 'processor\|core id'
     //    processor	: 0
@@ -313,12 +319,31 @@ int IvyDriver::main(int argc, char* argv[])
 
     //    std::map<unsigned int,WorkloadThread*> all_workload_threads {};
 
+    {
+        std::ostringstream o;
+
+        for (const auto& v : hyperthreads_per_core)
+        {
+            o << "debug: core " << v.first << " has hyperthreads ";
+
+            for (auto& p : v.second)
+            {
+                o << p << "  ";
+            }
+            o << std::endl;
+        }
+        log(slavelogfile,o.str());
+    }
+
     if (subthread_per_hyperthread)
     {
         for (auto& pear : hyperthreads_per_core)
         {
-            if (pear.first == 0) continue;  // leave this open for ivydriver master thread, or even the ivy central host subthreads.
+            if (pear.first == 0)
+            {
+                continue;  // leave this open for ivydriver master thread, or even the ivy central host subthreads.
                 // Come back here and maybe leave another core free in case this test host is also the master host ..... XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            }
 
             for (unsigned int& processor : pear.second)
             {
@@ -594,6 +619,7 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 		&interval_end_CPU,
 		&cpubusydetail, // this gets filled in as output
 		&cpubusysummary, // this gets filled in as output
+		active_cores,
 		slavelogfile
 	))
 	{
@@ -613,7 +639,7 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 
 	say(std::string("[CPU]")+cpubusysummary.toString());
 
-	interval_start_CPU.copyFrom(interval_end_CPU,std::string("turning over for next subinterval in waitForSubintervalEndThenHarvest()"),slavelogfile);
+	interval_start_CPU.copy(interval_end_CPU);
 
     ivy_float min_seq_fill_fraction = 1.0;
 
@@ -805,6 +831,11 @@ void IvyDriver::distribute_TestLUNs_over_cores()
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "IvyDriver::distribute_TestLUNs_over_cores()."; log(slavelogfile,o.str()); } }
 #endif
 
+    for (auto& pear : active_cores)
+    {
+        pear.second = false;
+    }
+
     for (auto& pear : all_workload_threads)
     {
         pear.second->pTestLUNs.clear();
@@ -825,6 +856,8 @@ void IvyDriver::distribute_TestLUNs_over_cores()
     for (auto& pear : testLUNs)
     {
         TestLUN* pTestLUN = &pear.second;
+
+        active_cores[wt_iter->first] = true;  // later when computing CPU busy this filters for those processors that are running driving I/O.
 
         WorkloadThread* pWorkloadThread = wt_iter->second;
 
