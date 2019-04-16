@@ -58,7 +58,8 @@ class subsystem_summary_data
     std::string csvValuesPartTwo(unsigned int divide_count_by = 1);
     std::string thumbnail() const;
     void derive_metrics();
-    ivy_float IOPS();  // these three methods return -1.0 if no data.
-    ivy_float decimal_MB_per_second();
-    ivy_float service_time_ms();
+    ivy_float IOPS();                    // returns -1.0 if no data.
+    ivy_float decimal_MB_per_second();   // returns -1.0 if no data.
+    ivy_float service_time_ms();         // returns -1.0 if no data.
+    ivy_float MP_microseconds_per_IO();  // returns -1.0 if no data.
 };

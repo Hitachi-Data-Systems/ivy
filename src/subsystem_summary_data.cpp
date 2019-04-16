@@ -96,8 +96,15 @@ void subsystem_summary_data::addIn(const subsystem_summary_data& other)
             const std::string metric = metric_pair.first;
 
             if (metric_pair.second & print_count_part_1       ) headers << ",subsystem " << np << element << " count";
-            if (metric_pair.second & print_avg_part_1         ) { headers << ",subsystem " << np << "avg " << element << ' ' << metric; }
+            if (metric_pair.second & print_avg_part_1         )
+            {
+                headers << ",subsystem " << np << "avg " << element << ' ' << metric;
 
+                if (element == "MP_core" && metric == "busy_percent")
+                {
+                    headers << ",subsystem MP_core busy microseconds per I/O";
+                }
+            }
 
             if (metric_pair.second & print_min_max_stddev_1   )
             {
@@ -158,7 +165,15 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                 if (flags & print_count_part_1)
                     values << ",<element " << element << " absent>";
 
-                if (flags & print_avg_part_1) { values << ",<element " << element << " absent>"; }
+                if (flags & print_avg_part_1)
+                {
+                    values << ",<element " << element << " absent>";
+
+                    if (element == "MP_core" && metric == "busy_percent")
+                    {
+                        values << ",";
+                    }
+                }
 
                 if (flags & print_min_max_stddev_1)
                 {
@@ -181,6 +196,11 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                     if (flags & print_avg_part_1)
                     {
                         values << ",<metric " << metric << " absent>";
+
+                        if (element == "MP_core" && metric == "busy_percent")
+                        {
+                            values << ",";
+                        }
                     }
 
                     if (flags & print_min_max_stddev_1)
@@ -213,6 +233,19 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                                 values << ',' << rs.avg();
                             }
                         }
+                        else
+                        {
+                            values << ',' << rs.avg();
+                        }
+
+                        if (element == "MP_core" && metric == "busy_percent")
+                        {
+                            ivy_float microseconds = MP_microseconds_per_IO();
+
+                            if (microseconds > 0) { values << "," << microseconds; }
+                            else                  { values << ","; }
+                        }
+
                     }
 
                     if (flags & print_min_max_stddev_1)
@@ -851,4 +884,32 @@ ivy_float subsystem_summary_data::service_time_ms()
 
     return ait->second.avg();
 }
+
+ivy_float subsystem_summary_data::MP_microseconds_per_IO()
+{
+    ivy_float total_IOPS = IOPS();
+
+    if (total_IOPS <= 0.0) return -1.0;
+
+    auto MP_it = data.find("MP_core");
+    if (MP_it == data.end()) return -1.0;
+
+    auto metric_it = MP_it->second.find("busy_percent");
+    if ( metric_it == MP_it->second.end() ) return -1.0;
+
+    if (metric_it ->second.count() == 0) return -1.0;
+
+    return 1E6 * (metric_it->second.sum() / repetition_factor) / total_IOPS;
+}
+
+
+
+
+
+
+
+
+
+
+
 
