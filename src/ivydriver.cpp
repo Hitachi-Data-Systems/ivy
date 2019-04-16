@@ -44,7 +44,7 @@
 IvyDriver ivydriver;
 
 bool routine_logging {false};
-bool subthread_per_hyperthread {false};
+bool subthread_per_hyperthread {true};  // sorry, this is backwards compared to the ivy main host's one_thread_per_core
 
 std::string printable_ascii;
 
@@ -181,14 +181,14 @@ int IvyDriver::main(int argc, char* argv[])
         std::string item {argv[arg_index]};
 
         if (item == "-log")         { routine_logging = true;           continue;}
-        if (item == "-hyperthread") { subthread_per_hyperthread = true; continue;}
+        if (item == "-one_thread_per_core") { subthread_per_hyperthread = false; continue;}
 
         if (arg_index != (argc-1))
         {
             std::cout << argv[0] << " - usage: " << argv[0] << " options <ivyscript_hostname>" << std::endl
                 << " where \"options\" means zero or more of: -log -hyperthread" << std::endl
-                << "and where ivyscript_hostname is either an identifier, a hostname or alias, or is an IPV4 dotted quad." << std::endl
-                << std::endl << "-hyperthread means start one I/O driving subthread per hyperthread, instead of one per physical core." << std::endl
+                << "and where ivyscript_hostname is either an identifier, a hostname or alias, or is an IPV4 dotted quad." << std::endl << std::endl
+                << "-one_thread_per_core means start an I/O driving subthread on only the first hyperthread of each physical core." << std::endl
                 << "Core 0 and its hyperthreads are never used for driving I/O." << std::endl << std::endl;
                 return -1;
         }
@@ -324,7 +324,7 @@ int IvyDriver::main(int argc, char* argv[])
 
         for (const auto& v : hyperthreads_per_core)
         {
-            o << "debug: core " << v.first << " has hyperthreads ";
+            o << "core " << v.first << " has hyperthreads ";
 
             for (auto& p : v.second)
             {

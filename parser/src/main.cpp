@@ -43,7 +43,7 @@ std::string inter_statement_divider {"==========================================
 bool routine_logging {false};
 bool rest_api {false};
 bool spinloop {false};
-bool hyperthread {false};
+bool one_thread_per_core {false};
 
 void usage_message(char* argv_0)
 {
@@ -62,9 +62,10 @@ void usage_message(char* argv_0)
         << "     don\'t collect performance data while ivy is running driving I/O." << std::endl << std::endl
         << "-spinloop" << std::endl
         << "     Used to make test host code continually check for work to do without ever waiting." << std::endl << std::endl
-        << "-hyperthread" << std::endl
-        << "     Use -hyperthread to have ivydriver start one I/O driving subthread per CPU hyperthread, instead of one per core." << std::endl
-        << "     Core 0 and its hyperthreads are never used for I/O driving subthreads." << std::endl << std::endl
+        << "-one_thread_per_core" << std::endl
+        << "     Use -one_thread_per_core to have ivydriver start a workload subthread on only the first" << std::endl
+        << "     hyperthread on each physical CPU core, instead of the default which is start a workload subthread"
+        << "     on all hyperthreads on each core.  Either way, workload subthread(s) are never started on core 0." << std::endl << std::endl
         << "-trace_lexer or -l" << std::endl
         << "     Log routine events and trace the \"lexer\" which breaks down the .ivyscript program into \"tokens\"." << std::endl << std::endl
         << "-trace_parser or -p" << std::endl
@@ -195,7 +196,7 @@ int main(int argc, char* argv[])
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_cmd")))         { m_s.use_command_device = false; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_ldev")))        { m_s.skip_ldev_data = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-spinloop")))       { spinloop = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-hyperthread")))    { hyperthread = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-one_thread_per_core"))) { one_thread_per_core = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_perf")))        { m_s.no_subsystem_perf = true; continue; }
 
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }

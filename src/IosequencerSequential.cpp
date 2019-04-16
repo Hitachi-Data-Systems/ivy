@@ -61,7 +61,7 @@ bool IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 
 	if (!Iosequencer::setFrom_IosequencerInput(p_i_i)) return false;
 
-	lastIOblockNumber = -1 + coverageStartBlock + (long long int) (p_IosequencerInput->seqStartFractionOfCoverage * (ivy_float) numberOfCoverageBlocks);
+	lastIOblockNumber = -1 + coverageStartBlock + (long long int) (p_IosequencerInput->seqStartPoint * (ivy_float) numberOfCoverageBlocks);
         // The reason we are subtracting one is that this will be incremented before the first use.
 
     blocks_generated = 0;

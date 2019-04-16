@@ -21,6 +21,7 @@
 
 #include "ivyhelpers.h"
 #include "pattern.h"
+#include "dedupe_method.h"
 
 class IosequencerInput {
 
@@ -57,16 +58,17 @@ public:
 			// For random can be any value from 0.0 to 1.0.  For sequential must be either 0.0 or 1.0.
 		        // Actually, we could use sequential values between 0 and 1 to emulate pathological vdbench random ... later maybe
 
-		volCoverageFractionStart {volCoverageFractionStart_default}, // default is start at sector 1.  Sector 0 is considered "out of bounds".
-		volCoverageFractionEnd {volCoverageFractionEnd_default}; // default is 1.0 maps to the last aligned block of that blocksize that fits.
+		rangeStart {rangeStart_default}, // default is start at sector 1.  Sector 0 is considered "out of bounds".
+		rangeEnd {rangeEnd_default}; // default is 1.0 maps to the last aligned block of that blocksize that fits.
 
 	ivy_float // Only sequential looks at this
-		seqStartFractionOfCoverage{seqStartFractionOfCoverage_default};
+		seqStartPoint {seqStartPoint_default};
 			// This defines where a sequential thread will start mapped from 0.0
-			// at the volCoverageFractionStart point up to 1.0 at the volCoverageFractionEnd point.
+			// at the rangeStart point up to 1.0 at the rangeEnd point.
 
     ivy_float dedupe          {dedupe_default};
     pattern   pat             {pattern_default};
+    dedupe_method dedupe_type {dedupe_method_default};
     ivy_float compressibility {compressibility_default};  // compressibility is only referred to for pattern = trailing_zeros
 
     unsigned int threads_in_workload_name {threads_in_workload_name_default};
@@ -100,13 +102,13 @@ public:
 	bool defaultIOPS() { return IOPS_default == IOPS; }
 	bool defaultskew_weight() { return skew_weight_default == skew_weight; }
 	bool defaultFractionRead() { return  fractionRead_default==fractionRead; }
-	bool defaultVolCoverageFractionStart() { return volCoverageFractionStart_default == volCoverageFractionStart; }
-	bool defaultVolCoverageFractionEnd() { return volCoverageFractionEnd_default == volCoverageFractionEnd; }
-	bool defaultSeqStartFractionOfCoverage()
+	bool defaultRangeStart() { return rangeStart_default == rangeStart; }
+	bool defaultRangeEnd() { return rangeEnd_default == rangeEnd; }
+	bool defaultSeqStartPoint()
 	{
 		if (stringCaseInsensitiveEquality(std::string("sequential"),iosequencer_type))
 		{
-			return seqStartFractionOfCoverage_default == seqStartFractionOfCoverage;
+			return seqStartPoint_default == seqStartPoint;
 		}
 		else
 		{
@@ -114,6 +116,7 @@ public:
 		}
 	}
 	bool defaultPattern() { return pat == pattern_default; }
+	bool defaultDedupeMethod() { return dedupe_type == dedupe_method_default; }
 	bool defaultDedupe() { return dedupe == dedupe_default; }
 	bool defaultCompressibility() { return compressibility == compressibility_default; }
 	bool defaultThreads_in_workload_name() { return threads_in_workload_name == threads_in_workload_name_default;}

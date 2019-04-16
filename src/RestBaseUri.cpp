@@ -21,8 +21,8 @@
 #include "RestHandler.h"
 #include "ivy_engine.h"
 #include "rapidjson/filereadstream.h"
-#include "rapidjson/document.h"  
-#include "rapidjson/schema.h"  
+#include "rapidjson/document.h"
+#include "rapidjson/schema.h"
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 
@@ -51,7 +51,7 @@ std::string JSON_SCHEMA = R"( {
                 }]
         },
         "binarysizeschema" : {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "value" : { "type":     "number" },
                 "suffix" : { "type": { "enum": [ "KiB", "MiB", "GiB", "TiB" ] } }
@@ -73,7 +73,7 @@ std::string JSON_SCHEMA = R"( {
                 {
                 "type": "array",
                 "items":{
-                    "type": "object", 
+                    "type": "object",
                     "properties": {
                         "key" : { "type": "string" },
                         "val" : {
@@ -90,10 +90,10 @@ std::string JSON_SCHEMA = R"( {
                 } ]
         },
         "ioparametersschema":  {
-            "anyof": [ 
+            "anyof": [
             {"type" : "string"},
             {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "skew": { "$ref": "#/definitions/percentageschema" },
                 "hot_zone_size_bytes" : {
@@ -106,9 +106,17 @@ std::string JSON_SCHEMA = R"( {
                 "hot_zone_write_fraction" : { "type" : "boolean" },
                 "hot_zone_IOPS_fraction": { "$ref": "#/definitions/percentageschema" },
                 "fractionRead": { "$ref": "#/definitions/percentageschema" },
-                "VolumeCoverageFractionStart": { "$ref": "#/definitions/percentageschema" },
-                "VolumeCoverageFractionEnd": { "$ref": "#/definitions/percentageschema" },
+                "RangeStart": { "$ref": "#/definitions/percentageschema" },
+                "RangeEnd": { "$ref": "#/definitions/percentageschema" },
                 "blocksize": { "type" : "integer" },
+                "dedupe": { "type" : "number" },
+                "dedupe_method": {
+                    "anyof": [
+                          { "type": {
+                              "enum": [ "serpentine", "target_spread", "constant_ratio" ] }
+                          }
+                    ]
+                },
                 "IOPS": {
                     "anyof": [
                           { "type": {
@@ -120,34 +128,34 @@ std::string JSON_SCHEMA = R"( {
                                       { "anyof": [
                                             {  "incr+": { "type": "string" } },
                                             {  "decr-": { "type": "string" } }
-                                       ] }, 
+                                       ] },
                                       { "amount": { "type": "integer" } }
-                                  ] 
+                                  ]
 	                      }
 	                  }
-                    ] 
+                    ]
                 },
                 "pattern": {
                     "anyof": [
                           { "type": {
-                              "enum": [ "random", "ascii", "gobbledgook" ] }
+                              "enum": [ "random", "ascii", "gobbledgook", "zeros", "all_0xFF" ] }
                           },
                           { "type": "object",
 	                      "properties": {
-                                  "variable_type": { "type": { 
+                                  "variable_type": { "type": {
                                       "enum": [ "trailing_zeros" ] }
                                   },
                                   "compressibility": { "$ref": "#/definitions/percentageschema" }
                               }
 	                  }
-                    ] 
+                    ]
                 },
                 "maxTags": {"type": "integer" }
             }
             } ]
         },
         "iosequencertemplateschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "iosequencer": { "type": {
                             "enum": [ "random_steady", "random_independent", "sequential" ] }},
@@ -155,7 +163,7 @@ std::string JSON_SCHEMA = R"( {
 	    }
         },
         "loggingchema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "logname": { "type": "string" },
                 "message": { "type": "string" },
@@ -163,7 +171,7 @@ std::string JSON_SCHEMA = R"( {
 	    }
         },
         "hostsstatementschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "hosts" : { "$ref": "#/definitions/hostlistschema" },
                 "select" : { "$ref": "#/definitions/selectschema" },
@@ -174,7 +182,7 @@ std::string JSON_SCHEMA = R"( {
             "iosequencer" : { "$ref": "#/definitions/iosequencertemplateschema" }
         },
         "createworkloadschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "name": { "type": "string" },
                 "select" : { "$ref": "#/definitions/selectschema" },
@@ -185,7 +193,7 @@ std::string JSON_SCHEMA = R"( {
 	    "required": ["name"]
         },
         "deleteworkloadschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "name": { "type": "string" },
                 "select" : { "$ref": "#/definitions/selectschema" }
@@ -193,7 +201,7 @@ std::string JSON_SCHEMA = R"( {
 	    "required": ["name"]
         },
         "createrollupschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "name": { "type": "string" },
                 "nocsv": { "type": "boolean" },
@@ -204,7 +212,7 @@ std::string JSON_SCHEMA = R"( {
 	    "required": ["name"]
         },
         "editrollupschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "name": { "type": "string" },
                 "parameters" : {
@@ -217,18 +225,18 @@ std::string JSON_SCHEMA = R"( {
 	    "required": ["name", "parameters"]
         },
         "deleterollupschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "name": { "type": "string" }
 	    },
 	    "required": ["name"]
         },
         "csvqueryschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "filename": { "type": "string" },
                 "row": { "type": "integer" },
-                "col": { 
+                "col": {
                     "anyof": [
                         { "type": "integer" },
                         { "type": "string" }
@@ -238,7 +246,7 @@ std::string JSON_SCHEMA = R"( {
 	    "required": ["filename", "row", "col"]
         },
         "configschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "Hosts": {
                     "type": "array",
@@ -273,14 +281,14 @@ std::string JSON_SCHEMA = R"( {
 	    }
         },
         "sessionsschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "api_token": { "type": "string" }
 	    },
 	    "required": ["api_token"]
         },
         "gostatementschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "stepname": { "type": "string" },
                 "subinterval_seconds" : { "type": "integer" },
@@ -293,7 +301,7 @@ std::string JSON_SCHEMA = R"( {
                              "service_time_seconds", "response_time_seconds"]
                 }},
                 "accuracy_plus_minus": { "type": "string" },
-                "timeout_seconds": { 
+                "timeout_seconds": {
                     "anyof": [
                         { "type": "integer" },
                         { "type": "string" }
@@ -334,7 +342,7 @@ std::string JSON_SCHEMA = R"( {
 	    "required": ["stepname"]
         },
         "responseschema":  {
-            "type": "object", 
+            "type": "object",
 	    "properties": {
                 "retval": { "type": "string" },
                 "status": { "type": "string" },
@@ -397,7 +405,7 @@ RestBaseUri::initialize_ivy_schema()
     }
     fclose(fp);
 #endif
-     
+
     schema_doc.Parse(JSON_SCHEMA.c_str());
     if (schema_doc.HasParseError()) {
         std::ostringstream err;

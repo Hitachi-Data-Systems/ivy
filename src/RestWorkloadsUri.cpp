@@ -1,7 +1,7 @@
 #include "RestHandler.h"
 #include "ivy_engine.h"
-#include "rapidjson/document.h"  
-#include "rapidjson/schema.h"  
+#include "rapidjson/document.h"
+#include "rapidjson/schema.h"
 
 extern ivy_engine m_s;
 
@@ -19,7 +19,7 @@ RestWorkloadsUri::handle_post(http_request request)
     if (request.absolute_uri().path().size() != _listener.uri().path().size())
     {
         std::ostringstream o;
-        std::string s; 
+        std::string s;
         // tokenize and extract fields such as an id of an instance or objects under
         while(std::getline(req_uri, s, '/'))
             suburitokens.push_back(s);
@@ -29,7 +29,7 @@ RestWorkloadsUri::handle_post(http_request request)
 
         std::cout << request.method() << " Sub URI : " << o.str() << std::endl;
 
-    } 
+    }
 
     int rc = 0;
     std::string resultstr;
@@ -41,7 +41,7 @@ RestWorkloadsUri::handle_post(http_request request)
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
     std::cout << "JSON:\n" << json << std::endl;
 
-    rapidjson::Document document; 
+    rapidjson::Document document;
     if (document.Parse(json).HasParseError())
     {
         rc = 1;
@@ -74,20 +74,20 @@ RestWorkloadsUri::handle_post(http_request request)
     {
         rapidjson::Value::MemberIterator IOPS = document.FindMember("IOPS");
         rapidjson::Value::MemberIterator fractionRead = document.FindMember("fractionRead");
-        rapidjson::Value::MemberIterator VolumeCoverageFractionStart = document.FindMember("VolumeCoverageFractionStart");
-        rapidjson::Value::MemberIterator VolumeCoverageFractionEnd = document.FindMember("VolumeCoverageFractionEnd");
+        rapidjson::Value::MemberIterator RangeStart = document.FindMember("RangeStart");
+        rapidjson::Value::MemberIterator RangeEnd = document.FindMember("RangeEnd");
         rapidjson::Value::MemberIterator blocksize = document.FindMember("blocksize");
         rapidjson::Value::MemberIterator maxtags = document.FindMember("maxtags");
 
         if (fractionRead != document.MemberEnd())
             params << "fractionRead=" << (fractionRead->value.IsInt() ? fractionRead->value.GetInt() :
                                           fractionRead->value.GetDouble());
-        if (VolumeCoverageFractionStart != document.MemberEnd())
-            params << "VolumeCoverageFractionStart=" << (VolumeCoverageFractionStart->value.IsInt() ? VolumeCoverageFractionStart->value.GetInt() :
-                                                         VolumeCoverageFractionStart->value.GetDouble());
-        if (VolumeCoverageFractionEnd != document.MemberEnd())
-            params << "VolumeCoverageFractionEnd=" << ((VolumeCoverageFractionEnd->value.IsInt() ? VolumeCoverageFractionEnd->value.GetInt() :
-                                                        VolumeCoverageFractionEnd->value.GetDouble()));
+        if (RangeStart != document.MemberEnd())
+            params << "RangeStart=" << (RangeStart->value.IsInt() ? RangeStart->value.GetInt() :
+                                                         RangeStart->value.GetDouble());
+        if (RangeEnd != document.MemberEnd())
+            params << "RangeEnd=" << ((RangeEnd->value.IsInt() ? RangeEnd->value.GetInt() :
+                                                        RangeEnd->value.GetDouble()));
         if (blocksize != document.MemberEnd())
             params << "%, blocksize=" << blocksize->value.GetInt();
         if (IOPS != document.MemberEnd())
@@ -97,7 +97,7 @@ RestWorkloadsUri::handle_post(http_request request)
             // missing mandatory field
 #if 0
             resultstr += "IOPS field is missing";
-            make_response(response, resultstr, result); 
+            make_response(response, resultstr, result);
             request.reply(response);
             return;
 #endif
@@ -141,7 +141,7 @@ RestWorkloadsUri::handle_put(http_request request)
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
     std::cout << "JSON:\n" << json << std::endl;
 
-    rapidjson::Document document; 
+    rapidjson::Document document;
     if (document.Parse(json).HasParseError())
     {
         rc = 1;
@@ -160,8 +160,8 @@ RestWorkloadsUri::handle_put(http_request request)
 
     rapidjson::Value::MemberIterator IOPS = document.FindMember("IOPS");
     rapidjson::Value::MemberIterator fractionRead = document.FindMember("fractionRead");
-    rapidjson::Value::MemberIterator volfstart = document.FindMember("VolumeCoverageFractionStart");
-    rapidjson::Value::MemberIterator volfend = document.FindMember("VolumeCoverageFractionEnd");
+    rapidjson::Value::MemberIterator volfstart = document.FindMember("RangeStart");
+    rapidjson::Value::MemberIterator volfend = document.FindMember("RangeEnd");
     rapidjson::Value::MemberIterator blocksize = document.FindMember("blocksize");
     rapidjson::Value::MemberIterator maxtags = document.FindMember("maxtags");
     http_response response(status_codes::OK);
@@ -178,12 +178,12 @@ RestWorkloadsUri::handle_put(http_request request)
         }
         if (volfstart != document.MemberEnd())
         {
-            params << "VolumeCoverageFractionStart=" << (volfstart->value.IsInt() ? volfstart->value.GetInt() :
+            params << "RangeStart=" << (volfstart->value.IsInt() ? volfstart->value.GetInt() :
                                                          volfstart->value.GetDouble());
         }
         if (volfend != document.MemberEnd())
         {
-            params << "VolumeCoverageFractionEnd=" << ((volfend->value.IsInt() ? volfend->value.GetInt() :
+            params << "RangeEnd=" << ((volfend->value.IsInt() ? volfend->value.GetInt() :
                                                         volfend->value.GetDouble()));
         }
         if (blocksize != document.MemberEnd())
@@ -196,7 +196,7 @@ RestWorkloadsUri::handle_put(http_request request)
         } else {
             // missing mandatory field
             resultstr += "IOPS field is missing";
-            make_response(response, resultstr, result); 
+            make_response(response, resultstr, result);
             request.reply(response);
             return;
         }
@@ -213,7 +213,7 @@ RestWorkloadsUri::handle_put(http_request request)
         m_s.set_iosequencer_template(iosequencer_template->value.GetString(), params.str());
     }
 
-    make_response(response, resultstr, result); 
+    make_response(response, resultstr, result);
     request.reply(response);
 }
 
@@ -241,7 +241,7 @@ RestWorkloadsUri::handle_delete(http_request request)
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
     std::cout << "JSON:\n" << json << std::endl;
 
-    rapidjson::Document document; 
+    rapidjson::Document document;
     if (document.Parse(json).HasParseError())
     {
         resultstr += "document invalid";
@@ -267,6 +267,6 @@ RestWorkloadsUri::handle_delete(http_request request)
         result = m_s.deleteWorkload(workload->value.GetString(),
                                  select_str);
     }
-    make_response(response, resultstr, result); 
+    make_response(response, resultstr, result);
     request.reply(response);
 }

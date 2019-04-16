@@ -402,6 +402,10 @@
 			<Option target="csv_column" />
 			<Option target="remove_empty_columns" />
 		</Unit>
+		<Unit filename="include/dedupe_method.h">
+			<Option target="ivymaster" />
+			<Option target="ivydriver" />
+		</Unit>
 		<Unit filename="include/discover_luns.h">
 			<Option target="ivymaster" />
 			<Option target="ivydriver" />
@@ -763,6 +767,10 @@
 			<Option target="csv_row" />
 			<Option target="csv_column" />
 			<Option target="remove_empty_columns" />
+		</Unit>
+		<Unit filename="src/dedupe_method.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/discover_luns.cpp">
 			<Option target="ivymaster" />

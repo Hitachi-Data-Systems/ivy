@@ -96,7 +96,9 @@ void subsystem_summary_data::addIn(const subsystem_summary_data& other)
             const std::string metric = metric_pair.first;
 
             if (metric_pair.second & print_count_part_1       ) headers << ",subsystem " << np << element << " count";
-            if (metric_pair.second & print_avg_part_1         ) headers << ",subsystem " << np << "avg " << element << ' ' << metric;
+            if (metric_pair.second & print_avg_part_1         ) { headers << ",subsystem " << np << "avg " << element << ' ' << metric; }
+
+
             if (metric_pair.second & print_min_max_stddev_1   )
             {
                 headers << ",subsystem " << np << "min " << element << ' ' << metric;
@@ -156,8 +158,7 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                 if (flags & print_count_part_1)
                     values << ",<element " << element << " absent>";
 
-                if (flags & print_avg_part_1)
-                    values << ",<element " << element << " absent>";
+                if (flags & print_avg_part_1) { values << ",<element " << element << " absent>"; }
 
                 if (flags & print_min_max_stddev_1)
                 {
@@ -178,7 +179,9 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                         values << ",<metric " << metric << " absent>";
 
                     if (flags & print_avg_part_1)
+                    {
                         values << ",<metric " << metric << " absent>";
+                    }
 
                     if (flags & print_min_max_stddev_1)
                     {

@@ -578,77 +578,104 @@ unsigned int Workload::generate_an_IO()
 
     freeStack.pop();
 
+    uint64_t new_pattern_number;
+    int bsindex;
+    int dedupeunitsvar;
+
+
     std::ostringstream o;
     // deterministic generation of "seed" for this I/O.
     if (have_writes)
     {
         if (doing_dedupe)
         {
-            bool old_method {false};
-            if (old_method)
+            switch(subinterval_array[0].input.dedupe_type)
             {
-                serpentine_number += threads_in_workload_name;
-                uint64_t new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
-                while (pattern_number < new_pattern_number)
-                {
-                    xorshift64star(pattern_seed);
-                    pattern_number++;
-                }
-                block_seed = pattern_seed ^ pattern_number;
-            } else
-            {   // new method
-                if (p_my_iosequencer->isRandom())
-                {
-                    if (pattern_number > dedupe_regulator->pattern_number_reuse_threshold)
+                case dedupe_method::serpentine:
+                    serpentine_number += threads_in_workload_name;
+                    new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
+                    while (pattern_number < new_pattern_number)
                     {
-                        if (dedupe_regulator->decide_reuse())
-                        {
-                            ostringstream o;
-                            std::pair<uint64_t, uint64_t> align_pattern;
-                            align_pattern = dedupe_regulator->reuse_seed();
-                            pattern_seed = align_pattern.first;
-                            pattern_alignment = align_pattern.second;
-                            pattern_number = pattern_alignment;
-                            o << "workloadthread - Reset pattern seed " << pattern_seed <<  " Offset: " << pattern_alignment << std::endl;
-                            //log(pWorkloadThread->slavethreadlogfile, o.str());
-                        }
-                    }
-                }
-
-                dedupeunits = p_current_IosequencerInput->blocksize_bytes / 8192;
-
-                int bsindex = 0;
-                int dedupeunitsvar = dedupeunits;
-                while (dedupeunitsvar-- > 0)
-                {
-                    std::ostringstream o;
-
-                    if (dedupe_count == 0) {
-                        modified_dedupe_factor = dedupe_regulator->dedupe_distribution();
-                        dedupe_count = (uint64_t) modified_dedupe_factor;
-#if 0
-                        o << "modified_dedupe_factor: " << modified_dedupe_factor << std::endl;
-                        //log(pWorkloadThread->slavethreadlogfile,o.str());
-#endif
-                    }
-
-                    if (dedupe_count == modified_dedupe_factor)
-                    {
-                        int count = dedupe_count;
-                        while (count > 0)
-                        {
-                            xorshift64star(pattern_seed);
-                            pattern_number++;
-                            count--;
-                        }
+                        xorshift64star(pattern_seed);
+                        pattern_number++;
                     }
                     block_seed = pattern_seed ^ pattern_number;
-                    last_block_seeds[bsindex++] = block_seed;
-                    dedupe_count--;
+                    break;
+
+                case dedupe_method::target_spread:
+                    if (p_my_iosequencer->isRandom())
+                    {
+                        if (pattern_number > dedupe_regulator->pattern_number_reuse_threshold)
+                        {
+                            if (dedupe_regulator->decide_reuse())
+                            {
+                                ostringstream o;
+                                std::pair<uint64_t, uint64_t> align_pattern;
+                                align_pattern = dedupe_regulator->reuse_seed();
+                                pattern_seed = align_pattern.first;
+                                pattern_alignment = align_pattern.second;
+                                pattern_number = pattern_alignment;
+                                o << "workloadthread - Reset pattern seed " << pattern_seed <<  " Offset: " << pattern_alignment << std::endl;
+                                //log(pWorkloadThread->slavethreadlogfile, o.str());
+                            }
+                        }
+                    }
+
+                    dedupeunits = p_current_IosequencerInput->blocksize_bytes / 8192;
+
+                    bsindex = 0;
+                    dedupeunitsvar = dedupeunits;
+                    while (dedupeunitsvar-- > 0)
+                    {
+                        std::ostringstream o;
+
+                        if (dedupe_count == 0) {
+                            modified_dedupe_factor = dedupe_regulator->dedupe_distribution();
+                            dedupe_count = (uint64_t) modified_dedupe_factor;
 #if 0
-                    o << "bsindex: " << bsindex << " dedupe_count: " << dedupe_count << " pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
-                    log(pWorkloadThread->slavethreadlogfile,o.str());
+                            o << "modified_dedupe_factor: " << modified_dedupe_factor << std::endl;
+                            //log(pWorkloadThread->slavethreadlogfile,o.str());
 #endif
+                        }
+
+                        if (dedupe_count == modified_dedupe_factor)
+                        {
+                            int count = dedupe_count;
+                            while (count > 0)
+                            {
+                                xorshift64star(pattern_seed);
+                                pattern_number++;
+                                count--;
+                            }
+                        }
+                        block_seed = pattern_seed ^ pattern_number;
+                        last_block_seeds[bsindex++] = block_seed;
+                        dedupe_count--;
+#if 0
+                        o << "bsindex: " << bsindex << " dedupe_count: " << dedupe_count << " pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
+                        log(pWorkloadThread->slavethreadlogfile,o.str());
+#endif
+                    }
+                    break;
+                case dedupe_method::constant_ratio:
+
+
+                    break;
+                case dedupe_method::invalid:
+                default:
+                {
+                    std::ostringstream o; o << "<Error> Internal programming error - dedupe_method is freeStack is empty - can\'t precompute - at "
+                        << __FILE__ << " line " << __LINE__ << std::endl;
+                    pWorkloadThread->dying_words = o.str();
+                    log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
+                    for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
+                    close(pWorkloadThread->event_fd);
+                    close(pWorkloadThread->epoll_fd);
+                    pWorkloadThread->state = ThreadState::died;
+                    pWorkloadThread->slaveThreadConditionVariable.notify_all();
+                    exit(-1);
+                    // should not occur unless there's a design fault or maybe if CPU-bound
+
                 }
             }
         }

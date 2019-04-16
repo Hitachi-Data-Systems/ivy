@@ -93,7 +93,7 @@ using namespace std;
 #define PIPE_WRITE 1
 
 extern bool routine_logging;
-extern bool hyperthread;
+extern bool one_thread_per_core;
 extern bool trace_evaluate;
 
 extern std::regex identifier_regex;
@@ -777,9 +777,9 @@ void pipe_driver_subthread::threadRun()
             }
             if (routine_logging)
             {
-                if (hyperthread)
+                if (one_thread_per_core)
                 {
-                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-log","-hyperthread",arg.c_str(),(char*)NULL);
+                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-log","-one_thread_per_core",arg.c_str(),(char*)NULL);
                 }
                 else
                 {
@@ -789,9 +789,9 @@ void pipe_driver_subthread::threadRun()
             }
             else
             {
-                if (hyperthread)
+                if (one_thread_per_core)
                 {
-                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-hyperthread",arg.c_str(),(char*)NULL);
+                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-one_thread_per_core",arg.c_str(),(char*)NULL);
                 }
                 else
                 {

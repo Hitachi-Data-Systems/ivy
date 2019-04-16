@@ -1,4 +1,4 @@
-//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
+//Copyright (c) 2018 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,28 +13,23 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Stephen Morgan <stephen.morgan@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
+
 #pragma once
 
-#include "ivylinuxcpubusy.h"
-
-class Subinterval_CPU
+enum class dedupe_method
 {
-public:
-	int rollup_count=0;
-	struct avgcpubusypercent overallCPU;
-	std::map<std::string, struct avgcpubusypercent> eachHostCPU;
-
-// methods
-	bool add(std::string hostname, const struct avgcpubusypercent&);  // sets rollup_count from zero to 1 as the first host entry is added.
-	void rollup(const Subinterval_CPU&);  // used to make an average over a series of subintervals.
-	static std::string csvTitles();
-	std::string csvValuesAvgOverHosts();
-	std::string csvValues(std::string hostname);
-	void clear();
+    invalid = 0,
+    serpentine,
+    target_spread,
+    constant_ratio
 };
 
+std::string valid_dedupe_methods();
 
+dedupe_method parse_dedupe_method(std::string);
+
+std::string dedupe_method_to_string(dedupe_method);

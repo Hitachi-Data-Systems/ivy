@@ -1442,6 +1442,11 @@ void RollupInstance::print_measurement_summary_csv_line()
                 o << IosequencerInputRollup::CSVcolumnTitles();
                 o << m_s.measurement_rollup_CPU.csvTitles();
 
+                if (std::string("all") == toLower(attributeNameComboID) && std::string("all") == toLower(rollupInstanceID))
+                {
+                    o << ",Test Host CPU time per I/O microseconds";
+                }
+
                 if (m_s.haveCmdDev)
                 {
                     if (!m_s.no_subsystem_perf) { o << subsystem_summary_data::csvHeadersPartOne(); }
@@ -1552,6 +1557,17 @@ void RollupInstance::print_measurement_summary_csv_line()
             else
             {
                 csvline << m_s.measurement_rollup_CPU.csvValuesAvgOverHosts();
+            }
+
+            if (std::string("all") == toLower(attributeNameComboID) && std::string("all") == toLower(rollupInstanceID))
+            {
+                csvline << "," <<
+                (
+                    1E6 *   // this turns the answer into microseconds
+                    ((m_s.measurement_rollup_CPU.overallCPU.sum_activecores_total / ((ivy_float) m_s.measurement_rollup_CPU.rollup_count))/100.0) // this is the fractional sum of overall % busy
+                    /
+                    (((ivy_float)measurementRollup.outputRollup.overall_service_time_RS().count())/measurementRollup.durationSeconds()) // this is the IOPS
+                );
             }
 
             if (m_s.haveCmdDev)

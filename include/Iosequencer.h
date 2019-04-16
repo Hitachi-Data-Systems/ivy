@@ -55,8 +55,8 @@ public:
 	long long int coverageStartLBA, coverageEndLBA, numberOfCoverageLBAs;
 		// These are calculated from the LUN's maxLBA attribute,
 		// and then modified according to the by setFromIosequencerInput() parameters
-		// VolumeCoverageStartFraction=0.0 (range from 0.0 to 1.0), VolumeCoverageEndFraction,
-		// and lastIO_LBA is set according to SeqStartingPointFractionOfCoveredArea.
+		// RangeStart=0.0 (range from 0.0 to 1.0), RangeEnd,
+		// and lastIO_LBA is set according to SeqStartPoint.
 		// (The lastIO_LBA matters nothing to random_steady and random_independent, because
 		// the lba for the next I/O is calculated without reference to the LBA for the previous I/O.)
 

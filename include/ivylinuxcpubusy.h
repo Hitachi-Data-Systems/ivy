@@ -96,7 +96,7 @@ public:
 	bool fromString(std::string);
 	void clear();
 	avgcpubusypercent(){};
-void	add(const avgcpubusypercent&);
+    void add(const avgcpubusypercent&);
 	static std::string csvTitles();
 	std::string csvValues(int number_of_subintervals);
 };

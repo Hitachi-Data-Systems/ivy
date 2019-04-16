@@ -38,7 +38,7 @@
 //	- It specifies parameter settings just like you set in [CreateWorkload] like "IOPS=356, fractionRead=.25"
 //
 //		- Note that not all iosequencer settings are referred to after the first sibinterval.
-//		  Go ahead and say "maxTags = 32, or "blocksize = 8 KiB" or "VolumeCoverageFractionEnd = .8";
+//		  Go ahead and say "maxTags = 32, or "blocksize = 8 KiB" or "RangeEnd = .8";
 //		  there will be no error message and the updates will be delivered into the next subinterval's input section
 //		  before the subinterval starts, but if the I/O sequencer being used doesn't refer to the
 //		  parameter after starting, changing the parameter has no effect.

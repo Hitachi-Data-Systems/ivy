@@ -440,9 +440,9 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
-	if ( normalized_identifier_equality(parameterName, std::string("VolumeCoverageFractionStart")) )
+	if ( normalized_identifier_equality(parameterName, std::string("VolumeCoverageFractionStart")) || normalized_identifier_equality(parameterName, std::string("RangeStart")))
 	{
-		if (0 == parameterValue.length()) { return std::make_pair(false, "VolumeCoverageFractionStart may not be set to the empty string."); }
+		if (0 == parameterValue.length()) { return std::make_pair(false, "RangeStart may not be set to the empty string."); }
 
 		bool hadPercent {false};
 		if ('%' == parameterValue[-1 + parameterValue.length()])
@@ -457,31 +457,31 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) )
 		{
             std::ostringstream o;
-			o << "invalid VolumeCoverageFractionStart parameter setting \"" << parameterValue;
+			o << "invalid RangeStart parameter setting \"" << parameterValue;
 			if (hadPercent) o << " %";
 			o << "\".";
 			return std::make_pair(false,o.str());
 		}
 
-		volCoverageFractionStart=ld;
+		rangeStart=ld;
 
-		if (hadPercent) volCoverageFractionStart = volCoverageFractionStart / 100.0;
+		if (hadPercent) rangeStart = rangeStart / 100.0;
 
-		if (volCoverageFractionStart >= volCoverageFractionEnd)
+		if (rangeStart >= rangeEnd)
 		{
 			std::ostringstream o;
-			o << "invalid VolumeCoverageFractionStart parameter setting \"" << parameterValue;
+			o << "invalid RangeStart parameter setting \"" << parameterValue;
 			if (hadPercent) o << "%";
-            o << "\".   Volume coverage start must be before volume coverage end.";
+            o << "\".   RangeStart must be before RangeEnd.";
 			return std::make_pair(false,o.str());
 		}
 
 		return std::make_pair(true,"");
 	}
 
-	if ( normalized_identifier_equality(parameterName, std::string("VolumeCoverageFractionEnd")) )
+	if ( normalized_identifier_equality(parameterName, std::string("VolumeCoverageFractionEnd")) || normalized_identifier_equality(parameterName, std::string("RangeEnd")))
 	{
-		if (0 == parameterValue.length()) { return std::make_pair(false, "VolumeCoverageFractionEnd may not be set to the empty string."); }
+		if (0 == parameterValue.length()) { return std::make_pair(false, "RangeEnd may not be set to the empty string."); }
 
 		bool hadPercent {false};
 		if ('%' == parameterValue[-1 + parameterValue.length()])
@@ -497,7 +497,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) )
 		{
 			std::ostringstream o;
-			o << "invalid VolumeCoverageFractionEnd parameter setting \"" << parameterValue;
+			o << "invalid RangeEnd parameter setting \"" << parameterValue;
 			if (hadPercent) o << " %";
 			o << "\".";
 			return std::make_pair(false,o.str());
@@ -505,14 +505,14 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 
 		if (hadPercent) ld /= 100.0;
 
-		volCoverageFractionEnd=ld;
+		rangeEnd=ld;
 
-		if (volCoverageFractionEnd<=volCoverageFractionStart)
+		if (rangeEnd<=rangeStart)
 		{
             std::ostringstream o;
-            o << "invalid VolumeCoverageFractionEnd parameter setting \"" << parameterValue;
+            o << "invalid RangeEnd parameter setting \"" << parameterValue;
             if (hadPercent) o << "%";
-            o << "\".  Volume coverage start must be before volume coverage end.";
+            o << "\".  RangeStart must be before RangeEnd.";
 			return std::make_pair(false,o.str());
 		}
 
@@ -520,9 +520,9 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
-	if ( normalized_identifier_equality(parameterName, std::string("SeqStartFractionOfCoverage")) ) {
+	if ( normalized_identifier_equality(parameterName, std::string("SeqStartFractionOfCoverage")) || normalized_identifier_equality(parameterName, std::string("SeqStartPoint")) ) {
 
-		if (0 == parameterValue.length()) { return std::make_pair(false, "SeqStartFractionOfCoverage may not be set to the empty string."); }
+		if (0 == parameterValue.length()) { return std::make_pair(false, "SeqStartPoint may not be set to the empty string."); }
 
 		bool hadPercent {false};
 		if ('%' == parameterValue[-1 + parameterValue.length()])
@@ -538,13 +538,13 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) )
 		{
 			std::ostringstream o;
-			o << "invalid SeqStartFractionOfCoverage parameter setting \"" << parameterValue;
+			o << "invalid SeqStartPoint parameter setting \"" << parameterValue;
 			if (hadPercent) o << " %";
 			o << "\".";
 			return std::make_pair(false,o.str());
 		}
-		seqStartFractionOfCoverage=ld;
-		if (hadPercent) seqStartFractionOfCoverage = seqStartFractionOfCoverage / 100.0;
+		seqStartPoint=ld;
+		if (hadPercent) seqStartPoint = seqStartPoint / 100.0;
 
 		return std::make_pair(true,"");
 	}
@@ -595,6 +595,20 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		{
             std::ostringstream o;
             o << "invalid pattern parameter value \"" << parameterValue << "\".  " << valid_patterns();
+			return std::make_pair(false,o.str());
+		}
+
+		return std::make_pair(true,"");
+	}
+
+	if ( stringCaseInsensitiveEquality(parameterName, std::string("dedupe_method")) ) {
+
+		dedupe_type = parse_dedupe_method(parameterValue);
+
+		if (dedupe_type == dedupe_method::invalid)
+		{
+            std::ostringstream o;
+            o << "invalid dedupe_method parameter value \"" << parameterValue << "\".  " << valid_dedupe_methods();
 			return std::make_pair(false,o.str());
 		}
 
@@ -750,11 +764,12 @@ void IosequencerInput::reset()
 	IOPS=IOPS_default; // -1.0 means "drive I/Os as fast as possible"
 	skew_weight=skew_weight_default;
 	fractionRead=fractionRead_default;
-	volCoverageFractionStart=volCoverageFractionStart_default;
-	volCoverageFractionEnd=volCoverageFractionEnd_default;
-	seqStartFractionOfCoverage=seqStartFractionOfCoverage_default;
+	rangeStart=rangeStart_default;
+	rangeEnd=rangeEnd_default;
+	seqStartPoint=seqStartPoint_default;
 
 	dedupe = dedupe_default;
+	dedupe_type = dedupe_method_default;
 	pat = pattern_default;
 	compressibility = compressibility_default;
 
@@ -835,14 +850,15 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
 	else          o << ",IOPS=" << IOPS;
 	o << ",skew_weight=" << skew_weight;
 	o << ",fractionRead=" << fractionRead;
-	o << ",VolumeCoverageFractionStart=" <<  volCoverageFractionStart;
-	o << ",VolumeCoverageFractionEnd=" << volCoverageFractionEnd;
+	o << ",RangeStart=" <<  rangeStart;
+	o << ",RangeEnd=" << rangeEnd;
     if(normalized_identifier_equality(iosequencer_type,std::string("sequential")))
     {
-		o << ",seqStartFractionOfCoverage=" << seqStartFractionOfCoverage;
+		o << ",SeqStartPoint=" << seqStartPoint;
 	}
 	o << ",pattern=" << pattern_to_string(pat);
 	o << ",dedupe=" << dedupe;
+	o << ",dedupe_method=" << dedupe_method_to_string(dedupe_type);
 	o << ",compressibility=" << compressibility;
 
     o << ",threads_in_workload_name=" << threads_in_workload_name;
@@ -896,14 +912,15 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 
 	if ( ! defaultFractionRead() )              { o << ",fractionRead=" << fractionRead; }
 
-	if ( ! defaultVolCoverageFractionStart())   { o << ",VolumeCoverageFractionStart=" <<  volCoverageFractionStart; }
+	if ( ! defaultRangeStart())   { o << ",RangeStart=" <<  rangeStart; }
 
-	if( ! defaultVolCoverageFractionEnd() )     { o << ",VolumeCoverageFractionEnd=" << volCoverageFractionEnd; }
+	if( ! defaultRangeEnd() )     { o << ",RangeEnd=" << rangeEnd; }
 
-    if( ! defaultSeqStartFractionOfCoverage() )	{ o << ",seqStartFractionOfCoverage=" << seqStartFractionOfCoverage; }
+    if( ! defaultSeqStartPoint() )	{ o << ",SeqStartPoint=" << seqStartPoint; }
 
 	if (!defaultPattern())                      { o << ",pattern=" << pattern_to_string(pat);}
 	if (!defaultDedupe())                       { o << ",dedupe=" << dedupe;}
+	if (!defaultDedupeMethod())                 { o << ",dedupe_method=" << dedupe_method_to_string(dedupe_type); }
 	if (!defaultCompressibility())              { o << ",compressibility=" << compressibility;}
 
     if (!defaultThreads_in_workload_name()) { o << ",threads_in_workload_name=" << threads_in_workload_name;}
@@ -941,11 +958,12 @@ void IosequencerInput::copy(const IosequencerInput& source)
 	IOPS=source.IOPS;
 	skew_weight = source.skew_weight;
 	fractionRead=source.fractionRead;
-	volCoverageFractionStart=source.volCoverageFractionStart;
-	volCoverageFractionEnd=source.volCoverageFractionEnd;
-	seqStartFractionOfCoverage=source.seqStartFractionOfCoverage;
+	rangeStart=source.rangeStart;
+	rangeEnd=source.rangeEnd;
+	seqStartPoint=source.seqStartPoint;
 
 	dedupe=source.dedupe;
+	dedupe_type=source.dedupe_type;
 	pat=source.pat;
 	compressibility=source.compressibility;
 

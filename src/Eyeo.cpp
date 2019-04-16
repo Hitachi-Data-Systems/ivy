@@ -303,6 +303,18 @@ void Eyeo::generate_pattern()
 
             break;
 
+        case pattern::zeros:
+
+            memset((void*)eyeocb.aio_buf,0,blocksize);
+
+            break;
+
+        case pattern::all_0xFF:
+
+            memset((void*)eyeocb.aio_buf,0xFF,blocksize);
+
+            break;
+
         case pattern::gobbledegook:
 
             p_c = (char*)eyeocb.aio_buf;

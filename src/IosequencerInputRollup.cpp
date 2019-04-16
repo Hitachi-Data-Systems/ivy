@@ -41,129 +41,15 @@
 		",IOPS input parameter setting"
 		",skew weight"
 		",fractionRead"
-		",VolumeCoverageFractionStart"
-		",VolumeCoverageFractionEnd"
-		",SeqStartFractionOfCoverage"
+		",dedupe"
+		",dedupe_method"
+		",pattern"
+		",RangeStart"
+		",RangeEnd"
+		",SeqStartPoint"
 		;
 }
 
-//std::string IosequencerInputRollup::hostnameList()
-//{
-//	// this prints out the set of hostnames seen in the same format you can write it in an ivyscript file
-//	// 	sun159 172.17.19.159 cb26-31 172.17.19.100-104
-//	std::ostringstream o;
-//	std::map<std::string,std::map<std::string, long int>>::iterator host_it = values_seen.find("HOST");
-//
-//	std::string
-//		hostname,
-//		earlier_base_part{""},
-//		first_numeric_suffix{""},
-//		last_numeric_suffix{""},
-//		base_part,
-//		numeric_suffix;
-//	int
-//		last_suffix_as_int=-1,
-//		suffix_as_int;
-//
-//	bool	first_host=true;
-//
-//	if (values_seen.end() == host_it) return std::string("");
-//	for (auto& pear : (*host_it).second)
-//	{
-//		hostname = toLower(pear.first);
-//
-//		if (hostname.length() >0 && isdigit(hostname[hostname.length()-1]))
-//		{
-//			// have hostname with numeric suffix or IPv4 IP address
-//			int i=hostname.length()-1;
-//			while (i>0 && isdigit(hostname[i])) i--;
-//			// hostname can't be all digits
-//			base_part=hostname.substr(0,i+1);
-//			numeric_suffix=hostname.substr(i+1,hostname.length()-(i+1));
-//			suffix_as_int = atoi(numeric_suffix.c_str());
-//		}
-//		else
-//		{
-//			// hostname does not have a numeric suffix
-//			base_part="";
-//			numeric_suffix="";
-//		}
-//
-//		if (earlier_base_part.length() >0)
-//		{
-//			if (0==earlier_base_part.compare(base_part) && suffix_as_int==(last_suffix_as_int+1))
-//			{
-//				// continuation of series
-//				last_numeric_suffix=numeric_suffix;
-//				last_suffix_as_int=suffix_as_int;
-//			}
-//			else
-//			{
-//				// first write out the previous hostname range
-//				if (!first_host) o << ' ';
-//				first_host=false;
-//				o << earlier_base_part << first_numeric_suffix;
-//				if (0!=first_numeric_suffix.compare(last_numeric_suffix))
-//				{
-//					o << '-' << last_numeric_suffix;
-//				}
-//
-//				// now process the current hostname
-//				if (numeric_suffix.length()>0)
-//				{
-//					// have a new hostname with a numeric suffix
-//					earlier_base_part=base_part;
-//					first_numeric_suffix=numeric_suffix;
-//					last_numeric_suffix=numeric_suffix;
-//					last_suffix_as_int=suffix_as_int;
-//				}
-//				else
-//				{
-//					o << hostname;
-//					earlier_base_part="";
-//					first_numeric_suffix="";
-//					last_numeric_suffix="";
-//					last_suffix_as_int=-1;
-//				}
-//			}
-//		}
-//		else
-//		{
-//			// no earlier hostname range
-//			if (numeric_suffix.length()>0)
-//			{
-//				// have a new hostname with a numeric suffix
-//				earlier_base_part=base_part;
-//				first_numeric_suffix=numeric_suffix;
-//				last_numeric_suffix=numeric_suffix;
-//				last_suffix_as_int=suffix_as_int;
-//			}
-//			else
-//			{
-//				if (!first_host) o << ' ';
-//				first_host=false;
-//				o << hostname;
-//				earlier_base_part="";
-//				first_numeric_suffix="";
-//				last_numeric_suffix="";
-//				last_suffix_as_int=-1;
-//			}
-//		}
-//	}
-//	// print out any remaining range
-//	if (earlier_base_part.length()>0)
-//	{
-//		if (!first_host) o << ' ';
-//		first_host=false;
-//		o << earlier_base_part << first_numeric_suffix;
-//		if (0!=first_numeric_suffix.compare(last_numeric_suffix))
-//		{
-//			o << '-' << last_numeric_suffix;
-//		}
-//	}
-//
-//	return o.str();
-//}
 
 
 std::string IosequencerInputRollup::CSVcolumnValues(bool detail)
@@ -178,9 +64,30 @@ std::string IosequencerInputRollup::CSVcolumnValues(bool detail)
 	<< ',' << '\"' << getParameterTextValueByName("IOPS",false) << '\"'   // for DFC=PID, as IOPS changes every subinterval.
 	<< ',' << '\"' << getParameterTextValueByName("skew_weight",detail) << '\"'
 	<< ',' << '\"' << getParameterTextValueByName("fractionRead",detail) << '\"'
-	<< ',' << '\"' << getParameterTextValueByName("VolumeCoverageFractionStart",detail) << '\"'
-	<< ',' << '\"' << getParameterTextValueByName("VolumeCoverageFractionEnd",detail) << '\"'
-	<< ',' << '\"' << getParameterTextValueByName("SeqStartFractionOfCoverage",detail) << '\"'
+	<< ',' << '\"' << getParameterTextValueByName("dedupe",detail) << '\"';
+
+	if (std::string("1") == getParameterTextValueByName("fractionRead",detail)  || std::string("1") == getParameterTextValueByName("dedupe",detail))
+	{
+	    o << ',' << "\"N/A\"";
+	}
+	else
+	{
+	    o << ',' << '\"' << getParameterTextValueByName("dedupe_method",detail) << '\"';
+	}
+
+	if (std::string("1") == getParameterTextValueByName("fractionRead",detail))
+	{
+	    o << ',' << "\"N/A\"";
+	}
+	else
+	{
+	    o << ',' << '\"' << getParameterTextValueByName("pattern",detail) << '\"';
+	}
+
+	o
+	<< ',' << '\"' << getParameterTextValueByName("RangeStart",detail) << '\"'
+	<< ',' << '\"' << getParameterTextValueByName("RangeEnd",detail) << '\"'
+	<< ',' << '\"' << getParameterTextValueByName("SeqStartPoint",detail) << '\"'
 	;
 
 	return o.str();

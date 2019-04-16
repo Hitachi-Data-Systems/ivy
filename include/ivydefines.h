@@ -28,6 +28,7 @@ const std::string ivy_version {"3.20.00"};
   using ivy_int =      long int; using ivy_float =      double;
 
 #include "pattern.h"
+#include "dedupe_method.h"
 
 #define SHOWLUNS_CMD std::string("showluns.sh")
 #define IVYDRIVER_EXECUTABLE std::string("ivydriver")
@@ -118,11 +119,12 @@ const int maxTags_default{1};   // make sure someone is going to notice if they 
 const ivy_float IOPS_default {1};  // Default is 1.0 I/Os per second
 const ivy_float skew_weight_default {-1.0};
 const ivy_float fractionRead_default{1.0};
-const ivy_float	volCoverageFractionStart_default {0.0};  // default is start at sector 1.  Sector 0 is considered "out of bounds".
-const ivy_float	volCoverageFractionEnd_default {1.0};    // default is 1.0 maps to the last aligned block of that blocksize that fits.
-const ivy_float	seqStartFractionOfCoverage_default{0.0}; // This defines where a sequential thread will start mapped from 0.0
-                                                         // at the volCoverageFractionStart point up to 1.0 at the volCoverageFractionEnd point.
+const ivy_float	rangeStart_default {0.0};  // default is start at sector 1.  Sector 0 is considered "out of bounds".
+const ivy_float	rangeEnd_default {1.0};    // default is 1.0 maps to the last aligned block of that blocksize that fits.
+const ivy_float	seqStartPoint_default{0.0}; // This defines where a sequential thread will start mapped from 0.0
+                                                         // at the rangeStart point up to 1.0 at the rangeEnd point.
 const pattern pattern_default {pattern::random};
+const dedupe_method dedupe_method_default {dedupe_method::target_spread};
 const ivy_float dedupe_default {1.0};
 const ivy_float compressibility_default {0.0};
 
