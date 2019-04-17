@@ -184,12 +184,48 @@ bool ivy_engine::some_cooldown_WP_not_empty()
             m_s.kill_subthreads_and_exit();
         }
 
-        if (wp > .015)
+        if (wp > m_s.subsystem_WP_threshold)
         {
+            {
+                std::ostringstream o;
+                o << "With cooldown_by_wp = on, a CLPR Write Pending % is " << std::fixed << std::setprecision(2) << (100.0 * wp) << "%"
+                  << ", which is above subsystem_WP_threshold = " << std::fixed << std::setprecision(1) << (100.0 * m_s.subsystem_WP_threshold) << "%" << std::endl;
+                std::cout << o.str();
+                if (routine_logging)
+                {
+                    log(masterlogfile,o.str());
+                }
+            }
             return true;
         }
     }
 
+    return false;
+}
+
+
+bool ivy_engine::some_subsystem_still_busy()
+{
+    RollupInstance* p_allall = m_s.rollups.get_all_equals_all_instance();
+
+    if (p_allall->subsystem_data_by_subinterval.size() == 0) return false;
+
+    ivy_float avg_busy = p_allall->subsystem_data_by_subinterval.back().avg_MP_core_busy_fraction();
+
+    if (avg_busy < 0.0) return false;
+
+    if( avg_busy > m_s.subsystem_busy_threshold )
+    {
+        std::ostringstream o;
+        o << "With cooldown_by_MP_busy=on, subsystem average MP_core % busy is " << std::fixed << std::setprecision(2) << (100.0 * avg_busy) << "%"
+          << ", which is above subsystem_busy_threshold = " << std::fixed << std::setprecision(1) << (100.0 * m_s.subsystem_busy_threshold) << "%" << std::endl;
+        std::cout << o.str();
+        if (routine_logging)
+        {
+            log(masterlogfile,o.str());
+        }
+        return true;
+    }
     return false;
 }
 
@@ -2209,11 +2245,11 @@ ivy_engine::go(const std::string& parameters)
         kill_subthreads_and_exit();
     }
 
-    std::string valid_parameter_names = "stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, sequential_fill";
+    std::string valid_parameter_names = "stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, cooldown_by_MP_busy, subsystem_WP_threshold, subsystem_busy_threshold, sequential_fill";
 
     std::string valid_parameters_message =
         "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
-        "                                                   sequential_fill.\n\n"
+        "                                                   subsystem_WP_threshold, cooldown_by_MP_busy, subsystem_busy_threshold, sequential_fill.\n\n"
         "For dfc = PID, additional valid parameters are:    target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
         "For measure = on, additional valid parameters are: accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
         "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n\n"
@@ -2238,10 +2274,13 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     if (go_parameters.contains("stepname")) stepName = go_parameters.retrieve("stepname");
     else stepName = stepNNNN;
 
-    if (!go_parameters.contains(std::string("subinterval_seconds"))) go_parameters.contents[normalize_identifier(std::string("subinterval_seconds"))] = subinterval_seconds_default;
-    if (!go_parameters.contains(std::string("warmup_seconds")))      go_parameters.contents[normalize_identifier(std::string("warmup_seconds"))]      = warmup_seconds_default;
-    if (!go_parameters.contains(std::string("measure_seconds")))     go_parameters.contents[normalize_identifier(std::string("measure_seconds"))]     = measure_seconds_default;
-    if (!go_parameters.contains(std::string("cooldown_by_wp")))      go_parameters.contents[normalize_identifier(std::string("cooldown_by_wp"))]      = cooldown_by_wp_default;
+    if (!go_parameters.contains(std::string("subinterval_seconds")))      go_parameters.contents[normalize_identifier(std::string("subinterval_seconds"))]      = subinterval_seconds_default;
+    if (!go_parameters.contains(std::string("warmup_seconds")))           go_parameters.contents[normalize_identifier(std::string("warmup_seconds"))]           = warmup_seconds_default;
+    if (!go_parameters.contains(std::string("measure_seconds")))          go_parameters.contents[normalize_identifier(std::string("measure_seconds"))]          = measure_seconds_default;
+    if (!go_parameters.contains(std::string("cooldown_by_wp")))           go_parameters.contents[normalize_identifier(std::string("cooldown_by_wp"))]           = cooldown_by_wp_default;
+    if (!go_parameters.contains(std::string("cooldown_by_MP_busy")))      go_parameters.contents[normalize_identifier(std::string("cooldown_by_MP_busy"))]      = cooldown_by_MP_busy_default;
+    if (!go_parameters.contains(std::string("subsystem_WP_threshold")))   go_parameters.contents[normalize_identifier(std::string("subsystem_WP_threshold"))]   = subsystem_WP_threshold_default; // used with cooldown_by_wp
+    if (!go_parameters.contains(std::string("subsystem_busy_threshold"))) go_parameters.contents[normalize_identifier(std::string("subsystem_busy_threshold"))] = subsystem_busy_threshold_default; // used with cooldown_by_MP_busy
 
     if (go_parameters.contains(std::string("dfc")))
     {
@@ -2562,8 +2601,12 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     min_measure_count = (int) ceil( measure_seconds / subinterval_seconds);
 
 //----------------------------------- cooldown_by_wp
-    if      ( stringCaseInsensitiveEquality(std::string("on"),  go_parameters.retrieve("cooldown_by_wp")) ) cooldown_by_wp = true;
-    else if ( stringCaseInsensitiveEquality(std::string("off"), go_parameters.retrieve("cooldown_by_wp")) ) cooldown_by_wp = false;
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    go_parameters.retrieve("cooldown_by_wp"))
+           || stringCaseInsensitiveEquality(std::string("true"),  go_parameters.retrieve("cooldown_by_wp"))
+           || stringCaseInsensitiveEquality(std::string("yes"),   go_parameters.retrieve("cooldown_by_wp")) ) cooldown_by_wp = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   go_parameters.retrieve("cooldown_by_wp"))
+           || stringCaseInsensitiveEquality(std::string("false"), go_parameters.retrieve("cooldown_by_wp"))
+           || stringCaseInsensitiveEquality(std::string("no"),    go_parameters.retrieve("cooldown_by_wp")) ) cooldown_by_wp = false;
     else
     {
         ostringstream o;
@@ -2571,6 +2614,45 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
+    }
+
+
+//----------------------------------- subsystem_WP_threshold  - goes with cooldown_by_wp
+    std::string subsystem_WP_threshold_parameter = go_parameters.retrieve("subsystem_WP_threshold");
+    {
+        std::ostringstream where_the;
+        where_the << "go_statement() - when setting \"subsystem_WP_threshold\" parameter to value \""
+            << subsystem_WP_threshold_parameter << "\": ";
+
+        subsystem_WP_threshold = number_optional_trailing_percent(subsystem_WP_threshold_parameter,where_the.str());
+    }
+
+
+//----------------------------------- cooldown_by_MP_busy
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    go_parameters.retrieve("cooldown_by_MP_busy"))
+           || stringCaseInsensitiveEquality(std::string("true"),  go_parameters.retrieve("cooldown_by_MP_busy"))
+           || stringCaseInsensitiveEquality(std::string("yes"),   go_parameters.retrieve("cooldown_by_MP_busy")) ) cooldown_by_MP_busy = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   go_parameters.retrieve("cooldown_by_MP_busy"))
+           || stringCaseInsensitiveEquality(std::string("false"), go_parameters.retrieve("cooldown_by_MP_busy"))
+           || stringCaseInsensitiveEquality(std::string("no"),    go_parameters.retrieve("cooldown_by_MP_busy")) ) cooldown_by_MP_busy = false;
+    else
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid cooldown_by_MP_busy parameter \"" << go_parameters.retrieve("cooldown_by_wp") << "\".  Must be \"on\" or \"off\"." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+
+
+//----------------------------------- subsystem_busy_threshold  - goes with cooldown_by_MP_busy
+    std::string subsystem_busy_threshold_parameter = go_parameters.retrieve("subsystem_busy_threshold");
+    {
+        std::ostringstream where_the;
+        where_the << "go_statement() - when setting \"subsystem_busy_threshold\" parameter to value \""
+            << subsystem_busy_threshold_parameter << "\": ";
+
+        subsystem_busy_threshold = number_optional_trailing_percent(subsystem_busy_threshold_parameter,where_the.str());
     }
 
 

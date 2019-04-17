@@ -213,7 +213,8 @@ std::pair<bool /*success*/, std::string /* message */>
 
     for (auto& s: test_hosts.hosts) { hosts.push_back(s);}
 
-    write_clear_script();  // This writes a shell script to run the clear_hung_ivy_threads executable on all involved hosts - handy if you are a developer and you mess things up
+    // ivy rarely blows up leaving hung threads, so this is commented out:
+    //write_clear_script();  // This writes a shell script to run the clear_hung_ivy_threads executable on all involved hosts - handy if you are a developer and you mess things up
 
     if (hosts.size() == 0)
     {

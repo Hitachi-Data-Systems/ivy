@@ -295,6 +295,9 @@ std::string JSON_SCHEMA = R"( {
                 "warmup_seconds" : { "type": "integer" },
                 "measure_seconds" : { "type": "integer" },
                 "cooldown_by_wp": { "type": "boolean" },
+                "cooldown_by_MP_busy": { "type": "boolean" },
+                "subsystem_busy_threshold": { "$ref": "#/definitions/percentageschema" },
+                "subsystem_WP_threshold": { "$ref": "#/definitions/percentageschema" },
                 "measure": { "type": {
                             "enum": ["MP_core_busy_percent", "PG_busy_percent",
                                      "CLPR_WP_percent", "MB_per_second", "IOPS",

@@ -46,6 +46,8 @@ class subsystem_summary_data
     // addIn() adds the repetition factor of the other thing you are adding in.
     // Thus if you look at the sum() function, you need to divide sum values by the repetition factor.
 
+    // I think the repetition factor only applies to measurement summaries over multiple subintervals.
+
     bool detailed_thumbnail {false};
 
 
@@ -62,4 +64,5 @@ class subsystem_summary_data
     ivy_float decimal_MB_per_second();   // returns -1.0 if no data.
     ivy_float service_time_ms();         // returns -1.0 if no data.
     ivy_float MP_microseconds_per_IO();  // returns -1.0 if no data.
+    ivy_float avg_MP_core_busy_fraction();  // returns -1.0 if no data.
 };

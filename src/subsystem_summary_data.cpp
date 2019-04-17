@@ -902,8 +902,18 @@ ivy_float subsystem_summary_data::MP_microseconds_per_IO()
     return 1E6 * (metric_it->second.sum() / repetition_factor) / total_IOPS;
 }
 
+ivy_float subsystem_summary_data::avg_MP_core_busy_fraction()  // returns -1.0 if no data.
+{
+    auto MP_it = data.find("MP_core");
+    if (MP_it == data.end()) return -1.0;
 
+    auto metric_it = MP_it->second.find("busy_percent");
+    if ( metric_it == MP_it->second.end() ) return -1.0;
 
+    if (metric_it ->second.count() == 0) return -1.0;
+
+    return metric_it ->second.avg();
+}
 
 
 

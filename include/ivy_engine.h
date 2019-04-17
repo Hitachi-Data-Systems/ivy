@@ -206,6 +206,9 @@ public:
 	ivy_float warmup_seconds {-1};      /* ==> */ int min_warmup_count /* i.e. subinterval count */;
 	ivy_float measure_seconds {-1};     /* ==> */ int min_measure_count;
 	bool cooldown_by_wp {true};  // whether the feature has been selected in the ivyscript program
+	bool cooldown_by_MP_busy {true};  // whether the feature has been selected in the ivyscript program
+	ivy_float subsystem_busy_threshold { -1. }; // this gets set when parsing go parameters, see subsystem_busy_threshold_default
+	ivy_float subsystem_WP_threshold { -1. }; // this gets set when parsing go parameters, see subsystem_busy_threshold_default
 	bool in_cooldown_mode {false}; // whether the ivy engine is in cooldown mode after SUCCESS or FAILURE
 	ivytime cooldown_start;
 
@@ -406,6 +409,7 @@ public:
     void print_latency_csvfiles();
 
     bool some_cooldown_WP_not_empty();
+    bool some_subsystem_still_busy();
 
     std::string focus_metric_ID();
 

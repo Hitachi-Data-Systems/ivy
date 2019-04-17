@@ -735,7 +735,11 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
             ivytime cooldown_time = now - m_s.cooldown_start;
 
-            if (m_s.some_cooldown_WP_not_empty())
+            if
+            (
+                ( m_s.cooldown_by_wp && m_s.some_cooldown_WP_not_empty()     )
+             || ( m_s.cooldown_by_MP_busy && m_s.some_subsystem_still_busy() )
+            )
             {
                 m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
 
@@ -777,16 +781,17 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 log(m_s.masterlogfile,o.str());
             }
 
-            if (
+            if
+            (
                     (
                         m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS
                         ||
                         m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_FAILURE
                     )
-                &&
-                    m_s.cooldown_by_wp
-                &&
-                    m_s.some_cooldown_WP_not_empty()
+                &&  (
+                         ( m_s.cooldown_by_wp      && m_s.some_cooldown_WP_not_empty() )
+                      || ( m_s.cooldown_by_MP_busy && m_s.some_subsystem_still_busy()  )
+                    )
             )
             {
                 m_s.eventualEvaluateSubintervalReturnCode = m_s.lastEvaluateSubintervalReturnCode;
@@ -796,8 +801,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 m_s.cooldown_start.setToNow();
 
                 std::ostringstream o;
-                o << "DFC posted SUCCESS or FAILURE, but cooldown_by_wp is on and we have at least one available test CLPR we can see that is not empty."
-                    << "  Entering cooldown mode." << std::endl;
+                o << "DFC posted SUCCESS or FAILURE, but cooldown being extended by cooldown_by_wp or cooldown_by_MP_busy." << std::endl;
 
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
