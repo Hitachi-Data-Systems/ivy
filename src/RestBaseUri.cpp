@@ -138,7 +138,7 @@ std::string JSON_SCHEMA = R"( {
                 "pattern": {
                     "anyof": [
                           { "type": {
-                              "enum": [ "random", "ascii", "gobbledgook", "zeros", "all_0xFF" ] }
+                              "enum": [ "random", "ascii", "gobbledgook", "zeros", "all_0x0F", "all_0xFF" ] }
                           },
                           { "type": "object",
 	                      "properties": {
