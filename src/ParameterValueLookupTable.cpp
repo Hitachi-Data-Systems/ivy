@@ -165,7 +165,7 @@ std::string ParameterValueLookupTable::toString()
 		quote_char='\"';
 		if (!first) o << ", ";
 		first=false;
-		o << pear.first << '=';
+		o << rehydrate_parameter_name(pear.first) << '=';
 		value=pear.second;
 		for (unsigned int i=0; i<value.length(); i++)
 		{
@@ -197,7 +197,7 @@ std::string ParameterValueLookupTable::retrieve(std::string key)
 	return m->second;
 }
 
-bool ParameterValueLookupTable::containsOnlyValidParameterNames(std::string s) // s = listOfValidParameterNames
+std::pair<bool,string> ParameterValueLookupTable::containsOnlyValidParameterNames(std::string s) // s = listOfValidParameterNames
 {
 	// Input is list of valid parameter names, like "blocksize, iorate".
 	// Comma separators are optional.
@@ -206,8 +206,9 @@ bool ParameterValueLookupTable::containsOnlyValidParameterNames(std::string s) /
 	unsigned int i=0;
 
 	int identifier_start, identifier_length;
-	bool all_valid=true;
 	std::set<std::string> valid_parameter_names;
+
+	std::ostringstream bad_names;
 
 	while (true) {
 		while (i<s.length() && (isspace(s[i]) || ',' == s[i]))
@@ -220,11 +221,11 @@ bool ParameterValueLookupTable::containsOnlyValidParameterNames(std::string s) /
 		if (!isalpha(s[i])) // start of identifier
 		{
             std::ostringstream o;
-			o << "ParameterValueLookupTable::containsOnlyValidParameterNames() invalid list of valid parameter names:" << std::endl << s << std::endl;
+			o << "<Error> Internal programming error - ParameterValueLookupTable::containsOnlyValidParameterNames() invalid list of valid parameter names:" << std::endl << s << std::endl;
 			for (unsigned int j=0; j<i; j++) o << ' ';
-			o << '^' << std::endl << "Parameter name must start with alphabetic and consist entirely of alphanumerics and underscores." << std::endl;
+			o << '^' << std::endl << "Parameter names must start with alphabetic and consist entirely of alphanumerics and underscores." << std::endl;
 			std::cout << o.str(); log(m_s.masterlogfile,o.str());
-			return false;
+			return std::make_pair(false,o.str());
 		}
 
 		identifier_start=i;
@@ -250,18 +251,56 @@ bool ParameterValueLookupTable::containsOnlyValidParameterNames(std::string s) /
 	{
 		if (valid_parameter_names.end() == valid_parameter_names.find(normalize_identifier(pear.first)))
 		{
-			if(all_valid) o << "ParameterValueLookupTable::containsOnlyValidParameterNames() Invalid parameter names present:" << pear.first;
-			all_valid=false;
-			o << ' ' << pear.first;
+			if (bad_names.str().size() > 0) bad_names << ", ";
+			bad_names << pear.first;
 		}
 	}
 
-	if (!all_valid)
-	{
-        o << std::endl;
-        log (m_s.masterlogfile,o.str());
-        std::cout << o.str();
-    }
-	return all_valid;
+	return std::make_pair(bad_names.str().size() == 0, bad_names.str());
 }
 
+std::map<std::string,std::string> ParameterValueLookupTable::parameter_name_rehydration_table
+{
+    {"accumulatortype",         "accumulator_type"},
+    {"accuracyplusminus",       "accuracy_plus_minus"},
+    {"balancedstepdirectionby", "balanced_step_direction_by"},
+    {"ballparkseconds",         "ballpark_seconds"},
+    {"cooldownbympbusy",        "cooldown_by_MP_busy"},
+    {"cooldownbywp",            "cooldown_by_WP"},
+    {"element_metric",          "element_metric"},
+    {"focusrollup",             "focus_rollup"},
+    {"gainstep",                "gain_step"},
+    {"highiops",                "high_IOPS"},
+    {"hightarget",              "high_target"},
+    {"lowiops",                 "low_IOPS"},
+    {"lowtarget",               "low_target"},
+    {"maxiops",                 "max_IOPS"},
+    {"maxmonotone",             "max_monotone"},
+    {"maxripple",               "max_ripple"},
+    {"maxwpchange",             "max_wp_change"},
+    {"maxwp",                   "max_WP"},
+    {"measureseconds",          "measure_seconds"},
+    {"minwp",                   "min_WP"},
+    {"noldev",                  "no_LDEV"},
+    {"noperf",                  "no_perf"},
+    {"pgpercentbusy",           "PG_percent_busy"},
+    {"raidsubsystem",           "RAID_subsystem"},
+    {"sequentialfill",          "sequential_fill"},
+    {"servicetimeseconds",      "service_time_seconds"},
+    {"subintervalseconds",      "subinterval_seconds"},
+    {"subsystembusythreshold",  "subsystem_busy_threshold"},
+    {"subsystemelement",        "subsystem_element"},
+    {"subsystemwpthreshold",    "subsystem_WP_threshold"},
+    {"targetvalue",             "target_value"},
+    {"timeoutseconds",          "timeout_seconds"},
+    {"warmupseconds",           "warmup_seconds"}
+};
+
+std::string ParameterValueLookupTable::rehydrate_parameter_name(const std::string& n)
+{
+    auto it = parameter_name_rehydration_table.find(n);
+
+    if (it == parameter_name_rehydration_table.end()) return n;
+
+    return it->second;
+}

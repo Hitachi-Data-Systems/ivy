@@ -26,14 +26,40 @@ extern bool routine_logging;
 
 void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_lk)
 {
+    ivytime entry_time; entry_time.setToNow();
+
+    gather_scheduled_start_time.waitUntilThisTime();
+
+    ivytime after_waiting; after_waiting.setToNow();
+    ivytime wait_time = after_waiting-entry_time;
+
+    bool fake_gather;
+
+    if (m_s.now_doing_no_perf_cooldown)                      { fake_gather = false; }
+    else if ( !m_s.no_subsystem_perf )                       { fake_gather = false; }
+    else if ( p_Hitachi_RAID_subsystem->gathers.size() > 0 ) { fake_gather = true;  }
+    else                                                     { fake_gather = false; }
+
     ivytime tn_gather_start, tn_gather_complete;
+
+    tn_gather_start.setToNow();
+
     ivytime tn_sub_gather_end;
     ivytime gatherStart;
 
     if (routine_logging)
     {
         std::ostringstream o;
-        o << "\"gather\" command received.  There are data from " << p_Hitachi_RAID_subsystem->gathers.size() << " previous gathers." << std::endl;
+
+        o << "\"gather\" command received, and waited for " << wait_time.format_as_duration_HMMSSns() << " until scheduled gather start time.";
+
+        if (fake_gather)
+        {
+            o << "  With command line option -no_perf, and with I/O being driven, doing a fake gather.";
+        }
+
+        o << "  There are data from " << p_Hitachi_RAID_subsystem->gathers.size() << " previous gathers." << std::endl;
+
         log(logfilename,o.str());
     }
 
@@ -45,119 +71,21 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
     // run whatever ivy_cmddev commands we need to, and parse the output pointing at the current GatherData object.
     GatherData& currentGD = p_Hitachi_RAID_subsystem->gathers.back();
 
-    gather_scheduled_start_time.waitUntilThisTime();
 
-    tn_gather_start.setToNow();
     gatherStart = tn_gather_start;
 
-    try
+
+    if (fake_gather)
     {
-        send_and_get_OK("get CLPRdetail");
-
-        try
-        {
-            process_ivy_cmddev_response(currentGD, gatherStart);
-        }
-        catch (std::invalid_argument& iaex)
-        {
-            std::ostringstream o;
-            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get CLPRdetail\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
-            log(logfilename,o.str());
-            kill_ssh_and_harvest();
-            commandComplete=true;
-            commandSuccess=false;
-            commandErrorMessage = o.str();
-            dead=true;
-            s_lk.unlock();
-            master_slave_cv.notify_all();
-            return;
-        }
-        catch (std::runtime_error& reex)
-        {
-            std::ostringstream o;
-            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get CLPRdetail\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
-            log(logfilename,o.str());
-            kill_ssh_and_harvest();
-            commandComplete=true;
-            commandSuccess=false;
-            commandErrorMessage = o.str();
-            dead=true;
-            s_lk.unlock();
-            master_slave_cv.notify_all();
-            return;
-        }
+        ivytime delay(0.25);
+        delay.wait_for_this_long();
     }
-    catch (std::runtime_error& reex)
-    {
-        std::ostringstream o;
-        o << "\"get CLPRdetail\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
-        log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
-        kill_ssh_and_harvest();
-        commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
-        master_slave_cv.notify_all();
-        return;
-    }
-
-    tn_sub_gather_end.setToNow();
-    getCLPRDetailTime.push(ivytime(tn_sub_gather_end - gatherStart));
-
-    gatherStart.setToNow();
-    try
-    {
-        send_and_get_OK("get MP_busy");
-        try
-        {
-            process_ivy_cmddev_response(currentGD, gatherStart);
-        }
-        catch (std::invalid_argument& iaex)
-        {
-            std::ostringstream o;
-            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get MP_busy\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
-            log(logfilename,o.str());
-            kill_ssh_and_harvest();
-            commandComplete=true;
-            commandSuccess=false;
-            commandErrorMessage = o.str();
-            dead=true;
-            s_lk.unlock();
-            master_slave_cv.notify_all();
-            return;
-        }
-        catch (std::runtime_error& reex)
-        {
-            std::ostringstream o;
-            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get MP_busy\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
-            log(logfilename,o.str());
-            kill_ssh_and_harvest();
-            commandComplete=true;
-            commandSuccess=false;
-            commandErrorMessage = o.str();
-            dead=true;
-            s_lk.unlock();
-            master_slave_cv.notify_all();
-            return;
-        }
-    }
-    catch (std::runtime_error& reex)
-    {
-        std::ostringstream o;
-        o << "\"get MP_busy\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
-        log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
-        kill_ssh_and_harvest();
-        commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
-        master_slave_cv.notify_all();
-        return;
-    }
-
-    tn_sub_gather_end.setToNow();
-    getMPbusyTime.push(ivytime(tn_sub_gather_end - gatherStart));
-
-    gatherStart.setToNow();
-    if (!m_s.skip_ldev_data)
+    else
     {
         try
         {
-            send_and_get_OK("get LDEVIO");
+            send_and_get_OK("get CLPRdetail");
+
             try
             {
                 process_ivy_cmddev_response(currentGD, gatherStart);
@@ -165,7 +93,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
             catch (std::invalid_argument& iaex)
             {
                 std::ostringstream o;
-                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get CLPRdetail\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
                 log(logfilename,o.str());
                 kill_ssh_and_harvest();
                 commandComplete=true;
@@ -179,7 +107,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
             catch (std::runtime_error& reex)
             {
                 std::ostringstream o;
-                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get CLPRdetail\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
                 log(logfilename,o.str());
                 kill_ssh_and_harvest();
                 commandComplete=true;
@@ -194,147 +122,255 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         catch (std::runtime_error& reex)
         {
             std::ostringstream o;
-            o << "\"get LDEVIO\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+            o << "\"get CLPRdetail\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
             kill_ssh_and_harvest();
             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
             master_slave_cv.notify_all();
             return;
         }
-    }
 
-    tn_sub_gather_end.setToNow();
-    getLDEVIOTime.push(ivytime(tn_sub_gather_end - gatherStart));
+        tn_sub_gather_end.setToNow();
+        getCLPRDetailTime.push(ivytime(tn_sub_gather_end - gatherStart));
 
-    // element port
-        // instance 1a
-            // mainframe:
-                // IO_count (rollover)
-                // block_count (rollover)
-            // open
-                // max_IOPS 32-bit (not rollover)
-                // min_IOPS 32-bit (not rollover)
-                // avg_IOPS 32-bit (not rollover)
-                // max_KBPS 32-bit (not rollover)
-                // min_KBPS 32-bit (not rollover)
-                // avg_KBPS 32-bit (not rollover)
-
-                // IO_count 64-bit (rollover)
-                // block_count 64-bit(rollover)
-
-                // initiator_max_IOPS 32-bit (not rollover)
-                // initiator_min_IOPS 32-bit (not rollover)
-                // initiator_avg_IOPS 32-bit (not rollover)
-                // initiator_max_KBPS 32-bit (not rollover)
-                // initiator_min_KBPS 32-bit (not rollover)
-                // initiator_avg_KBPS 32-bit (not rollover)
-
-                // initiator_IO_count 64-bit (rollover)
-                // initiator_block_count 64-bit (rollover)
-    gatherStart.setToNow();
-    try
-    {
-        send_and_get_OK("get PORTIO");
+        gatherStart.setToNow();
         try
         {
-            process_ivy_cmddev_response(currentGD, gatherStart);
-        }
-        catch (std::invalid_argument& iaex)
-        {
-            std::ostringstream o;
-            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get PORTIO\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
-            log(logfilename,o.str());
-            kill_ssh_and_harvest();
-            commandComplete=true;
-            commandSuccess=false;
-            commandErrorMessage = o.str();
-            dead=true;
-            s_lk.unlock();
-            master_slave_cv.notify_all();
-            return;
+            send_and_get_OK("get MP_busy");
+            try
+            {
+                process_ivy_cmddev_response(currentGD, gatherStart);
+            }
+            catch (std::invalid_argument& iaex)
+            {
+                std::ostringstream o;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get MP_busy\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                log(logfilename,o.str());
+                kill_ssh_and_harvest();
+                commandComplete=true;
+                commandSuccess=false;
+                commandErrorMessage = o.str();
+                dead=true;
+                s_lk.unlock();
+                master_slave_cv.notify_all();
+                return;
+            }
+            catch (std::runtime_error& reex)
+            {
+                std::ostringstream o;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get MP_busy\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                log(logfilename,o.str());
+                kill_ssh_and_harvest();
+                commandComplete=true;
+                commandSuccess=false;
+                commandErrorMessage = o.str();
+                dead=true;
+                s_lk.unlock();
+                master_slave_cv.notify_all();
+                return;
+            }
         }
         catch (std::runtime_error& reex)
         {
             std::ostringstream o;
-            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get PORIO\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
-            log(logfilename,o.str());
+            o << "\"get MP_busy\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
             kill_ssh_and_harvest();
-            commandComplete=true;
-            commandSuccess=false;
-            commandErrorMessage = o.str();
-            dead=true;
-            s_lk.unlock();
+            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
             master_slave_cv.notify_all();
             return;
         }
-    }
-    catch (std::runtime_error& reex)
-    {
-        std::ostringstream o;
-        o << "\"get PORTIO\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
-        log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
-        kill_ssh_and_harvest();
-        commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
-        master_slave_cv.notify_all();
-        return;
-    }
 
-    tn_sub_gather_end.setToNow();
-    getPORTIOTime.push(ivytime(tn_sub_gather_end - gatherStart));
-    gatherStart.setToNow();
-    try
-    {
-        send_and_get_OK("get UR_Jnl");
+        tn_sub_gather_end.setToNow();
+        getMPbusyTime.push(ivytime(tn_sub_gather_end - gatherStart));
+
+        gatherStart.setToNow();
+        if (!m_s.skip_ldev_data)
+        {
+            try
+            {
+                send_and_get_OK("get LDEVIO");
+                try
+                {
+                    process_ivy_cmddev_response(currentGD, gatherStart);
+                }
+                catch (std::invalid_argument& iaex)
+                {
+                    std::ostringstream o;
+                    o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                    log(logfilename,o.str());
+                    kill_ssh_and_harvest();
+                    commandComplete=true;
+                    commandSuccess=false;
+                    commandErrorMessage = o.str();
+                    dead=true;
+                    s_lk.unlock();
+                    master_slave_cv.notify_all();
+                    return;
+                }
+                catch (std::runtime_error& reex)
+                {
+                    std::ostringstream o;
+                    o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get LDEVIO\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                    log(logfilename,o.str());
+                    kill_ssh_and_harvest();
+                    commandComplete=true;
+                    commandSuccess=false;
+                    commandErrorMessage = o.str();
+                    dead=true;
+                    s_lk.unlock();
+                    master_slave_cv.notify_all();
+                    return;
+                }
+            }
+            catch (std::runtime_error& reex)
+            {
+                std::ostringstream o;
+                o << "\"get LDEVIO\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+                log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                kill_ssh_and_harvest();
+                commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                master_slave_cv.notify_all();
+                return;
+            }
+        }
+
+        tn_sub_gather_end.setToNow();
+        getLDEVIOTime.push(ivytime(tn_sub_gather_end - gatherStart));
+
+        // element port
+            // instance 1a
+                // mainframe:
+                    // IO_count (rollover)
+                    // block_count (rollover)
+                // open
+                    // max_IOPS 32-bit (not rollover)
+                    // min_IOPS 32-bit (not rollover)
+                    // avg_IOPS 32-bit (not rollover)
+                    // max_KBPS 32-bit (not rollover)
+                    // min_KBPS 32-bit (not rollover)
+                    // avg_KBPS 32-bit (not rollover)
+
+                    // IO_count 64-bit (rollover)
+                    // block_count 64-bit(rollover)
+
+                    // initiator_max_IOPS 32-bit (not rollover)
+                    // initiator_min_IOPS 32-bit (not rollover)
+                    // initiator_avg_IOPS 32-bit (not rollover)
+                    // initiator_max_KBPS 32-bit (not rollover)
+                    // initiator_min_KBPS 32-bit (not rollover)
+                    // initiator_avg_KBPS 32-bit (not rollover)
+
+                    // initiator_IO_count 64-bit (rollover)
+                    // initiator_block_count 64-bit (rollover)
+        gatherStart.setToNow();
         try
         {
-            process_ivy_cmddev_response(currentGD, gatherStart);
-        }
-        catch (std::invalid_argument& iaex)
-        {
-            std::ostringstream o;
-            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get UR_Jnl\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
-            log(logfilename,o.str());
-            kill_ssh_and_harvest();
-            commandComplete=true;
-            commandSuccess=false;
-            commandErrorMessage = o.str();
-            dead=true;
-            s_lk.unlock();
-            master_slave_cv.notify_all();
-            return;
+            send_and_get_OK("get PORTIO");
+            try
+            {
+                process_ivy_cmddev_response(currentGD, gatherStart);
+            }
+            catch (std::invalid_argument& iaex)
+            {
+                std::ostringstream o;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get PORTIO\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                log(logfilename,o.str());
+                kill_ssh_and_harvest();
+                commandComplete=true;
+                commandSuccess=false;
+                commandErrorMessage = o.str();
+                dead=true;
+                s_lk.unlock();
+                master_slave_cv.notify_all();
+                return;
+            }
+            catch (std::runtime_error& reex)
+            {
+                std::ostringstream o;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get PORIO\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                log(logfilename,o.str());
+                kill_ssh_and_harvest();
+                commandComplete=true;
+                commandSuccess=false;
+                commandErrorMessage = o.str();
+                dead=true;
+                s_lk.unlock();
+                master_slave_cv.notify_all();
+                return;
+            }
         }
         catch (std::runtime_error& reex)
         {
             std::ostringstream o;
-            o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get UR_Jnl\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
-            log(logfilename,o.str());
+            o << "\"get PORTIO\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
             kill_ssh_and_harvest();
-            commandComplete=true;
-            commandSuccess=false;
-            commandErrorMessage = o.str();
-            dead=true;
-            s_lk.unlock();
+            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
             master_slave_cv.notify_all();
             return;
         }
+
+        tn_sub_gather_end.setToNow();
+        getPORTIOTime.push(ivytime(tn_sub_gather_end - gatherStart));
+
+        gatherStart.setToNow();
+        try
+        {
+            send_and_get_OK("get UR_Jnl");
+            try
+            {
+                process_ivy_cmddev_response(currentGD, gatherStart);
+            }
+            catch (std::invalid_argument& iaex)
+            {
+                std::ostringstream o;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get UR_Jnl\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                log(logfilename,o.str());
+                kill_ssh_and_harvest();
+                commandComplete=true;
+                commandSuccess=false;
+                commandErrorMessage = o.str();
+                dead=true;
+                s_lk.unlock();
+                master_slave_cv.notify_all();
+                return;
+            }
+            catch (std::runtime_error& reex)
+            {
+                std::ostringstream o;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get UR_Jnl\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                log(logfilename,o.str());
+                kill_ssh_and_harvest();
+                commandComplete=true;
+                commandSuccess=false;
+                commandErrorMessage = o.str();
+                dead=true;
+                s_lk.unlock();
+                master_slave_cv.notify_all();
+                return;
+            }
+        }
+        catch (std::runtime_error& reex)
+        {
+            std::ostringstream o;
+            o << "\"get UR_Jnl\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+            kill_ssh_and_harvest();
+            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+            master_slave_cv.notify_all();
+            return;
+        }
+
+        tn_sub_gather_end.setToNow();
+        getUR_JnlTime.push(ivytime(tn_sub_gather_end - gatherStart));
     }
-    catch (std::runtime_error& reex)
-    {
-        std::ostringstream o;
-        o << "\"get UR_Jnl\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
-        log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
-        kill_ssh_and_harvest();
-        commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
-        master_slave_cv.notify_all();
-        return;
-    }
-
-    tn_sub_gather_end.setToNow();
-    getUR_JnlTime.push(ivytime(tn_sub_gather_end - gatherStart));
-    // Post-processing after gather to fill in derived metrics.
 
 
-    if (p_Hitachi_RAID_subsystem->gathers.size() > 1)
+    if (
+         ( (!m_s.no_subsystem_perf) && (p_Hitachi_RAID_subsystem->gathers.size() > 1) )
+      || ( m_s.no_perf_cooldown_subinterval_count >= 2 )
+    )
     {
         // post processing for the end of a subinterval (not for the t=0 gather)
 
@@ -493,13 +529,19 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         // For 64-bit unsigned RMLIB raw counters, ivy_cmddev reports a 64-bit unsigned int representing the
         // amount that the raw counter has incremented since the ivy_cmddev run started.
 
-        m_s.rollups.not_participating.push_back(subsystem_summary_data());
+        if (!m_s.no_subsystem_perf) { m_s.rollups.not_participating.push_back(subsystem_summary_data()); }
 
         void rollup_Hitachi_RAID_data(const std::string&, Hitachi_RAID_subsystem*, GatherData& currentGD, GatherData& lastGD);
 
-        if (p_Hitachi_RAID_subsystem->gathers.size() > 2) rollup_Hitachi_RAID_data(logfilename, p_Hitachi_RAID_subsystem, currentGD, lastGD);
-
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        if
+        (
+            ( (!m_s.no_subsystem_perf) && (p_Hitachi_RAID_subsystem->gathers.size() > 2) )
+         ||
+            ( m_s.no_subsystem_perf && (m_s.no_perf_cooldown_subinterval_count > 2) )
+        )
+        {
+            rollup_Hitachi_RAID_data(logfilename, p_Hitachi_RAID_subsystem, currentGD, lastGD);
+        }
 
 
         // Filter & post subsystem performance data by RollupInstance
@@ -514,11 +556,9 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         //						- for each metric
         //							- post values -.
 
+    }
 
-
-
-    } // if (p_Hitachi_RAID_subsystem->gathers.size() > 1)
-    else
+    if (m_s.doing_t0_gather)
     {
         // post-processing for the t=0 gather
 
@@ -548,7 +588,6 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
                 }
             }
         }
-
     }
 
     commandComplete=true;
@@ -577,6 +616,9 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
 
     ivytime tn_gather_time {tn_gather_complete - tn_gather_start};
 
-    m_s.overallGatherTimeSeconds.push(tn_gather_time.getlongdoubleseconds());
-    perSubsystemGatherTime.push(tn_gather_time.getlongdoubleseconds());
+    if (!fake_gather)
+    {
+        m_s.overallGatherTimeSeconds.push(tn_gather_time.getlongdoubleseconds());
+        perSubsystemGatherTime.push(tn_gather_time.getlongdoubleseconds());
+    }
 }

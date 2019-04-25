@@ -613,7 +613,7 @@ std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval
 
 
 
-		result << " <" << cereal << " " << CLPR << ": WP = " << std::fixed << std::setprecision(3) << (100.*WP) << '%';
+		result << " <" << cereal << " " << CLPR << ": WP = " << std::fixed << std::setprecision(2) << (100.*WP) << '%';
 
 		if (subinterval_index >-1)
 		{
@@ -622,7 +622,7 @@ std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval
 			slew_rate = delta/subinterval_seconds;
 			result << " ";
 			if (slew_rate >= 0.0) result << '+';
-			result << std::fixed << std::setprecision(3) << (100.*slew_rate) << "%/sec";
+			result << std::fixed << std::setprecision(2) << (100.*slew_rate) << "%/sec";
 		}
 
 		result << ">";
@@ -2245,16 +2245,24 @@ ivy_engine::go(const std::string& parameters)
         kill_subthreads_and_exit();
     }
 
-    std::string valid_parameter_names = "stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, cooldown_by_MP_busy, subsystem_WP_threshold, subsystem_busy_threshold, sequential_fill";
+    std::string valid_parameter_names = "no_perf, no_LDEV, stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, cooldown_by_MP_busy, subsystem_WP_threshold, subsystem_busy_threshold, sequential_fill";
 
     std::string valid_parameters_message =
-        "The following parameter names are always valid:    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
-        "                                                   subsystem_WP_threshold, cooldown_by_MP_busy, subsystem_busy_threshold, sequential_fill.\n\n"
-        "For dfc = PID, additional valid parameters are:    target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
-        "For measure = on, additional valid parameters are: accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
-        "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n\n"
+        "The following parameter names are always valid:\n"
+        "    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
+        "    no_perf, no_LDEV, subsystem_WP_threshold, cooldown_by_MP_busy, subsystem_busy_threshold,\n"
+        "    sequential_fill.\n\n"
+        "For dfc = PID, additional valid parameters are:\n"
+        "    target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step,\n"
+        "    ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
+        "For measure = on, additional valid parameters are:\n"
+        "    accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
+        "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n"
+        "    These are usually set using \"shorthand\" such as measure=service_time_seconds or measure=PG_percent_busy.\n\n"
         "For source = workload, additional valid parameters are: category, accumulator_type, accessor.\n\n"
+        "    These are usually set using \"shorthand\" such as measure=service_time_seconds or measure=PG_percent_busy.\n\n"
         "For source = RAID_subsystem, additional valid parameters are: subsystem_element, element_metric.\n\n"
+        "    These are usually set using \"shorthand\" such as measure=service_time_seconds or measure=PG_percent_busy.\n\n"
 
 R"("measure" may be set to "on" or "off", or to one of the following shorthand settings:
 
@@ -2273,6 +2281,9 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
     if (go_parameters.contains("stepname")) stepName = go_parameters.retrieve("stepname");
     else stepName = stepNNNN;
+
+    if (!go_parameters.contains(normalize_identifier(std::string("no_perf")))) go_parameters.contents[normalize_identifier(std::string("no_perf"))]  = no_subsystem_perf_default ? "on" : "off";
+    if (!go_parameters.contains(normalize_identifier(std::string("no_LDEV")))) go_parameters.contents[normalize_identifier(std::string("no_LDEV"))]  = skip_ldev_data_default ? "on" : "off";
 
     if (!go_parameters.contains(std::string("subinterval_seconds")))      go_parameters.contents[normalize_identifier(std::string("subinterval_seconds"))]      = subinterval_seconds_default;
     if (!go_parameters.contains(std::string("warmup_seconds")))           go_parameters.contents[normalize_identifier(std::string("warmup_seconds"))]           = warmup_seconds_default;
@@ -2469,11 +2480,11 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         }
     }
 
-    if (!go_parameters.containsOnlyValidParameterNames(valid_parameter_names))
+    auto names_are_valid = go_parameters.containsOnlyValidParameterNames(valid_parameter_names);
+    if (!names_are_valid.first)
     {
         std::ostringstream o;
-        o << std::endl << "<Error> ivy engine API - go() - Invalid [Go] statement parameter." << std::endl << std::endl
-                           << "Error found in [Go] statement parameter values: " << go_parameters.toString() << std::endl << std::endl
+        o << std::endl << "<Error> ivy engine API - invalid [Go] parameter(s) ==> " << names_are_valid.second << std::endl << std::endl
                            << valid_parameters_message << std::endl << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
@@ -2599,6 +2610,40 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         kill_subthreads_and_exit();
     }
     min_measure_count = (int) ceil( measure_seconds / subinterval_seconds);
+
+//----------------------------------- no_perf
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    go_parameters.retrieve("no_perf"))
+           || stringCaseInsensitiveEquality(std::string("true"),  go_parameters.retrieve("no_perf"))
+           || stringCaseInsensitiveEquality(std::string("yes"),   go_parameters.retrieve("no_perf")) ) no_subsystem_perf = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   go_parameters.retrieve("no_perf"))
+           || stringCaseInsensitiveEquality(std::string("false"), go_parameters.retrieve("no_perf"))
+           || stringCaseInsensitiveEquality(std::string("no"),    go_parameters.retrieve("no_perf")) ) no_subsystem_perf = false;
+    else
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid no_perf parameter \"" << go_parameters.retrieve("no_perf") << "\".  Must be \"on\" or \"off\"." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+
+
+//----------------------------------- no_ldev
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    go_parameters.retrieve("no_ldev"))
+           || stringCaseInsensitiveEquality(std::string("true"),  go_parameters.retrieve("no_ldev"))
+           || stringCaseInsensitiveEquality(std::string("yes"),   go_parameters.retrieve("no_ldev")) ) skip_ldev_data = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   go_parameters.retrieve("no_ldev"))
+           || stringCaseInsensitiveEquality(std::string("false"), go_parameters.retrieve("no_ldev"))
+           || stringCaseInsensitiveEquality(std::string("no"),    go_parameters.retrieve("no_ldev")) ) skip_ldev_data = false;
+    else
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid no_ldev parameter \"" << go_parameters.retrieve("no_ldev") << "\".  Must be \"on\" or \"off\"." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+
 
 //----------------------------------- cooldown_by_wp
     if      ( stringCaseInsensitiveEquality(std::string("on"),    go_parameters.retrieve("cooldown_by_wp"))
@@ -3182,7 +3227,11 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
     {
         std::ostringstream o;
-        o << "********* " << stepNNNN << " duration " << flight_duration.format_as_duration_HMMSS() << " for step name \"" << stepName << "\"" << std::endl;
+        o << "********* " << stepNNNN << " duration " << flight_duration.format_as_duration_HMMSS()
+            << " = warmup " << m_s.warmup_duration.format_as_duration_HMMSS()
+            << " + measurement " << m_s.measurement_duration.format_as_duration_HMMSS()
+            << " + cooldown " << m_s.cooldown_duration.format_as_duration_HMMSS()
+            << " for step name \"" << stepName << "\"" << std::endl;
 
         step_times << o.str();
         log(masterlogfile, o.str());

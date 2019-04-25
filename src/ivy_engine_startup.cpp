@@ -660,7 +660,7 @@ std::pair<bool /*success*/, std::string /* message */>
                             // 2) copy the LDEV's RMLIB attributes to the test LUN.
                             // put a suffix "_RMLIB" if the test LUN already has the attribute name (from the SCSI Inquiry LUN lister tool" showluns.sh").
 
-                            if (0 < pLUN->attribute_value("CLPR").length() && ! m_s.no_subsystem_perf)
+                            if ( 0 < pLUN->attribute_value("CLPR").length() )
                             {
                                 cooldown_WP_watch_set.insert(std::make_pair(pLUN->attribute_value("CLPR"),pSubsystem));
                             }
@@ -861,7 +861,7 @@ std::pair<bool /*success*/, std::string /* message */>
     if (m_s.haveCmdDev && m_s.no_subsystem_perf)
     {
         std::ostringstream o;
-        o << "Subsystem performance data collection suppressed by -no_perf command line option." << std::endl;
+        o << "Subsystem performance data collection while driving I/O suppressed by -no_perf command line option." << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
     }

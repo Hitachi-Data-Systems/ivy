@@ -31,6 +31,7 @@
 #include "ivytime.h"
 #include "ivydefines.h"
 #include "ivyhelpers.h"
+#include "ivy_engine.h"
 
 #include "GatherData.h"
 
@@ -260,7 +261,7 @@ void GatherData::print_csv_file_set(std::string root_folder /* must already exis
 
 		for (auto& instance_pair : element_instances)
 		{
-			ofs << quote_wrap_except_number(instance_pair.first);
+			ofs << quote_wrap_except_number(instance_pair.first,m_s.formula_wrapping);
 
 			for (const std::string& header : column_headers)
 			{
@@ -271,7 +272,7 @@ void GatherData::print_csv_file_set(std::string root_folder /* must already exis
 
 				if (instance_pair.second.end() != att_it)
 				{
-					ofs << quote_wrap_except_number((*att_it).second.string_value());
+					ofs << quote_wrap_except_number((*att_it).second.string_value(),m_s.formula_wrapping);
 				}
 			}
 			ofs << std::endl;

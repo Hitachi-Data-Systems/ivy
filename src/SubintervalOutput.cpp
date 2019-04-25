@@ -368,7 +368,7 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 
 	if (0 == bytes_transferred.count())
 	{
-		return "<no events>";
+		return "HOST IOPS = 0";
 	}
 
 	std::ostringstream o;
@@ -391,8 +391,8 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 
 	o << ", avg Blk (KiB) = " << std::fixed << std::setprecision(1) << ( bytes_transferred.avg() / 1024.0      );
 
-	o << ", Little\'s law avg  Q = " << std::fixed << std::setprecision(1) << (    ( ((ivy_float) bytes_transferred.count()) / seconds )/*IOPS*/  *   service_time.avg()     );
-//	o << ", running time Little\'s law avg  Q = " << std::fixed << std::setprecision(1) << (    ( ((ivy_float) bytes_transferred.count()) / seconds )/*IOPS*/  *   running_time.avg()     );
+	o << ", Little\'s law avg Q = " << std::fixed << std::setprecision(1) << (    ( ((ivy_float) bytes_transferred.count()) / seconds )/*IOPS*/  *   service_time.avg()     );
+//	o << ", running time Little\'s law avg Q = " << std::fixed << std::setprecision(1) << (    ( ((ivy_float) bytes_transferred.count()) / seconds )/*IOPS*/  *   running_time.avg()     );
 
 	o << ", service time = " <<  std::fixed << std::setprecision(3) <<  (service_time.avg() * 1000.0) << " ms";
 

@@ -28,6 +28,7 @@ class ParameterValueLookupTable {
 
 public:
 	std::map<std::string, std::string> contents;
+    static std::map<std::string,std::string> parameter_name_rehydration_table;
 
 	std::pair<bool,std::string> fromString(std::string);  // true if well-formed
 	std::pair<bool,std::string> addString(std::string);  // true if well-formed
@@ -46,9 +47,10 @@ public:
 	// Keys are translated to lower case before storing them and before looking them up.
 	// Values are not translated to lower case.
 	std::string toString();
+	static std::string rehydrate_parameter_name(const std::string&);
 	bool contains(std::string key);
 	std::string retrieve(std::string key);  // returns empty string if the key is not present
-	bool containsOnlyValidParameterNames(std::string listOfValidParameterNames);
+	std::pair<bool,std::string> containsOnlyValidParameterNames(std::string listOfValidParameterNames);
 
 };
 

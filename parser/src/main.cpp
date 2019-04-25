@@ -53,13 +53,23 @@ void usage_message(char* argv_0)
         << "     Turns on REST API service (ignores ivyscript in command line)" << std::endl << std::endl
         << "-log" << std::endl
         << "     Turns on logging of routine events." << std::endl << std::endl
+        << "-no_wrap" << std::endl
+        << "     When opening ivy csv files with Excel, parity group names (e.g. 1-1)" << std::endl
+        << "     are interpreted by Excel as dates and LDEV names (e.g. 10:00) as times."<<std::endl
+        << "     Normally ivy encloses things like these in formulas, like =\"1-1\" or =\"10:00\"" << std::endl
+        << "     so they will look OK in Excel. To supress this formula rapping, use -no_wrap." << std::endl << std::endl
         << "-no_cmd"<< std::endl
         << "     Don\'t use any command devices." << std::endl << std::endl
         << "-no_ldev"<< std::endl
-        << "     If a command device is being used, don\'t collect LDEV data." << std::endl << std::endl
+        << "     If a command device is being used, set the [Go] parameter default for no_LDEV" << std::endl
+        << "     to \"no_LDEV=on\" to skip collection of LDEV & PG data.  This makes gathers faster" << std::endl
+        << "     if you don't need LDEV and PG data." << std::endl << std::endl
         << "-no_perf"<< std::endl
-        << "     If a command device is being used, only collect subsystem configuration," << std::endl
-        << "     don\'t collect performance data while ivy is running driving I/O." << std::endl << std::endl
+        << "     If a command device is being used, set the [Go] parameter default for no_perf" << std::endl
+        << "     to \"no_perf=on\" to suppress the collection of subsystem performance data" << std::endl
+        << "     while ivy is running driving I/O.  Collection of performance data resumes" << std::endl
+        << "     with the second and subsequent cooldown subintervals at IOPS=0 to support" << std::endl
+        << "     the cooldwon_by_wp and cooldown_by_MP_busy featueres." << std::endl << std::endl
         << "-spinloop" << std::endl
         << "     Used to make test host code continually check for work to do without ever waiting." << std::endl << std::endl
         << "-one_thread_per_core" << std::endl
@@ -186,6 +196,7 @@ int main(int argc, char* argv[])
 
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-rest")))           { rest_api = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-log")))            { routine_logging = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_wrap")))        { m_s.formula_wrapping = false; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-t")))              { routine_logging = trace_lexer = trace_parser = trace_evaluate = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-trace_lexer"))
          || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-l"))          )    { routine_logging = trace_lexer = true; continue; }
@@ -194,10 +205,10 @@ int main(int argc, char* argv[])
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-trace_evaluate"))
         ||  stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-e"))             ) { routine_logging = trace_evaluate = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_cmd")))         { m_s.use_command_device = false; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_ldev")))        { m_s.skip_ldev_data = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_ldev")))        { m_s.skip_ldev_data_default = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-spinloop")))       { spinloop = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-one_thread_per_core"))) { one_thread_per_core = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_perf")))        { m_s.no_subsystem_perf = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_perf")))        { m_s.no_subsystem_perf_default = true; continue; }
 
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }
 

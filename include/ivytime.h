@@ -69,6 +69,7 @@ public:
 
 	void setToNow();
 	void waitUntilThisTime() const;
+	void wait_for_this_long() const;
 	uint64_t Milliseconds() const;
 	void roundUpToStartOfMinute();
 	void setFromNanoseconds(uint64_t Nanoseconds);

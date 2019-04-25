@@ -969,14 +969,14 @@ void RollupInstance::print_common_columns(std::ostream& os)
     std::string I_string; {std::ostringstream o; o << I; I_string = o.str();}
     std::string D_string; {std::ostringstream o; o << D; D_string = o.str();}
 
-    os << "," << quote_wrap_except_number( std::string("p=") + P_string + std::string("/i=") + I_string + std::string("/d=") + D_string );
-    os << "," << quote_wrap_except_number(P_string);
-    os << "," << quote_wrap_except_number(I_string);
-    os << "," << quote_wrap_except_number(D_string);
-    os << "," << quote_wrap_except_number(attributeNameComboID);
-    os << "," << quote_wrap_except_number(rollupInstanceID);
-    os << "," << quote_wrap_except_number(m_s.testName);
-    os << "," << quote_wrap_except_number(m_s.stepName);
+    os << "," << quote_wrap_except_number( std::string("p=") + P_string + std::string("/i=") + I_string + std::string("/d=") + D_string ,m_s.formula_wrapping);
+    os << "," << quote_wrap_except_number(P_string,m_s.formula_wrapping);
+    os << "," << quote_wrap_except_number(I_string,m_s.formula_wrapping);
+    os << "," << quote_wrap_except_number(D_string,m_s.formula_wrapping);
+    os << "," << quote_wrap_except_number(attributeNameComboID,m_s.formula_wrapping);
+    os << "," << quote_wrap_except_number(rollupInstanceID,m_s.formula_wrapping);
+    os << "," << quote_wrap_except_number(m_s.testName,m_s.formula_wrapping);
+    os << "," << quote_wrap_except_number(m_s.stepName,m_s.formula_wrapping);
 
 }
 
@@ -1102,20 +1102,20 @@ void RollupInstance::print_by_subinterval_header()
     o << "ivy version,build date,";
     if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
     o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
-    if (m_s.haveCmdDev) { o << Test_config_thumbnail::csv_headers(); }
+    if ( m_s.haveCmdDev ) { o << Test_config_thumbnail::csv_headers(); }
     o << IosequencerInputRollup::CSVcolumnTitles();
     o << avgcpubusypercent::csvTitles();
 
     if (m_s.haveCmdDev)
     {
-        if ( ! m_s.no_subsystem_perf ) { o << subsystem_summary_data::csvHeadersPartOne(); }
+        o << subsystem_summary_data::csvHeadersPartOne();
         o << ",host IOPS per drive,host decimal MB/s per drive,application service time Littles law q depth per drive";
-        if ( ! m_s.no_subsystem_perf ) { o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)"; }
+        o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
     }
 
     o << SubintervalOutput::csvTitles();
 
-    if (m_s.haveCmdDev && ! m_s.no_subsystem_perf)
+    if (m_s.haveCmdDev)
     {
         o << subsystem_summary_data::csvHeadersPartTwo();
         o << subsystem_summary_data::csvHeadersPartOne( "non-participating ");
@@ -1171,7 +1171,7 @@ void RollupInstance::print_subinterval_csv_line(
             << ',' // cooldown duration
             << ',' ; // beginning of the Write Pending field
 
-    if (m_s.cooldown_WP_watch_set.size())
+    if ( m_s.cooldown_WP_watch_set.size() && (!m_s.no_subsystem_perf) )
     {
         try
         {
@@ -1235,7 +1235,7 @@ void RollupInstance::print_subinterval_csv_line(
 
     if (m_s.haveCmdDev)
     {
-        if ( ! m_s.no_subsystem_perf ) { csvline << subsystem_data_by_subinterval[i].csvValuesPartOne(1); }
+        csvline << subsystem_data_by_subinterval[i].csvValuesPartOne(1);
 
 
         unsigned int overall_drive_count = test_config_thumbnail.total_drives();
@@ -1314,7 +1314,7 @@ void RollupInstance::print_subinterval_csv_line(
 
     csvline << subintervals.sequence[i].outputRollup.csvValues( seconds );
 
-    if ( m_s.haveCmdDev && ! m_s.no_subsystem_perf )
+    if ( m_s.haveCmdDev )
     {
         csvline << subsystem_data_by_subinterval[i].csvValuesPartTwo();
         csvline << m_s.rollups.not_participating[i].csvValuesPartOne();
@@ -1378,7 +1378,7 @@ void RollupInstance::print_subinterval_csv_line(
     }
 
     {
-        std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str()) << std::endl;
+        std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str(), m_s.formula_wrapping) << std::endl;
         fileappend(by_subinterval_csv_filename,o.str());
     }
 }
@@ -1449,16 +1449,17 @@ void RollupInstance::print_measurement_summary_csv_line()
 
                 if (m_s.haveCmdDev)
                 {
-                    if (!m_s.no_subsystem_perf) { o << subsystem_summary_data::csvHeadersPartOne(); }
+                    o << subsystem_summary_data::csvHeadersPartOne();
                     o << ",host IOPS per drive,host decimal MB/s per drive, application service time Littles law q depth per drive";
-                    if (!m_s.no_subsystem_perf) { o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";}
+                    o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time"
+                        << ",Path latency = application minus subsystem service time (ms)";
                 }
 
                 o << ",non random sample correction factor";
                 o << ",plus minus series statistical confidence";
 
                 o << SubintervalOutput::csvTitles(true);
-                if (m_s.haveCmdDev && !m_s.no_subsystem_perf)
+                if (m_s.haveCmdDev)
                 {
                     o << subsystem_summary_data::csvHeadersPartTwo();
                     o << subsystem_summary_data::csvHeadersPartOne("non-participating ");
@@ -1509,19 +1510,19 @@ void RollupInstance::print_measurement_summary_csv_line()
 
             ivytime warmup_start    = m_s.rollups.starting_ending_times[0].first;
             ivytime warmup_complete = m_s.rollups.starting_ending_times[m_s.firstMeasurementIndex-1].second;
-            ivytime warmup_duration = warmup_complete - warmup_start;
+            m_s.warmup_duration = warmup_complete - warmup_start;
 
             ivytime start    = m_s.rollups.starting_ending_times[m_s.firstMeasurementIndex].first;
-            ivytime duration = m_s.rollups.starting_ending_times[m_s.lastMeasurementIndex].second - start;
+            m_s.measurement_duration = m_s.rollups.starting_ending_times[m_s.lastMeasurementIndex].second - start;
 
             ivytime cooldown_start = m_s.rollups.starting_ending_times[m_s.lastMeasurementIndex+1].first;
             ivytime cooldown_complete = m_s.rollups.starting_ending_times[ m_s.rollups.starting_ending_times.size() - 1 ].second;
-            ivytime cooldown_duration = cooldown_complete - cooldown_start;
+            m_s.cooldown_duration = cooldown_complete - cooldown_start;
 
             csvline << ',' << start.format_as_datetime();
-            csvline << ',' << warmup_duration.format_as_duration_HMMSS();
-            csvline << ',' << duration.format_as_duration_HMMSS();
-            csvline << ',' << cooldown_duration.format_as_duration_HMMSS();
+            csvline << ',' << m_s.warmup_duration.format_as_duration_HMMSS();
+            csvline << ',' << m_s.measurement_duration.format_as_duration_HMMSS();
+            csvline << ',' << m_s.cooldown_duration.format_as_duration_HMMSS();
             csvline << ','; // Write Pending only shows in by-subinterval csv lines
             csvline << ',';
             if ( m_s.have_timeout_rollup || !m_s.rollups.passesDataVariationValidation().first)
@@ -1572,7 +1573,7 @@ void RollupInstance::print_measurement_summary_csv_line()
 
             if (m_s.haveCmdDev)
             {
-                if (! m_s.no_subsystem_perf) { csvline << measurement_subsystem_data.csvValuesPartOne( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index ); }
+                csvline << measurement_subsystem_data.csvValuesPartOne( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
 
                 unsigned int overall_drive_count = test_config_thumbnail.total_drives();
 
@@ -1601,7 +1602,7 @@ void RollupInstance::print_measurement_summary_csv_line()
             {
                 ivy_float seconds = measurementRollup.durationSeconds();
 
-                if (m_s.haveCmdDev && ! m_s.no_subsystem_perf)
+                if (m_s.haveCmdDev)
                 {
                     // print the comparisions between application & subsystem IOPS, MB/s, service time
 
@@ -1661,7 +1662,7 @@ void RollupInstance::print_measurement_summary_csv_line()
 
                 csvline << measurementRollup.outputRollup.csvValues(seconds,&(measurementRollup),m_s.non_random_sample_correction_factor);
 
-                if (m_s.haveCmdDev && ! m_s.no_subsystem_perf)
+                if (m_s.haveCmdDev)
                 {
                     csvline << measurement_subsystem_data.csvValuesPartTwo( m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
                     csvline << m_s.rollups.not_participating_measurement.csvValuesPartOne(   m_s.rollups.measurement_last_index + 1 - m_s.rollups.measurement_first_index );
@@ -1834,7 +1835,7 @@ void RollupInstance::print_measurement_summary_csv_line()
 
 
             {
-                std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str()) << std::endl;
+                std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str(),m_s.formula_wrapping) << std::endl;
                 fileappend(measurement_rollup_by_test_step_csv_filename,o.str());
                 fileappend(measurement_rollup_by_test_step_csv_type_filename,o.str());
             }
@@ -1898,7 +1899,7 @@ void RollupInstance::print_measurement_summary_csv_line()
             csvline << ',' << rollupInstanceID ; // rollupInstanceID;
 
             {
-                std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str()) << std::endl;
+                std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str(), m_s.formula_wrapping) << std::endl;
                 fileappend(measurement_rollup_by_test_step_csv_filename,o.str());
             }
         }

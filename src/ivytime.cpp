@@ -268,6 +268,19 @@ void ivytime::waitUntilThisTime() const
 }
 
 
+void ivytime::wait_for_this_long() const
+{
+	ivytime now;
+	now.setToNow();
+
+    ivytime wait_until = now + *this;
+
+    wait_until.waitUntilThisTime();
+
+	return;
+}
+
+
 long double ivytime::seconds_from_now()
 {
 	ivytime now;
@@ -377,7 +390,7 @@ std::string ivytime::format_as_duration_HMMSSns() const
     }
     else
     {
-        o << "+";
+//        o << "+";
         it = (*this);
     }
 
@@ -420,7 +433,7 @@ std::string ivytime::format_as_duration_HMMSS() const
     }
     else
     {
-        o << "+";
+//        o << "+";
         it = (*this);
     }
 

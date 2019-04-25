@@ -853,9 +853,10 @@ std::string quote_wrap(const std::string s)
 }
 
 
-std::string quote_wrap_except_number(const std::string s)
+std::string quote_wrap_except_number(const std::string s, bool formula_wrapping)
 // This is so that Excel won't try to interpret strings, only numbers.  Lets PGs and LDEVs look normal when you double-click on an ivy csv file.
 {
+    if (formula_wrapping) return s;
     if (stringCaseInsensitiveEquality("true",s)) return s;
     if (stringCaseInsensitiveEquality("false",s)) return s;
     if (s.size() == 0) return s;
@@ -864,7 +865,7 @@ std::string quote_wrap_except_number(const std::string s)
     return std::string("=\"") + s + std::string("\"");
 }
 
-std::string quote_wrap_csvline_except_numbers(const std::string csvline) // This is specifically so that when you double-click on an ivy csv file to launch Excel, it won't think LDEV names are times, etc.
+std::string quote_wrap_csvline_except_numbers(const std::string csvline, bool formula_wrapping) // This is specifically so that when you double-click on an ivy csv file to launch Excel, it won't think LDEV names are times, etc.
 {
     std::ostringstream o;
 
@@ -885,18 +886,18 @@ std::string quote_wrap_csvline_except_numbers(const std::string csvline) // This
     {
         if (last_char == 0) // if there is only the one character that is not a comma
         {
-            return quote_wrap_except_number(csvline);
+            return quote_wrap_except_number(csvline,formula_wrapping);
         }
 
         if (advanceToNextUnquotedComma(csvline, cursor))
         {
-            o << quote_wrap_except_number(csvline.substr(0,cursor)) << ',';
+            o << quote_wrap_except_number(csvline.substr(0,cursor),formula_wrapping) << ',';
             last_comma = cursor;
         }
         else
         {
             // no comma was found at all
-            return quote_wrap_except_number(csvline);
+            return quote_wrap_except_number(csvline,formula_wrapping);
         }
     }
 
@@ -913,7 +914,7 @@ std::string quote_wrap_csvline_except_numbers(const std::string csvline) // This
         {
             if ( cursor > (last_comma + 1) ) // if between the commas there was text to process
             {
-                o << quote_wrap_except_number(csvline.substr(last_comma+1,cursor-(last_comma+1)));
+                o << quote_wrap_except_number(csvline.substr(last_comma+1,cursor-(last_comma+1)),formula_wrapping);
             }
             o << ',';
             last_comma=cursor;
@@ -921,7 +922,7 @@ std::string quote_wrap_csvline_except_numbers(const std::string csvline) // This
         else
         {
             // there were more characters, but no comma
-            o << quote_wrap_except_number(csvline.substr(last_comma+1, csvline.size()-(last_comma+1)));
+            o << quote_wrap_except_number(csvline.substr(last_comma+1, csvline.size()-(last_comma+1)),formula_wrapping);
             return o.str();
         }
     }

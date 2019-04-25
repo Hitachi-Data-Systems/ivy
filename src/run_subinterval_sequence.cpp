@@ -84,6 +84,9 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     m_s.cruiseSeconds.clear();
     m_s.continueCooldownStopAckSeconds.clear();
 
+    m_s.now_doing_no_perf_cooldown = false;
+    m_s.no_perf_cooldown_subinterval_count = 0;
+
     // If we have command devices, we perform a t=0 gather.
 
     // Most Hitachi RAID metrics take the form of cumulative rollover event counters.
@@ -91,9 +94,26 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     // The t=0 gather time also informs us where to do the gather in subinterval 0,
     // the gather that will be rolled up at the beginning of subinterval 1.
 
+    // Even when we have the -no_perf command line option, we still perform the t=0 gather
+    // before I/O starts running, because
+    // 1) some config data appears in performance data - ["subsystem"],["supsystem"]
+    //    "max_MP_io_buffers" & "total_LDEV_capacity_512_sectors", and this gets
+    //    copied to the configuration data from the t=0 gather, and
+    // 2) with both -no_perf and (cooldown_by_wp and/or cooldown by _MP_busy) we are
+    //    going to "fake out" collection while I/O is being gathered, pushing empty
+    //    gather_data objects for each subinterval while I/O is running so that all
+    //    the data structures have the right number of gathers when we turn gathers
+    //    back on after we send the "cooldown" command to ivydriver.  We then run
+    //    for at least 2 more cooldown subintervals with real subsystem gathers
+    //    turned back on, so that we can keep extending until WP is empty and/or
+    //    MP activity has wound down.  The fake gathers will appear to have the same
+    //    gather time as the t=0 gather.
+
     ivytime t0_gather_start, t0_gather_complete, t0_gather_time;
 
-    if (m_s.haveCmdDev && ! m_s.no_subsystem_perf)
+    m_s.doing_t0_gather = true;
+
+    if (m_s.haveCmdDev)
     {
         t0_gather_start.setToNow();
 
@@ -205,6 +225,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         }
 
     }
+    m_s.doing_t0_gather=false;
+
     // end of t=0 gather
 
     m_s.have_timeout_rollup = false;
@@ -348,28 +370,26 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     // Issue a gather timed to finish at the end of the first subinterval (#0)
     // based on how long the t=0 gather took.
 
-    if (! m_s.no_subsystem_perf)
+    for (auto& pear : m_s.command_device_subthread_pointers)
     {
-        for (auto& pear : m_s.command_device_subthread_pointers)
-        {
-            pear.second->gather_scheduled_start_time = m_s.subintervalEnd - ivytime(pear.second->perSubsystemGatherTime.avg());
+        pear.second->gather_scheduled_start_time = m_s.subintervalEnd - ivytime(pear.second->perSubsystemGatherTime.avg());
 
+        {
+            std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
+            pear.second->commandString = std::string("gather");
+            pear.second->command=true;
+            pear.second->commandComplete=false;
+            pear.second->commandSuccess=false;
+            pear.second->commandErrorMessage.clear();
             {
-                std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
-                pear.second->commandString = std::string("gather");
-                pear.second->command=true;
-                pear.second->commandComplete=false;
-                pear.second->commandSuccess=false;
-                pear.second->commandErrorMessage.clear();
-                {
-                    std::ostringstream o;
-                    o << "Posted subinterval zero \"gather\" to thread for subsystem serial " << pear.first << " managed on host " << pear.second->ivyscript_hostname << '.' << std::endl;
-                    log(m_s.masterlogfile,o.str());
-                }
+                std::ostringstream o;
+                o << "Posted subinterval zero \"gather\" to thread for subsystem serial " << pear.first << " managed on host " << pear.second->ivyscript_hostname << '.' << std::endl;
+                log(m_s.masterlogfile,o.str());
             }
-            pear.second->master_slave_cv.notify_all();
         }
+        pear.second->master_slave_cv.notify_all();
     }
+
     // We are approaching the end of subinterval zero.
 
     while (true) // loop starts where we wrap around having just said "continue", or "stop", but not yet waited for a response.
@@ -519,7 +539,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         long double host_sendup = ivytime(hosts_sent_up - m_s.subintervalEnd).getlongdoubleseconds();
 
-        if (m_s.haveCmdDev && ! m_s.no_subsystem_perf)
+        if (m_s.haveCmdDev)
         {
             std::chrono::system_clock::time_point leftnow {std::chrono::system_clock::now()};
             int timeout_seconds {2};
@@ -653,7 +673,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
                 o << allAllSubintervalOutput.thumbnail(allAllSubintervalRollup.durationSeconds()) << std::endl;
 
-                if (m_s.haveCmdDev && !m_s.no_subsystem_perf)
+                if (m_s.haveCmdDev && ( (!m_s.no_subsystem_perf) || (m_s.now_doing_no_perf_cooldown && m_s.no_perf_cooldown_subinterval_count >= 2) ) )
                 {
                     o << m_s.getWPthumbnail(((*allAllIterator).second->subintervals.sequence.size())-1) << std::endl;
                     o << m_s.subsystem_thumbnail;
@@ -731,11 +751,31 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         if (m_s.in_cooldown_mode)
         {
+            m_s.no_perf_cooldown_subinterval_count++;
+            m_s.now_doing_no_perf_cooldown = true;
+
             ivytime now; now.setToNow();
 
-            ivytime cooldown_time = now - m_s.cooldown_start;
+            m_s.cooldown_duration = now - m_s.cooldown_start;
 
-            if
+            if (m_s.no_subsystem_perf && (m_s.cooldown_by_wp || m_s.cooldown_by_MP_busy) && m_s.no_perf_cooldown_subinterval_count <= 3 )
+            {
+                m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
+
+                std::ostringstream o;
+                if (m_s.no_perf_cooldown_subinterval_count == 1)
+                {
+                    o << "With -no_perf and (-cooldown_by_wp and/or -cooldown_by_MP_busy), at least 2 additional cooldown subintervals running at IOPS = 0 will be performed with subsystem performance data gathers turned back on." << std::endl;
+                }
+                else
+                {
+                    o << "With -no_perf and (-cooldown_by_wp and/or -cooldown_by_MP_busy), this is subinterval " << (m_s.no_perf_cooldown_subinterval_count-1)
+                        << " of at least 2 additional cooldown subintervals running at IOPS = 0 with subsystem performance data gathers turned back on." << std::endl;
+                }
+                std::cout << o.str();
+                log(m_s.masterlogfile,o.str());
+            }
+            else if
             (
                 ( m_s.cooldown_by_wp && m_s.some_cooldown_WP_not_empty()     )
              || ( m_s.cooldown_by_MP_busy && m_s.some_subsystem_still_busy() )
@@ -744,14 +784,14 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
 
                 std::ostringstream o;
-                o << "Cooldown duration " << cooldown_time.format_as_duration_HMMSS() << "  not complete, will do another cooldown subinterval." << std::endl;
+                o << "Cooldown duration " << m_s.cooldown_duration.format_as_duration_HMMSS() << "  not complete, will do another cooldown subinterval." << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
             }
             else
             {
                 std::ostringstream o;
-                o << "Cooldown duration " << cooldown_time.format_as_duration_HMMSS() << " complete, posting DFC return code from last test subinterval before running cooldown subintervals." << std::endl;
+                o << "Cooldown duration " << m_s.cooldown_duration.format_as_duration_HMMSS() << " complete, posting DFC return code from last test subinterval before running cooldown subintervals." << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
                 m_s.lastEvaluateSubintervalReturnCode = m_s.eventualEvaluateSubintervalReturnCode;
@@ -789,8 +829,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                         m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_FAILURE
                     )
                 &&  (
-                         ( m_s.cooldown_by_wp      && m_s.some_cooldown_WP_not_empty() )
-                      || ( m_s.cooldown_by_MP_busy && m_s.some_subsystem_still_busy()  )
+                         ( m_s.cooldown_by_wp      && ( m_s.no_subsystem_perf || m_s.some_cooldown_WP_not_empty() ) )
+                      || ( m_s.cooldown_by_MP_busy && ( m_s.no_subsystem_perf || m_s.some_subsystem_still_busy()  ) )
                     )
             )
             {
@@ -937,32 +977,30 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         // Issue next gather
 
-        if (! m_s.no_subsystem_perf)
+        for (auto& pear : m_s.command_device_subthread_pointers)
         {
-            for (auto& pear : m_s.command_device_subthread_pointers)
             {
+                pipe_driver_subthread*& p_pds = pear.second;
+
+                if (p_pds->pCmdDevLUN == nullptr) continue;
+
                 {
-                    pipe_driver_subthread*& p_pds = pear.second;
+                    std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
+                    p_pds->commandString = std::string("gather");
+                    p_pds->command=true;
+                    p_pds->commandComplete=false;
+                    p_pds->commandSuccess=false;
+                    p_pds->commandErrorMessage.clear();
 
-                    if (p_pds->pCmdDevLUN == nullptr) continue;
-
+                    if ( (!m_s.no_subsystem_perf) || (m_s.now_doing_no_perf_cooldown) )
                     {
-                        std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
-                        p_pds->commandString = std::string("gather");
-                        p_pds->command=true;
-                        p_pds->commandComplete=false;
-                        p_pds->commandSuccess=false;
-                        p_pds->commandErrorMessage.clear();
-
-                        {
-                            std::ostringstream o;
-                            o << "Gathering from subsystem serial " << pear.first;
-                            log(m_s.masterlogfile,o.str());
-                            if (routine_logging) { std::cout << o.str(); }
-                        }
+                        std::ostringstream o;
+                        o << "Gathering from subsystem serial " << pear.first << std::endl;
+                        log(m_s.masterlogfile,o.str());
+                        if (routine_logging) { std::cout << o.str(); }
                     }
-                    p_pds->master_slave_cv.notify_all();
                 }
+                p_pds->master_slave_cv.notify_all();
             }
         }
 

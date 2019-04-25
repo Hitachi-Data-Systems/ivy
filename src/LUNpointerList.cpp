@@ -27,6 +27,7 @@
 #include "ivyhelpers.h"
 #include "LUN.h"
 #include "LUNpointerList.h"
+#include "ivy_engine.h"
 
 //#define IVY_TRACE_LUNPOINTERLIST
 
@@ -156,7 +157,7 @@ void LUNpointerList::print_csv_file(std::ostream& o)
 			auto att_it = pLUN->attributes.find(header);
 			if (pLUN->attributes.end() != att_it)
 			{
-				o << quote_wrap_except_number((*att_it).second);
+				o << quote_wrap_except_number((*att_it).second,m_s.formula_wrapping);
 			}
 		}
 		o << std::endl;

@@ -75,9 +75,30 @@ public:
 
     bool overall_success {false};
 
+    bool doing_t0_gather {false};
+
+    bool formula_wrapping {true};
     bool use_command_device {true};
+    bool skip_ldev_data_default {false};
     bool skip_ldev_data {false};
+    bool no_subsystem_perf_default {false};
     bool no_subsystem_perf {false};
+    bool now_doing_no_perf_cooldown {false};
+        // This tells pipe_driver_subthread for a command device even when no_subsytem_perf is true
+        // that it's past the first cooldown subinterval, and that edit_rollup "all=all" "IOPS=0"
+        // has been sent out, and subsystem gathers need to resume to support the
+        // cooldown_by_wp and cooldown_by_MP_busy features to operate.
+	bool cooldown_by_wp {true};  // whether the feature has been selected in the ivyscript program
+	bool cooldown_by_MP_busy {true};  // whether the feature has been selected in the ivyscript program
+	bool in_cooldown_mode {false}; // whether the ivy engine is in cooldown mode after SUCCESS or FAILURE
+    unsigned int no_perf_cooldown_subinterval_count {0};
+	ivy_float subsystem_busy_threshold { -1. }; // this gets set when parsing go parameters, see subsystem_busy_threshold_default
+	ivy_float subsystem_WP_threshold { -1. }; // this gets set when parsing go parameters, see subsystem_busy_threshold_default
+	ivytime cooldown_start;
+
+	ivytime warmup_duration;
+	ivytime measurement_duration;
+	ivytime cooldown_duration;
 
     int harvesting_subinterval;
 
@@ -205,12 +226,6 @@ public:
 	ivy_float subinterval_seconds {-1}; /* ==> */ ivytime subintervalLength {ivytime(subinterval_seconds_default_int)};
 	ivy_float warmup_seconds {-1};      /* ==> */ int min_warmup_count /* i.e. subinterval count */;
 	ivy_float measure_seconds {-1};     /* ==> */ int min_measure_count;
-	bool cooldown_by_wp {true};  // whether the feature has been selected in the ivyscript program
-	bool cooldown_by_MP_busy {true};  // whether the feature has been selected in the ivyscript program
-	ivy_float subsystem_busy_threshold { -1. }; // this gets set when parsing go parameters, see subsystem_busy_threshold_default
-	ivy_float subsystem_WP_threshold { -1. }; // this gets set when parsing go parameters, see subsystem_busy_threshold_default
-	bool in_cooldown_mode {false}; // whether the ivy engine is in cooldown mode after SUCCESS or FAILURE
-	ivytime cooldown_start;
 
     // measure=on and/or dfc=pid
     std::string focus_rollup_parameter; /* ==> */ RollupType* p_focus_rollup {nullptr};

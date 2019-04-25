@@ -163,11 +163,11 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
             if ( element_pear_it == data.end() )
             {
                 if (flags & print_count_part_1)
-                    values << ",<element " << element << " absent>";
+                    values << ",";
 
                 if (flags & print_avg_part_1)
                 {
-                    values << ",<element " << element << " absent>";
+                    values << ",";
 
                     if (element == "MP_core" && metric == "busy_percent")
                     {
@@ -178,9 +178,9 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                 if (flags & print_min_max_stddev_1)
                 {
                     values
-                        << ",<element " << element << " absent>"
-                        << ",<element " << element << " absent>"
-                        << ",<element " << element << " absent>"
+                        << ","
+                        << ","
+                        << ","
                         ;
                 }
             }
@@ -191,11 +191,11 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                 if (metric_pear_it == element_pear_it->second.end())
                 {
                     if (flags & print_count_part_1)
-                        values << ",<metric " << metric << " absent>";
+                        values << ",";
 
                     if (flags & print_avg_part_1)
                     {
-                        values << ",<metric " << metric << " absent>";
+                        values << ",";
 
                         if (element == "MP_core" && metric == "busy_percent")
                         {
@@ -206,9 +206,9 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                     if (flags & print_min_max_stddev_1)
                     {
                         values
-                            << ",<metric " << metric << " absent>"
-                            << ",<metric " << metric << " absent>"
-                            << ",<metric " << metric << " absent>"
+                            << ","
+                            << ","
+                            << ","
                             ;
                     }
                 }
@@ -295,17 +295,17 @@ std::string subsystem_summary_data::csvValuesPartTwo(unsigned int divide_count_b
             if ( element_pear_it == data.end() )
             {
                 if (flags & print_count_part_2)
-                    values << ",<element " << element << " absent>";
+                    values << ",";
 
                 if (flags & print_avg_part_2)
-                    values << ",<element " << element << " absent>";
+                    values << ",";
 
                 if (flags & print_min_max_stddev_2)
                 {
                     values
-                        << ",<element " << element << " absent>"
-                        << ",<element " << element << " absent>"
-                        << ",<element " << element << " absent>"
+                        << ","
+                        << ","
+                        << ","
                         ;
                 }
             }
@@ -316,17 +316,17 @@ std::string subsystem_summary_data::csvValuesPartTwo(unsigned int divide_count_b
                 if (metric_pear_it == element_pear_it->second.end())
                 {
                     if (flags & print_count_part_2)
-                        values << ",<metric " << metric << " absent>";
+                        values << ",";
 
                     if (flags & print_avg_part_2)
-                        values << ",<metric " << metric << " absent>";
+                        values << ",";
 
                     if (flags & print_min_max_stddev_2)
                     {
                         values
-                            << ",<metric " << metric << " absent>"
-                            << ",<metric " << metric << " absent>"
-                            << ",<metric " << metric << " absent>"
+                            << ","
+                            << ","
+                            << ","
                             ;
                     }
                 }
