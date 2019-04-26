@@ -249,14 +249,12 @@ int IvyDriver::main(int argc, char* argv[])
 
     slavelogfile = std::string(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER) + std::string("/log.ivydriver.") + hostname + std::string(".txt");
 
+    if (routine_logging)
     {
         std::ostringstream o;
         o << "ivydriver version " << ivy_version << " build date " << IVYBUILDDATE << " starting." << std::endl;
         log(slavelogfile,o.str());
     }
-
-    if (!routine_logging) log(slavelogfile,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
-
 
 	lasttime.setToNow();
 	say(std::string("Hello, whirrled! from ")+myhostname());
@@ -319,6 +317,7 @@ int IvyDriver::main(int argc, char* argv[])
 
     //    std::map<unsigned int,WorkloadThread*> all_workload_threads {};
 
+    if (routine_logging)
     {
         std::ostringstream o;
 
@@ -1349,7 +1348,7 @@ void IvyDriver::go()
 
             wrkldThread.ivydriver_main_posted_command = true;
             wrkldThread.ivydriver_main_says = MainThreadCommand::start;
-            log(wrkldThread.slavethreadlogfile,"[logged here by ivydriver main thread] ivydriver main thread posted \"start\" command.");
+            if(routine_logging) {log(wrkldThread.slavethreadlogfile,"[logged here by ivydriver main thread] ivydriver main thread posted \"start\" command.");}
 
             wrkldThread.cooldown = false;
             wrkldThread.slaveThreadConditionVariable.notify_all();
@@ -1456,7 +1455,7 @@ void IvyDriver::stop()
 
             pear.second->ivydriver_main_posted_command=true;
             pear.second->ivydriver_main_says=MainThreadCommand::stop;
-            log(pear.second->slavethreadlogfile,"[logged here by ivydriver main thread] ivydriver main thread posted \"stop\" command.");
+            if(routine_logging) { log(pear.second->slavethreadlogfile,"[logged here by ivydriver main thread] ivydriver main thread posted \"stop\" command."); }
         }
         pear.second->slaveThreadConditionVariable.notify_all();
     }
@@ -1470,7 +1469,7 @@ void sig_handler(int sig, siginfo_t *p_siginfo, void *context)
 {
     std::ostringstream o;
 
-    o << "<Warning> signal " << sig << "(" << strsignal(sig) << ") received";
+    if (routine_logging) { o << "<Warning> signal " << sig << "(" << strsignal(sig) << ") received"; }
 
     switch (sig)
     {
@@ -1592,7 +1591,7 @@ past_si_code:
     auto pid = getpid();
     auto tid = syscall(SYS_gettid);
 
-    o << "getpid() = " << pid << ", gettid() = " << tid << ", getpgid(getpid()) = " << getpgid(getpid()) << std::endl;
+    if (routine_logging) { o << "getpid() = " << pid << ", gettid() = " << tid << ", getpgid(getpid()) = " << getpgid(getpid()) << std::endl; }
 
     switch(sig)
     {
@@ -1655,7 +1654,8 @@ past_si_code:
 
     }
 
-    log (ivydriver.slavelogfile,o.str());
+    if (routine_logging) { log (ivydriver.slavelogfile,o.str()); }
+
     return;
 }
 

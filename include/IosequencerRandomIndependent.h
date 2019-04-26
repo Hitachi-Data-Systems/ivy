@@ -23,7 +23,7 @@ class IosequencerRandomIndependent : public IosequencerRandom {
 public:
 	IosequencerRandomIndependent(LUN* pL, std::string lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
 	    : IosequencerRandom(pL, lf, wID, pWT, p_tl, p_w) {}
-    ~IosequencerRandomIndependent(){ std::ostringstream o; o << "^^^^^^^debug ~IosequencerRandomIndependent() at this = " << this; log(pWorkloadThread->slavethreadlogfile, o.str()); }
+    ~IosequencerRandomIndependent(){}
 	std::string instanceType() { return std::string("random_independent"); }
 	bool isRandom() { return true; }
 	bool generate(Eyeo&);

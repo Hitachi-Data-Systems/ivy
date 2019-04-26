@@ -129,7 +129,7 @@ std::pair<bool /*success*/, std::string /* message */>
     ivy_engine_logfile = testFolder + std::string("/logs/ivy_engine_API_calls.txt");
 
 
-    log(masterlogfile,      api_log_entry);
+    if (routine_logging) { log(masterlogfile, api_log_entry); }
     log(ivy_engine_logfile, api_log_entry);
 
     {
@@ -235,7 +235,7 @@ std::pair<bool /*success*/, std::string /* message */>
         kill_subthreads_and_exit();
     }
 
-    { std::ostringstream o; o << "select " << select << std::endl; std::cout << o.str(); log(masterlogfile,o.str()); }
+    if (routine_logging) { std::ostringstream o; o << "select " << select << std::endl; std::cout << o.str(); log(masterlogfile,o.str()); }
 
     if
     (
@@ -252,8 +252,9 @@ std::pair<bool /*success*/, std::string /* message */>
 
     for ( auto& host : hosts )
     {
-        if (routine_logging) { std::cout << "Starting thread for " << host << std::endl; }
-        log( masterlogfile, std::string("Starting thread for ") + host + std::string("\n") );
+        std::cout << "Starting thread for " << host << std::endl;
+
+        if (routine_logging) { log( masterlogfile, std::string("Starting thread for ") + host + std::string("\n") ); }
 
         pipe_driver_subthread* p_pipe_driver_subthread = new pipe_driver_subthread
             (
@@ -274,7 +275,7 @@ std::pair<bool /*success*/, std::string /* message */>
             << "Sometimes the ssh command to start up ivydriver on a test host can take a long time when waiting for DNS timeouts.  "
             << "This can be speeded up by editing /etc/nsswitch.conf / resolv.conf to use /etc/hosts first, or options for the sshd daemon can be edited; search for \"ssh login timeout\"." << std::endl << std::endl;
         std::cout << o.str();
-        log(masterlogfile,o.str());
+        if (routine_logging) { log(masterlogfile,o.str()); }
     }
 
     bool first_host {true};
@@ -300,7 +301,7 @@ std::pair<bool /*success*/, std::string /* message */>
                     std::ostringstream o;
                     o << "pipe_driver_subthread successful fireup for host " << pear.first << std::endl;
                     std::cout << o.str();
-                    log(masterlogfile,o.str());
+                    if (routine_logging) { log(masterlogfile,o.str()); }
                 }
                 else
                 {
@@ -327,7 +328,7 @@ std::pair<bool /*success*/, std::string /* message */>
         }
 
 
-        {ostringstream o; o << "Subthread for \"" << pear.first << "\" posted startupComplete." << std::endl; std::cout  << o.str(); log(masterlogfile,o.str());}
+        {ostringstream o; o << "Subthread for \"" << pear.first << "\" posted startupComplete." << std::endl; std::cout  << o.str(); if (routine_logging) log(masterlogfile,o.str());}
 
         for (auto& pLUN : pear.second->thisHostLUNs.LUNpointers)
         {
@@ -348,14 +349,14 @@ std::pair<bool /*success*/, std::string /* message */>
     ahl.close();
     ahl_csv.close();
     allThreadsSentTheLUNsTheySee=true;
-    /*debug*/
-    if (routine_logging){
-        ostringstream o;
-        o <<"allDiscoveredLUNs contains:"<<std::endl<< allDiscoveredLUNs.toString() <<std::endl;
-        //std::cout<<o.str();
-        log(masterlogfile,o.str());
-    }
-    else
+
+//    {
+//        ostringstream o;
+//        o <<"allDiscoveredLUNs contains:"<<std::endl<< allDiscoveredLUNs.toString() <<std::endl;
+//        //std::cout<<o.str();
+//        log(masterlogfile,o.str());
+//    }
+    if (routine_logging)
     {
         ostringstream o;
         o <<"Discovered " << allDiscoveredLUNs.LUNpointers.size() << " LUNs on the test hosts." << std::endl;
@@ -377,13 +378,12 @@ std::pair<bool /*success*/, std::string /* message */>
 
     allDiscoveredLUNs.split_out_command_devices_into(commandDeviceLUNs);
 
-    /*debug*/
-    {
-        ostringstream o;
-        o <<"commandDeviceLUNs contains:"<<std::endl<< commandDeviceLUNs.toString() <<std::endl;
-        //std::cout<<o.str();
-        log(masterlogfile,o.str());
-    }
+//    {
+//        ostringstream o;
+//        o <<"commandDeviceLUNs contains:"<<std::endl<< commandDeviceLUNs.toString() <<std::endl;
+//        //std::cout<<o.str();
+//        log(masterlogfile,o.str());
+//    }
 
     for (LUN* pLUN : allDiscoveredLUNs.LUNpointers)
     {
@@ -497,7 +497,7 @@ std::pair<bool /*success*/, std::string /* message */>
                     std::ostringstream o;
                     o << "Connecting to " << cmd_dev_description << std::endl;
                     std::cout << o.str();
-                    log(masterlogfile,o.str());
+                    if (routine_logging) { log(masterlogfile,o.str()); }
 
                     pipe_driver_subthread* p_pipe_driver_subthread = new pipe_driver_subthread(
 
@@ -544,7 +544,7 @@ std::pair<bool /*success*/, std::string /* message */>
                                 std::ostringstream o;
                                 o << "ivy_cmddev pipe_driver_subthread successful fireup for subsystem " << pSubsystem->serial_number << std::endl;
                                 std::cout << o.str();
-                                log(masterlogfile,o.str());
+                                if (routine_logging) log(masterlogfile,o.str());
                                 haveCmdDev = true;
                                 have_cmd_dev_this_subsystem = true;
                             }
@@ -592,6 +592,7 @@ std::pair<bool /*success*/, std::string /* message */>
                         p_pipe_driver_subthread->commandSuccess=false;
                         p_pipe_driver_subthread->commandErrorMessage.clear();
 
+                        if (routine_logging)
                         {
                             std::ostringstream o;
                             o << "Posted \"get config\" to thread for subsystem serial " << pRAIDsubsystem->serial_number << " managed on host " << p_pipe_driver_subthread->ivyscript_hostname << '.' << std::endl;
@@ -627,6 +628,7 @@ std::pair<bool /*success*/, std::string /* message */>
 
                             pRAIDsubsystem->config_gather_time  = config_gather_complete - config_gather_start;
 
+                            if (routine_logging)
                             {
                                 std::ostringstream o;
                                 o << "\"get config\" reported complete with duration " << pRAIDsubsystem->config_gather_time.format_as_duration_HMMSSns()

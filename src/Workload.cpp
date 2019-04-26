@@ -100,13 +100,8 @@ void Workload::prepare_to_run()
 
     if ( p_my_iosequencer != nullptr )
     {
-/*debug*/std::ostringstream o; o << "^^^^^^^debug Going to delete p_my_iosequencer = " << p_my_iosequencer << " for Workload " << workloadID; log(pWorkloadThread->slavethreadlogfile,o.str());
         delete p_my_iosequencer;
         p_my_iosequencer = nullptr;
-    }
-    else
-    {
-        std::ostringstream o; o << "^^^^^^^debug p_my_iosequencer == nullptr." << " for Workload " << workloadID; log(pWorkloadThread->slavethreadlogfile,o.str());
     }
 
     {
@@ -139,9 +134,6 @@ void Workload::prepare_to_run()
             exit(-1);
         }
     }
-
-    /*debug*/std::ostringstream o; o << "^^^^^^^debug Created new Iosequencer at p_my_iosequencer = " << p_my_iosequencer << " for Workload " << workloadID; log(pWorkloadThread->slavethreadlogfile,o.str());
-
 
     if (!p_my_iosequencer->setFrom_IosequencerInput(p_current_IosequencerInput))
     {

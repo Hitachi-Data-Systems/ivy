@@ -1427,7 +1427,7 @@ ivy_engine::createWorkload(
 		// We time how long it takes to make the thread
 		{
 			ostringstream o;
-			o << "Creating LUN workload thread on host \"" << p_host->ivyscript_hostname << "\", LUN \"" << p_LUN->attribute_value(std::string("LUN_name")) << "\", workload name \""
+			o << "Creating workload on host \"" << p_host->ivyscript_hostname << "\", LUN \"" << p_LUN->attribute_value(std::string("LUN_name")) << "\", workload name \""
 			  << workloadName << "\", iosequencer \"" << iosequencerName << "\", parameters \"" << i_i.toString() << "\".";
 			log(masterlogfile,o.str());
 		}

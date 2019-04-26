@@ -48,7 +48,7 @@
  *     N2
  */
 
-DedupePatternRegulator:: DedupePatternRegulator(ivy_float dedupe, uint64_t seed) : target_dedupe(dedupe), starting_seed(seed)
+DedupePatternRegulator::DedupePatternRegulator(ivy_float dedupe, uint64_t seed) : target_dedupe(dedupe), starting_seed(seed)
 {
     state = 0;
     pos = 0;

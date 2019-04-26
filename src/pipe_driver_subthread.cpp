@@ -580,29 +580,32 @@ void pipe_driver_subthread::harvest_pid()
             log(logfilename, o.str());
             break;
         }
-        if (WIFEXITED(status))
+        if (routine_logging)
         {
-            std::ostringstream o;
-            o << "ssh pid exited, status=" << WEXITSTATUS(status) << std::endl;
-            log(logfilename, o.str());
+            if (WIFEXITED(status))
+            {
+                std::ostringstream o;
+                o << "ssh pid exited, status=" << WEXITSTATUS(status) << std::endl;
+                log(logfilename, o.str());
+            }
+            else if (WIFSIGNALED(status))
+            {
+                std::ostringstream o;
+                o << "killed by signal " << WTERMSIG(status) << std::endl;
+                log(logfilename, o.str());
+            }
+            else if (WIFSTOPPED(status))
+            {
+                std::ostringstream o;
+                o << "stopped by signal " << WSTOPSIG(status) << std::endl;
+                log(logfilename, o.str());
+            }
+            else if (WIFCONTINUED(status))
+            {
+                log(logfilename, "waitpid() for ssh child pid is looping due to \"continued\" status.");
+            }
         }
-        else if (WIFSIGNALED(status))
-        {
-            std::ostringstream o;
-            o << "killed by signal " << WTERMSIG(status) << std::endl;
-            log(logfilename, o.str());
-        }
-        else if (WIFSTOPPED(status))
-        {
-            std::ostringstream o;
-            o << "stopped by signal " << WSTOPSIG(status) << std::endl;
-            log(logfilename, o.str());
-        }
-        else if (WIFCONTINUED(status))
-        {
-            log(logfilename, "waitpid() for ssh child pid is looping due to \"continued\" status.");
-        }
-    }
+            }
     while (!WIFEXITED(status) && !WIFSIGNALED(status));
     return;
 }
@@ -670,10 +673,6 @@ void pipe_driver_subthread::threadRun()
         }
         log(logfilename, logmsg.str());
     }
-    else
-    {
-        log(logfilename,"For logging of routine (non-error) events, use the ivy -log command line option, like \"ivy -log a.ivyscript\".\n\n");
-    }
 
     if (pipe(pipe_driver_subthread_to_slave_pipe) < 0)
     {
@@ -692,7 +691,7 @@ void pipe_driver_subthread::threadRun()
         return;
     }
 
-    log(logfilename, "About to fork to create ssh subthread.\n");
+    if (routine_logging) { log(logfilename, "About to fork to create ssh subthread.\n"); }
 
     ssh_pid = fork();
     if (0 == ssh_pid)
@@ -733,8 +732,6 @@ void pipe_driver_subthread::threadRun()
         close(slave_to_pipe_driver_subthread_pipe[PIPE_WRITE]);
 
         // run child process image
-        log(logfilename, "Child pid about to issue execl for ssh.\n");
-
 
         login = SLAVEUSERID + std::string("@") + ivyscript_hostname;
 
@@ -773,7 +770,7 @@ void pipe_driver_subthread::threadRun()
                 execl_cmd << "/usr/bin/ssh ssh -t -t " << login << ' ' << cmd << ' ';
                 if (routine_logging) execl_cmd << "-log ";
                 execl_cmd << arg << std::endl;
-                log(logfilename, execl_cmd.str());
+                if (routine_logging) { log(logfilename, execl_cmd.str()); }
             }
             if (routine_logging)
             {
@@ -808,13 +805,6 @@ void pipe_driver_subthread::threadRun()
     else if (ssh_pid > 0)
     {
         // parent
-
-        /*debug*/
-        {
-            std::ostringstream o;
-            o << "pid for ssh to " << ivyscript_hostname << " is " << ssh_pid << std::endl;
-            log(logfilename,o.str());
-        }
 
         // close unused file descriptors, these are for child only
         close(pipe_driver_subthread_to_slave_pipe[PIPE_READ]);
@@ -983,7 +973,7 @@ void pipe_driver_subthread::threadRun()
 
         std::string hellowhirrled("Hello, whirrled! from ");
 
-        log(logfilename, std::string("initial prompt from remote was \"")+copy_of_prompt+std::string("\"."));
+        if (routine_logging) { log(logfilename, std::string("initial prompt from remote was \"")+copy_of_prompt+std::string("\".")); }
 
         unsigned int i;
         for (i=0; i<=(prompt.size()-hellowhirrled.size()); i++)
@@ -1009,7 +999,7 @@ void pipe_driver_subthread::threadRun()
 
         trim(hostname);
 
-        log(logfilename, std::string("remote slave said its hostname is \"")+hostname+std::string("\"."));
+        if (routine_logging) { log(logfilename, std::string("remote slave said its hostname is \"")+hostname+std::string("\".")); }
 
 
 //*debug*/std::cout << "debug: waiting 60 seconds to allow showluns.sh run with another ivy hammering a lun, slowing the binary search for the LUN size.\n";
@@ -1088,11 +1078,15 @@ void pipe_driver_subthread::threadRun()
             startupSuccessful=true;
             if (pCmdDevLUN)
             {
-                std::ostringstream o;
-                o << "Have the lock - adding whirrled_version \"" << whirrled_version << "\" to  m_s.command_device_etc_version which initially was \"" << m_s.command_device_etc_version << "\"." << std::endl;
                 m_s.command_device_etc_version += whirrled_version;
-                o << "Then m_s.command_device_etc_version became \"" << m_s.command_device_etc_version << "\"." << std::endl;
-                log(logfilename, o.str());
+
+                if (routine_logging)
+                {
+                    std::ostringstream o;
+                    o << "Have the lock - adding whirrled_version \"" << whirrled_version << "\" to  m_s.command_device_etc_version which initially was \"" << m_s.command_device_etc_version << "\"." << std::endl;
+                    o << "Then m_s.command_device_etc_version became \"" << m_s.command_device_etc_version << "\"." << std::endl;
+                    log(logfilename, o.str());
+                }
             }
 
         }

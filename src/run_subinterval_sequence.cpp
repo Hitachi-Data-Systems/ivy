@@ -150,6 +150,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     p_pds->commandErrorMessage.clear();
                     p_pds->gather_scheduled_start_time.setToNow();
 
+                    if (routine_logging)
                     {
                         std::ostringstream o;
                         o << "Posted \"gather\" to thread for subsystem serial " << pHitachiRAID->serial_number << " managed on host " << p_pds->ivyscript_hostname << '.' << std::endl;
@@ -188,6 +189,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                             exit(-1);
                         }
 
+                        if (routine_logging)
                         {
                             std::ostringstream o;
                             o << "\"gather\" reported complete with duration " << p_pds->duration.format_as_duration_HMMSSns() << " by thread for subsystem serial " << pear.first << " managed on host " << p_pds->ivyscript_hostname << '.' << std::endl;
@@ -381,6 +383,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             pear.second->commandComplete=false;
             pear.second->commandSuccess=false;
             pear.second->commandErrorMessage.clear();
+            if (routine_logging)
             {
                 std::ostringstream o;
                 o << "Posted subinterval zero \"gather\" to thread for subsystem serial " << pear.first << " managed on host " << pear.second->ivyscript_hostname << '.' << std::endl;
@@ -571,6 +574,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                                 exit(-1);
                             }
 
+                            if (routine_logging)
                             {
                                 std::ostringstream o;
                                 o << "\"gather\" complete by thread for subsystem serial " << pear.first << " managed on host " << p_pds->ivyscript_hostname << '.' << std::endl;
@@ -1261,7 +1265,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         log(m_s.masterlogfile,o.str());
 
         // log gather time breakdown
-        for (auto& pear : m_s.command_device_subthread_pointers)
+        if (routine_logging) for (auto& pear : m_s.command_device_subthread_pointers)
         {
             std::ostringstream o;
 

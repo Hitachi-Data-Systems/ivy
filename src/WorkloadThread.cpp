@@ -298,35 +298,21 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                 if (pear.second.dedupe_regulator != nullptr) { delete pear.second.dedupe_regulator; }
                 pear.second.dedupe_regulator = new DedupePatternRegulator(pear.second.subinterval_array[0].input.dedupe, pear.second.pattern_seed);
-                log(slavethreadlogfile, pear.second.dedupe_regulator->logmsg());
+                //log(slavethreadlogfile, pear.second.dedupe_regulator->logmsg());
 
                 if (pear.second.p_my_iosequencer->isRandom())
                 {
                     if (pear.second.dedupe_regulator->decide_reuse())
                     {
-                        ostringstream o;
-                        uint64_t offset;
-
                         std::pair<uint64_t, uint64_t> align_pattern;
                         align_pattern = pear.second.dedupe_regulator->reuse_seed();
                         pear.second.pattern_seed = align_pattern.first;
                         pear.second.pattern_alignment = align_pattern.second;
-                        offset = pear.second.pattern_alignment;
                         pear.second.pattern_number = pear.second.pattern_alignment;
-                        o << "Workload - Reuse pattern seed " << pear.second.pattern_seed <<  " Offset: " << offset << std::endl;
-                        log(slavethreadlogfile, o.str());
                     } else
                     {
-                        ostringstream o;
                         pear.second.pattern_seed = pear.second.dedupe_regulator->random_seed();
-                        o << "Workload- use Random pattern seed " << pear.second.pattern_seed <<  std::endl;
-                        log(slavethreadlogfile, o.str());
                     }
-                } else
-                {
-                    ostringstream o;
-                    o << "Sequential workloadthread - Reuse pattern seed " << pear.second.pattern_seed <<  std::endl;
-                    log(slavethreadlogfile, o.str());
                 }
 
 
@@ -584,49 +570,52 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                     catch_in_flight_IOs_after_last_subinterval();
 
+                    if (routine_logging)
                     {
-                        std::ostringstream o;
-                        o << "Subinterval count = "  << dispatching_latency_seconds.count() << std::endl
-                            << "OS dispatching latency after subinterval end, seconds: "
-                            << " avg = " << dispatching_latency_seconds.avg()
-                            << " / min = " << dispatching_latency_seconds.min()
-                            << " / max = " << dispatching_latency_seconds.max()
-                            << std::endl
-                            << "lock acquisition latency: "
-                            << " avg = " << lock_aquisition_latency_seconds.avg()
-                            << " / min = " << lock_aquisition_latency_seconds.min()
-                            << " / max = " << lock_aquisition_latency_seconds.max()
-                            << std::endl
-                            << "complete switchover latency: "
-                            << " avg = " << switchover_completion_latency_seconds.avg()
-                            << " / min = " << switchover_completion_latency_seconds.min()
-                            << " / max = " << switchover_completion_latency_seconds.max()
-                            << std::endl;
-                        log(slavethreadlogfile,o.str());
-                    }
-                    {
-                        std::ostringstream o;
-
-                        o << "workload_thread_max_queue_depth = " << workload_thread_max_queue_depth << std::endl;
-
-                        for (auto& pTestLUN : pTestLUNs)
                         {
-                            o << "For TestLUN"                            << pTestLUN->host_plus_lun << " : "
-                                << "testLUN_max_queue_depth = "           << pTestLUN->testLUN_max_queue_depth
-                                << ", max_IOs_tried_to_launch_at_once = " << pTestLUN->max_IOs_tried_to_launch_at_once
-                                << ", max_IOs_launched_at_once = "        << pTestLUN->max_IOs_launched_at_once
-                                << ", max_IOs_reaped_at_once = "          << pTestLUN->max_IOs_reaped_at_once
+                            std::ostringstream o;
+                            o << "Subinterval count = "  << dispatching_latency_seconds.count() << std::endl
+                                << "OS dispatching latency after subinterval end, seconds: "
+                                << " avg = " << dispatching_latency_seconds.avg()
+                                << " / min = " << dispatching_latency_seconds.min()
+                                << " / max = " << dispatching_latency_seconds.max()
+                                << std::endl
+                                << "lock acquisition latency: "
+                                << " avg = " << lock_aquisition_latency_seconds.avg()
+                                << " / min = " << lock_aquisition_latency_seconds.min()
+                                << " / max = " << lock_aquisition_latency_seconds.max()
+                                << std::endl
+                                << "complete switchover latency: "
+                                << " avg = " << switchover_completion_latency_seconds.avg()
+                                << " / min = " << switchover_completion_latency_seconds.min()
+                                << " / max = " << switchover_completion_latency_seconds.max()
                                 << std::endl;
-
-                            for (auto& pear : pTestLUN->workloads)
-                            {
-                                o << "For Workload" << pear.first << " : "
-                                    << "workload_max_queue_depth = " << pear.second.workload_max_queue_depth << std::endl;
-
-                            }
+                            log(slavethreadlogfile,o.str());
                         }
+                        {
+                            std::ostringstream o;
 
-                        log(slavethreadlogfile,o.str());
+                            o << "workload_thread_max_queue_depth = " << workload_thread_max_queue_depth << std::endl;
+
+                            for (auto& pTestLUN : pTestLUNs)
+                            {
+                                o << "For TestLUN"                            << pTestLUN->host_plus_lun << " : "
+                                    << "testLUN_max_queue_depth = "           << pTestLUN->testLUN_max_queue_depth
+                                    << ", max_IOs_tried_to_launch_at_once = " << pTestLUN->max_IOs_tried_to_launch_at_once
+                                    << ", max_IOs_launched_at_once = "        << pTestLUN->max_IOs_launched_at_once
+                                    << ", max_IOs_reaped_at_once = "          << pTestLUN->max_IOs_reaped_at_once
+                                    << std::endl;
+
+                                for (auto& pear : pTestLUN->workloads)
+                                {
+                                    o << "For Workload" << pear.first << " : "
+                                        << "workload_max_queue_depth = " << pear.second.workload_max_queue_depth << std::endl;
+
+                                }
+                            }
+
+                            log(slavethreadlogfile,o.str());
+                        }
                     }
 
                     close_all_fds();

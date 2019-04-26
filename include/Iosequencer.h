@@ -98,7 +98,7 @@ public:
 		// Returns "random_steady" or "random independent", or "sequential",
 		// or in future things like trace playback or use of advanced statistical generators.
 
-    virtual ~Iosequencer() { std::ostringstream o; o << "^^^^^^^debug ~Iosequencer() at this = " << this; log(pWorkloadThread->slavethreadlogfile, o.str()); }
+    virtual ~Iosequencer() {}
 };
 
 

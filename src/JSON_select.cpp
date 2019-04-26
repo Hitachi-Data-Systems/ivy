@@ -182,7 +182,7 @@ std::ostream& operator<< (std::ostream& o, const JSON_select& Js)
 
     if (0 == values)
     {
-        o << "<JSON_select JSON_select_clause pointer list is empty>";
+        o << "<Null select clause - selecting all available test LUNs.>";
         return o;
     }
 
