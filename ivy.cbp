@@ -209,7 +209,11 @@
 		<Unit filename="include/Count_by_workloadID.h">
 			<Option target="ivydriver" />
 		</Unit>
-		<Unit filename="include/DedupePatternRegulator.h">
+		<Unit filename="include/DedupeConstantRatioRegulator.h">
+			<Option target="ivymaster" />
+			<Option target="ivydriver" />
+		</Unit>
+		<Unit filename="include/DedupeTargetSpreadRegulator.h">
 			<Option target="ivymaster" />
 			<Option target="ivydriver" />
 		</Unit>
@@ -574,7 +578,11 @@
 		<Unit filename="src/Count_by_workloadID.cpp">
 			<Option target="ivydriver" />
 		</Unit>
-		<Unit filename="src/DedupePatternRegulator.cpp">
+		<Unit filename="src/DedupeConstantRatioRegulator.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivydriver" />
+		</Unit>
+		<Unit filename="src/DedupeTargetSpreadRegulator.cpp">
 			<Option target="ivymaster" />
 			<Option target="ivydriver" />
 		</Unit>

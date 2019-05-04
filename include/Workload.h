@@ -27,7 +27,8 @@
 #include "IosequencerInput.h"
 #include "WorkloadID.h"
 #include "TestLUN.h"
-#include "DedupePatternRegulator.h"
+#include "DedupeTargetSpreadRegulator.h"
+#include "DedupeConstantRatioRegulator.h"
 
 //#define IVYDRIVER_TRACE
 
@@ -97,7 +98,8 @@ public:
 
 	std::string hostname;
 
-    DedupePatternRegulator *dedupe_regulator;
+    DedupeTargetSpreadRegulator *dedupe_target_spread_regulator;
+    DedupeConstantRatioRegulator *dedupe_constant_ratio_regulator;
 
     bool doing_dedupe;
     bool have_writes;

@@ -60,7 +60,7 @@
 #include "IosequencerSequential.h"
 #include "ivydriver.h"
 #include "TestLUN.h"
-#include "DedupePatternRegulator.h"
+#include "DedupeTargetSpreadRegulator.h"
 
 //#define IVYDRIVER_TRACE
 // IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
@@ -296,25 +296,27 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 pear.second.workload_cumulative_launch_count = 0;
                 pear.second.workload_weighted_IOPS_max_skew_progress = 0.0;
 
-                if (pear.second.dedupe_regulator != nullptr) { delete pear.second.dedupe_regulator; }
-                pear.second.dedupe_regulator = new DedupePatternRegulator(pear.second.subinterval_array[0].input.dedupe, pear.second.pattern_seed);
+                if (pear.second.dedupe_target_spread_regulator != nullptr) { delete pear.second.dedupe_target_spread_regulator; }
+                pear.second.dedupe_target_spread_regulator = new DedupeTargetSpreadRegulator(pear.second.subinterval_array[0].input.dedupe, pear.second.pattern_seed);
                 //log(slavethreadlogfile, pear.second.dedupe_regulator->logmsg());
 
                 if (pear.second.p_my_iosequencer->isRandom())
                 {
-                    if (pear.second.dedupe_regulator->decide_reuse())
+                    if (pear.second.dedupe_target_spread_regulator->decide_reuse())
                     {
                         std::pair<uint64_t, uint64_t> align_pattern;
-                        align_pattern = pear.second.dedupe_regulator->reuse_seed();
+                        align_pattern = pear.second.dedupe_target_spread_regulator->reuse_seed();
                         pear.second.pattern_seed = align_pattern.first;
                         pear.second.pattern_alignment = align_pattern.second;
                         pear.second.pattern_number = pear.second.pattern_alignment;
                     } else
                     {
-                        pear.second.pattern_seed = pear.second.dedupe_regulator->random_seed();
+                        pear.second.pattern_seed = pear.second.dedupe_target_spread_regulator->random_seed();
                     }
                 }
 
+                if (pear.second.dedupe_constant_ratio_regulator != nullptr) { delete pear.second.dedupe_constant_ratio_regulator; }
+                pear.second.dedupe_constant_ratio_regulator = new DedupeConstantRatioRegulator(pear.second.subinterval_array[0].input.dedupe);
 
 #ifdef IVYDRIVER_TRACE
                 pear.second.workload_callcount_prepare_to_run = 0;

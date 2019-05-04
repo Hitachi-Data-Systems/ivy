@@ -23,7 +23,7 @@
 #include <iomanip>
 #include <sstream>
 #include <functional>
-#include "DedupePatternRegulator.h"
+#include "DedupeTargetSpreadRegulator.h"
 #include "ivytime.h"
 #include "ivyhelpers.h"
 
@@ -48,7 +48,7 @@
  *     N2
  */
 
-DedupePatternRegulator::DedupePatternRegulator(ivy_float dedupe, uint64_t seed) : target_dedupe(dedupe), starting_seed(seed)
+DedupeTargetSpreadRegulator::DedupeTargetSpreadRegulator(ivy_float dedupe, uint64_t seed) : target_dedupe(dedupe), starting_seed(seed)
 {
     state = 0;
     pos = 0;
@@ -92,7 +92,7 @@ DedupePatternRegulator::DedupePatternRegulator(ivy_float dedupe, uint64_t seed) 
     generate_seeds();
 }
 
-DedupePatternRegulator::~DedupePatternRegulator()
+DedupeTargetSpreadRegulator::~DedupeTargetSpreadRegulator()
 {
     seed_pod.clear();
     seed_pod_map.clear();
@@ -100,7 +100,7 @@ DedupePatternRegulator::~DedupePatternRegulator()
 }
 
 std::string
-DedupePatternRegulator::generate_seeds()
+DedupeTargetSpreadRegulator::generate_seeds()
 {
     uint64_t pattern_seed = starting_seed;
     uint64_t pattern_number = 0;
@@ -136,7 +136,7 @@ DedupePatternRegulator::generate_seeds()
     return o.str();
 }
 
-void DedupePatternRegulator::record_seed(uint64_t seed, uint64_t pattern_number)
+void DedupeTargetSpreadRegulator::record_seed(uint64_t seed, uint64_t pattern_number)
 {
     // do not record if already in map
     auto loc = seed_pod_map.find(seed);
@@ -150,7 +150,7 @@ void DedupePatternRegulator::record_seed(uint64_t seed, uint64_t pattern_number)
     }
 }
 
-bool DedupePatternRegulator::decide_reuse()
+bool DedupeTargetSpreadRegulator::decide_reuse()
 {
     int toss = 0;
     bool reuse {false};
@@ -164,7 +164,7 @@ bool DedupePatternRegulator::decide_reuse()
     return reuse;
 }
 
-uint64_t DedupePatternRegulator::random_seed()
+uint64_t DedupeTargetSpreadRegulator::random_seed()
 {
     ivytime t;
     t.setToNow();
@@ -175,7 +175,7 @@ uint64_t DedupePatternRegulator::random_seed()
     return seed;
 }
 
-std::pair<uint64_t, uint64_t> DedupePatternRegulator::reuse_seed()
+std::pair<uint64_t, uint64_t> DedupeTargetSpreadRegulator::reuse_seed()
 {
     std::pair<uint64_t, uint64_t> seed;
     uint64_t index = 0;
@@ -190,7 +190,7 @@ std::pair<uint64_t, uint64_t> DedupePatternRegulator::reuse_seed()
 }
 
 std::string
-DedupePatternRegulator::logmsg()
+DedupeTargetSpreadRegulator::logmsg()
 {
     o<< "target=" << target
      << ", spread=" << spread

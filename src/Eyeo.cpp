@@ -17,6 +17,7 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
+#include <assert.h>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -45,6 +46,7 @@ using namespace std;
 #include "Subinterval.h"
 #include "WorkloadThread.h"
 #include "Workload.h"
+#include "DedupeConstantRatioRegulator.h"
 
 extern std::string printable_ascii;
 
@@ -240,7 +242,15 @@ void Eyeo::generate_pattern()
             {
                 if (pWorkload->doing_dedupe && i % 1024 == 0)
                 {
-                    pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                    if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::target_spread)
+                    {
+                        pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                    }
+                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
+                    {
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset / 8192 + i / 1024);
+                    }
+                    else assert(false);
                 }
                 xorshift64star(pWorkload->block_seed);
                 (*(p_uint64 + i)) = pWorkload->block_seed;
@@ -255,7 +265,17 @@ void Eyeo::generate_pattern()
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
                 if (pWorkload->doing_dedupe && i % 1024 == 0)
-                    pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                {
+                    if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::target_spread)
+                    {
+                        pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                    }
+                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
+                    {
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset / 8192 + i / 1024);
+                    }
+                    else assert(false);
+                }
                 xorshift64star(pWorkload->block_seed);
 
                 d = pWorkload->block_seed;
@@ -288,7 +308,17 @@ void Eyeo::generate_pattern()
             for (uint64_t i=0; i < uint64_t_count; i++)
             {
                 if (pWorkload->doing_dedupe && i % 1024 == 0)
-                    pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                {
+                    if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::target_spread)
+                    {
+                        pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                    }
+                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
+                    {
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset / 8192 + i / 1024);
+                    }
+                    else assert(false);
+                }
                 xorshift64star(pWorkload->block_seed);
                 (*(p_uint64 + i)) = pWorkload->block_seed;
             }
@@ -329,7 +359,17 @@ void Eyeo::generate_pattern()
             while(p_c < past_buf)
             {
                 if (pWorkload->doing_dedupe && count % 1024 == 0)
-                    pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                {
+                    if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::target_spread)
+                    {
+                        pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                    }
+                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
+                    {
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset / 8192 + count / 1024);
+                    }
+                    else assert(false);
+                }
                 xorshift64star(pWorkload->block_seed);
                 word_index = pWorkload->block_seed % unique_word_count;
                 p_word = unique_words[word_index];

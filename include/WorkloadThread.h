@@ -34,7 +34,7 @@
 
 #include "pattern.h"
 #include "Subinterval.h"
-#include "DedupePatternRegulator.h"
+#include "DedupeTargetSpreadRegulator.h"
 
 enum class ThreadState
 {

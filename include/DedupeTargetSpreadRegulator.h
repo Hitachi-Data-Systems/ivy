@@ -25,10 +25,10 @@
 #include <unordered_map>
 #include "ivydefines.h"
 
-class DedupePatternRegulator {
+class DedupeTargetSpreadRegulator {
 public:
-    DedupePatternRegulator(ivy_float target_dedupe = 1.0, uint64_t seed = universal_seed);
-    ~DedupePatternRegulator();
+    DedupeTargetSpreadRegulator(ivy_float target_dedupe = 1.0, uint64_t seed = universal_seed);
+    ~DedupeTargetSpreadRegulator();
 
     // return rounded dedupe factor resets state
     inline ivy_float dedupe_distribution()

@@ -37,14 +37,16 @@ Workload::Workload()
     p_current_IosequencerInput = & (subinterval_array[0].input);
     p_current_SubintervalOutput= & (subinterval_array[0].output);
     p_my_iosequencer = nullptr;
-    dedupe_regulator = nullptr;
+    dedupe_target_spread_regulator = nullptr;
+    dedupe_constant_ratio_regulator = nullptr;
 }
 
 Workload::~Workload()
 {
     delete p_my_iosequencer;
     for (auto& pEyeo : allEyeosThatExist) delete pEyeo;
-    if (dedupe_regulator != nullptr) delete dedupe_regulator;
+    if (dedupe_target_spread_regulator != nullptr) delete dedupe_target_spread_regulator;
+    if (dedupe_constant_ratio_regulator != nullptr) delete dedupe_constant_ratio_regulator;
 }
 
 
@@ -597,13 +599,13 @@ unsigned int Workload::generate_an_IO()
                 case dedupe_method::target_spread:
                     if (p_my_iosequencer->isRandom())
                     {
-                        if (pattern_number > dedupe_regulator->pattern_number_reuse_threshold)
+                        if (pattern_number > dedupe_target_spread_regulator->pattern_number_reuse_threshold)
                         {
-                            if (dedupe_regulator->decide_reuse())
+                            if (dedupe_target_spread_regulator->decide_reuse())
                             {
                                 ostringstream o;
                                 std::pair<uint64_t, uint64_t> align_pattern;
-                                align_pattern = dedupe_regulator->reuse_seed();
+                                align_pattern = dedupe_target_spread_regulator->reuse_seed();
                                 pattern_seed = align_pattern.first;
                                 pattern_alignment = align_pattern.second;
                                 pattern_number = pattern_alignment;
@@ -622,7 +624,7 @@ unsigned int Workload::generate_an_IO()
                         std::ostringstream o;
 
                         if (dedupe_count == 0) {
-                            modified_dedupe_factor = dedupe_regulator->dedupe_distribution();
+                            modified_dedupe_factor = dedupe_target_spread_regulator->dedupe_distribution();
                             dedupe_count = (uint64_t) modified_dedupe_factor;
 #if 0
                             o << "modified_dedupe_factor: " << modified_dedupe_factor << std::endl;
@@ -649,10 +651,13 @@ unsigned int Workload::generate_an_IO()
 #endif
                     }
                     break;
+
                 case dedupe_method::constant_ratio:
 
+                    // Handled elsewhere, as the seed generation depends on the LBA.
 
                     break;
+
                 case dedupe_method::invalid:
                 default:
                 {
