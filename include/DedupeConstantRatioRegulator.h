@@ -28,9 +28,14 @@
 class DedupeConstantRatioRegulator
 {
     public:
-        DedupeConstantRatioRegulator(ivy_float dedupe);
+        DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, ivy_float compression);
         virtual ~DedupeConstantRatioRegulator();
-        uint64_t get_seed(uint64_t lba);
+        uint64_t get_seed(uint64_t offset);
+
+    typedef struct {
+        int         slots;
+        ivy_float   ratio;
+    } slots_ratio_t;
 
     protected:
 
@@ -39,7 +44,15 @@ class DedupeConstantRatioRegulator
     std::default_random_engine generator;
     std::uniform_real_distribution<ivy_float> distribution;
 
-    const uint64_t max_seeds = 128;
+    const uint64_t multiplier = 64;
 
+    uint64_t block_size;
+    uint64_t max_seeds;
+    uint64_t range;
     ivy_float dedupe_ratio;
+    ivy_float compression_ratio;
+
+    int compute_max_seeds(const slots_ratio_t *array, int size, ivy_float target);
+    uint64_t compute_range(void);
+
 };

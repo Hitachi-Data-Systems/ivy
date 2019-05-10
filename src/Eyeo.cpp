@@ -248,7 +248,10 @@ void Eyeo::generate_pattern()
                     }
                     else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset / 8192 + i / 1024);
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + i * sizeof(uint64_t));
+                    }
+                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::serpentine) {
+                        // Do nothing special.
                     }
                     else assert(false);
                 }
@@ -272,7 +275,10 @@ void Eyeo::generate_pattern()
                     }
                     else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset / 8192 + i / 1024);
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + i * sizeof(uint64_t));
+                    }
+                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::serpentine) {
+                        // Do nothing special.
                     }
                     else assert(false);
                 }
@@ -315,7 +321,10 @@ void Eyeo::generate_pattern()
                     }
                     else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset / 8192 + i / 1024);
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + i * sizeof(uint64_t));
+                    }
+                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::serpentine) {
+                        // Do nothing special.
                     }
                     else assert(false);
                 }
@@ -366,7 +375,10 @@ void Eyeo::generate_pattern()
                     }
                     else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset / 8192 + count / 1024);
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + count * sizeof(uint64_t));
+                    }
+                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::serpentine) {
+                        // Do nothing special.
                     }
                     else assert(false);
                 }
