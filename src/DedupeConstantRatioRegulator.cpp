@@ -18,154 +18,78 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include "DedupeConstantRatioRegulator.h"
-
 #include <assert.h>
 #include <stdlib.h>
 #include "ivy_engine.h"
 #include "ivyhelpers.h"
+#include "DedupeConstantRatioRegulator.h"
+#include "DedupeConstantRatioTable.h"
 
-// This table indicates the number of slots needed to achieve a given dedupe ratio.
-// It was computed assuming a "multiplier" value of 64, i.e., a 64-sided die.  For
-// each entry, it indicates the number of rolls of a 64-sided die needed to achieve
-// the associated deduplication ration.
-//
-// Note: Table must be maintained in sorted order as we use binary search on it.
+// Simple linear lookup as table is short and lookup is done only once.
 
-const DedupeConstantRatioRegulator::slots_ratio_t dedupe_table[] = {
-    {1, 1.000000},
-    {12, 1.099388},
-    {24, 1.198259},
-    {36, 1.306506},
-    {46, 1.405164},
-    {56, 1.496989},
-    {66, 1.601150},
-    {76, 1.706145},
-    {85, 1.805573},
-    {93, 1.900876},
-    {102, 1.999506},
-    {111, 2.106796},
-    {119, 2.201853},
-    {127, 2.301546},
-    {135, 2.397511},
-    {143, 2.499986},
-    {151, 2.599669},
-    {158, 2.700606},
-    {166, 2.798501},
-    {174, 2.909903},
-    {181, 3.004809},
-    {188, 3.100742},
-    {195, 3.195051},
-    {202, 3.293802},
-    {210, 3.406981},
-    {217, 3.507099},
-    {224, 3.607673},
-    {230, 3.696804},
-    {237, 3.794198},
-    {244, 3.900303},
-    {251, 4.001688},
-    {258, 4.105323},
-    {265, 4.206345},
-    {271, 4.296486},
-    {278, 4.397910},
-    {285, 4.503196},
-    {292, 4.606941},
-    {298, 4.701113},
-    {305, 4.806613},
-    {311, 4.895962},
-    {318, 5.001684},
-    {325, 5.107522},
-    {331, 5.202206},
-    {338, 5.308755},
-    {344, 5.401302},
-    {351, 5.505001},
-    {357, 5.597496},
-    {364, 5.706888},
-    {370, 5.799379},
-    {377, 5.906568},
-    {383, 6.000768},
-    {390, 6.106739},
-    {396, 6.200374},
-    {403, 6.308596},
-    {409, 6.402702},
-    {416, 6.508884},
-    {422, 6.601501},
-    {428, 6.697162},
-    {435, 6.804755},
-    {441, 6.896972},
-    {448, 7.006013},
-    {454, 7.100521},
-    {461, 7.208619},
-    {467, 7.300930},
-    {473, 7.394855},
-    {480, 7.505966},
-    {486, 7.597730},
-    {493, 7.706302},
-    {499, 7.799719},
-    {506, 7.909642},
-    {512, 8.002797},
-    {528, 8.252360},
-    {544, 8.501348},
-    {560, 8.750972},
-    {576, 9.001286},
-    {592, 9.250881},
-    {608, 9.500452},
-    {624, 9.750310},
-    {640, 10.000318},
-};
-
-int DedupeConstantRatioRegulator::compute_max_seeds(const slots_ratio_t *array, int size, ivy_float target)
+void DedupeConstantRatioRegulator::lookup_sides_and_throws(ivy_float dedupe_ratio, ivy_float &sides, uint64_t &throws)
 {
-    assert(array != nullptr);
-    assert(size > 0);
+        // Out of range (too small).
 
-    // Corner cases.
+        if (dedupe_ratio < 1.0)
+                dedupe_ratio = 1.0;
 
-    if (target < array[0].ratio)
-        return array[0].slots;
+        // Just do linear search.
 
-    // Out of range.
-
-    if (target > array[size - 1].ratio)
-        return (int) (target * multiplier);  // Very close approximation.
-
-    // Binary search table for closest match.
-
-    int i = 0, j = size, mid = 0;
-    while (i < j) {
-        mid = (i + j) / 2;
-        if (array[mid].ratio == target)
-            return array[mid].slots;
-
-        if (target < array[mid].ratio)
+        auto prev = table_by_dedupe_ratio.begin();
+        for (auto it = table_by_dedupe_ratio.begin(); it != table_by_dedupe_ratio.end(); ++it)
         {
-            if ((mid > 0) && (target > array[mid - 1].ratio))
-            {
-                if (target - array[mid - 1].ratio <= array[mid].ratio - target)
-                    return array[mid - 1].slots;
-                else
-                    return array[mid].slots;
-            }
-            j = mid;
+                // Find the closest match.
+
+                if (it->first > dedupe_ratio)
+                {
+                        if ((it->first - dedupe_ratio) < (dedupe_ratio - prev->first))
+                        {
+                                sides = (ivy_float) it->second.first;
+                                throws = it->second.second;
+                        }
+                        else
+                        {
+                                sides = (ivy_float) prev->second.first;
+                                throws = prev->second.second;
+                        }
+                        return;
+                }
+                prev = it;
+        }
+
+        // Out of range (too big).
+
+        sides = (ivy_float) prev->second.first;
+        throws = (unsigned int) prev->second.first * dedupe_ratio;  // Good estimate.
+}
+
+void DedupeConstantRatioRegulator::compute_range(ivy_float &sides, uint64_t &throws, uint64_t block_size, ivy_float compression_ratio, uint64_t &range)
+{
+    // Complexity comes in because of compression, especially for large blocks.
+
+    if (compression_ratio == 0.0)
+    {
+        range = throws * 8192;
+    }
+    else
+    {
+        uint64_t data_blocks_per_io_block = (uint64_t) ceil((ivy_float) ((uint64_t) ((block_size + 8191) / 8192)) * (1.0 - compression_ratio));
+        ivy_float expansion_ratio = (ivy_float) throws / data_blocks_per_io_block;
+
+        if (expansion_ratio >= 1.0)
+        {
+            range = throws * block_size / data_blocks_per_io_block;
         }
         else
         {
-            if ((mid < size - 1) && (target < array[mid + 1].ratio))
-            {
-                if (target - array[mid].ratio <= array[mid + 1].ratio - target)
-                    return array[mid].slots;
-                else
-                    return array[mid + 1].slots;
-            }
-            i = mid + 1;
+            // Assumes that maintaining the sides:throws ratio will approximate the desired dedupe ratio.
+
+            sides /= expansion_ratio;
+            throws = data_blocks_per_io_block;
+            range = block_size;
         }
     }
-    return array[mid].slots;
-}
-
-uint64_t DedupeConstantRatioRegulator::compute_range(void)
-{
-    return max_seeds * 8192 * min((int) (block_size + 8191) / 8192, (int) (1.0 / (1.0 - compression_ratio)));
 }
 
 DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, ivy_float compression)
@@ -185,9 +109,8 @@ DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uin
 
     // Compute a range of blocks (not counting compression ratio).
 
-    max_seeds = compute_max_seeds(dedupe_table, (int) sizeof(dedupe_table)/sizeof(dedupe_table[0]), dedupe_ratio);
-
-    range = compute_range();
+    lookup_sides_and_throws(dedupe_ratio, sides, throws);
+    compute_range(sides, throws, block_size, compression_ratio, range);
 }
 
 DedupeConstantRatioRegulator::~DedupeConstantRatioRegulator()
@@ -212,7 +135,7 @@ uint64_t DedupeConstantRatioRegulator::get_seed(uint64_t offset)
 
     // Which of the allowed patterns shall we use?
 
-    index = (int) (distribution(generator) * multiplier);
+    index = (int) (distribution(generator) * sides);
 
     // For this chunk, select the starting seed.  All offsets in a given range have the same starting seed.
 

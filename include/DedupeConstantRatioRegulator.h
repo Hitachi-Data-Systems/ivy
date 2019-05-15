@@ -21,7 +21,6 @@
 #pragma once
 
 #include <random>
-
 #include "ivytime.h"
 #include "ivyhelpers.h"
 
@@ -32,11 +31,6 @@ class DedupeConstantRatioRegulator
         virtual ~DedupeConstantRatioRegulator();
         uint64_t get_seed(uint64_t offset);
 
-    typedef struct {
-        int         slots;
-        ivy_float   ratio;
-    } slots_ratio_t;
-
     protected:
 
     private:
@@ -44,15 +38,13 @@ class DedupeConstantRatioRegulator
     std::default_random_engine generator;
     std::uniform_real_distribution<ivy_float> distribution;
 
-    const uint64_t multiplier = 64;
-
     uint64_t block_size;
-    uint64_t max_seeds;
+    ivy_float sides;
+    uint64_t throws;
     uint64_t range;
     ivy_float dedupe_ratio;
     ivy_float compression_ratio;
 
-    int compute_max_seeds(const slots_ratio_t *array, int size, ivy_float target);
-    uint64_t compute_range(void);
-
+    void lookup_sides_and_throws(ivy_float dedupe_ratio, ivy_float &sides, uint64_t &throws);
+    void compute_range(ivy_float &sides, uint64_t &throws, uint64_t block_size, ivy_float compression_ratio, uint64_t &range);
 };
