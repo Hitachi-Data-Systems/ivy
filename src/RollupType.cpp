@@ -236,140 +236,9 @@ void RollupType::rebuild()
             pRollupInstance->config_filter[serial][attribute_value_pair.first].insert(attribute_value_pair.second);
         }
 
-        // Need to put the next bit into its own method ...
-
-        // Now we augment the config_filter with indirect configuration element instances.
-        // For example, if an LDEV is on an HM800 and we see that we have MPU "0" then we add the appropriate MP_core instances depending on the subsystem model.
-
-        auto sub_model_it = pWorkloadTracker->workloadLUN.attributes.find("sub_model");
-        if (sub_model_it != pWorkloadTracker->workloadLUN.attributes.end())
+        if (pWorkloadTracker->workloadLUN.contains_attribute_name("MP_core_set"))
         {
-            // Post MP_core / MP_number elements for this workload
-            std::string& sub_model = sub_model_it->second;
-
-            if (startsWith(sub_model,"HM800"))
-            {
-                if (pWorkloadTracker->workloadLUN.contains_attribute_name("MPU"))
-                {
-                    std::string MPU = pWorkloadTracker->workloadLUN.attribute_value("MPU");
-
-                    auto table_submodel_it = HM800_MPU_map.find(sub_model);
-                    if (table_submodel_it == HM800_MPU_map.end())
-                    {
-                        std::ostringstream o;
-                        o << "<Warning> RollupType::rebuild(), when putting in HM800 MP_core and MP# parameters, did not find sub_model \"" << sub_model << "\" in HM800_MPU_map." << std::endl;
-                        m_s.warning_messages.push_back(o.str());
-                        std::cout << o.str();
-                        log(m_s.masterlogfile,o.str());
-                    }
-                    else
-                    {
-                        auto table_MPU_it = table_submodel_it->second.find(MPU);
-                        if (table_MPU_it == table_submodel_it->second.end())
-                        {
-                            std::ostringstream o;
-                            o << "<Warning> RollupType::rebuild(), when putting in HM800 MP_core and MP# parameters, did not find MPU \"" << MPU << "\" for sub_model \"" << sub_model << "\" in HM800_MPU_map." << std::endl;
-                            m_s.warning_messages.push_back(o.str());
-                            std::cout << o.str();
-                            log(m_s.masterlogfile,o.str());
-                        }
-                        else
-                        {
-                            for (auto& pear : table_MPU_it->second)
-                            {
-                                std::string& MP_number = pear.first;
-                                std::string& MP_core = pear.second;
-                                pRollupInstance->config_filter[serial][toLower("MP_number")].insert(MP_number);
-                                pRollupInstance->config_filter[serial][toLower("MP_core")].insert(MP_core);
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
-
-        extern std::map<std::string, std::vector<std::string>> RAID800_MP_cores_by_MPU;
-        //        {
-        //            "0",
-        //            {
-        //                "MPU 00 1MA MP#0(MP#00)",
-        //                "MPU 00 1MA MP#4(MP#04)",
-        //                "MPU 00 1MA MP#1(MP#01)",
-        //                "MPU 00 1MA MP#5(MP#05)",
-        //                "MPU 00 1MA MP#2(MP#02)",
-        //                "MPU 00 1MA MP#6(MP#06)",
-        //                "MPU 00 1MA MP#3(MP#03)",
-        //                "MPU 00 1MA MP#7(MP#07)"
-        //            }
-        //        }
-
-
-        extern std::map<std::string /* MPU */, std::vector<std::pair<std::string /* MP_core */, std:: string /* MP_number */>>> RAID900_MP_cores_by_MPU;
-//                        "0",
-//                        {
-//                            { "MPU-010-00", "MP#00" },
-//                            { "MPU-010-01", "MP#01" },
-//                            { "MPU-010-02", "MP#02" },
-//                            { "MPU-010-03", "MP#03" },
-
-        if ( pWorkloadTracker->workloadLUN.contains_attribute_name("hitachi_product") )
-        {
-            if ( 0 == std::string("RAID800").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product")) )
-            {
-                if (pWorkloadTracker->workloadLUN.contains_attribute_name("MPU"))
-                {
-                    std::string MPU = pWorkloadTracker->workloadLUN.attribute_value("MPU");
-                    auto it = RAID800_MP_cores_by_MPU.find(MPU);
-                    if (it == RAID800_MP_cores_by_MPU.end())
-                    {
-                        std::ostringstream o;
-                        o << "RollupType::rebuild(), when putting in RAID800 MP_core and MP# parameters, did not find MPU \"" << MPU << "\" in RAID800_MP_cores_by_MPU." << std::endl;
-                        std::cout << o.str();
-                        m_s.kill_subthreads_and_exit();
-                    }
-                    for (auto& s : it->second)
-                    {
-                        std::string MP_core = s.substr(0,15);
-                        std::string MP_number = s.substr(16,5);
-                        pRollupInstance->config_filter[serial][toLower("MP_core")].insert(MP_core);
-                        pRollupInstance->config_filter[serial][toLower("MP_number")].insert(MP_number);
-                    }
-                }
-            }
-            else if ( 0 == std::string("RAID900").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product"))
-                        || 0 == std::string("RAID900").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product"))
-                        || 0 == std::string("Europa").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product"))
-                        || 0 == std::string("Jupiter").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product"))
-                        || 0 == std::string("Ganymede").compare(pWorkloadTracker->workloadLUN.attribute_value("hitachi_product")))
-            {
-                if (pWorkloadTracker->workloadLUN.contains_attribute_name("MPU"))
-                {
-                    std::string MPU = pWorkloadTracker->workloadLUN.attribute_value("MPU");  // This is a decimal number from 0 to 11
-
-                    auto it = RAID900_MP_cores_by_MPU.find(MPU);
-                    if (it == RAID900_MP_cores_by_MPU.end())
-                    {
-                        std::ostringstream o;
-                        o << "RollupType::rebuild(), when putting in RAID900 MP_core and MP# parameters, did not find MPU \"" << MPU << "\" in RAID900_MP_cores_by_MPU." << std::endl;
-                        std::cout << o.str();
-                        m_s.kill_subthreads_and_exit();
-                    }
-                    for (auto& pear : it->second)
-                    {
-                        std::string MP_core = pear.first;
-                        std::string MP_number = pear.second;
-                        pRollupInstance->config_filter[serial][toLower("MP_core")].insert(MP_core);
-                        pRollupInstance->config_filter[serial][toLower("MP_number")].insert(MP_number);
-                    }
-                }
-            }
-        }
-
-        auto pg_names_it = pWorkloadTracker->workloadLUN.attributes.find("pg_names");
-        if (pg_names_it != pWorkloadTracker->workloadLUN.attributes.end())
-        {
-            std::string s = pg_names_it->second;
+            std::string s = pWorkloadTracker->workloadLUN.attribute_value("MP_core_set");
 
             while (s.length() > 0)
             {
@@ -379,7 +248,87 @@ void RollupType::rebuild()
                 {
                     std::string piece = s.substr(0,pluspos);
                     s.erase(0,1+pluspos);
-                    if (trace_evaluate)
+                    if (routine_logging)
+                    {
+                        std::ostringstream o;
+                        o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
+                          << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting MP_core " << piece
+                          << " into config_filter[serial=" << serial << "][MP_core].";
+                        log(m_s.masterlogfile,o.str());
+                    }
+                    pRollupInstance->config_filter[serial][toLower("MP_core")].insert(piece);
+                    continue;
+                }
+
+                pRollupInstance->config_filter[serial][toLower("MP_core")].insert(s);
+                if (trace_evaluate)
+                {
+                    std::ostringstream o;
+                    o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
+                        << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting MP_core " << s << " into config_filter[serial=" << serial << "][MP_core].";
+                    log(m_s.masterlogfile,o.str());
+                }
+                break;
+            }
+        }
+        else
+        {
+            std::ostringstream o;
+            o << "RollupType::rebuild() for WorkloadTracker " << pWorkloadTracker->workloadID << " did not find attribute \"" << "MP_core_set" << "\"." << std::endl
+                << "This Workload\'s LUN has attributes " <<  pWorkloadTracker->workloadLUN.toString() << std::endl;
+            log(m_s.masterlogfile, o.str());
+        }
+
+        if (pWorkloadTracker->workloadLUN.contains_attribute_name("MP_number_set"))
+        {
+            std::string s = pWorkloadTracker->workloadLUN.attribute_value("MP_number_set");
+
+            while (s.length() > 0)
+            {
+                size_t pluspos = s.find('+');
+
+                if (pluspos != std::string::npos)
+                {
+                    std::string piece = s.substr(0,pluspos);
+                    s.erase(0,1+pluspos);
+                    if (routine_logging)
+                    {
+                        std::ostringstream o;
+                        o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
+                          << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting MP_number " << piece
+                          << " into config_filter[serial=" << serial << "][MP_number].";
+                        log(m_s.masterlogfile,o.str());
+                    }
+                    pRollupInstance->config_filter[serial][toLower("MP_number")].insert(piece);
+                    continue;
+                }
+
+                pRollupInstance->config_filter[serial][toLower("MP_number")].insert(s);
+                if (trace_evaluate)
+                {
+                    std::ostringstream o;
+                    o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
+                        << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting MP_number " << s << " into config_filter[serial=" << serial << "][MP_number].";
+                    log(m_s.masterlogfile,o.str());
+                }
+                break;
+            }
+        }
+
+
+        if (pWorkloadTracker->workloadLUN.contains_attribute_name("PG_names"))
+        {
+            std::string s = pWorkloadTracker->workloadLUN.attribute_value("PG_names");
+
+            while (s.length() > 0)
+            {
+                size_t pluspos = s.find('+');
+
+                if (pluspos != std::string::npos)
+                {
+                    std::string piece = s.substr(0,pluspos);
+                    s.erase(0,1+pluspos);
+                    if (routine_logging)
                     {
                         std::ostringstream o;
                         o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
@@ -552,6 +501,12 @@ void RollupType::rebuild()
             }
         }
 
+        if (routine_logging)
+        {
+            std::ostringstream o;
+            o << "RollupInstance " << pRollupInstance->attributeNameComboID << "=" << pRollupInstance->rollupInstanceID << " config_filter_contents() = " << pRollupInstance->config_filter_contents() << std::endl;
+            log(m_s.masterlogfile,o.str());
+        }
     } //for (auto& pear : m_s.workloadTrackers.workloadTrackerPointers)
 
     for (auto& pear : instances) pear.second->rebuild_test_config_thumbnail();

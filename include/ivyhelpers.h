@@ -127,7 +127,7 @@ bool isPlusSignCombo(std::string& callers_error_message, int& callersNumberOfFie
 // - May not have two consecutive '+'
 // Number of fields returned is the same as 1 + number of '+'
 
-ivy_float number_optional_trailing_percent(const std::string& s /* e.g. "1.2%" */, std::string name_associated_with_value_for_error_message = std::string("") );  // throws std::invalid_argument
+ivy_float number_optional_trailing_percent(const std::string& s /* e.g. "1.2%" */, const std::string& name_associated_with_value_for_error_message = std::string("") );  // throws std::invalid_argument
 unsigned int unsigned_int(const std::string&, std::string name_associated_with_value_for_error_message = std::string("") );
 
 std::string render_string_harmless(const std::string s);

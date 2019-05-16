@@ -37,6 +37,7 @@ using namespace std;
 #include <sys/types.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <cmath>
 
 #include "ParameterValueLookupTable.h"
 #include "MeasureCtlr.h"
@@ -208,14 +209,37 @@ bool ivy_engine::some_subsystem_still_busy()
 {
     RollupInstance* p_allall = m_s.rollups.get_all_equals_all_instance();
 
+//{std::ostringstream o; o << "debug: ivy_engine::some_subsystem_still_busy() - p_allall->subsystem_data_by_subinterval.size() = " << p_allall->subsystem_data_by_subinterval.size() << std::endl; std::cout << o.str(); log(masterlogfile, o.str());}
+
     if (p_allall->subsystem_data_by_subinterval.size() == 0) return false;
 
     ivy_float avg_busy = p_allall->subsystem_data_by_subinterval.back().avg_MP_core_busy_fraction();
 
-    if (avg_busy < 0.0) return false;
+//{std::ostringstream o; o << "debug: ivy_engine::some_subsystem_still_busy() - average MP busy = " << (100.0*avg_busy) << "%" << std::endl; std::cout << o.str(); log(masterlogfile, o.str());}
 
-    if( avg_busy > m_s.subsystem_busy_threshold )
+    if (avg_busy < subsystem_busy_threshold)
     {
+        cooldown_by_MP_busy_stay_down_count ++;
+
+//{std::ostringstream o; o << "debug: ivy_engine::some_subsystem_still_busy() - cooldown_by_MP_busy_stay_down_count = " << cooldown_by_MP_busy_stay_down_count << std::endl; std::cout << o.str(); log(masterlogfile, o.str());}
+
+        if (cooldown_by_MP_busy_stay_down_count >= cooldown_by_MP_busy_stay_down_count_limit)
+        {
+            return false;
+        }
+        else
+        {
+            std::ostringstream o;
+            o << "With cooldown_by_MP_busy=on, average MP_core % busy is " << std::fixed << std::setprecision(2) << (100.0 * avg_busy) << "%"
+              << ", below the subsystem_busy_threshold " << std::fixed << std::setprecision(1) << (100.0 * m_s.subsystem_busy_threshold) << "% for " << cooldown_by_MP_busy_stay_down_count
+              << " of the required " << cooldown_by_MP_busy_stay_down_count_limit << " subintervals." << std::endl;
+            std::cout << o.str();
+            return true;
+        }
+    }
+    else // avg_busy > m_s.subsystem_busy_threshold
+    {
+        cooldown_by_MP_busy_stay_down_count = 0;
         std::ostringstream o;
         o << "With cooldown_by_MP_busy=on, subsystem average MP_core % busy is " << std::fixed << std::setprecision(2) << (100.0 * avg_busy) << "%"
           << ", which is above subsystem_busy_threshold = " << std::fixed << std::setprecision(1) << (100.0 * m_s.subsystem_busy_threshold) << "%" << std::endl;
@@ -2245,13 +2269,17 @@ ivy_engine::go(const std::string& parameters)
         kill_subthreads_and_exit();
     }
 
-    std::string valid_parameter_names = "no_perf, no_LDEV, stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp, cooldown_by_MP_busy, subsystem_WP_threshold, subsystem_busy_threshold, sequential_fill";
+    std::string parameter_value;
+
+    std::string valid_parameter_names = "suppress_perf, skip_LDEV, stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp"s
+        + ",cooldown_by_MP_busy, cooldown_by_MP_busy_stay_down_time_seconds, subsystem_WP_threshold, subsystem_busy_threshold, sequential_fill"s
+        + ",stepcsv, storcsv"s;
 
     std::string valid_parameters_message =
         "The following parameter names are always valid:\n"
         "    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
-        "    no_perf, no_LDEV, subsystem_WP_threshold, cooldown_by_MP_busy, subsystem_busy_threshold,\n"
-        "    sequential_fill.\n\n"
+        "    suppress_perf, skip_LDEV, subsystem_WP_threshold, cooldown_by_MP_busy, cooldown_by_MP_busy_stay_down_time_seconds,\n"
+        "    subsystem_busy_threshold, sequential_fill, stepcsv, storcsv.\n\n"
         "For dfc = PID, additional valid parameters are:\n"
         "    target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step,\n"
         "    ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
@@ -2282,14 +2310,17 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     if (go_parameters.contains("stepname")) stepName = go_parameters.retrieve("stepname");
     else stepName = stepNNNN;
 
-    if (!go_parameters.contains(normalize_identifier(std::string("no_perf")))) go_parameters.contents[normalize_identifier(std::string("no_perf"))]  = no_subsystem_perf_default ? "on" : "off";
-    if (!go_parameters.contains(normalize_identifier(std::string("no_LDEV")))) go_parameters.contents[normalize_identifier(std::string("no_LDEV"))]  = skip_ldev_data_default ? "on" : "off";
+    if (!go_parameters.contains(normalize_identifier(std::string("suppress_perf")))) go_parameters.contents[normalize_identifier(std::string("suppress_perf"))]  = suppress_subsystem_perf_default ? "on" : "off";
+    if (!go_parameters.contains(normalize_identifier(std::string("skip_LDEV")))) go_parameters.contents[normalize_identifier(std::string("skip_LDEV"))]  = skip_ldev_data_default ? "on" : "off";
+    if (!go_parameters.contains(normalize_identifier(std::string("stepcsv")))) go_parameters.contents[normalize_identifier(std::string("stepcsv"))]  = stepcsv_default ? "on" : "off";
+    if (!go_parameters.contains(normalize_identifier(std::string("storcsv")))) go_parameters.contents[normalize_identifier(std::string("storcsv"))]  = storcsv_default ? "on" : "off";
 
     if (!go_parameters.contains(std::string("subinterval_seconds")))      go_parameters.contents[normalize_identifier(std::string("subinterval_seconds"))]      = subinterval_seconds_default;
     if (!go_parameters.contains(std::string("warmup_seconds")))           go_parameters.contents[normalize_identifier(std::string("warmup_seconds"))]           = warmup_seconds_default;
     if (!go_parameters.contains(std::string("measure_seconds")))          go_parameters.contents[normalize_identifier(std::string("measure_seconds"))]          = measure_seconds_default;
     if (!go_parameters.contains(std::string("cooldown_by_wp")))           go_parameters.contents[normalize_identifier(std::string("cooldown_by_wp"))]           = cooldown_by_wp_default;
     if (!go_parameters.contains(std::string("cooldown_by_MP_busy")))      go_parameters.contents[normalize_identifier(std::string("cooldown_by_MP_busy"))]      = cooldown_by_MP_busy_default;
+    if (!go_parameters.contains(std::string("cooldown_by_MP_busy_stay_down_time_seconds")))      go_parameters.contents[normalize_identifier(std::string("cooldown_by_MP_busy_stay_down_time_seconds"))] = go_parameters.retrieve("subinterval_seconds");
     if (!go_parameters.contains(std::string("subsystem_WP_threshold")))   go_parameters.contents[normalize_identifier(std::string("subsystem_WP_threshold"))]   = subsystem_WP_threshold_default; // used with cooldown_by_wp
     if (!go_parameters.contains(std::string("subsystem_busy_threshold"))) go_parameters.contents[normalize_identifier(std::string("subsystem_busy_threshold"))] = subsystem_busy_threshold_default; // used with cooldown_by_MP_busy
 
@@ -2528,14 +2559,15 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
 
 //----------------------------------- subinterval_seconds
+    parameter_value = go_parameters.retrieve("subinterval_seconds");
     try
     {
-        subinterval_seconds = number_optional_trailing_percent(go_parameters.retrieve("subinterval_seconds"));
+        subinterval_seconds = number_optional_trailing_percent(parameter_value);
     }
     catch(std::invalid_argument& iaex)
     {
         std::ostringstream o;
-        o << "<Error> ivy engine API - go() - Invalid subinterval_seconds parameter value \"" << go_parameters.retrieve("subinterval_seconds") << "\"." << std::endl;
+        o << "<Error> ivy engine API - go() - Invalid subinterval_seconds parameter value \"" << parameter_value << "\"." << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
         kill_subthreads_and_exit();
@@ -2544,7 +2576,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     if (subinterval_seconds < min_subinterval_seconds || subinterval_seconds > max_subinterval_seconds )
     {
         std::ostringstream o;
-        o << "<Error> ivy engine API - go() - Invalid subinterval_seconds parameter value \"" << go_parameters.retrieve("subinterval_seconds") << "\".  Permitted range is from " << min_subinterval_seconds << " to " << max_subinterval_seconds << "." << std::endl;
+        o << "<Error> ivy engine API - go() - Invalid subinterval_seconds parameter value \"" << parameter_value << "\".  Permitted range is from " << min_subinterval_seconds << " to " << max_subinterval_seconds << "." << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
         kill_subthreads_and_exit();
@@ -2553,7 +2585,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     if (subinterval_seconds < 3.)
     {
         std::ostringstream o;
-        o << "<Error> ivy engine API - go() - Invalid subinterval_seconds parameter value \"" << go_parameters.retrieve("subinterval_seconds") << "\".  Permitted range is from " << min_subinterval_seconds << " to " << max_subinterval_seconds << "." << std::endl;
+        o << "<Error> ivy engine API - go() - Invalid subinterval_seconds parameter value \"" << parameter_value << "\".  Permitted range is from " << min_subinterval_seconds << " to " << max_subinterval_seconds << "." << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
         kill_subthreads_and_exit();
@@ -2611,34 +2643,70 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     }
     min_measure_count = (int) ceil( measure_seconds / subinterval_seconds);
 
-//----------------------------------- no_perf
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    go_parameters.retrieve("no_perf"))
-           || stringCaseInsensitiveEquality(std::string("true"),  go_parameters.retrieve("no_perf"))
-           || stringCaseInsensitiveEquality(std::string("yes"),   go_parameters.retrieve("no_perf")) ) no_subsystem_perf = true;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   go_parameters.retrieve("no_perf"))
-           || stringCaseInsensitiveEquality(std::string("false"), go_parameters.retrieve("no_perf"))
-           || stringCaseInsensitiveEquality(std::string("no"),    go_parameters.retrieve("no_perf")) ) no_subsystem_perf = false;
+//----------------------------------- suppress_perf
+    parameter_value = go_parameters.retrieve("suppress_perf");
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
+           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
+           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) suppress_subsystem_perf = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
+           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
+           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) suppress_subsystem_perf = false;
     else
     {
         ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid no_perf parameter \"" << go_parameters.retrieve("no_perf") << "\".  Must be \"on\" or \"off\"." << std::endl;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid suppress_perf parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+
+//----------------------------------- stepcsv
+    parameter_value = go_parameters.retrieve("stepcsv");
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
+           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
+           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) stepcsv = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
+           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
+           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) stepcsv = false;
+    else
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid stepcsv parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+
+//----------------------------------- storcsv
+    parameter_value = go_parameters.retrieve("storcsv");
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
+           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
+           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) storcsv = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
+           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
+           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) storcsv = false;
+    else
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid storcsv parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
     }
 
 
-//----------------------------------- no_ldev
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    go_parameters.retrieve("no_ldev"))
-           || stringCaseInsensitiveEquality(std::string("true"),  go_parameters.retrieve("no_ldev"))
-           || stringCaseInsensitiveEquality(std::string("yes"),   go_parameters.retrieve("no_ldev")) ) skip_ldev_data = true;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   go_parameters.retrieve("no_ldev"))
-           || stringCaseInsensitiveEquality(std::string("false"), go_parameters.retrieve("no_ldev"))
-           || stringCaseInsensitiveEquality(std::string("no"),    go_parameters.retrieve("no_ldev")) ) skip_ldev_data = false;
+//----------------------------------- skip_LDEV
+    parameter_value = go_parameters.retrieve("skip_LDEV");
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
+           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
+           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) skip_ldev_data = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
+           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
+           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) skip_ldev_data = false;
     else
     {
         ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid no_ldev parameter \"" << go_parameters.retrieve("no_ldev") << "\".  Must be \"on\" or \"off\"." << std::endl;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid skip_LDEV parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
@@ -2646,16 +2714,17 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
 
 //----------------------------------- cooldown_by_wp
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    go_parameters.retrieve("cooldown_by_wp"))
-           || stringCaseInsensitiveEquality(std::string("true"),  go_parameters.retrieve("cooldown_by_wp"))
-           || stringCaseInsensitiveEquality(std::string("yes"),   go_parameters.retrieve("cooldown_by_wp")) ) cooldown_by_wp = true;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   go_parameters.retrieve("cooldown_by_wp"))
-           || stringCaseInsensitiveEquality(std::string("false"), go_parameters.retrieve("cooldown_by_wp"))
-           || stringCaseInsensitiveEquality(std::string("no"),    go_parameters.retrieve("cooldown_by_wp")) ) cooldown_by_wp = false;
+    parameter_value = go_parameters.retrieve("cooldown_by_wp");
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
+           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
+           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) cooldown_by_wp = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
+           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
+           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) cooldown_by_wp = false;
     else
     {
         ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid cooldown_by_wp parameter \"" << go_parameters.retrieve("cooldown_by_wp") << "\".  Must be \"on\" or \"off\"." << std::endl;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid cooldown_by_wp parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
@@ -2674,12 +2743,13 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
 
 //----------------------------------- cooldown_by_MP_busy
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    go_parameters.retrieve("cooldown_by_MP_busy"))
-           || stringCaseInsensitiveEquality(std::string("true"),  go_parameters.retrieve("cooldown_by_MP_busy"))
-           || stringCaseInsensitiveEquality(std::string("yes"),   go_parameters.retrieve("cooldown_by_MP_busy")) ) cooldown_by_MP_busy = true;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   go_parameters.retrieve("cooldown_by_MP_busy"))
-           || stringCaseInsensitiveEquality(std::string("false"), go_parameters.retrieve("cooldown_by_MP_busy"))
-           || stringCaseInsensitiveEquality(std::string("no"),    go_parameters.retrieve("cooldown_by_MP_busy")) ) cooldown_by_MP_busy = false;
+    parameter_value = go_parameters.retrieve("cooldown_by_MP_busy");
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
+           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
+           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) cooldown_by_MP_busy = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
+           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
+           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) cooldown_by_MP_busy = false;
     else
     {
         ostringstream o;
@@ -2688,6 +2758,22 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         std::cout << o.str();
         kill_subthreads_and_exit();
     }
+
+    //----------------------------------- cooldown_by_MP_busy_stay_down_time_seconds
+    try
+    {
+        cooldown_by_MP_busy_stay_down_time_seconds = number_optional_trailing_percent(rewrite_HHMMSS_to_seconds(go_parameters.retrieve("cooldown_by_MP_busy_stay_down_time_seconds")));
+    }
+    catch(std::invalid_argument& iaex)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine API - go() - Invalid cooldown_by_MP_busy_stay_down_time_seconds parameter value \"" << go_parameters.retrieve("cooldown_by_MP_busy_stay_down_time_seconds") << "\"." << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        kill_subthreads_and_exit();
+    }
+
+    cooldown_by_MP_busy_stay_down_count_limit = (unsigned int) std::ceil(cooldown_by_MP_busy_stay_down_time_seconds / subinterval_seconds);
 
 
 //----------------------------------- subsystem_busy_threshold  - goes with cooldown_by_MP_busy
@@ -3099,7 +3185,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
         try
         {
-            accuracy_plus_minus_fraction = number_optional_trailing_percent(accuracy_plus_minus_parameter);
+            accuracy_plus_minus_fraction = number_optional_trailing_percent(accuracy_plus_minus_parameter,"accuracy_plus_minus");
         }
         catch (std::invalid_argument& iaex)
         {
@@ -3115,7 +3201,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         confidence_parameter = go_parameters.retrieve("confidence");
         try
         {
-            confidence = number_optional_trailing_percent(confidence_parameter);
+            confidence = number_optional_trailing_percent(confidence_parameter,"confidence");
         }
         catch(std::invalid_argument& iae)
         {
@@ -3133,7 +3219,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         {
             std::string ts = go_parameters.retrieve("timeout_seconds");
             trim(ts);
-            timeout_seconds = number_optional_trailing_percent(rewrite_HHMMSS_to_seconds(ts));
+            timeout_seconds = number_optional_trailing_percent(rewrite_HHMMSS_to_seconds(ts),"timeout_seconds");
         }
         catch(std::invalid_argument& iae)
         {
@@ -3148,7 +3234,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         min_wp_parameter = go_parameters.retrieve("min_wp");
         try
         {
-            min_wp = number_optional_trailing_percent(min_wp_parameter);
+            min_wp = number_optional_trailing_percent(min_wp_parameter,"min_wp");
 
         }
         catch (std::invalid_argument& iaex)
@@ -3171,7 +3257,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         max_wp_parameter = go_parameters.retrieve("max_wp");
         try
         {
-            max_wp = number_optional_trailing_percent(go_parameters.retrieve("max_wp"));
+            max_wp = number_optional_trailing_percent(go_parameters.retrieve("max_wp"), "max_wp");
 
         }
         catch (std::invalid_argument& iaex)
@@ -3194,7 +3280,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         max_wp_change_parameter = go_parameters.retrieve("max_wp_change");
         try
         {
-            max_wp_change = number_optional_trailing_percent(max_wp_change_parameter);
+            max_wp_change = number_optional_trailing_percent(max_wp_change_parameter,"max_wp_change");
 
         }
         catch (std::invalid_argument& iaex)

@@ -1110,7 +1110,7 @@ void RollupInstance::print_by_subinterval_header()
     {
         o << subsystem_summary_data::csvHeadersPartOne();
         o << ",host IOPS per drive,host decimal MB/s per drive,application service time Littles law q depth per drive";
-        o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
+        if ( ! m_s.suppress_subsystem_perf ) o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
     }
 
     o << SubintervalOutput::csvTitles();
@@ -1171,7 +1171,7 @@ void RollupInstance::print_subinterval_csv_line(
             << ',' // cooldown duration
             << ',' ; // beginning of the Write Pending field
 
-    if ( m_s.cooldown_WP_watch_set.size() && (!m_s.no_subsystem_perf) )
+    if ( m_s.cooldown_WP_watch_set.size() && (!m_s.suppress_subsystem_perf) )
     {
         try
         {
@@ -1256,7 +1256,7 @@ void RollupInstance::print_subinterval_csv_line(
             csvline << "," << std::fixed << std::setprecision(1) << (st.avg()*iops_per_drive);
         }
 
-        if ( ! m_s.no_subsystem_perf )
+        if ( ! m_s.suppress_subsystem_perf )
         {
             // print the comparisions between application & subsystem IOPS, MB/s, service time
 
@@ -1905,32 +1905,35 @@ void RollupInstance::print_measurement_summary_csv_line()
         }
     }
 
+    if (m_s.stepcsv) // Re-write by-subinterval csv files, this time filling in "warmup", "measurment", and "cooldown".
     {
-        struct stat struct_stat;
-        if(0 == stat(by_subinterval_csv_filename.c_str(),&struct_stat))
         {
-            // if the file already exists, delete it
-            std::remove(by_subinterval_csv_filename.c_str());
+            struct stat struct_stat;
+            if(0 == stat(by_subinterval_csv_filename.c_str(),&struct_stat))
+            {
+                // if the file already exists, delete it
+                std::remove(by_subinterval_csv_filename.c_str());
+            }
+            else
+            {
+                std::ostringstream o;
+                o << "<Error> Did not find provisional copy of \"" << by_subinterval_csv_filename << "\" "
+                    << "for " << attributeNameComboID << "=" << rollupInstanceID
+                    << " when about to replace it with the final version with the \"warmup\" / \"measurement\" / \"cooldown\" column filled in.\n";
+                std::cout << o.str();
+                log(m_s.masterlogfile,o.str());
+                m_s.kill_subthreads_and_exit();
+                exit(-1);
+            }
         }
-        else
+
+        print_by_subinterval_header();
+
+        // print the detail lines for each subinterval
+        for (unsigned int i = 0; i < (subintervals.sequence).size(); i++)
         {
-            std::ostringstream o;
-            o << "<Error> Did not find provisional copy of \"" << by_subinterval_csv_filename << "\" "
-                << "for " << attributeNameComboID << "=" << rollupInstanceID
-                << " when about to replace it with the final version with the \"warmup\" / \"measurement\" / \"cooldown\" column filled in.\n";
-            std::cout << o.str();
-            log(m_s.masterlogfile,o.str());
-            m_s.kill_subthreads_and_exit();
-            exit(-1);
+            print_subinterval_csv_line(i, false /* is not provisional */);
         }
-    }
-
-    print_by_subinterval_header();
-
-    // print the detail lines for each subinterval
-    for (unsigned int i = 0; i < (subintervals.sequence).size(); i++)
-    {
-        print_subinterval_csv_line(i, false /* is not provisional */);
     }
 }
 

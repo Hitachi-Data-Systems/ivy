@@ -59,6 +59,7 @@ public:
  	RunningStat<FloatType,IntType>& operator+=(const RunningStat<FloatType,IntType> &rhs);
 
         void clear();
+        void no_op();
         void push(FloatType x);
         IntType count() const;
 	FloatType min() const;
@@ -96,6 +97,12 @@ void RunningStat<FloatType, IntType>::clear()
 #ifdef KURTOSISKEW
 	M3=M4=0.;
 #endif // KURTOSISKEW
+}
+
+template <typename FloatType, typename IntType>
+void RunningStat<FloatType, IntType>::no_op()
+{
+    return;
 }
 
 template <typename FloatType, typename IntType>

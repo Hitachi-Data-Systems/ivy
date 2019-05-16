@@ -45,7 +45,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     m_s.stepFolder = m_s.testFolder + std::string("/") + m_s.stepNNNN + std::string(".") + m_s.stepName;
 
-    if (mkdir(m_s.stepFolder.c_str(),S_IRWXU | S_IRWXG | S_IRWXO))
+    if (m_s.stepcsv && mkdir(m_s.stepFolder.c_str(),S_IRWXU | S_IRWXG | S_IRWXO))
     {
         std::ostringstream o;
         o << std::endl << "writhe and fail, gasping \"Died trying to make test step folder \"" << m_s.stepFolder << "\".   Uuuugg." << std::endl;
@@ -65,6 +65,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 //    m_s.have_best_of_wurst = false;
     m_s.have_timeout_rollup = false;
 
+    m_s.cooldown_by_MP_busy_stay_down_count = 0;
 
     m_s.min_sequential_fill_progress = 1.0;
     m_s.keep_filling = false;
@@ -84,8 +85,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     m_s.cruiseSeconds.clear();
     m_s.continueCooldownStopAckSeconds.clear();
 
-    m_s.now_doing_no_perf_cooldown = false;
-    m_s.no_perf_cooldown_subinterval_count = 0;
+    m_s.now_doing_suppress_perf_cooldown = false;
+    m_s.suppress_perf_cooldown_subinterval_count = 0;
 
     // If we have command devices, we perform a t=0 gather.
 
@@ -94,12 +95,12 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     // The t=0 gather time also informs us where to do the gather in subinterval 0,
     // the gather that will be rolled up at the beginning of subinterval 1.
 
-    // Even when we have the -no_perf command line option, we still perform the t=0 gather
+    // Even when we have the -suppress_perf command line option, we still perform the t=0 gather
     // before I/O starts running, because
     // 1) some config data appears in performance data - ["subsystem"],["supsystem"]
     //    "max_MP_io_buffers" & "total_LDEV_capacity_512_sectors", and this gets
     //    copied to the configuration data from the t=0 gather, and
-    // 2) with both -no_perf and (cooldown_by_wp and/or cooldown by _MP_busy) we are
+    // 2) with both -suppress_perf and (cooldown_by_wp and/or cooldown by _MP_busy) we are
     //    going to "fake out" collection while I/O is being gathered, pushing empty
     //    gather_data objects for each subinterval while I/O is running so that all
     //    the data structures have the right number of gathers when we turn gathers
@@ -143,7 +144,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
                 {
                     std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
-                    p_pds->commandString = std::string("gather");
+                    p_pds->commandString = std::string("t=0 gather");
                     p_pds->command=true;
                     p_pds->commandComplete=false;
                     p_pds->commandSuccess=false;
@@ -628,7 +629,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         long double sendup_time = ivytime(barrier_1_time - m_s.subintervalEnd).getlongdoubleseconds();
 
         // print the by-subinterval "provisional" csv line with a blank "warmup" / "measurement" / "cooldown" column
-        for (auto& pear: m_s.rollups.rollups)
+        if (m_s.stepcsv) for (auto& pear: m_s.rollups.rollups)
         {
             for (auto& peach : pear.second->instances)
             {
@@ -677,7 +678,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
                 o << allAllSubintervalOutput.thumbnail(allAllSubintervalRollup.durationSeconds()) << std::endl;
 
-                if (m_s.haveCmdDev && ( (!m_s.no_subsystem_perf) || (m_s.now_doing_no_perf_cooldown && m_s.no_perf_cooldown_subinterval_count >= 2) ) )
+                if (m_s.haveCmdDev && ( (!m_s.suppress_subsystem_perf) || (m_s.now_doing_suppress_perf_cooldown && m_s.suppress_perf_cooldown_subinterval_count >= 2) ) )
                 {
                     o << m_s.getWPthumbnail(((*allAllIterator).second->subintervals.sequence.size())-1) << std::endl;
                     o << m_s.subsystem_thumbnail;
@@ -755,34 +756,30 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         if (m_s.in_cooldown_mode)
         {
-            m_s.no_perf_cooldown_subinterval_count++;
-            m_s.now_doing_no_perf_cooldown = true;
+            if (m_s.suppress_subsystem_perf)
+            {
+                m_s.suppress_perf_cooldown_subinterval_count++;
+                m_s.now_doing_suppress_perf_cooldown = true;
+            }
 
             ivytime now; now.setToNow();
 
             m_s.cooldown_duration = now - m_s.cooldown_start;
 
-            if (m_s.no_subsystem_perf && (m_s.cooldown_by_wp || m_s.cooldown_by_MP_busy) && m_s.no_perf_cooldown_subinterval_count <= 3 )
+            if (m_s.suppress_subsystem_perf && (m_s.cooldown_by_wp || m_s.cooldown_by_MP_busy) && m_s.suppress_perf_cooldown_subinterval_count <= 2 )
             {
                 m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
 
                 std::ostringstream o;
-                if (m_s.no_perf_cooldown_subinterval_count == 1)
-                {
-                    o << "With -no_perf and (-cooldown_by_wp and/or -cooldown_by_MP_busy), at least 2 additional cooldown subintervals running at IOPS = 0 will be performed with subsystem performance data gathers turned back on." << std::endl;
-                }
-                else
-                {
-                    o << "With -no_perf and (-cooldown_by_wp and/or -cooldown_by_MP_busy), this is subinterval " << (m_s.no_perf_cooldown_subinterval_count-1)
-                        << " of at least 2 additional cooldown subintervals running at IOPS = 0 with subsystem performance data gathers turned back on." << std::endl;
-                }
+                o << "With -suppress_perf this is IOPS=0 cooldown subinterval " << (m_s.suppress_perf_cooldown_subinterval_count)
+                    << " with subsystem gathers turned back on." << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
             }
             else if
             (
-                ( m_s.cooldown_by_wp && m_s.some_cooldown_WP_not_empty()     )
-             || ( m_s.cooldown_by_MP_busy && m_s.some_subsystem_still_busy() )
+                ( m_s.cooldown_by_MP_busy && m_s.some_subsystem_still_busy() )  // this clause has to go first to make sure we are counting the number of subintervals MP busy stays below the limit.
+             || ( m_s.cooldown_by_wp && m_s.some_cooldown_WP_not_empty()     )
             )
             {
                 m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
@@ -833,8 +830,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                         m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_FAILURE
                     )
                 &&  (
-                         ( m_s.cooldown_by_wp      && ( m_s.no_subsystem_perf || m_s.some_cooldown_WP_not_empty() ) )
-                      || ( m_s.cooldown_by_MP_busy && ( m_s.no_subsystem_perf || m_s.some_subsystem_still_busy()  ) )
+                         ( m_s.cooldown_by_wp      && ( m_s.suppress_subsystem_perf || m_s.some_cooldown_WP_not_empty() ) )
+                      || ( m_s.cooldown_by_MP_busy && ( m_s.suppress_subsystem_perf || m_s.some_subsystem_still_busy()  ) )
                     )
             )
             {
@@ -996,7 +993,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     p_pds->commandSuccess=false;
                     p_pds->commandErrorMessage.clear();
 
-                    if ( (!m_s.no_subsystem_perf) || (m_s.now_doing_no_perf_cooldown) )
+                    if ( (!m_s.suppress_subsystem_perf) || (m_s.now_doing_suppress_perf_cooldown) )
                     {
                         std::ostringstream o;
                         o << "Gathering from subsystem serial " << pear.first << std::endl;
@@ -1069,7 +1066,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     // HOWEVER - need to think about column titles when a metric doesn't appear until after the first gather.
 
-    for (auto& pear : m_s.subsystems)
+    if (m_s.stepcsv && m_s.storcsv) for (auto& pear : m_s.subsystems)
     {
         pear.second->print_subinterval_csv_line_set( pear.second->serial_number + std::string(".perf"));
     }
@@ -1163,9 +1160,9 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     m_s.rollups.print_measurement_summary_csv_line();
 
-    m_s.print_latency_csvfiles();
+    if (m_s.stepcsv) m_s.print_latency_csvfiles();
 
-    if (m_s.have_pid)
+    if (m_s.stepcsv && m_s.have_pid)
     {
         if (m_s.p_focus_rollup == nullptr) throw std::runtime_error("<Error> internal programming error - run_subinterval_sequence() - have_pid when printing pid csv files, but m_s.p_focus_rollup == nullptr.");
 

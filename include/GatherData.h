@@ -60,7 +60,7 @@ public:
 	uint64_t uint64_t_value(std::string name_associated_with_value_for_error_message = std::string(""));
 		// Throws std::invalid_argument if the original string value didn't represent a 64 bit unsigned integer value.
 
-	ivy_float numeric_value(std::string name_associated_with_value_for_error_message = std::string(""));
+	ivy_float numeric_value(const std::string& name_associated_with_value_for_error_message);
 		// Throws std::invalid_argument if the original string value didn't represent a floating point value.
 
 		// The string representing the floating point value, that is, "value", if it has a percent sign '%' appended, the numeric value is divided by 100.

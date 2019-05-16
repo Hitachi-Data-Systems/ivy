@@ -24,7 +24,7 @@
 
 extern bool routine_logging;
 
-void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_lk)
+void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_lk, bool t_0_gather)
 {
     ivytime entry_time; entry_time.setToNow();
 
@@ -35,10 +35,10 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
 
     bool fake_gather;
 
-    if (m_s.now_doing_no_perf_cooldown)                      { fake_gather = false; }
-    else if ( !m_s.no_subsystem_perf )                       { fake_gather = false; }
-    else if ( p_Hitachi_RAID_subsystem->gathers.size() > 0 ) { fake_gather = true;  }
-    else                                                     { fake_gather = false; }
+    if      (  m_s.now_doing_suppress_perf_cooldown)          { fake_gather = false; }
+    else if ( !m_s.suppress_subsystem_perf )                  { fake_gather = false; }
+    else if (  p_Hitachi_RAID_subsystem->gathers.size() > 0 ) { fake_gather = true;  }
+    else                                                      { fake_gather = false; } // t=0 gather
 
     ivytime tn_gather_start, tn_gather_complete;
 
@@ -55,7 +55,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
 
         if (fake_gather)
         {
-            o << "  With command line option -no_perf, and with I/O being driven, doing a fake gather.";
+            o << "  With command line option -suppress_perf, and with I/O being driven, doing a fake gather.";
         }
 
         o << "  There are data from " << p_Hitachi_RAID_subsystem->gathers.size() << " previous gathers." << std::endl;
@@ -67,13 +67,10 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
     GatherData gd;
     p_Hitachi_RAID_subsystem->gathers.push_back(gd);
 
-
     // run whatever ivy_cmddev commands we need to, and parse the output pointing at the current GatherData object.
     GatherData& currentGD = p_Hitachi_RAID_subsystem->gathers.back();
 
-
     gatherStart = tn_gather_start;
-
 
     if (fake_gather)
     {
@@ -82,6 +79,46 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
     }
     else
     {
+        if
+        (
+            t_0_gather
+         || ( m_s.now_doing_suppress_perf_cooldown && m_s.suppress_perf_cooldown_subinterval_count == 1 )
+        )
+        {
+            try
+            {
+                send_and_get_OK("reset rollover counters");
+            }
+            catch (std::runtime_error& reex)
+            {
+                std::ostringstream o;
+                o << "\"reset rollover counters\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+                log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                kill_ssh_and_harvest();
+                commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                master_slave_cv.notify_all();
+                return;
+            }
+        }
+        else
+        {
+            try
+            {
+                send_and_get_OK("start normal gather");
+            }
+            catch (std::runtime_error& reex)
+            {
+                std::ostringstream o;
+                o << "\"start normal gather\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+                log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                kill_ssh_and_harvest();
+                commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                master_slave_cv.notify_all();
+                return;
+            }
+
+        }
+
         try
         {
             send_and_get_OK("get CLPRdetail");
@@ -368,179 +405,24 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
 
 
     if (
-         ( (!m_s.no_subsystem_perf) && (p_Hitachi_RAID_subsystem->gathers.size() > 1) )
-      || ( m_s.no_perf_cooldown_subinterval_count >= 2 )
+         ( (!m_s.suppress_subsystem_perf) && (p_Hitachi_RAID_subsystem->gathers.size() > 1) )
+      || ( m_s.suppress_perf_cooldown_subinterval_count >= 2 )
     )
     {
         // post processing for the end of a subinterval (not for the t=0 gather)
 
-        GatherData& lastGD = p_Hitachi_RAID_subsystem->gathers[p_Hitachi_RAID_subsystem->gathers.size() - 2 ];
+        if (!m_s.suppress_subsystem_perf) { m_s.rollups.not_participating.push_back(subsystem_summary_data()); }
 
-        // compute & store MP % busy from MP counter values
-
-        auto this_element_it = currentGD.data.find(std::string("MP_core"));
-        auto last_element_it =    lastGD.data.find(std::string("MP_core"));
-
-        if (this_element_it != currentGD.data.end() && last_element_it != lastGD.data.end()) // processing MP_core from 2nd gather on
-        {
-            std::map<std::string, RunningStat<ivy_float, ivy_int>> mpu_busy;
-
-            for (auto this_instance_it = this_element_it->second.begin(); this_instance_it != this_element_it->second.end(); this_instance_it++)
-            {
-                // for each MP_core instance
-
-                std::string MP_core_instance_name = this_instance_it->first;
-
-                auto last_instance_it = last_element_it->second.find(MP_core_instance_name);
-
-                if (last_instance_it == last_element_it->second.end() )
-                {
-                    throw std::runtime_error(std::string("pipe_driver_subthread.cpp: Computation of subsystem MP % busy as delta busy counter divided by delta elapsed counter - corresponding MP_core not found in previous gather for current gather location =\"") + MP_core_instance_name + std::string("\"."));
-                }
-
-                auto this_elapsed_it = this_instance_it->second.find(std::string("elapsed_counter"));
-                auto last_elapsed_it = last_instance_it->second.find(std::string("elapsed_counter"));
-                auto this_busy_it    = this_instance_it->second.find(std::string("busy_counter"));
-                auto last_busy_it    = last_instance_it->second.find(std::string("busy_counter"));
-
-                if (this_elapsed_it == this_instance_it->second.end())
-                {
-                    std::ostringstream o;
-                    o 	<< "pipe_driver_subthread.cpp: Computation of subsystem MP % busy as delta busy counter divided by delta elapsed counter -"
-                        << "this gather instance " << this_instance_it->first << " does not have has metric_value elapsed_counter." << std::endl;
-                    log(logfilename,o.str());
-                    throw std::runtime_error(o.str());
-                }
-
-                if (last_elapsed_it == last_instance_it->second.end())
-                {
-                    std::ostringstream o;
-                    o 	<< "pipe_driver_subthread.cpp: Computation of subsystem MP % busy as delta busy counter divided by delta elapsed counter -"
-                        << "last gather instance " << last_instance_it->first << " does not have has metric_value elapsed_counter." << std::endl;
-                    log(logfilename,o.str());
-                    throw std::runtime_error(o.str());
-                }
-
-                if (this_busy_it == this_instance_it->second.end())
-                {
-                    std::ostringstream o;
-                    o 	<< "pipe_driver_subthread.cpp: Computation of subsystem MP % busy as delta busy counter divided by delta elapsed counter -"
-                        << "this gather instance " << this_instance_it->first << " does not have has metric_value busy_counter." << std::endl;
-                    log(logfilename,o.str());
-                    throw std::runtime_error(o.str());
-                }
-
-                if (last_busy_it == last_instance_it->second.end())
-                {
-                    std::ostringstream o;
-                    o 	<< "pipe_driver_subthread.cpp: Computation of subsystem MP % busy as delta busy counter divided by delta elapsed counter -"
-                        << "last gather instance " << last_instance_it->first << " does not have has metric_value busy_counter." << std::endl;
-                    log(logfilename,o.str());
-                    throw std::runtime_error(o.str());
-                }
-
-                uint64_t this_elapsed = this_elapsed_it->second.uint64_t_value("this_elapsed_it->second"); // throws std::invalid_argument
-                uint64_t last_elapsed = last_elapsed_it->second.uint64_t_value("last_elapsed_it->second"); // throws std::invalid_argument
-                uint64_t this_busy    = this_busy_it   ->second.uint64_t_value("this_busy_it   ->second"); // throws std::invalid_argument
-                uint64_t last_busy    = last_busy_it   ->second.uint64_t_value("last_busy_it   ->second"); // throws std::invalid_argument
-
-                std::ostringstream os;
-                if (this_elapsed<= last_elapsed || this_busy < last_busy)
-                {
-                    std::ostringstream o;
-                    o 	<< "pipe_driver_subthread.cpp: Computation of subsystem MP % busy as delta busy counter divided by delta elapsed counter - "
-                        << "elapsed_counter this gather = " << this_elapsed << ", elapsed_counter last gather = " << last_elapsed
-                        << ", busy_counter this gather = " << this_busy << ", busy_counter last gather = " << last_busy << std::endl
-                        << "Elapsed counter did not increase, or busy counter decreased";
-                    log(logfilename,o.str());
-                    throw std::runtime_error(o.str());
-                }
-                std::ostringstream o;
-                ivy_float busy_percent = 100. * ( ((ivy_float) this_busy) - ((ivy_float) last_busy) ) / ( ((ivy_float) this_elapsed) - ((ivy_float) last_elapsed) );
-                o << std::fixed <<  std::setprecision(3) << busy_percent  << "%";
-                {
-                    auto& metric_value = this_instance_it->second["busy_percent"];
-                    metric_value.start = this_elapsed_it->second.start;
-                    metric_value.complete = this_elapsed_it->second.complete;
-                    metric_value.value = o.str();
-                    currentGD.data["MP_busy"]["all"][MP_core_instance_name] = metric_value;
-                }
-                auto this_MPU_it = this_instance_it->second.find(std::string("MPU"));
-                if (this_MPU_it != this_instance_it->second.end())
-                {
-                    mpu_busy[this_MPU_it->second.value/* MPU as decimal digits HM800: 0-3, RAID800 0-15, RAID900 0-11 */].push(busy_percent);
-                }
-            }
-
-            for (auto& pear : mpu_busy)
-            {
-                std::ostringstream m;
-                m << pear.first; // MPU number
-                auto& mv = currentGD.data["MPU"][m.str()];
-                {
-                    std::ostringstream v;
-                    v <<                                       pear.second.count();
-                    mv["count"].value = v.str();
-                }
-                {
-                    std::ostringstream v;
-                    v << std::fixed << std::setprecision(3) << pear.second.avg() << "%";
-                    mv["avg_busy"].value = v.str();
-                }
-                {
-                    std::ostringstream v;
-                    v << std::fixed << std::setprecision(3) << pear.second.min() << "%";
-                    mv["min_busy"].value = v.str();
-                }
-                {
-                    std::ostringstream v;
-                    v << std::fixed << std::setprecision(3) << pear.second.max() << "%";
-                    mv["max_busy"].value = v.str();
-                }
-            }
-        } //  processing MP_core from 2nd gather on
-
-
-        // post-process LDEV I/O data only starts from third subinterval, subinterval #1
-        // because the t=0 gather is asynchronous from "Go!", so at the end of subinterval #0
-        // there is no valid delta-DKC time yet.  The calculations work starting the 3rd subinterval.
-
-
-        // Note that the suffix "_count" at the end of a metric name is significant.
-
-        // Metric names ending in _count are [usually cumulative] counters that require some
-        // further processing before they are "consumeable".
-
-        // So in the code below, we create whatever derived metrics we want from the raw collected data, including the counts.
-
-        // Metrics whose name ends in _count are ignored when printing csv file titles and data lines.
-
-        // Even though the _count metrics don't print in by-step subsystem performance csv files, they are retained in the data structures
-        // so that you can easily interpret the raw counter values over any time period.
-
-        // This makes it easy for a MeasureController to get an average value over a subinterval sequence by looking at the values
-        // of raw cumulative counters at the beginning and end of the sequence and dividing the delta by the elapsed time.
-
-        // Note that the way ivy_cmddevice operates, cumulative counter values are monotonically increasing
-        // from the time that the ivy_cmddev executable starts.  This is because ivy_cmddev extends every
-        // RMLIB unsigned 32 bit cumulative counter value that is subject to rollovers to a 64-bit unsigned value
-        // using as the upper 32 bits the number of rollovers that ivy_cmddev has seen for this particular counter.
-
-        // For 64-bit unsigned RMLIB raw counters, ivy_cmddev reports a 64-bit unsigned int representing the
-        // amount that the raw counter has incremented since the ivy_cmddev run started.
-
-        if (!m_s.no_subsystem_perf) { m_s.rollups.not_participating.push_back(subsystem_summary_data()); }
-
-        void rollup_Hitachi_RAID_data(const std::string&, Hitachi_RAID_subsystem*, GatherData& currentGD, GatherData& lastGD);
+        void rollup_Hitachi_RAID_data(const std::string&, Hitachi_RAID_subsystem*, GatherData& currentGD);
 
         if
         (
-            ( (!m_s.no_subsystem_perf) && (p_Hitachi_RAID_subsystem->gathers.size() > 2) )
+            ( (!m_s.suppress_subsystem_perf) && (p_Hitachi_RAID_subsystem->gathers.size() > 1) )
          ||
-            ( m_s.no_subsystem_perf && (m_s.no_perf_cooldown_subinterval_count > 2) )
+            ( m_s.suppress_subsystem_perf && (m_s.suppress_perf_cooldown_subinterval_count > 1) )
         )
         {
-            rollup_Hitachi_RAID_data(logfilename, p_Hitachi_RAID_subsystem, currentGD, lastGD);
+            rollup_Hitachi_RAID_data(logfilename, p_Hitachi_RAID_subsystem, currentGD);
         }
 
 

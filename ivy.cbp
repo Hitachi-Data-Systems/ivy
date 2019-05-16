@@ -810,12 +810,6 @@
 			<Option target="ivymaster" />
 			<Option target="test_hosts_list" />
 		</Unit>
-		<Unit filename="src/ivy_RAID800.cpp">
-			<Option target="ivymaster" />
-		</Unit>
-		<Unit filename="src/ivy_RAID900.cpp">
-			<Option target="ivymaster" />
-		</Unit>
 		<Unit filename="src/ivy_engine.cpp">
 			<Option target="ivymaster" />
 		</Unit>

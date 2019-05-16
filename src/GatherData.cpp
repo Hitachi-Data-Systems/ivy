@@ -62,7 +62,7 @@ uint64_t metric_value::uint64_t_value(std::string name_associated_with_value_for
 	return n;
 }
 
-ivy_float metric_value::numeric_value(std::string name_associated_with_value_for_error_message)
+ivy_float metric_value::numeric_value(const std::string& name_associated_with_value_for_error_message)
 {
 	std::string s = value;
 	trim(s);
