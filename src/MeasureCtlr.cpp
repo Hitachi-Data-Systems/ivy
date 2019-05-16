@@ -175,7 +175,7 @@ int MeasureCtlr::evaluateSubinterval()
 //*debug*/ {std::ostringstream o; o << "current=" << current << ", fromLast=" << fromLast << ", now_processing " << now_processing << std::endl;std::cout<<o.str();log(m_s.masterlogfile,o.str());}
 
 		// we see if Write Pending was within the slew (plus or minus) limit.  We only consider subinterval subsequences if WP is "stable", or at least not slewing too much over the potential measurement period
-		if (!m_s.no_subsystem_perf) for (auto& pear : m_s.cooldown_WP_watch_set)
+		if (!m_s.suppress_subsystem_perf) for (auto& pear : m_s.cooldown_WP_watch_set)
 		{
 			ivy_float wp;
 

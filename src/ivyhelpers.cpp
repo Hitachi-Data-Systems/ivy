@@ -984,7 +984,7 @@ bool isPlusSignCombo(std::string& callers_error_message, int& callersNumberOfFie
 
 
 
-ivy_float number_optional_trailing_percent(const std::string& s /* e.g. "1.2%" */, std::string name_associated_with_value_for_error_message)  // throws std::invalid_argument
+ivy_float number_optional_trailing_percent(const std::string& s /* e.g. "1.2%" */, const std::string& name_associated_with_value_for_error_message)  // throws std::invalid_argument
 {
 	if (!std::regex_match(s, float_number_optional_trailing_percent_regex))
 	{

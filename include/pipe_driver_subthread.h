@@ -232,7 +232,7 @@ public:
 // ivy_cmddev methods:
 	void get_token();  // throws std::invalid_argument, std::runtime_error
 	void process_ivy_cmddev_response(GatherData& gd, ivytime start); // throws std::invalid_argument, std::runtime_error
-    void pipe_driver_gather(std::unique_lock<std::mutex>&);
+    void pipe_driver_gather(std::unique_lock<std::mutex>&,bool /*true for t=0 gather*/);
     void process_cmddev_commands(std::unique_lock<std::mutex>&);
     void process_ivydriver_commands(std::unique_lock<std::mutex>&);
 };

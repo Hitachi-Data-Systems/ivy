@@ -75,15 +75,24 @@ public:
 
     bool overall_success {false};
 
+    bool stepcsv_default {true}, stepcsv {true};
+        // Command line option -no_stepcsv turns this off.  It's the default for the "stepcsv" Go parameter, which
+        // when turned "on" causes "step" folders to be created holding by-subinterval csv files.
+
+    bool storcsv_default {false}, storcsv {false};
+        // Command line option -storcsv turns this on.  It's the default for the "storcsv" Go parameter, which
+        // when turned "on" and when stepcsv is also on creates within the step folder a further subfolder
+        // holding by-subinterval csv files for each Hitachi subsystem's performance metrics.
+
     bool doing_t0_gather {false};
 
     bool formula_wrapping {true};
     bool use_command_device {true};
     bool skip_ldev_data_default {false};
     bool skip_ldev_data {false};
-    bool no_subsystem_perf_default {false};
-    bool no_subsystem_perf {false};
-    bool now_doing_no_perf_cooldown {false};
+    bool suppress_subsystem_perf_default {false};
+    bool suppress_subsystem_perf {false};
+    bool now_doing_suppress_perf_cooldown {false};
         // This tells pipe_driver_subthread for a command device even when no_subsytem_perf is true
         // that it's past the first cooldown subinterval, and that edit_rollup "all=all" "IOPS=0"
         // has been sent out, and subsystem gathers need to resume to support the
@@ -91,7 +100,11 @@ public:
 	bool cooldown_by_wp {true};  // whether the feature has been selected in the ivyscript program
 	bool cooldown_by_MP_busy {true};  // whether the feature has been selected in the ivyscript program
 	bool in_cooldown_mode {false}; // whether the ivy engine is in cooldown mode after SUCCESS or FAILURE
-    unsigned int no_perf_cooldown_subinterval_count {0};
+    unsigned int cooldown_by_MP_busy_stay_down_count_limit;  // set using Go parameter cooldown_by_MP_busy_stay_down_time_seconds defaulting to one subinterval, and that you can set to "5:00" to mean 5 minutes or "1:00:00" to mean an hour.
+        // The Go parameter in seconds / minutes / hours is converted to a subinterval count in cooldown_by_MP_busy_stay_down_count_limit;
+    ivy_float cooldown_by_MP_busy_stay_down_time_seconds;
+    unsigned int cooldown_by_MP_busy_stay_down_count;
+    unsigned int suppress_perf_cooldown_subinterval_count {0};
 	ivy_float subsystem_busy_threshold { -1. }; // this gets set when parsing go parameters, see subsystem_busy_threshold_default
 	ivy_float subsystem_WP_threshold { -1. }; // this gets set when parsing go parameters, see subsystem_busy_threshold_default
 	ivytime cooldown_start;

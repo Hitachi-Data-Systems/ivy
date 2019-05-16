@@ -169,8 +169,6 @@ std::pair<bool /*success*/, std::string /* message */>
         return std::make_pair(false,o.str());
     }
 
-    test_start_time.setToNow();
-
     initialize_io_time_clip_levels();
 
     availableControllers[toLower(std::string("measure"))] = &the_dfc;
@@ -860,10 +858,10 @@ std::pair<bool /*success*/, std::string /* message */>
     availableTestLUNs.print_csv_file(atlcsv);
     atlcsv.close();
 
-    if (m_s.haveCmdDev && m_s.no_subsystem_perf)
+    if (m_s.haveCmdDev && m_s.suppress_subsystem_perf)
     {
         std::ostringstream o;
-        o << "Subsystem performance data collection while driving I/O suppressed by -no_perf command line option." << std::endl;
+        o << "Subsystem performance data collection while driving I/O suppressed by -suppress_perf command line option." << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
     }

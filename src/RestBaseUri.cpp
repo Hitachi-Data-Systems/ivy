@@ -296,6 +296,7 @@ std::string JSON_SCHEMA = R"( {
                 "measure_seconds" : { "type": "integer" },
                 "cooldown_by_wp": { "type": "boolean" },
                 "cooldown_by_MP_busy": { "type": "boolean" },
+                "cooldown_by_MP_busy_stay_down_time_seconds": { "type": "integer" },
                 "subsystem_busy_threshold": { "$ref": "#/definitions/percentageschema" },
                 "subsystem_WP_threshold": { "$ref": "#/definitions/percentageschema" },
                 "measure": { "type": {

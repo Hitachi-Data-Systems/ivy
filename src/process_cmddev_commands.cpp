@@ -207,9 +207,13 @@ void pipe_driver_subthread::process_cmddev_commands(std::unique_lock<std::mutex>
     }
     // indent level processing command device commands
 
+    else if (0==std::string("t=0 gather").compare(commandString))
+    {
+        pipe_driver_gather(s_lk,true);
+    }
     else if (0==std::string("gather").compare(commandString))
     {
-        pipe_driver_gather(s_lk);
+        pipe_driver_gather(s_lk,false);
     }
     else
     {

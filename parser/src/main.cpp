@@ -53,6 +53,15 @@ void usage_message(char* argv_0)
         << "     Turns on REST API service (ignores ivyscript in command line)" << std::endl << std::endl
         << "-log" << std::endl
         << "     Turns on logging of routine events." << std::endl << std::endl
+        << "-no_stepcsv" << std::endl
+        << "     Sets the default for the \"stepcsv\" [Go] parameter to \"off\" instead of \"on\"." << std::endl
+        << "     This suppresses creation of a \"step\" subfolder with by-subinterval csv files for rollups." << std::endl << std::endl
+        << "-storcsv" << std::endl
+        << "     Sets the default for the \"storcsv\" [Go] parameter to \"on\" instead of \"off\"." << std::endl
+        << "     For each step (for each [Go]), if \"stepcsv\" is \"on\" to create a step subfolder with" << std::endl
+        << "     by-subinterval csv files, if the \"storcsv\" [Go] parameter is also \"on\", for each" << std::endl
+        << "     Hitachi subsystem with a command device connector, a nested subfolder is created containing" << std::endl
+        << "     by-subinterval subsystem data csv files." << std::endl << std::endl
         << "-no_wrap" << std::endl
         << "     When opening ivy csv files with Excel, parity group names (e.g. 1-1)" << std::endl
         << "     are interpreted by Excel as dates and LDEV names (e.g. 10:00) as times."<<std::endl
@@ -60,13 +69,13 @@ void usage_message(char* argv_0)
         << "     so they will look OK in Excel. To supress this formula rapping, use -no_wrap." << std::endl << std::endl
         << "-no_cmd"<< std::endl
         << "     Don\'t use any command devices." << std::endl << std::endl
-        << "-no_ldev"<< std::endl
-        << "     If a command device is being used, set the [Go] parameter default for no_LDEV" << std::endl
-        << "     to \"no_LDEV=on\" to skip collection of LDEV & PG data.  This makes gathers faster" << std::endl
+        << "-skip_LDEV"<< std::endl
+        << "     If a command device is being used, set the [Go] parameter default for skip_LDEV" << std::endl
+        << "     to \"skip_LDEV=on\" to skip collection of LDEV & PG data.  This makes gathers faster" << std::endl
         << "     if you don't need LDEV and PG data." << std::endl << std::endl
-        << "-no_perf"<< std::endl
-        << "     If a command device is being used, set the [Go] parameter default for no_perf" << std::endl
-        << "     to \"no_perf=on\" to suppress the collection of subsystem performance data" << std::endl
+        << "-suppress_perf"<< std::endl
+        << "     If a command device is being used, set the [Go] parameter default for suppress_perf" << std::endl
+        << "     to \"suppress_perf=on\" to suppress the collection of subsystem performance data" << std::endl
         << "     while ivy is running driving I/O.  Collection of performance data resumes" << std::endl
         << "     with the second and subsequent cooldown subintervals at IOPS=0 to support" << std::endl
         << "     the cooldwon_by_wp and cooldown_by_MP_busy featueres." << std::endl << std::endl
@@ -76,21 +85,23 @@ void usage_message(char* argv_0)
         << "     Use -one_thread_per_core to have ivydriver start a workload subthread on only the first" << std::endl
         << "     hyperthread on each physical CPU core, instead of the default which is start a workload subthread"
         << "     on all hyperthreads on each core.  Either way, workload subthread(s) are never started on core 0." << std::endl << std::endl
-        << "-trace_lexer or -l" << std::endl
-        << "     Log routine events and trace the \"lexer\" which breaks down the .ivyscript program into \"tokens\"." << std::endl << std::endl
-        << "-trace_parser or -p" << std::endl
-        << "     Log routine events and trace the \"parser\" which recognizes the syntax of the stream of tokens as a program." << std::endl << std::endl
-        << "-trace_evaluate or -e" << std::endl
-        << "     Log routine events and trace the execution of the compiled ivyscript program." << std::endl << std::endl
-        << "-t" << std::endl
-        << "     Same as -trace_lexer -trace_parser -trace_evaluate." << std::endl << std::endl
+//        << "-trace_lexer or -l" << std::endl
+//        << "     Log routine events and trace the \"lexer\" which breaks down the .ivyscript program into \"tokens\"." << std::endl << std::endl
+//        << "-trace_parser or -p" << std::endl
+//        << "     Log routine events and trace the \"parser\" which recognizes the syntax of the stream of tokens as a program." << std::endl << std::endl
+//        << "-trace_evaluate or -e" << std::endl
+//        << "     Log routine events and trace the execution of the compiled ivyscript program." << std::endl << std::endl
+//        << "-t" << std::endl
+//        << "     Same as -trace_lexer -trace_parser -trace_evaluate." << std::endl << std::endl
         << "The .ivyscript suffix on the name of the ivyscript program is optional." << std::endl << std::endl
         << "Examples:" << std::endl
         << "\t" << argv_0 << " -rest" << std::endl
         << "\t" << argv_0 << " xxxx.ivyscript" << std::endl
         << "\t" << argv_0 << " xxxx" << std::endl
+        << "\t" << argv_0 << " -no_wrap xxxx" << std::endl
+        << "\t" << argv_0 << " -spinloop xxxx" << std::endl
         << "\t" << argv_0 << " -log xxxx" << std::endl
-        << "\t" << argv_0 << " -t xxxx" << std::endl
+        //<< "\t" << argv_0 << " -t xxxx" << std::endl
         ;
 }
 
@@ -197,6 +208,8 @@ int main(int argc, char* argv[])
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-rest")))           { rest_api = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-log")))            { routine_logging = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_wrap")))        { m_s.formula_wrapping = false; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_stepcsv")))     { m_s.stepcsv_default = false; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-storcsv")))        { m_s.storcsv_default = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-t")))              { routine_logging = trace_lexer = trace_parser = trace_evaluate = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-trace_lexer"))
          || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-l"))          )    { routine_logging = trace_lexer = true; continue; }
@@ -205,10 +218,10 @@ int main(int argc, char* argv[])
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-trace_evaluate"))
         ||  stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-e"))             ) { routine_logging = trace_evaluate = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_cmd")))         { m_s.use_command_device = false; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_ldev")))        { m_s.skip_ldev_data_default = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-skip_LDEV")))      { m_s.skip_ldev_data_default = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-spinloop")))       { spinloop = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-one_thread_per_core"))) { one_thread_per_core = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_perf")))        { m_s.no_subsystem_perf_default = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-suppress_perf")))  { m_s.suppress_subsystem_perf_default = true; continue; }
 
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }
 
@@ -280,6 +293,8 @@ int main(int argc, char* argv[])
         std::cout << "<Error> ivyscript filename \"" + ivyscriptFilename  + "\" is not a regular file." << std::endl;
         return -1;
     }
+
+    m_s.test_start_time.setToNow();
 
     if (is_python_script)
     {
