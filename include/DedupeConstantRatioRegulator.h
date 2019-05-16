@@ -39,12 +39,13 @@ class DedupeConstantRatioRegulator
     std::uniform_real_distribution<ivy_float> distribution;
 
     uint64_t block_size;
-    ivy_float sides;
+    uint64_t sides;
     uint64_t throws;
     uint64_t range;
     ivy_float dedupe_ratio;
     ivy_float compression_ratio;
 
-    void lookup_sides_and_throws(ivy_float dedupe_ratio, ivy_float &sides, uint64_t &throws);
-    void compute_range(ivy_float &sides, uint64_t &throws, uint64_t block_size, ivy_float compression_ratio, uint64_t &range);
+    uint64_t gcd(uint64_t a, uint64_t b);
+    void lookup_sides_and_throws(ivy_float dedupe_ratio, uint64_t &sides, uint64_t &throws);
+    void compute_range(uint64_t &sides, uint64_t &throws, uint64_t block_size, ivy_float compression_ratio, uint64_t &range);
 };

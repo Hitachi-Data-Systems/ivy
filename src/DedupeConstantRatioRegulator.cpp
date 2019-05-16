@@ -27,7 +27,7 @@
 
 // Simple linear lookup as table is short and lookup is done only once.
 
-void DedupeConstantRatioRegulator::lookup_sides_and_throws(ivy_float dedupe_ratio, ivy_float &sides, uint64_t &throws)
+void DedupeConstantRatioRegulator::lookup_sides_and_throws(ivy_float dedupe_ratio, uint64_t &sides, uint64_t &throws)
 {
         // Out of range (too small).
 
@@ -45,12 +45,12 @@ void DedupeConstantRatioRegulator::lookup_sides_and_throws(ivy_float dedupe_rati
                 {
                         if ((it->first - dedupe_ratio) < (dedupe_ratio - prev->first))
                         {
-                                sides = (ivy_float) it->second.first;
+                                sides = it->second.first;
                                 throws = it->second.second;
                         }
                         else
                         {
-                                sides = (ivy_float) prev->second.first;
+                                sides = prev->second.first;
                                 throws = prev->second.second;
                         }
                         return;
@@ -60,11 +60,16 @@ void DedupeConstantRatioRegulator::lookup_sides_and_throws(ivy_float dedupe_rati
 
         // Out of range (too big).
 
-        sides = (ivy_float) prev->second.first;
-        throws = (unsigned int) prev->second.first * dedupe_ratio;  // Good estimate.
+        sides = prev->second.first;
+        throws = (prev->second.first * dedupe_ratio + 0.5);  // Good estimate.
 }
 
-void DedupeConstantRatioRegulator::compute_range(ivy_float &sides, uint64_t &throws, uint64_t block_size, ivy_float compression_ratio, uint64_t &range)
+uint64_t DedupeConstantRatioRegulator::gcd(uint64_t a, uint64_t b)
+{
+    return (b == 0) ? a : gcd(b, a % b);
+}
+
+void DedupeConstantRatioRegulator::compute_range(uint64_t &sides, uint64_t &throws, uint64_t block_size, ivy_float compression_ratio, uint64_t &range)
 {
     // Complexity comes in because of compression, especially for large blocks.
 
@@ -74,21 +79,14 @@ void DedupeConstantRatioRegulator::compute_range(ivy_float &sides, uint64_t &thr
     }
     else
     {
-        uint64_t data_blocks_per_io_block = (uint64_t) ceil((ivy_float) ((uint64_t) ((block_size + 8191) / 8192)) * (1.0 - compression_ratio));
-        ivy_float expansion_ratio = (ivy_float) throws / data_blocks_per_io_block;
+        uint64_t data_blocks_per_io_block = ceil((ivy_float) block_size / 8192.0 * (1.0 - compression_ratio));
+        uint64_t divisor = gcd(gcd(throws, sides), data_blocks_per_io_block);
 
-        if (expansion_ratio >= 1.0)
-        {
-            range = throws * block_size / data_blocks_per_io_block;
-        }
-        else
-        {
-            // Assumes that maintaining the sides:throws ratio will approximate the desired dedupe ratio.
+        // Assumes that maintaining the sides:throws ratio will approximate the desired dedupe ratio.
 
-            sides /= expansion_ratio;
-            throws = data_blocks_per_io_block;
-            range = block_size;
-        }
+        range = throws * block_size / divisor;
+        sides *= data_blocks_per_io_block / divisor;
+        throws *= data_blocks_per_io_block / divisor;
     }
 }
 
@@ -96,13 +94,13 @@ DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uin
 {
     assert(dedupe >= 1.0);
     assert(block > 0);
-    assert(compression >= 0 && compression <= 1.0);
+    assert(compression >= 0.0 && compression <= 1.0);
 
     dedupe_ratio = dedupe;
     block_size = block;
     compression_ratio = compression;
 
-    // We don't support compression ratios greater than 99.9%
+    // We don't support compression ratios greater than 99.9% (i.e., 1000:1).
 
     if (compression_ratio > (ivy_float) 0.999)
         compression_ratio = (ivy_float) 0.999;
