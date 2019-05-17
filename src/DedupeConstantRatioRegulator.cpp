@@ -27,73 +27,47 @@
 
 // Simple linear lookup as table is short and lookup is done only once.
 
-void DedupeConstantRatioRegulator::lookup_sides_and_throws(ivy_float dedupe_ratio, uint64_t &sides, uint64_t &throws)
+void DedupeConstantRatioRegulator::lookup_sides_and_throws(uint64_t &sides, uint64_t &throws)
 {
-        // Out of range (too small).
+    // Just do linear search.
 
-        if (dedupe_ratio < 1.0)
-                dedupe_ratio = 1.0;
+    auto prev = table_by_dedupe_ratio.begin();
+    for (auto it = table_by_dedupe_ratio.begin(); it != table_by_dedupe_ratio.end(); ++it)
+    {
+        // Find the closest match.
 
-        // Just do linear search.
-
-        auto prev = table_by_dedupe_ratio.begin();
-        for (auto it = table_by_dedupe_ratio.begin(); it != table_by_dedupe_ratio.end(); ++it)
+        if (it->first > dedupe_ratio)
         {
-                // Find the closest match.
-
-                if (it->first > dedupe_ratio)
-                {
-                        if ((it->first - dedupe_ratio) < (dedupe_ratio - prev->first))
-                        {
-                                sides = it->second.first;
-                                throws = it->second.second;
-                        }
-                        else
-                        {
-                                sides = prev->second.first;
-                                throws = prev->second.second;
-                        }
-                        return;
-                }
-                prev = it;
+            if ((it->first - dedupe_ratio) < (dedupe_ratio - prev->first))
+            {
+                sides = it->second.first;
+                throws = it->second.second;
+            }
+            else
+            {
+                sides = prev->second.first;
+                throws = prev->second.second;
+            }
+            return;
         }
+        prev = it;
+    }
 
-        // Out of range (too big).
+    // Out of range (too big).
 
-        sides = prev->second.first;
-        throws = (prev->second.first * dedupe_ratio + 0.5);  // Good estimate.
+    sides = prev->second.first;
+    throws = prev->second.second * dedupe_ratio / prev->first + 0.5;  // Good estimate.
 }
 
-uint64_t DedupeConstantRatioRegulator::gcd(uint64_t a, uint64_t b)
+void DedupeConstantRatioRegulator::compute_range(uint64_t &range)
 {
-    return (b == 0) ? a : gcd(b, a % b);
-}
-
-void DedupeConstantRatioRegulator::compute_range(uint64_t &sides, uint64_t &throws, uint64_t block_size, ivy_float compression_ratio, uint64_t &range)
-{
-    // Complexity comes in because of compression, especially for large blocks.
-
-    if (compression_ratio == 0.0)
-    {
-        range = throws * 8192;
-    }
-    else
-    {
-        uint64_t data_blocks_per_io_block = ceil((ivy_float) block_size / 8192.0 * (1.0 - compression_ratio));
-        uint64_t divisor = gcd(gcd(throws, sides), data_blocks_per_io_block);
-
-        // Assumes that maintaining the sides:throws ratio will approximate the desired dedupe ratio.
-
-        range = throws * block_size / divisor;
-        sides *= data_blocks_per_io_block / divisor;
-        throws *= data_blocks_per_io_block / divisor;
-    }
+    range = throws * block_size;
 }
 
 DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, ivy_float compression)
 {
     assert(dedupe >= 1.0);
-    assert(block > 0);
+    assert((block % min_dedupe_block) == 0);
     assert(compression >= 0.0 && compression <= 1.0);
 
     dedupe_ratio = dedupe;
@@ -105,10 +79,16 @@ DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uin
     if (compression_ratio > (ivy_float) 0.999)
         compression_ratio = (ivy_float) 0.999;
 
+    // Compute total blocks (tbpiob), data blocks (dbpiob) and zero blocks (zbpiob) per I/O block.
+
+    tbpiob = block_size / min_dedupe_block;
+    dbpiob = ceil((ivy_float) tbpiob * (1.0 - compression_ratio));
+    zbpiob = tbpiob - dbpiob;
+
     // Compute a range of blocks (not counting compression ratio).
 
-    lookup_sides_and_throws(dedupe_ratio, sides, throws);
-    compute_range(sides, throws, block_size, compression_ratio, range);
+    lookup_sides_and_throws(sides, throws);
+    compute_range(range);
 }
 
 DedupeConstantRatioRegulator::~DedupeConstantRatioRegulator()
@@ -128,16 +108,30 @@ DedupeConstantRatioRegulator::~DedupeConstantRatioRegulator()
 
 uint64_t DedupeConstantRatioRegulator::get_seed(uint64_t offset)
 {
+    uint64_t base;
     uint64_t seed;
+    uint64_t blockno;
+    uint64_t modbase;
+    uint64_t modblock;
     int index;
 
     // Which of the allowed patterns shall we use?
 
     index = (int) (distribution(generator) * sides);
 
-    // For this chunk, select the starting seed.  All offsets in a given range have the same starting seed.
+    // For this range, select the appropriate "modulo block." A range comprises a "(throws * block_size)"
+    // non-overlapping region.  A modulo block is the address of the ith block in the range modulo the
+    // number of throws.  The offset of the current I/O has an associated modulo block, which is the
+    // congruency class for the current block.  Compute the base address of the current modulo block.
 
-    srand48(offset / range);
+    base = (offset / range) * range;
+    blockno = (offset - base) / min_dedupe_block;
+    modblock = (blockno / tbpiob) * dbpiob + (blockno % tbpiob);
+    modbase = base + modblock / throws;  // This is a nonsense number corresponding to the congruency class.
+
+    xorshift64star(modbase);
+
+    srand48(modbase);
     seed = lrand48();  // LFSR-based.
 
     // Compute the pattern for the ith allowed pattern in the chunk.
