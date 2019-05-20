@@ -38,16 +38,18 @@ class DedupeConstantRatioRegulator
     std::default_random_engine generator;
     std::uniform_real_distribution<ivy_float> distribution;
 
+    const uint64_t min_dedupe_block = 8192;
+
     uint64_t block_size;
     uint64_t sides;
     uint64_t throws;
     uint64_t range;
+    uint64_t dbpiob; // data blocks per i/o block
+    uint64_t zbpiob; // zero blocks per i/o block
+    uint64_t tbpiob; // total blocks per i/o block
     ivy_float dedupe_ratio;
     ivy_float compression_ratio;
 
-    uint64_t gcd(uint64_t a, uint64_t b);
-public:
-    static void lookup_sides_and_throws(ivy_float dedupe_ratio, uint64_t &sides, uint64_t &throws);
-private:
-    void compute_range(uint64_t &sides, uint64_t &throws, uint64_t block_size, ivy_float compression_ratio, uint64_t &range);
+    void lookup_sides_and_throws(uint64_t &sides, uint64_t &throws);
+    void compute_range(uint64_t &range);
 };
