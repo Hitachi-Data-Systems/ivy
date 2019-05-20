@@ -151,3 +151,5 @@ extern char* unique_words[];
 #define ivy_ssh_timeout (180) /* ssh can sometimes take a long time to fire up due to DNS timeouts */
 
 #define FIRST_FEW_CALLS 250
+
+#define LOG_FIRST_FEW_IO_COMPLETIONS (5)

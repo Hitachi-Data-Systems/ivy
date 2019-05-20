@@ -44,6 +44,7 @@ public:
 //variables
 
     WorkloadID workloadID;
+    uint64_t uint64_t_hash_of_workloadID;
 
     TestLUN* pTestLUN;
 
@@ -102,6 +103,11 @@ public:
     DedupeConstantRatioRegulator *dedupe_constant_ratio_regulator;
 
     bool doing_dedupe;
+    uint64_t constant_ratio_sides;
+    uint64_t constant_ratio_throws;
+    uint64_t throw_group_size;
+
+    std::uniform_int_distribution<uint64_t>*   p_sides_distribution {nullptr};
     bool have_writes;
     ivy_float compressibility;
 
@@ -127,6 +133,7 @@ public:
 	std::unique_ptr<unsigned char[]> ewe_neek {}; // Points to a buffer pool for the Eyeos for this workload
 
     uint64_t workload_cumulative_launch_count {0};
+    uint64_t workload_cumulative_completion_count {0};
     ivy_float workload_weighted_IOPS_max_skew_progress {0.0};
 
 #ifdef IVYDRIVER_TRACE

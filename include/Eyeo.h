@@ -78,12 +78,13 @@ public:
 	bool iops_max_counted {false};
 
     uint64_t io_sequence_number {0};
+    uint64_t completion_sequence_number {0};
 
 // methods
 	Eyeo(Workload*);
 	~Eyeo(){};
 
-	std::string toString();
+	std::string toString(bool display_buffer_contents = false);
 	std::string thumbnail();
 	void resetForNextIO();
 	ivy_float service_time_seconds();

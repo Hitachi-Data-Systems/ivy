@@ -69,7 +69,7 @@ public:
     ivy_float dedupe          {dedupe_default};
     pattern   pat             {pattern_default};
     dedupe_method dedupe_type {dedupe_method_default};
-    ivy_float compressibility {compressibility_default};  // compressibility is only referred to for pattern = trailing_zeros
+    ivy_float compressibility {compressibility_default};  // compressibility is only referred to for pattern = trailing_blanks
 
     unsigned int threads_in_workload_name {threads_in_workload_name_default};
     unsigned int this_thread_in_workload {this_thread_in_workload_default};
@@ -85,7 +85,15 @@ public:
 public:
 	inline IosequencerInput(){reset();}
 
+private:
 	std::pair<bool,std::string> setParameter(std::string parameterNameEqualsValue);
+	    // This is made private, called only by setMultipleParameters(),
+	    // so that in setMultipleParameters we can check that the
+	    // set of parameter values is consistent, that is that there
+	    // are no incompatible combinations of parameter settings,
+	    // once all the individual parameter settings have been performed.
+
+public:
 	std::pair<bool,std::string> setMultipleParameters(std::string commaSeparatedList);
 	std::string toStringFull();
 	std::string toString();

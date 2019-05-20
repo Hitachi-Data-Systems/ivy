@@ -1498,6 +1498,25 @@ void RollupInstance::print_measurement_summary_csv_line()
             }
         }
 
+        ivy_float subsystem_IOPS = 0.0;
+        ivy_float application_IOPS = 0.0;
+        ivy_float subsystem_IOPS_as_fraction_of_host_IOPS = -1.0;
+        ivy_float seconds = measurementRollup.durationSeconds();
+
+        if (m_s.haveCmdDev)
+        {
+            subsystem_IOPS = measurement_subsystem_data.IOPS();
+            if (subsystem_IOPS > 0)
+            {
+                RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
+                application_IOPS = st.count() / seconds;
+                if (application_IOPS > 0)
+                {
+                    subsystem_IOPS_as_fraction_of_host_IOPS = subsystem_IOPS / application_IOPS;
+                }
+            }
+        }
+
         if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode || m_s.have_timeout_rollup)
         {
             std::ostringstream csvline;
@@ -1525,7 +1544,15 @@ void RollupInstance::print_measurement_summary_csv_line()
             csvline << ',' << m_s.cooldown_duration.format_as_duration_HMMSS();
             csvline << ','; // Write Pending only shows in by-subinterval csv lines
             csvline << ',';
-            if ( m_s.have_timeout_rollup || !m_s.rollups.passesDataVariationValidation().first)
+
+            bool subsystem_IOPS_as_fraction_of_host_IOPS_failure
+                = subsystem_IOPS_as_fraction_of_host_IOPS > 0
+                && ( subsystem_IOPS_as_fraction_of_host_IOPS < 0.9
+                  || subsystem_IOPS_as_fraction_of_host_IOPS > 1.1
+                   );
+
+
+            if ( m_s.have_timeout_rollup || !m_s.rollups.passesDataVariationValidation().first || subsystem_IOPS_as_fraction_of_host_IOPS_failure)
             {
                 csvline << "invalid"; // subintervalIndex;
             }
@@ -1539,6 +1566,8 @@ void RollupInstance::print_measurement_summary_csv_line()
             if (m_s.have_timeout_rollup) validation_errors = "[measurement timeout]";
 
             validation_errors += m_s.rollups.passesDataVariationValidation().second;
+
+            if (subsystem_IOPS_as_fraction_of_host_IOPS_failure) validation_errors += std::string("[subsystem IOPS is more thean 10% different from host IOPS.]");
 
             csvline << ',' << validation_errors;
 
@@ -1599,14 +1628,13 @@ void RollupInstance::print_measurement_summary_csv_line()
                 }
             }
 
-            {
-                ivy_float seconds = measurementRollup.durationSeconds();
 
+            {
                 if (m_s.haveCmdDev)
                 {
                     // print the comparisions between application & subsystem IOPS, MB/s, service time
 
-                    ivy_float subsystem_IOPS = measurement_subsystem_data.IOPS();
+
                     ivy_float subsystem_decimal_MB_per_second = measurement_subsystem_data.decimal_MB_per_second();
                     ivy_float subsystem_service_time_ms = measurement_subsystem_data.service_time_ms();
 
@@ -1615,11 +1643,9 @@ void RollupInstance::print_measurement_summary_csv_line()
                     csvline << ','; // subsystem IOPS as % of application IOPS
                     if (subsystem_IOPS > 0.0)
                     {
-                        RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
-                        ivy_float application_IOPS = st.count() / seconds;
                         if (application_IOPS > 0.0)
                         {
-                            csvline << std::fixed << std::setprecision(3) << (subsystem_IOPS / application_IOPS) * 100.0 << '%';
+                            csvline << std::fixed << std::setprecision(3) << (subsystem_IOPS_as_fraction_of_host_IOPS * 100.0) << '%';
                         }
                     }
 

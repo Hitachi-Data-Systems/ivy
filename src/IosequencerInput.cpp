@@ -28,6 +28,7 @@
 #include "ivyhelpers.h"
 #include "ivydefines.h"
 #include "IosequencerInput.h"
+#include <string>
 
 std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameterNameEqualsValue) {
     // This is ancient code from when regexes were still broken in libstdc++.
@@ -728,7 +729,7 @@ std::pair<bool,std::string> IosequencerInput::setMultipleParameters(std::string 
 				if (rv.first) {
 					sawGoodOne=true;
 				} else {
-                    if (sawBadOne) composite_error_message.push_back(' ');
+                    if (sawBadOne) composite_error_message += std::string(" & ");
 					sawBadOne=true;
 					composite_error_message += std::string("name=value \"") + nameEqualsValue + std::string("\" - " + rv.second);
 				}
@@ -736,6 +737,47 @@ std::pair<bool,std::string> IosequencerInput::setMultipleParameters(std::string 
 		}
 
 		i++;
+	}
+
+	if (dedupe > 1.0 && fractionRead < 1.0)
+	{
+        std::ostringstream o;
+
+        switch (dedupe_type)
+        {
+            case dedupe_method::serpentine:
+
+                break;
+
+            case dedupe_method::target_spread:
+
+                if (0 == blocksize_bytes % 8192) break;
+
+                o << "Invalid blocksize " << blocksize_bytes << " for \"target_spread\" dedupe method - must be a multiple of 8 KiB (8192).";
+                if (sawBadOne) composite_error_message += std::string(" & ");
+                sawBadOne=true;
+                composite_error_message += o.str();
+
+            case dedupe_method::constant_ratio:
+
+                if (0 == blocksize_bytes % 8192) break;
+
+                o << "Invalid blocksize " << blocksize_bytes << " for \"constant+ratio\" dedupe method - must be a multiple of 8 KiB (8192).";
+                if (sawBadOne) composite_error_message += std::string(" & ");
+                sawBadOne=true;
+                composite_error_message += o.str();
+
+            case dedupe_method::invalid:
+            default:
+            {
+                std::ostringstream o;
+                o << "<Error> Internal programming error in IosequencerInput::setMultipleParameters90 - invalid dedupe_method 0x" << std::hex << std::setw(2) << std::setfill('0') << ((unsigned int) dedupe_type);
+
+                if (sawBadOne) composite_error_message += std::string(" & ");
+                sawBadOne=true;
+                composite_error_message += o.str();
+            }
+        }
 	}
 
 	return std::make_pair(sawGoodOne && (!sawBadOne),composite_error_message);

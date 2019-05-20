@@ -47,6 +47,7 @@ using namespace std;
 
 extern bool routine_logging;
 
+std::default_random_engine deafrangen;
 
 bool Iosequencer::generate(Eyeo& e)
 {

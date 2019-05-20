@@ -25,7 +25,7 @@
 #include "ivyhelpers.h"
 #include "pattern.h"
 
-std::string valid_patterns() {return ("Valid pattern values are \"random\", \"gobbledegook\", \"ascii\", \"trailing_zeros\", \"zeros\", and \"all_0xFF\".");}
+std::string valid_patterns() {return ("Valid pattern values are \"random\", \"gobbledegook\", \"ascii\", \"trailing_blanks\", \"zeros\", and \"all_0xFF\".");}
 
 pattern parse_pattern(std::string s)
 {
@@ -36,7 +36,7 @@ pattern parse_pattern(std::string s)
 
     if (stringCaseInsensitiveEquality(s,std::string("ascii")))          { return pattern::ascii; }
 
-    if (normalized_identifier_equality(s,std::string("trailing_zeros"))) { return pattern::trailing_zeros; }
+    if (normalized_identifier_equality(s,std::string("trailing_blanks"))) { return pattern::trailing_blanks; }
 
     if (normalized_identifier_equality(s,std::string("zeros"))) { return pattern::zeros; }
 
@@ -54,7 +54,7 @@ std::string pattern_to_string(pattern p)
         case pattern::ascii: return "ascii";
         case pattern::gobbledegook: return "gobbledegook";
         case pattern::random: return "random";
-        case pattern::trailing_zeros: return "trailing_zeros";
+        case pattern::trailing_blanks: return "trailing_blanks";
         case pattern::zeros: return "zeros";
         case pattern::all_0x0F: return "all_0x0F";
         case pattern::all_0xFF: return "all_0xFF";

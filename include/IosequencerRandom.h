@@ -19,13 +19,15 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
+extern std::default_random_engine deafrangen;
+
 class IosequencerRandom : public Iosequencer {
 	// this is the base class of random_steady and random_independent.
 protected:
 //        size_t seed_hash;
 	std::uniform_int_distribution<uint64_t>*   p_uniform_int_distribution         {nullptr};
 	std::uniform_real_distribution<ivy_float>* p_uniform_real_distribution_0_to_1 {nullptr};
-    std::default_random_engine deafrangen;
+
 
 	std::uniform_int_distribution<uint64_t>* p_hot_zone_block_distribution        {nullptr};
 	std::uniform_int_distribution<uint64_t>* p_other_area_block_distribution      {nullptr};

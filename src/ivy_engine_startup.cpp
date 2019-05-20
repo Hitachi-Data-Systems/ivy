@@ -173,7 +173,7 @@ std::pair<bool /*success*/, std::string /* message */>
 
     availableControllers[toLower(std::string("measure"))] = &the_dfc;
 
-    auto rv = random_steady_template.setParameter("iosequencer=random_steady");
+    auto rv = random_steady_template.setMultipleParameters("iosequencer=random_steady");
     if ( ! rv.first)
     {
         std::ostringstream o;
@@ -182,7 +182,7 @@ std::pair<bool /*success*/, std::string /* message */>
         return std::make_pair(false,o.str());
     }
 
-    rv = random_independent_template.setParameter("iosequencer=random_independent");
+    rv = random_independent_template.setMultipleParameters("iosequencer=random_independent");
     if ( !rv.first )
     {
         std::ostringstream o;
@@ -191,7 +191,7 @@ std::pair<bool /*success*/, std::string /* message */>
         return std::make_pair(false,o.str());
     }
 
-    rv = sequential_template.setParameter("iosequencer=sequential");
+    rv = sequential_template.setMultipleParameters("iosequencer=sequential");
     if ( !rv.first )
     {
         std::ostringstream o;

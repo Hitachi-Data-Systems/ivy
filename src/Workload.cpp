@@ -89,6 +89,17 @@ void Workload::prepare_to_run()
         }
     }
 
+    if (doing_dedupe && subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
+    {
+        DedupeConstantRatioRegulator::lookup_sides_and_throws(subinterval_array[0].input.dedupe,constant_ratio_sides,constant_ratio_throws);
+        if (p_sides_distribution != nullptr) delete p_sides_distribution;
+        p_sides_distribution = new std::uniform_int_distribution<uint64_t> (0, constant_ratio_sides);
+        throw_group_size = (((pTestLUN->maxLBA) + 1)* sector_size_bytes) / 8192;
+    }
+
+
+    workload_cumulative_completion_count = 0;
+
     write_io_count = 0;
 
     subinterval_array[0].output.clear();  // later if energetic figure out if these must already be cleared.
@@ -430,6 +441,15 @@ unsigned int /* number of I/Os popped and processed.  */
 			log(pWorkloadThread->slavethreadlogfile,o.str());
 		}
 	}
+
+	workload_cumulative_completion_count++;
+	p_dun->completion_sequence_number = workload_cumulative_completion_count;
+
+	if (routine_logging && workload_cumulative_completion_count <= LOG_FIRST_FEW_IO_COMPLETIONS)
+	{
+	    log(pWorkloadThread->slavethreadlogfile,p_dun->toString(true));
+	}
+
 
 	freeStack.push(p_dun);
 

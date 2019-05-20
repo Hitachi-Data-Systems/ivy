@@ -23,6 +23,7 @@
 #include <signal.h>
 #include <string.h>
 #include <execinfo.h>
+#include <functional>  // for std::hash
 
 // get REG_EIP from ucontext.h
 #ifndef __USE_GNU
@@ -1063,6 +1064,8 @@ void IvyDriver::create_workload()
     Workload* pWorkload = &((pTestLUN->workloads)[workloadID]);
 
     pWorkload->workloadID = wID;
+
+    pWorkload->uint64_t_hash_of_workloadID = (uint64_t) std::hash<std::string>{}(wID.workloadID);
 
     pWorkload->iosequencerParameters = newWorkloadParameters;
 

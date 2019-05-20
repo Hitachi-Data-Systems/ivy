@@ -143,7 +143,7 @@ std::string JSON_SCHEMA = R"( {
                           { "type": "object",
 	                      "properties": {
                                   "variable_type": { "type": {
-                                      "enum": [ "trailing_zeros" ] }
+                                      "enum": [ "trailing_blanks" ] }
                                   },
                                   "compressibility": { "$ref": "#/definitions/percentageschema" }
                               }
