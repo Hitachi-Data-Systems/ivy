@@ -318,7 +318,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 if (pear.second.dedupe_constant_ratio_regulator != nullptr) { delete pear.second.dedupe_constant_ratio_regulator; }
                 pear.second.dedupe_constant_ratio_regulator = new DedupeConstantRatioRegulator(pear.second.subinterval_array[0].input.dedupe,
                                                                                                pear.second.subinterval_array[0].input.blocksize_bytes,
-                                                                                               pear.second.subinterval_array[0].input.compressibility);
+                                                                                               pear.second.uint64_t_hash_of_workloadID);
 
 #ifdef IVYDRIVER_TRACE
                 pear.second.workload_callcount_prepare_to_run = 0;

@@ -64,28 +64,52 @@ void DedupeConstantRatioRegulator::compute_range(uint64_t &range)
     range = throws * block_size;
 }
 
-DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, ivy_float compression)
+DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, uint64_t workloadID_hash, ivy_float zero_blocks)
 {
     assert(dedupe >= 1.0);
     assert((block % min_dedupe_block) == 0);
-    assert(compression >= 0.0 && compression <= 1.0);
+    assert(zero_blocks >= 0.0 && zero_blocks <= 1.0);
 
     dedupe_ratio = dedupe;
     block_size = block;
-    compression_ratio = compression;
-
-    // We don't support compression ratios greater than 99.9% (i.e., 1000:1).
-
-    if (compression_ratio > (ivy_float) 0.999)
-        compression_ratio = (ivy_float) 0.999;
+    zero_blocks_ratio = zero_blocks;
 
     // Compute total blocks (tbpiob), data blocks (dbpiob) and zero blocks (zbpiob) per I/O block.
 
     tbpiob = block_size / min_dedupe_block;
-    dbpiob = ceil((ivy_float) tbpiob * (1.0 - compression_ratio));
+    dbpiob = ceil((ivy_float) tbpiob * (1.0 - zero_blocks_ratio));
     zbpiob = tbpiob - dbpiob;
 
-    // Compute a range of blocks (not counting compression ratio).
+    // Remember the hash of the workloadID
+
+    workloadID = workloadID_hash;
+
+    // Compute a range of blocks.
+
+    lookup_sides_and_throws(sides, throws);
+    compute_range(range);
+}
+
+DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, uint64_t workloadID_hash)
+{
+    assert(dedupe >= 1.0);
+    assert((block % min_dedupe_block) == 0);
+
+    dedupe_ratio = dedupe;
+    block_size = block;
+
+    // Compute total blocks (tbpiob), data blocks (dbpiob) and zero blocks (zbpiob) per I/O block.
+    // Note: No zero blocks with this constructor.
+
+    tbpiob = block_size / min_dedupe_block;
+    dbpiob = tbpiob;
+    zbpiob = tbpiob - dbpiob;
+
+    // Remember the hash of the workloadID
+
+    workloadID = workloadID_hash;
+
+    // Compute a range of blocks.
 
     lookup_sides_and_throws(sides, throws);
     compute_range(range);
@@ -139,6 +163,10 @@ uint64_t DedupeConstantRatioRegulator::get_seed(uint64_t offset)
 
     for (int i = 0; i < 1 + index; i++)
         xorshift64star(seed);
+
+    // Account for workloadID on different volumes.
+
+    seed ^= workloadID;
 
     // And that's that.
 
