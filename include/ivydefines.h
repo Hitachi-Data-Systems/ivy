@@ -117,7 +117,7 @@ const std::string ivy_version {"3.20.02"};
 const ivy_float min_subinterval_seconds {3.0};
 const ivy_float max_subinterval_seconds {3600.0};
 
-const int blocksize_bytes_default {4096};
+const int blocksize_bytes_default {8192};
 const int maxTags_default{1};   // make sure someone is going to notice if they haven't set this.
 const ivy_float IOPS_default {1};  // Default is 1.0 I/Os per second
 const ivy_float skew_weight_default {-1.0};
