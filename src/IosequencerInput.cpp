@@ -172,6 +172,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 
         return std::make_pair(true,"");
     }
+
 	if ( normalized_identifier_equality(parameterName, std::string("hot_zone_size_bytes")) )
 	{
         if ( (!normalized_identifier_equality(iosequencer_type,std::string("random_steady")))
@@ -656,6 +657,87 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 		return std::make_pair(true,"");
 	}
 
+	if ( normalized_identifier_equality(parameterName, std::string("dedupe_unit_bytes")) ) {
+
+		bool KiB{false}, MiB{false};
+		if (parameterValue.length()>3 && stringCaseInsensitiveEquality(std::string("KiB"),parameterValue.substr(parameterValue.length()-3,3)) ) {
+			KiB=true;
+			parameterValue=parameterValue.substr(0,parameterValue.length()-3);
+			trim(parameterValue);
+		} else if (parameterValue.length()>3 && stringCaseInsensitiveEquality(std::string("MiB"),parameterValue.substr(parameterValue.length()-3,3)) ) {
+			MiB=true;
+			parameterValue=parameterValue.substr(0,parameterValue.length()-3);
+			trim(parameterValue);
+		}
+		std::istringstream is(parameterValue);
+		int dub;
+		is >> dub;
+		if ( is.fail() || (!is.eof()) )
+		{
+            std::ostringstream o;
+            o << "invalid dedupe_unit_bytes \"" << parameterValue;
+			if (KiB) o << " KiB";
+			if (MiB) o << " MiB";
+			o << "\".";
+            return std::make_pair(false,o.str());
+		}
+		if (KiB) dub*=1024;
+		if (MiB) dub*=(1024*1024);
+		if (0 != dub%512)
+		{
+
+            std::ostringstream o;
+            o << "invalid dedupe_unit_bytes \"" << parameterValue;
+			if (KiB) o << " KiB";
+			if (MiB) o << " MiB";
+			o << "\".  dedupe_unit_bytes must be a multiple of 512.";  /// NEED 4K SECTOR SUPPORT HERE
+            return std::make_pair(false,o.str());
+		}
+		dedupe_unit_bytes=dub;
+		return std::make_pair(true,"");
+	}
+
+
+	if ( stringCaseInsensitiveEquality(parameterName, std::string("fraction_zero_pattern")) ) {
+
+		if (0 == parameterValue.length()) { return std::make_pair(false, "fraction_zero_pattern may not be set to the empty string."); }
+
+		bool hadPercent {false};
+		if ('%' == parameterValue[-1 + parameterValue.length()])
+		{
+			hadPercent = true;
+			parameterValue.erase(-1 + parameterValue.length(),1); // hopefully erase last character
+			trim(parameterValue);
+		}
+
+		std::istringstream is(parameterValue);
+		ivy_float ld;
+		if ( (!(is >> ld)) || (!is.eof()) )
+		{
+			std::ostringstream o;
+			o << "invalid fraction_zero_pattern parameter value \"" << parameterValue;
+			if (hadPercent) o << " %";
+			o << "\".  Must be a number greater than or equal to 0.0 (0%), and less than 1.0 (100%).";
+
+			return std::make_pair(false,o.str());
+		}
+
+		if (hadPercent) ld /= 100.0;
+
+		if ( ld < 0.0 || ld >= 1.0 )
+		{
+			std::ostringstream o;
+			o << "invalid fraction_zero_pattern parameter value \"" << parameterValue;
+			if (hadPercent) o << " %";
+			o << "\".  Must be a number greater than or equal to 0.0 (0%), and less than 1.0 (100%).";
+
+			return std::make_pair(false,o.str());
+		}
+
+        fraction_zero_pattern = ld;
+		return std::make_pair(true,"");
+	}
+
 	if ( normalized_identifier_equality(parameterName, std::string("threads_in_workload_name")) ) {
 		std::istringstream is(parameterValue);
 		unsigned int eye;
@@ -758,14 +840,8 @@ std::pair<bool,std::string> IosequencerInput::setMultipleParameters(std::string 
                 sawBadOne=true;
                 composite_error_message += o.str();
 
-            case dedupe_method::constant_ratio:
-
-                if (0 == blocksize_bytes % 8192) break;
-
-                o << "Invalid blocksize " << blocksize_bytes << " for \"constant+ratio\" dedupe method - must be a multiple of 8 KiB (8192).";
-                if (sawBadOne) composite_error_message += std::string(" & ");
-                sawBadOne=true;
-                composite_error_message += o.str();
+            case dedupe_method::constant_ratio: break; // separate error message below.
+            case dedupe_method::static_method: break;
 
             case dedupe_method::invalid:
             default:
@@ -779,6 +855,24 @@ std::pair<bool,std::string> IosequencerInput::setMultipleParameters(std::string 
             }
         }
 	}
+
+	if ((dedupe_type != dedupe_method::constant_ratio && dedupe_type != dedupe_method::static_method) && fraction_zero_pattern != 0.0)
+    {
+        std::ostringstream o;
+        o << "Invalid fraction_zero_pattern = " << fraction_zero_pattern << ".  This may only be used with the \"fixed\" and \"constant_ratio\" dedupe methods.";
+        if (sawBadOne) composite_error_message += std::string(" & ");
+        sawBadOne=true;
+        composite_error_message += o.str();
+    }
+
+	if (fractionRead != 1.0 && dedupe > 1.0 && (dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method) && ((blocksize_bytes < dedupe_unit_bytes) || (0 != blocksize_bytes % dedupe_unit_bytes)))
+    {
+        std::ostringstream o;
+        o << "Invalid combination of blocksize = " << put_on_KiB_etc_suffix(blocksize_bytes) << " with dedupe_unit_bytes = " << put_on_KiB_etc_suffix(dedupe_unit_bytes) << ".  Blocksize must be a multiple of dedupe_unit_bytes.";
+        if (sawBadOne) composite_error_message += std::string(" & ");
+        sawBadOne=true;
+        composite_error_message += o.str();
+    }
 
 	return std::make_pair(sawGoodOne && (!sawBadOne),composite_error_message);
 }
@@ -814,6 +908,7 @@ void IosequencerInput::reset()
 	dedupe_type = dedupe_method_default;
 	pat = pattern_default;
 	compressibility = compressibility_default;
+	fraction_zero_pattern = 0.0;
 
 	threads_in_workload_name = threads_in_workload_name_default;
 	this_thread_in_workload = this_thread_in_workload_default;
@@ -823,6 +918,7 @@ void IosequencerInput::reset()
 	hot_zone_IOPS_fraction = 0.0;
 	hot_zone_read_fraction = 0.0;
 	hot_zone_write_fraction = 0.0;
+
 }
 
 
@@ -901,7 +997,18 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
 	o << ",pattern=" << pattern_to_string(pat);
 	o << ",dedupe=" << dedupe;
 	o << ",dedupe_method=" << dedupe_method_to_string(dedupe_type);
+	{
+		o<< ",dedupe_unit_bytes=";
+		if (0==(dedupe_unit_bytes%(1024*1024))) {
+			o << (dedupe_unit_bytes/(1024*1024)) << " MiB";
+		} else if (0==(dedupe_unit_bytes%1024)) {
+			o << (dedupe_unit_bytes/1024) << " KiB";
+		} else {
+			o << dedupe_unit_bytes;
+		}
+	}
 	o << ",compressibility=" << compressibility;
+	if (dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method) o << ",fraction_zero_pattern=" << fraction_zero_pattern;
 
     o << ",threads_in_workload_name=" << threads_in_workload_name;
     o << ",this_thread_in_workload=" << this_thread_in_workload;
@@ -963,7 +1070,19 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 	if (!defaultPattern())                      { o << ",pattern=" << pattern_to_string(pat);}
 	if (!defaultDedupe())                       { o << ",dedupe=" << dedupe;}
 	if (!defaultDedupeMethod())                 { o << ",dedupe_method=" << dedupe_method_to_string(dedupe_type); }
+	if (!default_dedupe_unit())
+	{
+		o<< ",dedupe_unit_bytes=";
+		if (0==(dedupe_unit_bytes%(1024*1024))) {
+			o << (dedupe_unit_bytes/(1024*1024)) << " MiB";
+		} else if (0==(dedupe_unit_bytes%1024)) {
+			o << (dedupe_unit_bytes/1024) << " KiB";
+		} else {
+			o << dedupe_unit_bytes;
+		}
+	}
 	if (!defaultCompressibility())              { o << ",compressibility=" << compressibility;}
+	if ((dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method) && !default_fraction_zero_pattern())       { o << ",fraction_zero_pattern=" << compressibility;}
 
     if (!defaultThreads_in_workload_name()) { o << ",threads_in_workload_name=" << threads_in_workload_name;}
     if (!defaultThis_thread_in_workload())  { o << ",this_thread_in_workload=" << this_thread_in_workload;}
@@ -993,25 +1112,27 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 
 void IosequencerInput::copy(const IosequencerInput& source)
 {
-	iosequencer_type=source.iosequencer_type;
-	iosequencerIsSet=source.iosequencerIsSet;
-	blocksize_bytes=source.blocksize_bytes;
-	maxTags=source.maxTags;
-	IOPS=source.IOPS;
-	skew_weight = source.skew_weight;
-	fractionRead=source.fractionRead;
-	rangeStart=source.rangeStart;
-	rangeEnd=source.rangeEnd;
-	seqStartPoint=source.seqStartPoint;
+	iosequencer_type = source.iosequencer_type;
+	iosequencerIsSet = source.iosequencerIsSet;
+	blocksize_bytes  = source.blocksize_bytes;
+	maxTags          = source.maxTags;
+	IOPS             = source.IOPS;
+	skew_weight      = source.skew_weight;
+	fractionRead     = source.fractionRead;
+	rangeStart       = source.rangeStart;
+	rangeEnd         = source.rangeEnd;
+	seqStartPoint    = source.seqStartPoint;
 
-	dedupe=source.dedupe;
-	dedupe_type=source.dedupe_type;
-	pat=source.pat;
-	compressibility=source.compressibility;
+	dedupe                = source.dedupe;
+	dedupe_type           = source.dedupe_type;
+	dedupe_unit_bytes     = source.dedupe_unit_bytes;
+	pat                   = source.pat;
+	compressibility       = source.compressibility;
+	fraction_zero_pattern = source.fraction_zero_pattern;
 
-	threads_in_workload_name=source.threads_in_workload_name;
-	this_thread_in_workload=source.this_thread_in_workload;
-	pattern_seed=source.pattern_seed;
+	threads_in_workload_name = source.threads_in_workload_name;
+	this_thread_in_workload  = source.this_thread_in_workload;
+	pattern_seed             = source.pattern_seed;
 
 	hot_zone_size_bytes     = source.hot_zone_size_bytes;
 	hot_zone_IOPS_fraction  = source.hot_zone_IOPS_fraction;

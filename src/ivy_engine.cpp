@@ -192,10 +192,7 @@ bool ivy_engine::some_cooldown_WP_not_empty()
                 o << "With cooldown_by_wp = on, a CLPR Write Pending % is " << std::fixed << std::setprecision(2) << (100.0 * wp) << "%"
                   << ", which is above subsystem_WP_threshold = " << std::fixed << std::setprecision(1) << (100.0 * m_s.subsystem_WP_threshold) << "%" << std::endl;
                 std::cout << o.str();
-                if (routine_logging)
-                {
-                    log(masterlogfile,o.str());
-                }
+                if (routine_logging) { log(masterlogfile,o.str()); }
             }
             return true;
         }
@@ -209,19 +206,13 @@ bool ivy_engine::some_subsystem_still_busy()
 {
     RollupInstance* p_allall = m_s.rollups.get_all_equals_all_instance();
 
-//{std::ostringstream o; o << "debug: ivy_engine::some_subsystem_still_busy() - p_allall->subsystem_data_by_subinterval.size() = " << p_allall->subsystem_data_by_subinterval.size() << std::endl; std::cout << o.str(); log(masterlogfile, o.str());}
-
     if (p_allall->subsystem_data_by_subinterval.size() == 0) return false;
 
     ivy_float avg_busy = p_allall->subsystem_data_by_subinterval.back().avg_MP_core_busy_fraction();
 
-//{std::ostringstream o; o << "debug: ivy_engine::some_subsystem_still_busy() - average MP busy = " << (100.0*avg_busy) << "%" << std::endl; std::cout << o.str(); log(masterlogfile, o.str());}
-
     if (avg_busy < subsystem_busy_threshold)
     {
         cooldown_by_MP_busy_stay_down_count ++;
-
-//{std::ostringstream o; o << "debug: ivy_engine::some_subsystem_still_busy() - cooldown_by_MP_busy_stay_down_count = " << cooldown_by_MP_busy_stay_down_count << std::endl; std::cout << o.str(); log(masterlogfile, o.str());}
 
         if (cooldown_by_MP_busy_stay_down_count >= cooldown_by_MP_busy_stay_down_count_limit)
         {
@@ -234,6 +225,7 @@ bool ivy_engine::some_subsystem_still_busy()
               << ", below the subsystem_busy_threshold " << std::fixed << std::setprecision(1) << (100.0 * m_s.subsystem_busy_threshold) << "% for " << cooldown_by_MP_busy_stay_down_count
               << " of the required " << cooldown_by_MP_busy_stay_down_count_limit << " subintervals." << std::endl;
             std::cout << o.str();
+            if (routine_logging) { log(masterlogfile,o.str()); }
             return true;
         }
     }
@@ -244,10 +236,8 @@ bool ivy_engine::some_subsystem_still_busy()
         o << "With cooldown_by_MP_busy=on, subsystem average MP_core % busy is " << std::fixed << std::setprecision(2) << (100.0 * avg_busy) << "%"
           << ", which is above subsystem_busy_threshold = " << std::fixed << std::setprecision(1) << (100.0 * m_s.subsystem_busy_threshold) << "%" << std::endl;
         std::cout << o.str();
-        if (routine_logging)
-        {
-            log(masterlogfile,o.str());
-        }
+        if (routine_logging) { log(masterlogfile,o.str()); }
+
         return true;
     }
     return false;

@@ -146,20 +146,21 @@ std::string Eyeo::toString(bool display_buffer_contents) {
 	if (iops_max_counted) o << "true";
 	else                  o << "false";
 
+	const uint64_t dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 	if (display_buffer_contents)
 	{
-	    if (eyeocb.aio_nbytes <= 8192)
+	    if (eyeocb.aio_nbytes <= (2*dedupe_unit_bytes))
 	    {
 	        o << std::endl << "buffer contents:" << std::endl;
 	        display_memory_contents(o,((const unsigned char*) eyeocb.aio_buf),(int) eyeocb.aio_nbytes,32);
 	    }
 	    else
 	    {
-	        o << std::endl << "first 4 KiB of buffer contents:" << std::endl;
-	        display_memory_contents(o,((const unsigned char*) eyeocb.aio_buf),4096,32);
+	        o << std::endl << "first dedupe_unit_bytes = " << dedupe_unit_bytes << " of buffer contents:" << std::endl;
+	        display_memory_contents(o,((const unsigned char*) eyeocb.aio_buf),dedupe_unit_bytes,32);
 
-	        o << std::endl << "last 4 KiB of buffer contents:" << std::endl;
-	        display_memory_contents(o,((const unsigned char*) (eyeocb.aio_buf+eyeocb.aio_nbytes-4096)),4096,32);
+	        o << std::endl << "..." << std::endl << "last dedupe_unit_bytes = " << dedupe_unit_bytes << " of buffer contents:" << std::endl;
+	        display_memory_contents(o,((const unsigned char*) (eyeocb.aio_buf+eyeocb.aio_nbytes-dedupe_unit_bytes)),dedupe_unit_bytes,32);
 	    }
 	}
 
@@ -236,7 +237,6 @@ ivy_float Eyeo::running_time_seconds()
 void Eyeo::generate_pattern()
 {
     uint64_t blocksize = eyeocb.aio_nbytes;
-    uint64_t uint64_t_count;
     uint64_t* p_uint64;
     char* p_c;
     uint64_t d;
@@ -246,11 +246,12 @@ void Eyeo::generate_pattern()
     char* past_piece;
     char* p_word;
     int bsindex = 0;
-    int count = 0;
+    uint64_t count = 0;
 
-    uint64_t eightKiBpieces;
+    uint64_t pieces;
     uint64_t remainder;
 
+    const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
     pWorkload->write_io_count++;
 
@@ -259,56 +260,74 @@ void Eyeo::generate_pattern()
         case pattern::random:
 
             p_uint64 = (uint64_t*) eyeocb.aio_buf;
-            uint64_t_count = blocksize / 8;
+            count = blocksize / 8;
 
             // For dedupe_method  = constant_ratio or target_spread, we have already confirmed that the blocksize is a multiple of 8192 in setMultipleParameters
 
-            for (uint64_t i=0; i < uint64_t_count; i++)
+            for (uint64_t i=0; i < count; i++)
             {
-                if (pWorkload->doing_dedupe && i % 1024 == 0)
+                if (pWorkload->doing_dedupe && i % (dedupe_unit_bytes/8) == 0)
                 {
-                    if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::target_spread)
+                    if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::target_spread)
                     {
                         pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
                     }
-                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
+                    else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                     {
                         pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + i * sizeof(uint64_t));
-//                        uint64_t eight_KiB_block_number = ((uint64_t) eyeocb.aio_offset + (i * 8)) / 8192;
-//                        uint64_t fixed_part_of_seed = eight_KiB_block_number % pWorkload->throw_group_size;
-//                        pWorkload->block_seed = fixed_part_of_seed ^ (*(pWorkload->p_sides_distribution))(deafrangen) ^ pWorkload->uint64_t_hash_of_workloadID;
                     }
-                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::serpentine) {
+                    else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::static_method)
+                    {
+                        pWorkload->block_seed = fixed_pattern_sub_block_starting_seed( i * 8 );
+                        if (pWorkload->block_seed == 0)
+                        {
+                            void* p = (void*) (eyeocb.aio_buf + (i * 8));
+                            memset(p,0x00,dedupe_unit_bytes);
+                            i += ((dedupe_unit_bytes/8)-1);
+                            goto past_random_pattern_8byte_write;
+                        }
+                    }
+                    else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::serpentine) {
                         // Do nothing special.
                     }
                     else assert(false);
                 }
                 xorshift64star(pWorkload->block_seed);
                 (*(p_uint64 + i)) = pWorkload->block_seed;
+
+past_random_pattern_8byte_write:;
             }
 
             break;
 
         case pattern::ascii:
             p_c = (char*) eyeocb.aio_buf;
-            uint64_t_count = blocksize / 8;
+            count = blocksize / 8;
 
-            for (uint64_t i=0; i < uint64_t_count; i++)
+            for (uint64_t i=0; i < count; i++)
             {
-                if (pWorkload->doing_dedupe && i % 1024 == 0)
+                if (pWorkload->doing_dedupe && i % (dedupe_unit_bytes/8) == 0)
                 {
-                    if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::target_spread)
+                    if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::target_spread)
                     {
                         pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
                     }
-                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
+                    else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                     {
                         pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + i * sizeof(uint64_t));
-//                        uint64_t eight_KiB_block_number = ((uint64_t) eyeocb.aio_offset + (i * 8)) / 8192;
-//                        uint64_t fixed_part_of_seed = eight_KiB_block_number % pWorkload->throw_group_size;
-//                        pWorkload->block_seed = fixed_part_of_seed ^ (*(pWorkload->p_sides_distribution))(deafrangen) ^ pWorkload->uint64_t_hash_of_workloadID;
                     }
-                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::serpentine) {
+                    else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::static_method)
+                    {
+                        pWorkload->block_seed = fixed_pattern_sub_block_starting_seed( i * 8 );
+                        if (pWorkload->block_seed == 0)
+                        {
+                            void* p = (void*) (eyeocb.aio_buf + (i * 8));
+                            memset(p,0x00,dedupe_unit_bytes);
+                            i += ((dedupe_unit_bytes/8)-1);
+                            goto past_ascii_pattern_8byte_write;
+                        }
+                    }
+                    else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::serpentine) {
                         // Do nothing special.
                     }
                     else assert(false);
@@ -333,6 +352,7 @@ void Eyeo::generate_pattern()
                 d /= printable_ascii.size();
                 *p_c++ = printable_ascii[d % printable_ascii.size()]; // 8
                 d /= printable_ascii.size();
+past_ascii_pattern_8byte_write:;
             }
 
             break;
@@ -343,31 +363,39 @@ void Eyeo::generate_pattern()
 
             past_buf = ((char*) eyeocb.aio_buf)+blocksize;
 
-            eightKiBpieces = blocksize / 8192;
-            remainder = blocksize % 8192;
+            pieces = blocksize / dedupe_unit_bytes;
+            remainder = blocksize % dedupe_unit_bytes;
 
-            // For dedupe_method  = constant_ratio or target_spread, we have already confirmed that the blocksize is a multiple of 8192 in setMultipleParameters
+            // For dedupe_method  = constant_ratio, static, or target_spread, we have already confirmed that the blocksize is a multiple of dedupe_unit_bytes in setMultipleParameters
 
-            for (uint64_t piece = 0; piece < eightKiBpieces; piece++)
+            for (uint64_t piece = 0; piece < pieces; piece++)
             {
-                uint64_t_count = ceil(  (1.0-pWorkload->compressibility)  *  ((double) 1024)  );
+                count = ceil(  (1.0-pWorkload->compressibility)  *  ((double) (dedupe_unit_bytes/8))  );
 
-                for (uint64_t i=0; i < uint64_t_count; i++)
+                for (uint64_t i=0; i < count; i++)
                 {
                     if (pWorkload->doing_dedupe && i == 0)
                     {
-                        if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::target_spread)
+                        if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::target_spread)
                         {
                             pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
                         }
-                        else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
+                        else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                         {
-                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + (piece * 8192) /* + i * sizeof(uint64_t))*/ );
-//                            uint64_t eight_KiB_block_number = ((uint64_t) eyeocb.aio_offset + (i * 8)) / 8192;
-//                            uint64_t fixed_part_of_seed = eight_KiB_block_number % pWorkload->throw_group_size;
-//                            pWorkload->block_seed = fixed_part_of_seed ^ (*(pWorkload->p_sides_distribution))(deafrangen) ^ pWorkload->uint64_t_hash_of_workloadID;
+                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + (piece * dedupe_unit_bytes) /* + i * sizeof(uint64_t))*/ );
                         }
-                        else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::serpentine)
+                        else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::static_method)
+                        {
+                            pWorkload->block_seed = fixed_pattern_sub_block_starting_seed(piece * dedupe_unit_bytes);
+                            if (pWorkload->block_seed == 0)
+                            {
+                                void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
+                                memset(p,0x00,dedupe_unit_bytes);
+                                i += ((dedupe_unit_bytes/8)-1);
+                                goto past_trailing_blanks_pattern_8byte_write;
+                            }
+                        }
+                        else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::serpentine)
                         {
                             // Do nothing special.
                         }
@@ -377,22 +405,24 @@ void Eyeo::generate_pattern()
                     (*(p_uint64 + i)) = pWorkload->block_seed;
                 }
 
-                first_bite = floor((1.0-pWorkload->compressibility) * 8192 );
+                first_bite = floor((1.0-pWorkload->compressibility) * dedupe_unit_bytes );
 
-                past_piece = ((char*) eyeocb.aio_buf) + 8192 * (piece +1);
+                past_piece = ((char*) eyeocb.aio_buf) + dedupe_unit_bytes * (piece +1);
 
-                for (p_c = (((char*) eyeocb.aio_buf) + (piece * 8192) + first_bite); p_c < past_piece; p_c++)
+                for (p_c = (((char*) eyeocb.aio_buf) + (piece * dedupe_unit_bytes) + first_bite); p_c < past_piece; p_c++)
                 {
                     *p_c = ' ';
                 }
-                p_uint64 += 1024;
+                p_uint64 += (dedupe_unit_bytes/8);
+
+past_trailing_blanks_pattern_8byte_write:;
             }
 
             if (remainder > 0) // can only happen for dedupe_method = serpentine
             {
-                uint64_t_count = ceil(  (1.0-pWorkload->compressibility)  *  ((double)(remainder / 8))  );
+                count = ceil(  (1.0-pWorkload->compressibility)  *  ((double)(remainder / 8))  );
 
-                for (uint64_t i=0; i < uint64_t_count; i++)
+                for (uint64_t i=0; i < count; i++)
                 {
                     xorshift64star(pWorkload->block_seed);
                     (*(p_uint64 + i)) = pWorkload->block_seed;
@@ -400,7 +430,7 @@ void Eyeo::generate_pattern()
 
                 first_bite = floor((1.0-pWorkload->compressibility) * remainder );
 
-                for (p_c = (((char*) eyeocb.aio_buf) + (8192 * eightKiBpieces) + first_bite); p_c < past_buf; p_c++)
+                for (p_c = (((char*) eyeocb.aio_buf) + (dedupe_unit_bytes * pieces) + first_bite); p_c < past_buf; p_c++)
                 {
                     *p_c = ' ';
                 }
@@ -428,42 +458,74 @@ void Eyeo::generate_pattern()
 
         case pattern::gobbledegook:
 
-            p_c = (char*)eyeocb.aio_buf;
-            past_buf = ((char*) eyeocb.aio_buf)+blocksize;
-            count = 0;
-            while(p_c < past_buf)
+            pieces = blocksize / dedupe_unit_bytes;
+            remainder = blocksize % dedupe_unit_bytes;
+
+            for (uint64_t piece = 0; piece < pieces; piece++)
             {
-                if (pWorkload->doing_dedupe && count % 1024 == 0)
+                p_c = (char*) (((uint64_t) eyeocb.aio_buf) + piece * dedupe_unit_bytes);
+                past_buf = p_c + dedupe_unit_bytes;
+                count = 0;
+                while(p_c < past_buf)
                 {
-                    if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::target_spread)
+                    if (pWorkload->doing_dedupe && count == 0)
                     {
-                        pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                        if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::target_spread)
+                        {
+                            pWorkload->block_seed = pWorkload->last_block_seeds[bsindex++];
+                        }
+                        else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
+                        {
+                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + piece*dedupe_unit_bytes + count * sizeof(uint64_t));
+                        }
+                        else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::static_method)
+                        {
+                            pWorkload->block_seed = fixed_pattern_sub_block_starting_seed(piece * dedupe_unit_bytes);
+                            if (pWorkload->block_seed == 0)
+                            {
+                                void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
+                                memset(p,0x00,dedupe_unit_bytes);
+                                goto past_trailing_gobbldegook_pattern_write;
+                            }
+                        }
+                        else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::serpentine) {
+                            // Do nothing special.
+                        }
+                        else assert(false);
                     }
-                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::constant_ratio)
+                    xorshift64star(pWorkload->block_seed);
+                    word_index = pWorkload->block_seed % unique_word_count;
+                    p_word = unique_words[word_index];
+                    while ( (*p_word) && (p_c < past_buf) )
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + count * sizeof(uint64_t));
-//                        uint64_t eight_KiB_block_number = ((uint64_t) eyeocb.aio_offset + (count * 8)) / 8192;
-//                        uint64_t fixed_part_of_seed = eight_KiB_block_number % pWorkload->throw_group_size;
-//                        pWorkload->block_seed = fixed_part_of_seed ^ (*(pWorkload->p_sides_distribution))(deafrangen) ^ pWorkload->uint64_t_hash_of_workloadID;
+                        *p_c++ = *p_word++;
+                        count++;
                     }
-                    else if (pWorkload->subinterval_array[0].input.dedupe_type == dedupe_method::serpentine) {
-                        // Do nothing special.
-                    }
-                    else assert(false);
+                    if (p_c < past_buf) {*p_c++ = ' '; count++;}
                 }
-                xorshift64star(pWorkload->block_seed);
-                word_index = pWorkload->block_seed % unique_word_count;
-                p_word = unique_words[word_index];
-                while ( (*p_word) && (p_c < past_buf) )
+past_trailing_gobbldegook_pattern_write:;
+            }
+
+            if (remainder > 0) // this doesn't happen when we're doing dedupe.
+            {
+                p_c      = (char*) (((uint64_t) eyeocb.aio_buf) + pieces * dedupe_unit_bytes);
+                past_buf = (char*) (((uint64_t) eyeocb.aio_buf) + blocksize);
+                while(p_c < past_buf)
                 {
-                    *p_c++ = *p_word++;
-                    count++;
+                    xorshift64star(pWorkload->block_seed);
+                    word_index = pWorkload->block_seed % unique_word_count;
+                    p_word = unique_words[word_index];
+                    while ( (*p_word) && (p_c < past_buf) )
+                    {
+                        *p_c++ = *p_word++;
+                    }
+                    if (p_c < past_buf) {*p_c++ = ' ';}
                 }
-                if (p_c < past_buf) {*p_c++ = ' '; count++;}
             }
 
             break;
 
+        case pattern::invalid:
         default:
             {
                 std::ostringstream o;
@@ -503,3 +565,69 @@ std::string Eyeo::buffer_first_last_16_hex()
 
     return o.str();
 }
+
+
+uint64_t Eyeo::zero_pattern_filtered_sub_block_number(uint64_t offset_within_this_Eyeo_buffer)
+{
+
+    uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
+
+    uint64_t unfiltered_sub_block_number = (((uint64_t) eyeocb.aio_offset) + offset_within_this_Eyeo_buffer) / dedupe_unit_bytes;
+
+    if (unfiltered_sub_block_number == 0)
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error.  Eyeo::zero_pattern_filtered_sub_block_number() was called for block zero.  We never write to block zero, so we don\'t over-write partition table / boot sector."
+                << "  This Eyeo toString() = " << toString();
+        std::cout << o.str();
+        throw std::runtime_error(o.str());
+    }
+
+    const long double& fraction_zero_pattern = pWorkload->p_current_IosequencerInput->fraction_zero_pattern;
+
+    uint64_t n           = (uint64_t) (((long double)(unfiltered_sub_block_number  ))*(1.0-fraction_zero_pattern));
+    uint64_t n_minus_one = (uint64_t) (((long double)(unfiltered_sub_block_number-1))*(1.0-fraction_zero_pattern));
+
+    if (n == n_minus_one) return 0;
+
+    return n;
+}
+
+
+uint64_t Eyeo::fixed_pattern_sub_block_starting_seed(uint64_t offset_within_this_Eyeo_buffer)
+{
+    uint64_t filtered_sub_block_number = zero_pattern_filtered_sub_block_number(offset_within_this_Eyeo_buffer);
+
+    if (filtered_sub_block_number == 0) return 0;
+
+    const ivy_float& dedupe = pWorkload->p_current_IosequencerInput->dedupe;
+
+    return pWorkload->uint64_t_hash_of_workloadID  ^ (1 + ((uint64_t) (((long double) filtered_sub_block_number)/dedupe)));
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

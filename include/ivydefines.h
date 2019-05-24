@@ -118,6 +118,7 @@ const ivy_float min_subinterval_seconds {3.0};
 const ivy_float max_subinterval_seconds {3600.0};
 
 const int blocksize_bytes_default {8192};
+const int dedupe_unit_bytes_default {8192};
 const int maxTags_default{1};   // make sure someone is going to notice if they haven't set this.
 const ivy_float IOPS_default {1};  // Default is 1.0 I/Os per second
 const ivy_float skew_weight_default {-1.0};
@@ -127,7 +128,7 @@ const ivy_float	rangeEnd_default {1.0};    // default is 1.0 maps to the last al
 const ivy_float	seqStartPoint_default{0.0}; // This defines where a sequential thread will start mapped from 0.0
                                                          // at the rangeStart point up to 1.0 at the rangeEnd point.
 const pattern pattern_default {pattern::random};
-const dedupe_method dedupe_method_default {dedupe_method::target_spread};
+const dedupe_method dedupe_method_default {dedupe_method::static_method};
 const ivy_float dedupe_default {1.0};
 const ivy_float compressibility_default {0.0};
 

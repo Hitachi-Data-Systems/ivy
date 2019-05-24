@@ -673,6 +673,7 @@ unsigned int Workload::generate_an_IO()
                     break;
 
                 case dedupe_method::constant_ratio:
+                case dedupe_method::static_method:
 
                     // Handled elsewhere, as the seed generation depends on the LBA.
 

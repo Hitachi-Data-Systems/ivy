@@ -96,6 +96,32 @@ public:
 
 	void generate_pattern();
 	ivytime since_start_time(); // returns ivytime(0) if start_time is not in the past
+
+    uint64_t zero_pattern_filtered_sub_block_number(uint64_t offset_within_this_Eyeo_buffer);
+        // An (unfiltered) sub-block number is the offset within the LUN in bytes, divided by dedupe_unit_bytes.
+
+        // "blocksize_bytes" is a multiple of "dedupe_unit_bytes", so there may be multiple sub-blocks within the Eyeo pattern.
+
+        // Returns 0 if this is a zero pattern sub-block.
+
+        // Otherwise, returns what the sub-block number would be when not counting zero pattern blocks.
+
+        // For example, if we have a 25% fraction_zero_pattern, for sub-blocks 1, 2, 3, ... it returns
+        // 0, 1, 2, 3, 0, 4, 5, 6, 0, 7, 8, 9,  ...
+
+	uint64_t fixed_pattern_sub_block_starting_seed(uint64_t offset_within_this_Eyeo_buffer);
+
+	    // Returns 0 if this should be an all-zeros sub-block, based on IosequencerInput's "fraction_zero_pattern" parameter.
+
+        // Otherwise first calculates a sub-block number with the right number of duplicates
+        // to hit the required dedupe ratio, once zero (sub-)blocks are removed.
+
+        // For example, if we have a 25% fraction_zero_pattern, and a 1.5:1 dedupe ratio, for (sub-)blocks 1, 2, 3, ... it calculates
+        // 0, 1, 2, 3, 0, 3, 4, 5, 0, 5, 6, 7, 0, 7, 8, 9, 0, ...
+
+        // Then finally, for non-zero sub-blocks, it returns the 64-but hash of the workload ID
+        // XORed with the sub-block number, including duplicates as shown in the series immediately above.
+
 };
 
 std::ostream& operator<<(std::ostream&, const struct io_event&);

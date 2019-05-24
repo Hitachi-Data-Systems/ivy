@@ -69,7 +69,9 @@ public:
     ivy_float dedupe          {dedupe_default};
     pattern   pat             {pattern_default};
     dedupe_method dedupe_type {dedupe_method_default};
+    uint64_t dedupe_unit_bytes  {dedupe_unit_bytes_default};
     ivy_float compressibility {compressibility_default};  // compressibility is only referred to for pattern = trailing_blanks
+    long double fraction_zero_pattern {0.0}; // long double has a 64 bit fractional part (mantissa) needed to hold (sub-)block
 
     unsigned int threads_in_workload_name {threads_in_workload_name_default};
     unsigned int this_thread_in_workload {this_thread_in_workload_default};
@@ -127,6 +129,8 @@ public:
 	bool defaultDedupeMethod() { return dedupe_type == dedupe_method_default; }
 	bool defaultDedupe() { return dedupe == dedupe_default; }
 	bool defaultCompressibility() { return compressibility == compressibility_default; }
+	bool default_dedupe_unit() { return dedupe_unit_bytes == dedupe_unit_bytes_default; }
+	bool default_fraction_zero_pattern() { return fraction_zero_pattern == 0.0; }
 	bool defaultThreads_in_workload_name() { return threads_in_workload_name == threads_in_workload_name_default;}
 	bool defaultThis_thread_in_workload() { return this_thread_in_workload == this_thread_in_workload_default;}
 	bool defaultPattern_seed() { return pattern_seed == pattern_seed_default;}

@@ -297,28 +297,35 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 pear.second.workload_weighted_IOPS_max_skew_progress = 0.0;
 
                 if (pear.second.dedupe_target_spread_regulator != nullptr) { delete pear.second.dedupe_target_spread_regulator; }
-                pear.second.dedupe_target_spread_regulator = new DedupeTargetSpreadRegulator(pear.second.subinterval_array[0].input.dedupe, pear.second.pattern_seed);
-                //log(slavethreadlogfile, pear.second.dedupe_regulator->logmsg());
 
-                if (pear.second.p_my_iosequencer->isRandom())
+                if (pear.second.p_current_IosequencerInput->dedupe > 1.0 && pear.second.p_current_IosequencerInput->fractionRead != 1.0  && pear.second.p_current_IosequencerInput->dedupe_type == dedupe_method::target_spread)
                 {
-                    if (pear.second.dedupe_target_spread_regulator->decide_reuse())
+                    pear.second.dedupe_target_spread_regulator = new DedupeTargetSpreadRegulator(pear.second.subinterval_array[0].input.dedupe, pear.second.pattern_seed);
+                    if (pear.second.p_my_iosequencer->isRandom())
                     {
-                        std::pair<uint64_t, uint64_t> align_pattern;
-                        align_pattern = pear.second.dedupe_target_spread_regulator->reuse_seed();
-                        pear.second.pattern_seed = align_pattern.first;
-                        pear.second.pattern_alignment = align_pattern.second;
-                        pear.second.pattern_number = pear.second.pattern_alignment;
-                    } else
-                    {
-                        pear.second.pattern_seed = pear.second.dedupe_target_spread_regulator->random_seed();
+                        if (pear.second.dedupe_target_spread_regulator->decide_reuse())
+                        {
+                            std::pair<uint64_t, uint64_t> align_pattern;
+                            align_pattern = pear.second.dedupe_target_spread_regulator->reuse_seed();
+                            pear.second.pattern_seed = align_pattern.first;
+                            pear.second.pattern_alignment = align_pattern.second;
+                            pear.second.pattern_number = pear.second.pattern_alignment;
+                        } else
+                        {
+                            pear.second.pattern_seed = pear.second.dedupe_target_spread_regulator->random_seed();
+                        }
                     }
                 }
+                //log(slavethreadlogfile, pear.second.dedupe_regulator->logmsg());
+
 
                 if (pear.second.dedupe_constant_ratio_regulator != nullptr) { delete pear.second.dedupe_constant_ratio_regulator; }
-                pear.second.dedupe_constant_ratio_regulator = new DedupeConstantRatioRegulator(pear.second.subinterval_array[0].input.dedupe,
-                                                                                               pear.second.subinterval_array[0].input.blocksize_bytes,
-                                                                                               pear.second.uint64_t_hash_of_workloadID);
+                if (pear.second.p_current_IosequencerInput->dedupe > 1.0 && pear.second.p_current_IosequencerInput->fractionRead != 1.0  && pear.second.p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
+                {
+                    pear.second.dedupe_constant_ratio_regulator = new DedupeConstantRatioRegulator(pear.second.subinterval_array[0].input.dedupe,
+                                                                                                   pear.second.subinterval_array[0].input.blocksize_bytes,
+                                                                                                   pear.second.uint64_t_hash_of_workloadID);
+                }
 
 #ifdef IVYDRIVER_TRACE
                 pear.second.workload_callcount_prepare_to_run = 0;
