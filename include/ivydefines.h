@@ -153,4 +153,4 @@ extern char* unique_words[];
 
 #define FIRST_FEW_CALLS 250
 
-#define LOG_FIRST_FEW_IO_COMPLETIONS (5)
+#define LOG_FIRST_FEW_IO_COMPLETIONS (25)

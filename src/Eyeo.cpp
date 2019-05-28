@@ -324,6 +324,7 @@ past_random_pattern_8byte_write:;
                             void* p = (void*) (eyeocb.aio_buf + (i * 8));
                             memset(p,0x00,dedupe_unit_bytes);
                             i += ((dedupe_unit_bytes/8)-1);
+                            p_c += dedupe_unit_bytes;
                             goto past_ascii_pattern_8byte_write;
                         }
                     }
@@ -392,6 +393,7 @@ past_ascii_pattern_8byte_write:;
                                 void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
                                 memset(p,0x00,dedupe_unit_bytes);
                                 i += ((dedupe_unit_bytes/8)-1);
+                                p_uint64 = (uint64_t*) (eyeocb.aio_buf + (piece+1)*dedupe_unit_bytes);
                                 goto past_trailing_blanks_pattern_8byte_write;
                             }
                         }

@@ -550,7 +550,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
             log(m_s.masterlogfile, errah.str());
             throw std::runtime_error(errah.str());
         }
-        ivy_float random_blocksize_KiB =  ait->second.avg();
+        ivy_float random_blocksize_KiB =  ait->second.avg()/1.024;
 
 
         metric  = "random_IOPS";
@@ -582,7 +582,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
             log(m_s.masterlogfile, errah.str());
             throw std::runtime_error(errah.str());
         }
-        ivy_float sequential_blocksize_KiB =  ait->second.avg();
+        ivy_float sequential_blocksize_KiB =  ait->second.avg()/1.024;
 
 
         metric  = "sequential_IOPS";
