@@ -274,7 +274,7 @@ void Eyeo::generate_pattern()
                     }
                     else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + i * sizeof(uint64_t));
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, eyeocb.aio_offset + i * sizeof(uint64_t));
                         if (pWorkload->block_seed == 0)
                         {
                             void* p = (void*) (eyeocb.aio_buf + (i * 8));
@@ -321,7 +321,7 @@ past_random_pattern_8byte_write:;
                     }
                     else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + i * sizeof(uint64_t));
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, eyeocb.aio_offset + i * sizeof(uint64_t));
                         if (pWorkload->block_seed == 0)
                         {
                             void* p = (void*) (eyeocb.aio_buf + (i * 8));
@@ -398,7 +398,7 @@ past_ascii_pattern_8byte_write:;
                         }
                         else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                         {
-                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + (piece * dedupe_unit_bytes) /* + i * sizeof(uint64_t))*/ );
+                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, eyeocb.aio_offset + (piece * dedupe_unit_bytes) /* + i * sizeof(uint64_t))*/ );
                             if (pWorkload->block_seed == 0)
                             {
                                 void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
@@ -501,7 +501,7 @@ past_trailing_blanks_pattern_8byte_write:;
                         }
                         else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                         {
-                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(eyeocb.aio_offset + piece*dedupe_unit_bytes + count * sizeof(uint64_t));
+                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, eyeocb.aio_offset + piece*dedupe_unit_bytes + count * sizeof(uint64_t));
                             if (pWorkload->block_seed == 0)
                             {
                                 void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));

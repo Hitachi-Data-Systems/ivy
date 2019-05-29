@@ -29,7 +29,7 @@ class DedupeConstantRatioRegulator
     public:
         DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, ivy_float zero_blocks, uint64_t workloadID_hash);
         virtual ~DedupeConstantRatioRegulator();
-        uint64_t get_seed(uint64_t offset);
+        uint64_t get_seed(Eyeo *p_eyeo, uint64_t offset);
 
     protected:
 

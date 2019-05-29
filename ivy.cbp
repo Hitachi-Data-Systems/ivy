@@ -588,14 +588,12 @@
 			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/DedupeConstantRatioRegulator.cpp">
-			<Option target="ivymaster" />
 			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/DedupeConstantRatioTable.cpp">
 			<Option target="DedupeConstantRatioTableGenerator" />
 		</Unit>
 		<Unit filename="src/DedupeTargetSpreadRegulator.cpp">
-			<Option target="ivymaster" />
 			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/Eyeo.cpp">

@@ -24,12 +24,13 @@
 #include "ivyhelpers.h"
 #include "DedupeConstantRatioRegulator.h"
 #include "DedupeConstantRatioTable.h"
+#include "Eyeo.h"
 
 // Simple linear lookup as table is short and lookup is done only once.
 
 void DedupeConstantRatioRegulator::lookup_sides_and_throws(uint64_t &sides, uint64_t &throws)
 {
-    // Just do linear search.
+    // Just do linear search.  Assumes table is in sorted order already.
 
     auto prev = table_by_dedupe_ratio.begin();
     for (auto it = table_by_dedupe_ratio.begin(); it != table_by_dedupe_ratio.end(); ++it)
@@ -61,7 +62,7 @@ void DedupeConstantRatioRegulator::lookup_sides_and_throws(uint64_t &sides, uint
 
 void DedupeConstantRatioRegulator::compute_range(uint64_t &range)
 {
-    range = ceil(throws * block_size / (1.0 - zero_blocks_ratio) / min_dedupe_block) * min_dedupe_block;
+    range = throws * block_size;
 }
 
 DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, ivy_float zero_blocks, uint64_t workloadID_hash)
@@ -74,15 +75,16 @@ DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uin
     block_size = block;
     zero_blocks_ratio = zero_blocks;
 
-    tbpiob = block_size / min_dedupe_block;
-
     // Remember the hash of the workloadID
 
     workloadID = workloadID_hash;
 
-    // Compute a range of blocks.
+    // Lookup sides and throws from computed table.
 
     lookup_sides_and_throws(sides, throws);
+
+    // Compute a range of blocks.
+
     compute_range(range);
 }
 
@@ -92,49 +94,48 @@ DedupeConstantRatioRegulator::~DedupeConstantRatioRegulator()
 }
 
 // This method returns the seed to use when generating an I/O for a write to the present offset.
-// The algorithm is simple.  A pattern index from the range [0..multiplier-1] is chosen, indicating
-// which pattern seed to use within the present range.  (Multiplier is currently set to 64 but can
-// be any reasonably small integer.)  A range of (dedupe_ratio * multiplier) blocks is filled with
-// patterns randomly chosen.  This means that on average, dedupe_ratio will be attained.  Note that
-// special care must be taken for blocks larger than 8 KiB that are filled with trailing zeroes (in
-// the case of compression, hence the complex math formula for seeding srand48()).  Once a seed for
-// the range has been chosen, the seed is xor-shifted until a "random" number is chosen as the seed
-// for the pattern for the block.
+// The algorithm is simple.  A pattern index from the range [1..sides] is chosen, indicating which
+// pattern seed to use within the present range. A range (comprising throw # of blocks) is filled
+// with patterns randomly chosen.  This means that on average, dedupe_ratio will be attained.
+// Once a seed for the block has been chosen, the seed is xor-shifted until a "random" number has
+// been selected as the seed for the pattern for the block.
 
-uint64_t DedupeConstantRatioRegulator::get_seed(uint64_t offset)
+uint64_t DedupeConstantRatioRegulator::get_seed(Eyeo *p_eyeo, uint64_t offset)
 {
-    uint64_t base;
+    uint64_t modbase;
     uint64_t seed;
     uint64_t blockno;
-    uint64_t modbase;
+    uint64_t congruent;
     uint64_t modblock;
+    uint64_t modoffs;
     int index;
+
+    // Should this be a zero-filled block?
+
+    modblock = p_eyeo->zero_pattern_filtered_sub_block_number(offset - (uint64_t) (p_eyeo->eyeocb.aio_offset));
+    if (modblock == 0)
+    {
+        return 0; // Generate a zero-filled block.
+    }
 
     // For this range, select the appropriate "modulo block." A range comprises a "(throws * block_size)"
     // non-overlapping region.  A modulo block is the address of the ith block in the range modulo the
     // number of throws.  The offset of the current I/O has an associated modulo block, which is the
     // congruency class for the current block.  Compute the base address of the current modulo block.
 
-    base = (offset / range) * range;
-    blockno = (offset - base) / min_dedupe_block;
-
-    // In this version of the code, all zero blocks fall at the end of the range.
-
-    if (blockno >= (block_size * throws) / min_dedupe_block)
-    {
-        return 0;  // Generate a zero-filled block.
-    }
+    modoffs = modblock * min_dedupe_block;
+    modbase = (modoffs / range) * range;
+    blockno = (modoffs - modbase) / min_dedupe_block;
 
     // This is a nonsense number corresponding to the congruency class.
 
-    modblock = blockno / tbpiob * tbpiob + blockno % tbpiob;
-    modbase = base + modblock / throws;
+    congruent = modbase + blockno / throws;
 
     // Seed a random number generator with the congruency class and
     // generate a first seed.
 
-    xorshift64star(modbase);
-    srand48(modbase);
+    xorshift64star(congruent);
+    srand48(congruent);
     seed = lrand48();  // LFSR-based.
 
     // Determine which pattern to generate.
