@@ -27,8 +27,7 @@
 class DedupeConstantRatioRegulator
 {
     public:
-        DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, uint64_t workloadID_hash, ivy_float zero_blocks);
-        DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, uint64_t workloadID_hash);
+        DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, ivy_float zero_blocks, uint64_t workloadID_hash);
         virtual ~DedupeConstantRatioRegulator();
         uint64_t get_seed(uint64_t offset);
 
@@ -46,8 +45,6 @@ class DedupeConstantRatioRegulator
     uint64_t sides;
     uint64_t throws;
     uint64_t range;
-    uint64_t dbpiob; // data blocks per i/o block
-    uint64_t zbpiob; // zero blocks per i/o block
     uint64_t tbpiob; // total blocks per i/o block
     ivy_float dedupe_ratio;
     ivy_float zero_blocks_ratio;

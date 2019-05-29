@@ -319,11 +319,13 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 //log(slavethreadlogfile, pear.second.dedupe_regulator->logmsg());
 
 
-                if (pear.second.dedupe_constant_ratio_regulator != nullptr) { delete pear.second.dedupe_constant_ratio_regulator; }
-                if (pear.second.p_current_IosequencerInput->dedupe > 1.0 && pear.second.p_current_IosequencerInput->fractionRead != 1.0  && pear.second.p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
+                if (pear.second.dedupe_constant_ratio_regulator != nullptr) { delete pear.second.dedupe_constant_ratio_regulator; pear.second.dedupe_constant_ratio_regulator = nullptr;}
+                if (pear.second.p_current_IosequencerInput->dedupe > 1.0 && pear.second.p_current_IosequencerInput->fractionRead != 1.0 &&
+                    pear.second.p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                 {
-                    pear.second.dedupe_constant_ratio_regulator = new DedupeConstantRatioRegulator(pear.second.subinterval_array[0].input.dedupe,
-                                                                                                   pear.second.subinterval_array[0].input.blocksize_bytes,
+                    pear.second.dedupe_constant_ratio_regulator = new DedupeConstantRatioRegulator(pear.second.p_current_IosequencerInput->dedupe,
+                                                                                                   pear.second.p_current_IosequencerInput->blocksize_bytes,
+                                                                                                   pear.second.p_current_IosequencerInput->fraction_zero_pattern,
                                                                                                    pear.second.uint64_t_hash_of_workloadID);
                 }
 

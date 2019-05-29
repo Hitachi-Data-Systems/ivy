@@ -61,10 +61,10 @@ void DedupeConstantRatioRegulator::lookup_sides_and_throws(uint64_t &sides, uint
 
 void DedupeConstantRatioRegulator::compute_range(uint64_t &range)
 {
-    range = throws * block_size;
+    range = ceil(throws * block_size / (1.0 - zero_blocks_ratio) / min_dedupe_block) * min_dedupe_block;
 }
 
-DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, uint64_t workloadID_hash, ivy_float zero_blocks)
+DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, ivy_float zero_blocks, uint64_t workloadID_hash)
 {
     assert(dedupe >= 1.0);
     assert((block % min_dedupe_block) == 0);
@@ -74,36 +74,7 @@ DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uin
     block_size = block;
     zero_blocks_ratio = zero_blocks;
 
-    // Compute total blocks (tbpiob), data blocks (dbpiob) and zero blocks (zbpiob) per I/O block.
-
     tbpiob = block_size / min_dedupe_block;
-    dbpiob = ceil((ivy_float) tbpiob * (1.0 - zero_blocks_ratio));
-    zbpiob = tbpiob - dbpiob;
-
-    // Remember the hash of the workloadID
-
-    workloadID = workloadID_hash;
-
-    // Compute a range of blocks.
-
-    lookup_sides_and_throws(sides, throws);
-    compute_range(range);
-}
-
-DedupeConstantRatioRegulator::DedupeConstantRatioRegulator(ivy_float dedupe, uint64_t block, uint64_t workloadID_hash)
-{
-    assert(dedupe >= 1.0);
-    assert((block % min_dedupe_block) == 0);
-
-    dedupe_ratio = dedupe;
-    block_size = block;
-
-    // Compute total blocks (tbpiob), data blocks (dbpiob) and zero blocks (zbpiob) per I/O block.
-    // Note: No zero blocks with this constructor.
-
-    tbpiob = block_size / min_dedupe_block;
-    dbpiob = tbpiob;
-    zbpiob = tbpiob - dbpiob;
 
     // Remember the hash of the workloadID
 
@@ -139,10 +110,6 @@ uint64_t DedupeConstantRatioRegulator::get_seed(uint64_t offset)
     uint64_t modblock;
     int index;
 
-    // Which of the allowed patterns shall we use?
-
-    index = (int) (distribution(generator) * sides);
-
     // For this range, select the appropriate "modulo block." A range comprises a "(throws * block_size)"
     // non-overlapping region.  A modulo block is the address of the ith block in the range modulo the
     // number of throws.  The offset of the current I/O has an associated modulo block, which is the
@@ -150,13 +117,29 @@ uint64_t DedupeConstantRatioRegulator::get_seed(uint64_t offset)
 
     base = (offset / range) * range;
     blockno = (offset - base) / min_dedupe_block;
-    modblock = (blockno / tbpiob) * dbpiob + (blockno % tbpiob);
-    modbase = base + modblock / throws;  // This is a nonsense number corresponding to the congruency class.
+
+    // In this version of the code, all zero blocks fall at the end of the range.
+
+    if (blockno >= (block_size * throws) / min_dedupe_block)
+    {
+        return 0;  // Generate a zero-filled block.
+    }
+
+    // This is a nonsense number corresponding to the congruency class.
+
+    modblock = blockno / tbpiob * tbpiob + blockno % tbpiob;
+    modbase = base + modblock / throws;
+
+    // Seed a random number generator with the congruency class and
+    // generate a first seed.
 
     xorshift64star(modbase);
-
     srand48(modbase);
     seed = lrand48();  // LFSR-based.
+
+    // Determine which pattern to generate.
+
+    index = distribution(generator) * sides;
 
     // Compute the pattern for the ith allowed pattern in the chunk.
     // Note: Always call xorshift64star() at least once!

@@ -1082,7 +1082,7 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 		}
 	}
 	if (!defaultCompressibility())              { o << ",compressibility=" << compressibility;}
-	if ((dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method) && !default_fraction_zero_pattern())       { o << ",fraction_zero_pattern=" << compressibility;}
+	if ((dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method) && !default_fraction_zero_pattern())       { o << ",fraction_zero_pattern=" << fraction_zero_pattern;}
 
     if (!defaultThreads_in_workload_name()) { o << ",threads_in_workload_name=" << threads_in_workload_name;}
     if (!defaultThis_thread_in_workload())  { o << ",this_thread_in_workload=" << this_thread_in_workload;}
