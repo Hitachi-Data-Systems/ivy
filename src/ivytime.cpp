@@ -163,6 +163,11 @@ ivytime::ivytime(const int Seconds) {
 	t.tv_nsec=0;
 	return;
 }
+ivytime::ivytime(const unsigned int Seconds) {
+	t.tv_sec=Seconds;
+	t.tv_nsec=0;
+	return;
+}
 
 ivytime::ivytime(const double Seconds) {
 	t.tv_sec= ((long double) Seconds);

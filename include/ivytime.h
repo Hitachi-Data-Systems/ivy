@@ -39,6 +39,7 @@ public:
 	virtual ~ivytime();
 	ivytime(const struct timespec& ts);
 	ivytime(const int Seconds);
+	ivytime(const unsigned int Seconds);
 	ivytime(const ivytime& rhs);
 	ivytime(const ivytime* rhs);
 	ivytime(uint64_t seconds, uint64_t nanoseconds);
