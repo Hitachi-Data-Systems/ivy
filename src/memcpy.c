@@ -12,3 +12,7 @@ void *__wrap_memcpy(void *dest, const void *src, size_t n)
 {
     return __memcpy_glibc_2_2_5(dest, src, n);
 }
+
+// Compiling this "C" program in the ivy_cmddev C++ build target gives you the following warning, which you can ignore:
+
+// warning: command line option ‘-std=c++14’ is valid for C++/ObjC++ but not for C|

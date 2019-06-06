@@ -18,8 +18,8 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 using namespace std;
-
 #include <string>
+using namespace std::string_literals;  // for std::string literals like "bork"s
 #include <list>
 #include <algorithm>
 #include <map>
@@ -3527,6 +3527,11 @@ ivy_engine::get(const std::string& thingee)
             << std::endl << std::endl
             << valid_get_parameters();
         return std::make_pair(false,o.str());
+    }
+
+    if (0 == t.compare(normalize_identifier("summary_csv")))
+    {
+        return std::make_pair(true,testFolder + "/all/"s + testName + ".all=all.summary.csv"s);
     }
 
 
