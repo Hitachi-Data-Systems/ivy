@@ -1065,7 +1065,7 @@ void IvyDriver::create_workload()
 
     pWorkload->workloadID = wID;
 
-    pWorkload->uint64_t_hash_of_workloadID = (uint64_t) std::hash<std::string>{}(wID.workloadID);
+    pWorkload->uint64_t_hash_of_host_plus_LUN = (uint64_t) std::hash<std::string>{}(pTestLUN->host_plus_lun);
 
     pWorkload->iosequencerParameters = newWorkloadParameters;
 

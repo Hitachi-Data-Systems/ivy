@@ -633,7 +633,7 @@ uint64_t Eyeo::fixed_pattern_sub_block_starting_seed(uint64_t offset_within_this
 
     const ivy_float& dedupe = pWorkload->p_current_IosequencerInput->dedupe;
 
-    return pWorkload->uint64_t_hash_of_workloadID  ^ (1 + ((uint64_t) (((long double) filtered_sub_block_number)/dedupe)));
+    return pWorkload->uint64_t_hash_of_host_plus_LUN  ^ (1 + ((uint64_t) (((long double) filtered_sub_block_number)/dedupe)));
 }
 
 

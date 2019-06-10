@@ -44,7 +44,7 @@ public:
 //variables
 
     WorkloadID workloadID;
-    uint64_t uint64_t_hash_of_workloadID;
+    uint64_t uint64_t_hash_of_host_plus_LUN;
 
     TestLUN* pTestLUN;
 

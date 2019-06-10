@@ -326,7 +326,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                     pear.second.dedupe_constant_ratio_regulator = new DedupeConstantRatioRegulator(pear.second.p_current_IosequencerInput->dedupe,
                                                                                                    pear.second.p_current_IosequencerInput->blocksize_bytes,
                                                                                                    pear.second.p_current_IosequencerInput->fraction_zero_pattern,
-                                                                                                   pear.second.uint64_t_hash_of_workloadID);
+                                                                                                   pear.second.uint64_t_hash_of_host_plus_LUN);
                 }
 
 #ifdef IVYDRIVER_TRACE

@@ -1010,7 +1010,7 @@ void pipe_driver_subthread::threadRun()
         {
             try
             {
-                lun_csv_header = send_and_clip_response_upto("send LUN header\n", "[LUNheader]", ivytime(5));
+                lun_csv_header = send_and_clip_response_upto("send LUN header\n", "[LUNheader]", ivytime(30));
             }
             catch (std::runtime_error& reex)
             {
@@ -1029,7 +1029,7 @@ void pipe_driver_subthread::threadRun()
                 std::string response;
                 try
                 {
-                    response = send_and_clip_response_upto("send LUN\n", "[LUN]", ivytime(5));
+                    response = send_and_clip_response_upto("send LUN\n", "[LUN]", ivytime(30));
                 }
                 catch (std::runtime_error& reex)
                 {
