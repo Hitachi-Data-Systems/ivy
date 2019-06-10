@@ -2263,13 +2263,13 @@ ivy_engine::go(const std::string& parameters)
 
     std::string valid_parameter_names = "suppress_perf, skip_LDEV, stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp"s
         + ",cooldown_by_MP_busy, cooldown_by_MP_busy_stay_down_time_seconds, subsystem_WP_threshold, subsystem_busy_threshold, sequential_fill"s
-        + ",stepcsv, storcsv"s;
+        + ",stepcsv, storcsv, check_failed_component"s;
 
     std::string valid_parameters_message =
         "The following parameter names are always valid:\n"
         "    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
         "    suppress_perf, skip_LDEV, subsystem_WP_threshold, cooldown_by_MP_busy, cooldown_by_MP_busy_stay_down_time_seconds,\n"
-        "    subsystem_busy_threshold, sequential_fill, stepcsv, storcsv.\n\n"
+        "    subsystem_busy_threshold, sequential_fill, stepcsv, storcsv, check_failed_component.\n\n"
         "For dfc = PID, additional valid parameters are:\n"
         "    target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step,\n"
         "    ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
@@ -2300,10 +2300,11 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     if (go_parameters.contains("stepname")) stepName = go_parameters.retrieve("stepname");
     else stepName = stepNNNN;
 
-    if (!go_parameters.contains(normalize_identifier(std::string("suppress_perf")))) go_parameters.contents[normalize_identifier(std::string("suppress_perf"))]  = suppress_subsystem_perf_default ? "on" : "off";
-    if (!go_parameters.contains(normalize_identifier(std::string("skip_LDEV")))) go_parameters.contents[normalize_identifier(std::string("skip_LDEV"))]  = skip_ldev_data_default ? "on" : "off";
-    if (!go_parameters.contains(normalize_identifier(std::string("stepcsv")))) go_parameters.contents[normalize_identifier(std::string("stepcsv"))]  = stepcsv_default ? "on" : "off";
-    if (!go_parameters.contains(normalize_identifier(std::string("storcsv")))) go_parameters.contents[normalize_identifier(std::string("storcsv"))]  = storcsv_default ? "on" : "off";
+    if (!go_parameters.contains("suppress_perf"s))          go_parameters.contents[normalize_identifier(std::string("suppress_perf"))]            = suppress_subsystem_perf_default ? "on" : "off";
+    if (!go_parameters.contains("skip_LDEV"s))              go_parameters.contents[normalize_identifier(std::string("skip_LDEV"))]                = skip_ldev_data_default          ? "on" : "off";
+    if (!go_parameters.contains("stepcsv"s))                go_parameters.contents[normalize_identifier(std::string("stepcsv"))]                  = stepcsv_default                 ? "on" : "off";
+    if (!go_parameters.contains("storcsv"s))                go_parameters.contents[normalize_identifier(std::string("storcsv"))]                  = storcsv_default                 ? "on" : "off";
+    if (!go_parameters.contains("check_failed_component"s)) go_parameters.contents[normalize_identifier(std::string("check_failed_component"))]   = check_failed_component_default  ? "on" : "off";
 
     if (!go_parameters.contains(std::string("subinterval_seconds")))      go_parameters.contents[normalize_identifier(std::string("subinterval_seconds"))]      = subinterval_seconds_default;
     if (!go_parameters.contains(std::string("warmup_seconds")))           go_parameters.contents[normalize_identifier(std::string("warmup_seconds"))]           = warmup_seconds_default;
@@ -2679,6 +2680,22 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     {
         ostringstream o;
         o << "<Error> ivy engine API - go() - [Go] statement - invalid storcsv parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
+        log(masterlogfile,o.str());
+        std::cout << o.str();
+        kill_subthreads_and_exit();
+    }
+//----------------------------------- check_failed_component
+    parameter_value = go_parameters.retrieve("check_failed_component");
+    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
+           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
+           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) check_failed_component = true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
+           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
+           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) check_failed_component = false;
+    else
+    {
+        ostringstream o;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid check_failed_component parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();

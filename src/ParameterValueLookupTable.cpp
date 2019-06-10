@@ -265,6 +265,7 @@ std::map<std::string,std::string> ParameterValueLookupTable::parameter_name_rehy
     {"accuracyplusminus",       "accuracy_plus_minus"},
     {"balancedstepdirectionby", "balanced_step_direction_by"},
     {"ballparkseconds",         "ballpark_seconds"},
+    {"checkfailedcomponent",    "check_failed_component"},
     {"cooldownbympbusy",        "cooldown_by_MP_busy"},
     {"cooldownbympbusystaydowntimeseconds",        "cooldown_by_MP_busy_stay_down_time_seconds"},
     {"cooldownbywp",            "cooldown_by_WP"},

@@ -99,17 +99,17 @@ void pipe_driver_subthread::process_cmddev_commands(std::unique_lock<std::mutex>
         auto element_it = p_Hitachi_RAID_subsystem->configGatherData.data.find("LDEV");
         if (element_it == p_Hitachi_RAID_subsystem->configGatherData.data.end())
         {
-                std::ostringstream o;
-                o << "pipe_driver_subthread for remote ivy_cmddev CLI - post-processing configuration gather data, gathered configuration did not have the LDEV element type" << std::endl;
-                log(logfilename,o.str());
-                kill_ssh_and_harvest();
-                commandComplete=true;
-                commandSuccess=false;
-                commandErrorMessage = o.str();
-                dead=true;
-                s_lk.unlock();
-                master_slave_cv.notify_all();
-                return;
+            std::ostringstream o;
+            o << "pipe_driver_subthread for remote ivy_cmddev CLI - post-processing configuration gather data, gathered configuration did not have the LDEV element type" << std::endl;
+            log(logfilename,o.str());
+            kill_ssh_and_harvest();
+            commandComplete=true;
+            commandSuccess=false;
+            commandErrorMessage = o.str();
+            dead=true;
+            s_lk.unlock();
+            master_slave_cv.notify_all();
+            return;
         }
         for (auto& LDEV_pear : element_it->second)
         {
@@ -205,8 +205,36 @@ void pipe_driver_subthread::process_cmddev_commands(std::unique_lock<std::mutex>
 
         // "get config" - end
     }
-    // indent level processing command device commands
+    else if (0==std::string("get failed_component").compare(commandString))
+    {
+        send_and_get_OK("get failed_component");
 
+        std::string component_failure_line = get_line_from_pipe(ivytime(5),"get failed_component");
+
+        if      (startsWith(component_failure_line,"<Good>"   )) { commandSuccess = true;}
+        else if (startsWith(component_failure_line,"<Failure>")) { commandSuccess = false; commandErrorMessage = component_failure_line; }
+        else
+        {
+            std::ostringstream o;
+            o << "pipe_driver_subthread for remote ivy_cmddev CLI - issued \"get failed_component\", and did not get <Good> or <Failure>, instead saw \"" << component_failure_line << "\"." << std::endl;
+            log(logfilename,o.str());
+            kill_ssh_and_harvest();
+            commandComplete=true;
+            commandSuccess=false;
+            commandErrorMessage = o.str();
+            dead=true;
+            s_lk.unlock();
+            master_slave_cv.notify_all();
+            return;
+        }
+
+        commandComplete=true;
+        ivytime end;
+        end.setToNow();
+        /* ivytime */ duration = end-start;
+        s_lk.unlock();
+        master_slave_cv.notify_all();
+    }
     else if (0==std::string("t=0 gather").compare(commandString))
     {
         pipe_driver_gather(s_lk,true);

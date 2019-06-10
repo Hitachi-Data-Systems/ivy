@@ -88,6 +88,93 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     m_s.now_doing_suppress_perf_cooldown = false;
     m_s.suppress_perf_cooldown_subinterval_count = 0;
 
+
+    // Check for failed subsystem components
+    if (m_s.haveCmdDev & m_s.check_failed_component)
+    {
+        m_s.have_failed_component = false;
+        m_s.failed_component_message.clear();
+
+        for (auto& pear : m_s.command_device_subthread_pointers)
+        {
+            {
+                pipe_driver_subthread*& p_pds = pear.second;
+
+                if (p_pds->pCmdDevLUN == nullptr) continue;
+
+                std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
+                p_pds->commandString = std::string("get failed_component");
+                p_pds->command=true;
+                p_pds->commandComplete=false;
+                p_pds->commandSuccess=false;
+                p_pds->commandErrorMessage.clear();
+            }
+            pear.second->master_slave_cv.notify_all();
+        }
+
+        std::chrono::system_clock::time_point leftnow {std::chrono::system_clock::now()};
+
+        for (auto& pear : m_s.command_device_subthread_pointers)
+        {
+            {
+                pipe_driver_subthread*& p_pds = pear.second;
+
+                if (p_pds->pCmdDevLUN == nullptr) continue;
+
+                {
+                    std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
+
+                    if (
+                            p_pds->master_slave_cv.wait_until
+                            (
+                                u_lk,
+                                leftnow + std::chrono::milliseconds(5000),
+                                [&p_pds]() { return p_pds->commandComplete; }
+                            )
+                        )
+                    {
+                        if (!p_pds->commandSuccess)
+                        {
+                            m_s.have_failed_component = true;
+
+                            std::ostringstream o;
+                            o << "<Error> \"check_failed_component\" = \"on\" and found failed component on subsystem serial " << pear.first << " managed on host " << p_pds->ivyscript_hostname
+                                << ", saying \"" << p_pds->commandErrorMessage << "\"." << std::endl;
+
+                            m_s.failed_component_message += o.str();
+                            log(m_s.masterlogfile,o.str());
+                        }
+
+                        if (routine_logging)
+                        {
+                            std::ostringstream o;
+                            o << "\"check_failed_component\" = \"on\" and subsystem serial " << pear.first << " managed on host " << p_pds->ivyscript_hostname << " does not have a failed component." << std::endl;
+                            log(m_s.masterlogfile,o.str());
+                        }
+                    }
+                    else // timeout
+                    {
+                        std::ostringstream o;
+                        o << "Aborting - timeout waiting for pipe_driver_subthread for subsystem " << pear.first << " to check for a failed component." <<  std::endl;
+                        std::cout << o.str();
+                        log(m_s.masterlogfile,o.str());
+                        u_lk.unlock();
+                        m_s.kill_subthreads_and_exit();
+                        exit ( -1);
+                    }
+                }
+                p_pds->master_slave_cv.notify_all();
+            }
+            // lock dropped
+        }
+
+        if (m_s.have_failed_component)
+        {
+            std::cout << m_s.failed_component_message;
+            m_s.kill_subthreads_and_exit();
+        }
+    }
+
     // If we have command devices, we perform a t=0 gather.
 
     // Most Hitachi RAID metrics take the form of cumulative rollover event counters.
@@ -1055,6 +1142,93 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     }
 
 //*debug*/{std::ostringstream o; o << "After subinterval sequence but before calculating measurement interval stuff." << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
+
+    // Check for failed subsystem components
+    if (m_s.haveCmdDev & m_s.check_failed_component)
+    {
+        m_s.have_failed_component = false;
+        m_s.failed_component_message.clear();
+
+        for (auto& pear : m_s.command_device_subthread_pointers)
+        {
+            {
+                pipe_driver_subthread*& p_pds = pear.second;
+
+                if (p_pds->pCmdDevLUN == nullptr) continue;
+
+                std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
+                p_pds->commandString = std::string("get failed_component");
+                p_pds->command=true;
+                p_pds->commandComplete=false;
+                p_pds->commandSuccess=false;
+                p_pds->commandErrorMessage.clear();
+            }
+            pear.second->master_slave_cv.notify_all();
+        }
+
+        std::chrono::system_clock::time_point leftnow {std::chrono::system_clock::now()};
+
+        for (auto& pear : m_s.command_device_subthread_pointers)
+        {
+            {
+                pipe_driver_subthread*& p_pds = pear.second;
+
+                if (p_pds->pCmdDevLUN == nullptr) continue;
+
+                {
+                    std::unique_lock<std::mutex> u_lk(p_pds->master_slave_lk);
+
+                    if (
+                            p_pds->master_slave_cv.wait_until
+                            (
+                                u_lk,
+                                leftnow + std::chrono::milliseconds(5000),
+                                [&p_pds]() { return p_pds->commandComplete; }
+                            )
+                        )
+                    {
+                        if (!p_pds->commandSuccess)
+                        {
+                            m_s.have_failed_component = true;
+
+                            std::ostringstream o;
+                            o << "<Error> \"check_failed_component\" = \"on\" and found failed component on subsystem serial " << pear.first << " managed on host " << p_pds->ivyscript_hostname
+                                << ", saying \"" << p_pds->commandErrorMessage << "\"." << std::endl;
+
+                            m_s.failed_component_message += o.str();
+                            log(m_s.masterlogfile,o.str());
+                        }
+
+                        if (routine_logging)
+                        {
+                            std::ostringstream o;
+                            o << "\"check_failed_component\" = \"on\" and subsystem serial " << pear.first << " managed on host " << p_pds->ivyscript_hostname << " does not have a failed component." << std::endl;
+                            log(m_s.masterlogfile,o.str());
+                        }
+                    }
+                    else // timeout
+                    {
+                        std::ostringstream o;
+                        o << "Aborting - timeout waiting for pipe_driver_subthread for subsystem " << pear.first << " to check for a failed component." <<  std::endl;
+                        std::cout << o.str();
+                        log(m_s.masterlogfile,o.str());
+                        u_lk.unlock();
+                        m_s.kill_subthreads_and_exit();
+                        exit ( -1);
+                    }
+                }
+                p_pds->master_slave_cv.notify_all();
+            }
+            // lock dropped
+        }
+
+        if (m_s.have_failed_component)
+        {
+            std::cout << m_s.failed_component_message;
+            m_s.kill_subthreads_and_exit();
+        }
+    }
+
 
     ivytime warmup_start, warmup_duration, measurement_start, measurement_duration, cooldown_start, cooldown_end, cooldown_duration;
 

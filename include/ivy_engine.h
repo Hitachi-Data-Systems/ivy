@@ -402,6 +402,13 @@ public:
     ivy_float   min_sequential_fill_progress { 1.0 };
     bool        keep_filling {false};
 
+    bool check_failed_component {true}, check_failed_component_default {true};
+        // With command device and check_failed_component,
+        // will refuse to start running with a failed component,
+        // and if a component fails during a test step, will mark the result "invalid".
+    bool have_failed_component = {false};
+    std::string failed_component_message {};
+
     std::string command_device_etc_version {};
 
     std::string thing {};  // something you can set a value into to test ivy_engine_set and ivy_engine_get
