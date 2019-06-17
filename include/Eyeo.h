@@ -92,6 +92,8 @@ public:
 	ivy_float submit_time_seconds();
 	ivy_float running_time_seconds();
 
+	ivy_float lookup_probabilistic_compressibility(ivy_float compressibility);
+
 	std::string buffer_first_last_16_hex();
 
 	void generate_pattern();
@@ -122,6 +124,10 @@ public:
         // Then finally, for non-zero sub-blocks, it returns the 64-but hash of the workload ID
         // XORed with the sub-block number, including duplicates as shown in the series immediately above.
 
+private:
+
+    std::default_random_engine generator;
+    std::uniform_real_distribution<ivy_float> distribution;
 };
 
 std::ostream& operator<<(std::ostream&, const struct io_event&);

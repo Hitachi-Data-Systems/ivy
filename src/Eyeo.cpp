@@ -234,6 +234,99 @@ ivy_float Eyeo::running_time_seconds()
 	return (ivy_float) run_time;
 }
 
+// This method corrects for the difference between compressibility desired by the caller and
+// the actual compression ratio that ivy should use, based on measurements of ADR compression.
+// (Possibly, it should be optionally invoked based on a user-supplied parameter.)
+//
+// The method works by looking up a table of actual requested vs. measured compression ratios.
+// For values requested that are in between actual measurement points, the method interpolates
+// and probabilistically determines a corrected compression ratio. The method returns either
+// a corrected compression ratio (usually higher than the desired one) or zero (0.0) if the
+// given block should not be compressed (probabilistically).
+ivy_float Eyeo::lookup_probabilistic_compressibility(ivy_float desired_compressibility)
+{
+    ivy_float requested_compressibility = 0.0;
+    ivy_float measured_compressibility = 0.0;
+    ivy_float probability = 0.0;
+    static bool identified_vendor = false;
+    static bool vendor_is_hitachi = false;
+
+    struct table {
+        ivy_float measured_compressibility;
+        ivy_float requested_compressibility;
+    } correction_table[] = {
+        {0.0625, 0.10}, //  1/16
+        {0.1250, 0.15}, //  2/16
+        {0.1875, 0.25}, //  3/16
+        {0.2500, 0.30}, //  4/16
+        {0.3125, 0.35}, //  5/16
+        {0.3750, 0.45}, //  6/16
+        {0.4375, 0.50}, //  7/16
+        {0.5000, 0.55}, //  8/16
+        {0.5625, 0.60}, //  9/16
+        {0.6250, 0.70}, // 10/16
+        {0.6875, 0.75}, // 11/16
+        {0.7500, 0.80}, // 12/16
+        {0.8125, 0.85}, // 13/16
+        {0.8750, 0.95}, // 14/16
+        {0.9375, 0.97}, // 15/16
+        {1.0000, 0.97}, // 16/16 (impossible)
+    };
+
+    assert((desired_compressibility >= 0.0) && (desired_compressibility <= 1.0));
+
+    // Short-circuit for common case.
+
+    if (desired_compressibility == 0.0)
+        return 0.0;
+
+    // Correction table only applies to Hitachi subsystem.
+
+    if (! identified_vendor)
+    {
+        if (pWorkload->pTestLUN->pLUN->attribute_value_matches("Vendor", "Hitachi"))
+            vendor_is_hitachi = true;
+
+        identified_vendor = true;
+    }
+
+    if (! vendor_is_hitachi)
+        return desired_compressibility;
+
+    // Since the table is so short, just use a linear lookup.
+    // Start halfway through table if desired_compressibility is large.
+
+    const unsigned int full = sizeof(correction_table) / sizeof(struct table);
+    const unsigned int half = (full / 2) - 1;
+    unsigned int i = (desired_compressibility < correction_table[half].measured_compressibility) ? 0 : half;
+    for (; i < full; i++)
+    {
+        measured_compressibility = correction_table[i].measured_compressibility;
+        if (measured_compressibility >= desired_compressibility)
+        {
+            if (i == full - 1)
+            {
+                // Can't go past 15/16 (i.e., 93.75%) on Hitachi subsystems.
+                probability = 1.0;
+            }
+            else
+            {
+                // If not an exact match, interpolate.
+                probability = (measured_compressibility == desired_compressibility) ? 1.0 : desired_compressibility / measured_compressibility;
+            }
+            requested_compressibility = correction_table[i].requested_compressibility;
+            break;
+        }
+    }
+
+    // Probabilistically compress this block.
+
+    if (probability == 1.0)
+        return requested_compressibility;
+    else
+        return (distribution(generator) < probability) ? requested_compressibility : 0.0;
+}
+
 void Eyeo::generate_pattern()
 {
     uint64_t blocksize = eyeocb.aio_nbytes;
@@ -252,6 +345,8 @@ void Eyeo::generate_pattern()
     uint64_t remainder;
 
     const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
+
+    ivy_float probabilistic_compressibility = lookup_probabilistic_compressibility(pWorkload->compressibility);
 
     pWorkload->write_io_count++;
 
@@ -386,7 +481,7 @@ past_ascii_pattern_8byte_write:;
 
             for (uint64_t piece = 0; piece < pieces; piece++)
             {
-                count = ceil(  (1.0-pWorkload->compressibility)  *  ((double) (dedupe_unit_bytes/8))  );
+                count = ceil(  (1.0-probabilistic_compressibility)  *  ((double) (dedupe_unit_bytes/8))  );
 
                 for (uint64_t i=0; i < count; i++)
                 {
@@ -430,7 +525,7 @@ past_ascii_pattern_8byte_write:;
                     (*(p_uint64 + i)) = pWorkload->block_seed;
                 }
 
-                first_bite = floor((1.0-pWorkload->compressibility) * dedupe_unit_bytes );
+                first_bite = floor((1.0-probabilistic_compressibility) * dedupe_unit_bytes );
 
                 past_piece = ((char*) eyeocb.aio_buf) + dedupe_unit_bytes * (piece +1);
 
@@ -445,7 +540,7 @@ past_trailing_blanks_pattern_8byte_write:;
 
             if (remainder > 0) // can only happen for dedupe_method = serpentine
             {
-                count = ceil(  (1.0-pWorkload->compressibility)  *  ((double)(remainder / 8))  );
+                count = ceil(  (1.0-probabilistic_compressibility)  *  ((double)(remainder / 8))  );
 
                 for (uint64_t i=0; i < count; i++)
                 {
@@ -453,7 +548,7 @@ past_trailing_blanks_pattern_8byte_write:;
                     (*(p_uint64 + i)) = pWorkload->block_seed;
                 }
 
-                first_bite = floor((1.0-pWorkload->compressibility) * remainder );
+                first_bite = floor((1.0-probabilistic_compressibility) * remainder );
 
                 for (p_c = (((char*) eyeocb.aio_buf) + (dedupe_unit_bytes * pieces) + first_bite); p_c < past_buf; p_c++)
                 {
