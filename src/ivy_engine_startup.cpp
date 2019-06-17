@@ -333,9 +333,6 @@ std::pair<bool /*success*/, std::string /* message */>
             allDiscoveredLUNs.LUNpointers.push_back(pLUN);
             ahl << pLUN->toString() << std::endl;
         }
-//*debug*/{ostringstream o; o << "Loop for \"" << pear.first << "\" about to copy on sample LUN." << std::endl; std::cout  << o.str(); log(masterlogfile,o.str());}
-
-//*debug*/{ostringstream o; o << "Loop for \"" << pear.first << "\" HostSampleLUN=" << pear.second->HostSampleLUN.toString() << std::endl; std::cout  << o.str(); log(masterlogfile,o.str());}
 
         TheSampleLUN.copyOntoMe(&pear.second->HostSampleLUN);
 
@@ -652,7 +649,7 @@ std::pair<bool /*success*/, std::string /* message */>
 
                     for (auto pLUN : availableTestLUNs.LUNpointers)
                     {
-                        if ( 0 == std::string("Hitachi RAID").compare(pSubsystem->type())  &&  0 == pSubsystem->serial_number.compare(pLUN->attribute_value("serial_number")))
+                        if ( 0 == std::string("Hitachi RAID").compare(pSubsystem->type())  &&  0 == pSubsystem->serial_number.compare(pLUN->attribute_value("Serial Number")))
                         {
 
                             // for each test LUN, if we are processing a Hitachi RAID subsystem with a given serial number and the test LUN serial_number matches the subsystem
@@ -740,7 +737,7 @@ std::pair<bool /*success*/, std::string /* message */>
 
                                 // pear is std::map<std::string,metric_value>
 
-                                std::string attribute_name = toLower(pear.first);
+                                std::string attribute_name = pear.first;
                                 std::string attribute_value = pear.second.string_value();
 
                                 std::string trimmed_attribute_value = toLower(attribute_value);
@@ -752,7 +749,7 @@ std::pair<bool /*success*/, std::string /* message */>
                                     trim(trimmed_LUN_value);
                                     if (0 != trimmed_attribute_value.compare(trimmed_LUN_value))
                                     {
-                                        attribute_name += std::string("_rmlib");
+                                        attribute_name += std::string(" RMLIB");
                                         pLUN->set_attribute(attribute_name, attribute_value);
                                     }
                                 }

@@ -671,7 +671,7 @@ bool JSON_select_clause::host_matches(LUN* p_LUN)
         if (host_string.size() == 0)
         {
             std::ostringstream o;
-            o << "<Warning> JSON_select_clausehost_matches() - LUN had neither \"ivyscript_hostname\" nor \"hostname\" parity_group attributes or their values are at most whitespace" << std::endl
+            o << "<Warning> JSON_select_clausehost_matches() - LUN had neither \"ivyscript hostname\" nor \"hostname\" parity_group attributes or their values are at most whitespace" << std::endl
                 << "in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
             m_s.warning_messages.push_back(o.str());
             log(m_s.masterlogfile, o.str());

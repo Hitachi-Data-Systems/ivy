@@ -475,7 +475,7 @@ int IvyDriver::main(int argc, char* argv[])
 		else if (stringCaseInsensitiveEquality(input_line, std::string("send LUN header")))
 		{
 			disco.get_header_line(header_line);
-			say("[LUNheader]ivyscript_hostname,"+header_line);
+			say("[LUNheader]Ivyscript Hostname,"+header_line);
 		}
 		// end of send LUN header
 		else if (stringCaseInsensitiveEquality(input_line,std::string("send LUN")))

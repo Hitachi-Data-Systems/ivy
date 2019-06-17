@@ -39,7 +39,7 @@ void LUN::createNicknames()
 {
 	if (contains_attribute_name(std::string("ivyscript hostname"s)))
 	{
-		set_attribute("host"s, attribute_value("ivyscript hostname"s));
+		set_attribute("Host"s, attribute_value("ivyscript hostname"s));
 	}
 
 //	if (contains_attribute_name(std::string("PG")))
