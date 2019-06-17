@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -111,8 +111,8 @@ std::string LDEV_to_string(unsigned int); // calls the uint16_t version
 // A quoted string starts with either a single or double quote - the "starting quote" and continues to the closing quote mark of the same type as the starting quote.
 // Single quote marks ' or double quote marks " when immediately preceded by a backslash \ said to be "escapted" and are not recognized as opening or closing quotes.
 int countCSVlineUnquotedCommas(const std::string& csvline);
-std::string retrieveRawCSVcolumn(std::string& csvline, int n_from_zero);
-std::string UnwrapCSVcolumn(std::string s);
+std::string retrieveRawCSVcolumn(const std::string& csvline, int n_from_zero);
+std::string UnwrapCSVcolumn(const std::string& s);
 // An unwrapped CSV column value first has leading/trailing whitespace removed and then if what remains is a single quoted string,
 // the quotes are removed and any internal "escaped" quotes have their escaping backslashes removed, i.e. \" -> ".
 
@@ -156,3 +156,10 @@ std::string left(const std::string&,unsigned int);  // leftmost "n" characters
 std::string right(const std::string&,unsigned int);
 
 std::map<unsigned int /* core */, std::vector<unsigned int /* processor (hyperthread) */>> get_processors_by_core();
+
+std::pair<bool /*false means attempt to read past the end*/, std::string /*field*/>
+    get_next_field(const std::string& s, unsigned int& cursor, char delimiter);
+    // for "1-1/1-2" with delimeter '/' starting with cursor 0 returns "1-1" and then "1-2"
+    // for "/" returns "" then ""
+
+

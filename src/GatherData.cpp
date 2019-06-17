@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -71,29 +71,20 @@ ivy_float metric_value::numeric_value(const std::string& name_associated_with_va
 
 std::ostream& operator<<(std::ostream& o, const GatherData& gd)
 {
-//*debug*/std::cout << "std::ostream& operator<<(std::ostream& o, const GatherData& gd) entry" << std::endl;
-
 	o << "{ " << std::endl;
 
 	for (auto& pear : gd.data)
 	{
 		const std::string& element = pear.first;
 
-//*debug*/std::cout << "std::ostream& operator<<(std::ostream& o, const GatherData& gd) element=\"" << element << "\"" << std::endl;
-
 		for (auto& peach : pear.second)
 		{
 			const std::string& instance = peach.first;
-
-//*debug*/std::cout << "std::ostream& operator<<(std::ostream& o, const GatherData& gd) instance=\"" << instance << "\"" << std::endl;
 
 			for (auto& banana : peach.second)
 			{
 				const std::string& metric = banana.first;
 				const metric_value& mv = banana.second;
-
-//*debug*/std::cout << "std::ostream& operator<<(std::ostream& o, const GatherData& gd) metric=\"" << metric << "\", string_value=\"" << mv.string_value()
-//*debug*/<< "\"  , start=" << mv.gather_start().format_as_datetime_with_ns() << ", complete=" << mv.gather_complete().format_as_datetime_with_ns() << std::endl;
 
 				o << "{ element=\"" << element << "\", instance=\"" << instance << "\", metric=\"" << metric << "\", value=\"" ;
 				o << mv.string_value();

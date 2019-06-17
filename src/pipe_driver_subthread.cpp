@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -323,7 +323,7 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
             ostringstream logmsg;
             logmsg << "<Warning> For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe() - child has exited."
             << "  pid = " << ssh_pid << ", after waitpid(ssh_pid, &pid_status, WNOHANG), pid_status = 0x" << std::hex << std::uppercase << pid_status;
-            m_s.warning_messages.push_back(logmsg.str());
+            //m_s.warning_messages.push_back(logmsg.str());
             log(logfilename,logmsg.str());
             // return false;  - Commented out to see if this can occur spuriously 2016-09-25
         }
@@ -643,10 +643,10 @@ void pipe_driver_subthread::threadRun()
         }
         std::ostringstream lfn;
         lfn << logfolder << "/log.ivymaster.cmd_dev."
-            << "serial_number_" << LUN::convert_to_lower_case_and_convert_nonalphameric_to_underscore(p_Hitachi_RAID_subsystem->serial_number)
-            << "+LDEV_" << LUN::convert_to_lower_case_and_convert_nonalphameric_to_underscore(LDEV)
-            << "+host_" << LUN::convert_to_lower_case_and_convert_nonalphameric_to_underscore(pCmdDevLUN->attribute_value("ivyscript_hostname"))
-            << "+LUN" << LUN::convert_to_lower_case_and_convert_nonalphameric_to_underscore(pCmdDevLUN->attribute_value("LUN Name"))
+            << "serial_number_" << LUN::normalize_attribute_name(p_Hitachi_RAID_subsystem->serial_number)
+            << "+LDEV_" << LUN::normalize_attribute_name(LDEV)
+            << "+host_" << LUN::normalize_attribute_name(pCmdDevLUN->attribute_value("ivyscript hostname"))
+            << "+LUN" << LUN::normalize_attribute_name(pCmdDevLUN->attribute_value("LUN Name"))
             << ".txt";
         logfilename=lfn.str();
     }
@@ -1968,7 +1968,7 @@ void pipe_driver_subthread::process_ivy_cmddev_response(GatherData& gd, ivytime 
 
     while (true)
         // for each:
-        // { element="LDEV", instance="00:45", data = { total_count=3487324, read_hit_count=57238743 } }
+        // { element="LDEV", instance="00:45", data = { total_count=3487324, "read hit count" = 57238743 } }
     {
         get_token();
 
@@ -2003,10 +2003,10 @@ void pipe_driver_subthread::process_ivy_cmddev_response(GatherData& gd, ivytime 
         }
 
         get_token();
-        if (!token_identifier)
+        if ((!token_identifier)  && (!token_quoted_string))
         {
             std::ostringstream o;
-            o << "process_ivy_cmddev_response() failed - \"element\" value must be an identifer starting with an alphabetic and continuing alphanumerics/underscores - instead token is \"" << token << "\"." << std::endl;
+            o << "process_ivy_cmddev_response() failed - \"element\" value must be a quoted string or an identifer starting with an alphabetic and continuing alphanumerics/underscores - instead token is \"" << token << "\"." << std::endl;
             log(logfilename, o.str());
             throw std::invalid_argument(o.str());
         }
@@ -2075,10 +2075,10 @@ void pipe_driver_subthread::process_ivy_cmddev_response(GatherData& gd, ivytime 
             while ("," == token) get_token();
             if ("}" == token) break; // closing } for attribute pairs
 
-            if (!token_identifier)
+            if ((!token_identifier) && (!token_quoted_string))
             {
                 std::ostringstream o;
-                o << "process_ivy_cmddev_response() failed - attribute name must be an identifier starting with an alphabetic and continuing alphanumerics/underscores - instead token is \"" << token << "\"." << std::endl;
+                o << "process_ivy_cmddev_response() failed - attribute name must be a quoted string or an identifier starting with an alphabetic and continuing alphanumerics/underscores - instead token is \"" << token << "\"." << std::endl;
                 log(logfilename, o.str());
                 throw std::invalid_argument(o.str());
             }

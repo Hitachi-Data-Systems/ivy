@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -432,7 +432,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         //	- if gather is not for t=0
         //		- for each RollupType, for each RollupInstance
         //			- add a subsystem_summary_data object for this subinterval
-        //			- for each summary element type ("MP_core", "CLPR", ...) ivy_engine::subsystem_summary_metrics
+        //			- for each summary element type ("MP core", "CLPR", ...) ivy_engine::subsystem_summary_metrics
         //				- for each instance of the element, e.g. MP_core="MP10-00"
         //					- if the subsystem serial number and attribute name match the RollupInstance
         //						- for each metric

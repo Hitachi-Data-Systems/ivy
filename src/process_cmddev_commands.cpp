@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -118,7 +118,7 @@ void pipe_driver_subthread::process_cmddev_commands(std::unique_lock<std::mutex>
             const std::string& subsystem_LDEV = LDEV_pear.first;
 //                            std::map
 //                            <
-//                                std::string, // Metric, e.g. "drive_type"
+//                                std::string, // Metric, e.g. "drive type"
 //                                metric_value
 //                            >& subsystem_LDEV_metrics = LDEV_pear.second;
 
@@ -129,13 +129,13 @@ void pipe_driver_subthread::process_cmddev_commands(std::unique_lock<std::mutex>
             if (metric_it != LDEV_pear.second.end())
             {
                 //{std::ostringstream o; o << "it's a pool vol. " << std::endl; log(logfilename,o.str());}
-                const std::string& pool_ID = LDEV_pear.second["Pool_ID"].string_value();
+                const std::string& pool_ID = LDEV_pear.second["Pool ID"].string_value();
                 std::pair
                 <
                     const std::string, // Configuration element instance, e.g. 00:FF
                     std::map
                     <
-                        std::string, // Metric, e.g. "drive_type"
+                        std::string, // Metric, e.g. "drive type"
                         metric_value
                     >
                 >*p;
@@ -181,7 +181,7 @@ void pipe_driver_subthread::process_cmddev_commands(std::unique_lock<std::mutex>
 
                 for (auto& p : pointers)
                 {
-                    o << "Pool ID \"" << poolid << "\", Pool Vol = " << p->first << ", Drive_type = " << p->second["Drive_type"].string_value() << std::endl;
+                    o << "Pool ID \"" << poolid << "\", Pool Vol = " << p->first << ", Drive type = " << p->second["Drive type"].string_value() << std::endl;
                 }
             }
             log(logfilename,o.str());

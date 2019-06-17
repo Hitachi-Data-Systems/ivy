@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -55,12 +55,12 @@ std::string ListOfNameEqualsValueList::toString()
 #endif//IVY_PARSE_TRACE_ON
 
 
-// ListOfNameEqualsValueList "LDEV = 00:00-00:FF, Port = (1A,3A,5A,7A}  PG={ 1:3-*, 15-15 }"
+// ListOfNameEqualsValueList "LDEV = 00:00-00:FF, Port = {1A,3A,5A,7A}  PG={ 1:3-*, 15-15 }"
 //       NameEqualsValueList "LDEV = 00:00-00:FF"
 //           name token      "LDEV"
 //           value token list
 //                value token "00:00-00:FF"
-//       NameEqualsValueList "Port = (1A,3A,5A,7A}"
+//       NameEqualsValueList "Port = {1A,3A,5A,7A}"
 //           name token      "Port"
 //           value token list
 //                value token "1A"
@@ -586,6 +586,7 @@ bool ListOfNameEqualsValueList::consume_name_token(std::string& s)
 
 bool ListOfNameEqualsValueList::consume_equals_sign()
 {
+	stepOverWhitespace();
 	if (pastLastCursor() || '=' != c)
 	{
 #ifdef IVY_PARSE_TRACE_ON
@@ -606,6 +607,7 @@ bool ListOfNameEqualsValueList::consume_equals_sign()
 
 bool ListOfNameEqualsValueList::consume_opening_brace()
 {
+	stepOverWhitespace();
 	if (pastLastCursor() || '{' != c)
 	{
 #ifdef IVY_PARSE_TRACE_ON

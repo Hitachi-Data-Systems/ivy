@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -171,10 +171,11 @@ void Subsystem::print_subinterval_csv_line_set( std::string subfolder_leaf_name 
 
 		std::string header_line = o.str();
 
+        std::string normalized_element_type = LUN::normalize_attribute_name(element_type);
 
 		// Create the sub-subfolder for the element, if it doesn't already exist.
 
-		if (!std::regex_match(element_type,leaf_name_regex))
+		if (!std::regex_match(normalized_element_type,leaf_name_regex))
 		{
 			std::ostringstream o;
 			o << "<Error> Subsystem::print_subinterval_csv_line_set(root_folder = \"" << root_folder << "\", subfolder_leaf_name=\"" << subfolder_leaf_name << "\"):" << std::endl
@@ -184,7 +185,7 @@ void Subsystem::print_subinterval_csv_line_set( std::string subfolder_leaf_name 
 			m_s.kill_subthreads_and_exit();
 		}
 
-		std::string element_folder = leaf_folder + path_separator + element_type;
+		std::string element_folder = leaf_folder + path_separator + normalized_element_type;
 
 		if( stat(element_folder.c_str(),&struct_stat))
 		{
@@ -308,13 +309,13 @@ ivy_float Hitachi_RAID_subsystem::get_wp(const std::string& CLPR, int subinterva
 
 	std::string string_value;
 
-	ivy_float WP_MB, size_MB;
+	ivy_float WP_MiB, size_MiB;
 
 	try
 	{
-		metric_value& mv = gathers[gather_index].get(std::string("CLPR"), CLPR, std::string("WP_MB"));
+		metric_value& mv = gathers[gather_index].get(std::string("CLPR"), CLPR, std::string("WP MiB"));
 		string_value = mv.string_value();
-		WP_MB = number_optional_trailing_percent(string_value);
+		WP_MiB = number_optional_trailing_percent(string_value);
 	}
 	catch (std::out_of_range& oor)  // this is what gathers.get() throws
 	{
@@ -327,16 +328,16 @@ ivy_float Hitachi_RAID_subsystem::get_wp(const std::string& CLPR, int subinterva
 	{
 		std::ostringstream o;
 		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
-			<< " - retrieved WP_MB metric \"" << string_value << "\" did not parse as a number with optional trailing percent." << std::endl << iaex.what() << std::endl;
+			<< " - retrieved \"WP MiB\" metric \"" << string_value << "\" did not parse as a number with optional trailing percent." << std::endl << iaex.what() << std::endl;
 		throw std::invalid_argument(o.str());
 	}
 
 
 	try
 	{
-		metric_value& mv = gathers[gather_index].get(std::string("CLPR"), CLPR, std::string("size_MB"));
+		metric_value& mv = gathers[gather_index].get(std::string("CLPR"), CLPR, std::string("size MiB"));
 		string_value = mv.string_value();
-		size_MB = number_optional_trailing_percent(string_value);
+		size_MiB = number_optional_trailing_percent(string_value);
 	}
 	catch (std::out_of_range& oor)  // this is what gathers.get() throws
 	{
@@ -350,11 +351,11 @@ ivy_float Hitachi_RAID_subsystem::get_wp(const std::string& CLPR, int subinterva
 	{
 		std::ostringstream o;
 		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
-			<< " - retrieved size_MB metric \"" << string_value << "\" did not parse as a number with optional trailing percent." << std::endl << iaex.what() << std::endl;
+			<< " - retrieved \"size MiB\" metric \"" << string_value << "\" did not parse as a number with optional trailing percent." << std::endl << iaex.what() << std::endl;
 		throw std::invalid_argument(o.str());
 	}
 
-	if (size_MB <= 0.0)
+	if (size_MiB <= 0.0)
 	{
 		std::ostringstream o;
 		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
@@ -362,7 +363,7 @@ ivy_float Hitachi_RAID_subsystem::get_wp(const std::string& CLPR, int subinterva
 		throw std::invalid_argument(o.str());
 	}
 
-	return WP_MB / size_MB;
+	return WP_MiB / size_MiB;
 }
 
 ivy_float Hitachi_RAID_subsystem::get_wp_change_from_last_subinterval(const std::string& CLPR, unsigned int subinterval)

@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -171,12 +171,13 @@ std::pair<bool,std::string> RollupSet::addRollupType
 //*debug*/ std::cout << "bool RollupSet::addRollupType (callers_error_message,\"" <<  attributeNameComboText << "\",";
 //*debug*/ if (nocsvSection) std::cout << "true,"; else std::cout << "false,";
 //*debug*/ if (quantitySection) std::cout << "true,"; else std::cout << "false,";
-//*debug*/ if (maxDroopMaxtoMinIOPSSection) std::cout << "true,"; else std::cout << "false,\"";
-//*debug*/ std::cout << nocsvText << "\",\"" << quantityText << "\",\"" << maxDroopMaxtoMinIOPSText << "\")" << std::endl;
+//*debug*/ if (maxDroopMaxtoMinIOPSSection) std::cout << "true"; else std::cout << "false";
+//*debug*/ std::cout << ", quantity = " << quantity << ", maxDroop = " << maxDroop << ")" << std::endl;
+//*debug*/ std::cout << "m_s.TheSampleLUN = " << m_s.TheSampleLUN.toString() << std::endl;
+
     AttributeNameCombo aNC;
 
     std::pair<bool,std::string> retval = aNC.set(attributeNameComboText, &(m_s.TheSampleLUN));
-
 
     if (!retval.first)
     {
@@ -247,7 +248,17 @@ RollupInstance* RollupSet::get_all_equals_all_instance()
 
 std::pair<bool,std::string> RollupSet::deleteRollup(std::string attributeNameComboText)
 {
-    auto it = rollups.find(toLower(attributeNameComboText));
+    AttributeNameCombo anc;
+
+    auto rc = anc.set(attributeNameComboText,&m_s.TheSampleLUN);
+    if (!rc.first)
+    {
+        std::ostringstream o;
+        o << "deleteRollup(\"" << attributeNameComboText << "\") - failed - " << rc.second;
+        return std::make_pair(false,o.str());
+    }
+
+    auto it = rollups.find(toLower(anc.attributeNameComboID));
     if (it == rollups.end())
     {
         std::ostringstream o;

@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -28,6 +28,8 @@
 #include <list>
 #include <algorithm>
 #include <map>
+#include <string>
+using namespace std::string_literals;  // for std::string literals like "bork"s
 
 #include "ivyhelpers.h"
 
@@ -35,21 +37,20 @@
 
 void LUN::createNicknames()
 {
-	if (contains_attribute_name(std::string("ivyscript_hostname")))
+	if (contains_attribute_name(std::string("ivyscript hostname"s)))
 	{
-		attributes[std::string("host")] = attributes[std::string("ivyscript_hostname")];
+		set_attribute("host"s, attribute_value("ivyscript hostname"s));
 	}
 
-	if (contains_attribute_name(std::string("pg")))
-	{
-		rewritePG(attributes[std::string("pg")]);
+//	if (contains_attribute_name(std::string("PG")))
+//	{
+//		rewritePG(attributes["pg"s].second);
+//	}
 
-	}
+	set_attribute("all"s,"all"s);  // I can't remember why I was doing this - maybe to make an automatic all=all rollup??? maybe remove later
 
-	attributes[std::string("all")] = std::string("all");  // I can't remember why I was doing this - maybe to make an automatic all=all rollup??? maybe remove later
-
-	attributes[std::string("workload")] = std::string("<placeholder>");
-	attributes[std::string("workloadid")] = std::string("<placeholder>");
+	set_attribute("Workload"s, "<placeholder>"s);
+	set_attribute("WorkloadID"s, "<placeholder>"s);
 		// We put these in here so all LUNs have same attribute names so we don't have to worry about which LUN to use as TheSampleLUN.
 		// Later on, in the "workloadLUN" LUN instance that is allocated in the WorkloadTracker and that is a clone of of the discovered LUN,
 		// we will set the workloadid and workload attributes in that LUN instance in the workload tracker, and then using
@@ -59,7 +60,7 @@ void LUN::createNicknames()
 
 }
 
-bool LUN::loadcsvline(std::string headerline, std::string dataline, std::string logfilename)
+bool LUN::loadcsvline(const std::string& headerline, const std::string& dataline, const std::string& logfilename)
 {
 	// false on a failure to load the line properly
 	int header_columns = 1 + countCSVlineUnquotedCommas(headerline);
@@ -85,22 +86,22 @@ bool LUN::loadcsvline(std::string headerline, std::string dataline, std::string 
 
 	attributes.clear();
 
-	std::string keyword, value;
+	std::string original_attribute_name, normalized_name, value;
 
 	for (int col=0; col < header_columns; col++)
 	{
-		keyword =
-			convert_to_lower_case_and_convert_nonalphameric_to_underscore
-			(
-				UnwrapCSVcolumn(retrieveRawCSVcolumn(headerline, col))
-			);
+	    original_attribute_name = UnwrapCSVcolumn(retrieveRawCSVcolumn(headerline, col));
+
+	    normalized_name = LUN::normalize_attribute_name(original_attribute_name);
+
 		value = UnwrapCSVcolumn(retrieveRawCSVcolumn(dataline, col));
-		attributes[keyword] = value;
+
+		attributes[normalized_name] = std::make_pair(original_attribute_name,value);
 	}
 	return true;
 }
 
-std::string LUN::toString()
+std::string LUN::toString() const
 {
 	std::string result;
 	bool notfirst = false;
@@ -112,41 +113,37 @@ std::string LUN::toString()
 	{
 		if (notfirst) o << ", ";
 		notfirst=true;
-		o << pear.first << " = \"" << pear.second << "\"";
+		o << "\"" << pear.second.first << "\" = \"" << pear.second.second << "\"";
 	}
 	o << "}";
 	return o.str();
 }
 
-std::string LUN::attribute_value(std::string attribute_name)
+std::string LUN::attribute_value(const std::string& attribute_name) const
 {
-	std::map<std::string, std::string>::iterator it;
+	std::string atname = LUN::normalize_attribute_name(attribute_name);
 
-	std::string atname = LUN::convert_to_lower_case_and_convert_nonalphameric_to_underscore(UnwrapCSVcolumn(attribute_name));
+	auto it = attributes.find(atname);
 
-	it = attributes.find(atname);
+	if (it == attributes.end()) return "< LUN::attribute_value(\""s + attribute_name + "\") - no such_attribute>"s;
 
-	if (it == attributes.end()) return std::string("No_such_attribute");
-
-	return (*it).second;
+	return (*it).second.second;
 }
 
-bool LUN::contains_attribute_name(std::string attribute_name)
+bool LUN::contains_attribute_name(const std::string& attribute_name) const
 {
-	std::map<std::string, std::string>::iterator it;
+	std::string atname = LUN::normalize_attribute_name(attribute_name);
 
-	std::string atname = LUN::convert_to_lower_case_and_convert_nonalphameric_to_underscore(UnwrapCSVcolumn(attribute_name));
-
-	it = attributes.find(atname);
+	auto it = attributes.find(atname);
 
 	if (it == attributes.end()) return false;
-	else return true;
+	else                        return true;
 }
 
 
-void LUN::set_attribute(std::string attribute_name, std::string value)
+void LUN::set_attribute(const std::string& attribute_name, const std::string& value)
 {
-	std::string name = LUN::convert_to_lower_case_and_convert_nonalphameric_to_underscore(UnwrapCSVcolumn(attribute_name));
+	std::string name = LUN::normalize_attribute_name(attribute_name);
 
 	if (0 == name.size())
 	{
@@ -155,47 +152,125 @@ void LUN::set_attribute(std::string attribute_name, std::string value)
 		throw std::invalid_argument(o.str());
 	}
 
-	attributes[name] = value;
+	if (contains_attribute_name(attribute_name))
+	{
+	    // we keep the original "original" name.
+	    attributes[name].second = value;
+    }
+    else
+    {
+        std::pair<std::string,std::string>& pear = attributes[name];
+        pear.first=attribute_name;
+        pear.second = value;
+    }
 
 	return;
 }
 
 
-bool LUN::attribute_value_matches(std::string attribute_name, std::string value)
+bool LUN::attribute_value_matches(const std::string& attribute_name, const std::string& value) const
 {
-	std::map<std::string, std::string>::iterator it;
+	std::string atname = LUN::normalize_attribute_name(attribute_name);
 
-	std::string atname = LUN::convert_to_lower_case_and_convert_nonalphameric_to_underscore(UnwrapCSVcolumn(attribute_name));
-
-	it = attributes.find(atname);
+	auto it = attributes.find(atname);
 
 	if (it == attributes.end()) return false;
 
-	return stringCaseInsensitiveEquality(UnwrapCSVcolumn(value),(*it).second);
+	return stringCaseInsensitiveEquality(value,(*it).second.second);
 }
 
-std::string LUN::convert_to_lower_case_and_convert_nonalphameric_to_underscore(std::string column_title)
+std::string LUN::normalize_attribute_name(const std::string& column_title)
 {
 	if (0 == column_title.length())	return std::string("");
 
 	std::string result;
 	char c;
 
+	bool last_char_was_underscore {false};
+
 	for (unsigned int i=0; i < column_title.length(); i++)
 	{
 		c = tolower(column_title[i]);
-		if (!isalnum(c)) c = '_';
-		result.push_back(c);
+		if (!isalnum(c))
+		{
+		    if (!last_char_was_underscore) result.push_back('_');
+		    last_char_was_underscore = true;
+		}
+		else
+		{
+		    result.push_back(c);
+		    last_char_was_underscore = false;
+		}
 	}
+
+	while (result.size() > 0 && result[result.size()-1] == '_') { result.erase(result.size()-1,1);}
+	while (result.size() > 0 && result[0]               == '_') { result.erase(0,1);}
 
 	return result;
 }
 
-void LUN::copyOntoMe(LUN* p_other)
+void LUN::copyOntoMe(const LUN* p_other)
 {
 	for (auto& pear : p_other->attributes)
 	{
-		attributes[pear.first] = pear.second;
+		set_attribute(pear.second.first,pear.second.second);
 	}
 	return;
+}
+
+std::string LUN::original_name(const std::string& attribute_name) const
+{
+    std::string normalized_name = LUN::normalize_attribute_name(attribute_name);
+
+    auto it = attributes.find(normalized_name);
+    if (it != attributes.end())
+    {
+        return it->second.first;
+    }
+
+    {
+        std::ostringstream o;
+        o << "<No such attribute \"" << attribute_name << "\">";
+        return o.str();
+    }
+}
+
+std::string LUN::valid_attribute_names() const
+{
+    if (attributes.size() == 0) return "<Empty LUN - no attributes>";
+
+    std::ostringstream o;
+
+    o << "{ ";
+    bool needComma = false;
+    for (auto& pear : attributes)
+    {
+        if (needComma) o << ", ";
+        needComma = true;
+        o << "\"" << pear.second.first << "\"";
+    }
+    o << " }";
+    return o.str();
+}
+
+void LUN::push_attribute_values(std::map<std::string /* LUN attribute name */, std::set<std::string> /* LUN attribute values */>& LUNattributeValues) const
+{
+    for (auto& pear : attributes)
+    {
+        LUNattributeValues[pear.second.first].insert(pear.second.second);
+    }
+    return;
+}
+
+void LUN::push_attribute_names(std::set<std::string>& column_headers) const
+{
+    for (auto& pear : attributes)
+    {
+        if (pear.first != "all"s)
+        {
+            column_headers.insert(pear.second.first);
+        }
+
+    }
+    return;
 }

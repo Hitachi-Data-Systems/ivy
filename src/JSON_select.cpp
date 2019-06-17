@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -491,73 +491,82 @@ bool JSON_select_clause::pg_matches(LUN* p_LUN)
 	}
     std::list<JSON_select_value*>& value_pointer_list = *p_value_pointer_list;
 
-	std::string pg_string = p_LUN->attribute_value("Parity Group");
+	std::string pg;
 
-	trim(pg_string); // remove leading/trailing whitespace
-	if (pg_string.size() == 0)
-	{
-        pg_string = p_LUN->attribute_value("PG");
+    if (p_LUN->contains_attribute_name("PG names"))
+    {
+        std::string pg_names = p_LUN->attribute_value("PG names");
 
-        if (pg_string.size() == 0)
+        if (pg_names.size() == 0) return false;
+
+        unsigned int cursor = 0;
+
+        while (true)
         {
-            return false;
+            auto rc = get_next_field(pg_names,cursor,'/');
+
+            if (!rc.first) break;
+
+            pg = rc.second;
+
+            int first_int, last_int;
+
+            std::smatch bits;
+
+            if (std::regex_match(pg,bits,regex_PG))
+            {
+                std::ssub_match first_sub = bits[1];
+                std::ssub_match last_sub = bits[2];
+                first_int = atoi(first_sub.str().c_str());
+                last_int = atoi(last_sub.str().c_str());
+            }
+            else
+            {
+                std::ostringstream o; o << "<Warning> At " << __FILE__ << " line " << __LINE__ << " in function " << __FUNCTION__
+                    << " - Within the LUN's \"PG names\" = \"" << pg_names << "\", the individual PG string \"" << pg << "\" does not look like a parity group (digits hyphen digits)." << std::endl;
+                m_s.warning_messages.push_back(o.str());
+                log(m_s.masterlogfile, o.str());
+                return false;
+            }
+
+            for (auto& p : value_pointer_list)
+            {
+                if (nullptr==p)
+                {
+                    std::ostringstream o; o << "<Warning> At " << __FILE__ << " line " << __LINE__ << " in function " << __FUNCTION__ << " - "
+                        << " ignoring a null pointer in the list of pointers to value strings." << std::endl;
+                    m_s.warning_messages.push_back(o.str());
+                    log(m_s.masterlogfile, o.str());
+                    continue;
+                }
+
+                std::ostringstream q;
+
+                std::string s = p->bare_value();
+
+                if (s == "*") return true;
+
+                if (!std::regex_match(s,bits,regex_before_after_hyphen))
+                {
+                    complain_pg(s);
+                    return false;
+                }
+
+                std::ssub_match before_part_match = bits[1];
+                std::ssub_match after_part_match = bits[2];
+
+                std::string before_part = before_part_match.str();
+                std::string after_part = after_part_match.str();
+
+                if ( pg_part_matches(first_int,before_part) && pg_part_matches(last_int,after_part) )
+                {
+                    return true;
+                }
+
+            }
         }
-	}
+    }
 
-	int first_int, last_int;
-
-	std::smatch bits;
-	if (std::regex_match(pg_string,bits,regex_PG))
-	{
-        std::ssub_match first_sub = bits[1];
-        std::ssub_match last_sub = bits[2];
-        first_int = atoi(first_sub.str().c_str());
-        last_int = atoi(last_sub.str().c_str());
-	}
-	else
-	{
-        std::ostringstream o; o << "<Warning> At " << __FILE__ << " line " << __LINE__ << " in function " << __FUNCTION__
-            << " - LUN has a parity group attribute, but its value \"" << pg_string << "\" does not look like a parity group (digits hyphen digits)." << std::endl;
-        m_s.warning_messages.push_back(o.str());
-        log(m_s.masterlogfile, o.str());
-        return false;
-	}
-
-	for (auto& p : value_pointer_list)
-	{
-        if (nullptr==p)
-        {
-            std::ostringstream o; o << "<Warning> At " << __FILE__ << " line " << __LINE__ << " in function " << __FUNCTION__ << " - "
-                << " ignoring a null pointer in the list of pointers to value strings." << std::endl;
-            m_s.warning_messages.push_back(o.str());
-            log(m_s.masterlogfile, o.str());
-            continue;
-        }
-
-        std::ostringstream q;
-
-        std::string s = p->bare_value();
-
-        if (s == "*") return true;
-
-
-        if (!std::regex_match(s,bits,regex_before_after_hyphen))
-        {
-            complain_pg(s);
-            return false;
-        }
-
-        std::ssub_match before_part_match = bits[1];
-        std::ssub_match after_part_match = bits[2];
-
-        std::string before_part = before_part_match.str();
-        std::string after_part = after_part_match.str();
-
-        if ( pg_part_matches(first_int,before_part) && pg_part_matches(last_int,after_part) )
-        {
-            return true;
-        }
-	}
 	return false;
 }
 
@@ -652,7 +661,7 @@ bool JSON_select_clause::host_matches(LUN* p_LUN)
         }
     }
 
-	std::string host_string = p_LUN->attribute_value("ivyscript_hostname");
+	std::string host_string = p_LUN->attribute_value("ivyscript hostname");
 
 	trim(host_string); // remove leading/trailing whitespace
 	if (host_string.size() == 0)

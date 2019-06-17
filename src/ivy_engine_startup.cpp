@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -480,9 +480,9 @@ std::pair<bool /*success*/, std::string /* message */>
 
                     {
                         std::ostringstream o;
-                        o << "Command device for " << pL->attribute_value("Hitachi_product") << " " << pL->attribute_value("HDS_product")
+                        o << "Command device for " << pL->attribute_value("Hitachi product") << " " << pL->attribute_value("Hitachi Vantara product")
                             <<  " serial number " << pSubsystem->serial_number
-                            << " on host = " << pL->attribute_value("ivyscript_hostname")
+                            << " on host = " << pL->attribute_value("ivyscript hostname")
                             << ", subsystem port = " << pL->attribute_value("port")
                             << ", LDEV = " << pL->attribute_value("LDEV")
                             << std::endl;
@@ -499,7 +499,7 @@ std::pair<bool /*success*/, std::string /* message */>
 
                     pipe_driver_subthread* p_pipe_driver_subthread = new pipe_driver_subthread(
 
-                        pL->attribute_value("ivyscript_hostname")
+                        pL->attribute_value("ivyscript hostname")
                         , outputFolderRoot
                         , testName,
                         testFolder+std::string("/logs")

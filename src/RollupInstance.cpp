@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -149,7 +149,7 @@ std::string RollupInstance::config_filter_contents()
 
         for (auto& element_pair : serial_pair.second)
         {
-            o << "         { element = \"" << element_pair.first << ", instances = { ";
+            o << "         { element = \"" << element_pair.first << "\", instances = { ";
 
             bool first_instance {true};
 

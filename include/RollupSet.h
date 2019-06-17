@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -115,7 +115,7 @@ public:
 
         // The first time ivy ran with this feature, the specification was:
         //    {
-        //        { "MP_core",     { "busy_percent", "io_buffers" } },
+        //        { "MP core",     { "busy %", "I/O buffers" } },
         //        { "CLPR",        { "WP_percent"                 } }
         //    };
 
@@ -199,7 +199,7 @@ public:
         // when iterating over each workload LUN in the workloads comprising
         // each RollupInstance during a rebuild.
 
-        // Then for configuration elements such as "MP_core" that are only indirectly
+        // Then for configuration elements such as "MP core" that are only indirectly
         // associated with a particular configuration attribute value such as "MPU = 2"
         // that is observed for a given LUN/LDEV, there is a post-processing phase that
         // adds indirectly associated configuration elements to the config_filter, where the

@@ -13,12 +13,14 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <iostream>
 #include <sstream>
+#include <string>
+using namespace std::string_literals;
 
 #include "ivydefines.h"
 #include "ivyhelpers.h"
@@ -30,18 +32,18 @@
 WorkloadTracker::WorkloadTracker(std::string ID, std::string iosequencer_name, LUN* pL) : workloadID(ID)
 {
 	workloadLUN.copyOntoMe(pL);
-	workloadLUN.attributes[std::string("workloadid")] = ID;
-	workloadLUN.attributes[std::string("iosequencer_name")] = iosequencer_name;
+	workloadLUN.set_attribute("WorkloadID"s, ID);
+	workloadLUN.set_attribute("iosequencer_name"s, iosequencer_name);
 
 	WorkloadID workloadID(ID);
 	if (workloadID.isWellFormed)
 	{
-		workloadLUN.attributes[std::string("workload")] = workloadID.getWorkloadPart();
+		workloadLUN.set_attribute("workload"s, workloadID.getWorkloadPart());
 	}
 	else
 	{
 		std::ostringstream o; o << "<WorkloadTracker::WorkloadTracker() - internal programming error - workloadID \"" << ID << "\" is malformed.";
-		workloadLUN.attributes[std::string("workload")] = o.str();
+		workloadLUN.set_attribute("Workload"s, o.str());
 	}
 
 //*debug*/std::cout << "WorkloadTracker::WorkloadTracker - workloadLUN = " << workloadLUN.toString() << std::endl;

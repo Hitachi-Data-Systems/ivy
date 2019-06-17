@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -122,12 +122,7 @@ void LUNpointerList::print_csv_file(std::ostream& o)
 	std::set<std::string> column_headers;
 	for (auto& pLUN : LUNpointers)
 	{
-		for (auto& pear : pLUN->attributes)
-		{
-			const std::string& attribute = pear.first;
-
-			if (!stringCaseInsensitiveEquality(std::string("all"),attribute)) column_headers.insert(attribute);
-		}
+		pLUN->push_attribute_names(column_headers);
 	}
 
 	bool need_comma{false};
@@ -154,10 +149,9 @@ void LUNpointerList::print_csv_file(std::ostream& o)
 			}
 			need_comma = true;
 
-			auto att_it = pLUN->attributes.find(header);
-			if (pLUN->attributes.end() != att_it)
+			if (pLUN->contains_attribute_name(header))
 			{
-				o << quote_wrap_except_number((*att_it).second,m_s.formula_wrapping);
+				o << quote_wrap_except_number(pLUN->attribute_value(header),m_s.formula_wrapping);
 			}
 		}
 		o << std::endl;

@@ -233,10 +233,6 @@
 			<Option target="ivymaster" />
 			<Option target="ivydriver" />
 		</Unit>
-		<Unit filename="include/HM800_tables.h">
-			<Option target="ivymaster" />
-			<Option target="ivydriver" />
-		</Unit>
 		<Unit filename="include/Iosequencer.h">
 			<Option target="ivydriver" />
 		</Unit>
@@ -600,9 +596,6 @@
 			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/GatherData.cpp">
-			<Option target="ivymaster" />
-		</Unit>
-		<Unit filename="src/HM800_tables.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/Iosequencer.cpp">

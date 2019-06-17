@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -29,6 +29,8 @@
 #include <list>
 #include <algorithm>    // std::find_if
 #include <regex>
+#include <string>
+using namespace std::string_literals;
 
 #include "ivytime.h"
 #include "ivyhelpers.h"
@@ -699,7 +701,7 @@ int countCSVlineUnquotedCommas(const std::string& csvline)
 	return count;
 }
 
-std::string retrieveRawCSVcolumn(std::string& csvline, int n_from_zero)
+std::string retrieveRawCSVcolumn(const std::string& csvline, int n_from_zero)
 {
 	if ( 0 > n_from_zero || 0 == csvline.length() ) return std::string("");
 
@@ -764,12 +766,14 @@ std::string retrieveRawCSVcolumn(std::string& csvline, int n_from_zero)
 	return csvline.substr(starting_cursor,longeur);
 }
 
-std::string UnwrapCSVcolumn(std::string s)
+std::string UnwrapCSVcolumn(const std::string& ss)
 {
     // first if it starts with =" and ends with ", we just clip those off and return the rest.
 
     // Otherwise, an unwrapped CSV column value first has leading/trailing whitespace removed and then if what remains is a single quoted string,
 	// the quotes are removed and any internal "escaped" quotes have their escaping backslashes removed, i.e. \" -> ".
+	std::string s = ss;
+
 	trim(s);
 
 	if (s.length()>=3 && s[0] == '=' && s[1] == '\"' && s[s.length()-1] == '\"')
@@ -1328,6 +1332,68 @@ std::map<unsigned int /* core */, std::vector<unsigned int /* processor (hyperth
     }
     return processors_by_core;
 }
+
+std::pair<bool /*false means attempt to read past the end*/, std::string /*field*/>
+    get_next_field(const std::string& s, unsigned int& cursor, char delimiter)
+{
+    // for "1-1/1-2" with delimeter '/' starting with cursor 0 returns "1-1" and then "1-2"
+
+    // for "/" returns "" then ""
+
+    if (cursor >= s.size())
+    {
+        if (s.size() > 0 && cursor == s.size() && s[cursor-1] == delimiter)
+        {
+            // last time we saw a delimiter as the last character, so we send a last null field.
+            cursor++;
+            return std::make_pair(true, ""s);
+        }
+        return std::make_pair(false,""s);
+    }
+
+    std::string field {};
+
+    while (true)
+    {
+        char c = s[cursor++];
+
+        if (c == delimiter) return std::make_pair(true,field);
+
+        field.push_back(c);
+
+        if (cursor >= s.size()) return std::make_pair(true,field);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

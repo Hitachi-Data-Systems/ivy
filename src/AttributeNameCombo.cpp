@@ -13,11 +13,12 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <string>
+using namespace std::string_literals;
 #include <map>
 #include <list>
 #include <algorithm>    // std::find_if
@@ -31,22 +32,15 @@
 #include "AttributeNameCombo.h"
 
 
-std::pair<bool,std::string> isValidAttributeName(std::string token, LUN* pSampleLUN)
+std::pair<bool,std::string> isValidAttributeName(const std::string& token, const LUN* pSampleLUN)
 {
 	if (stringCaseInsensitiveEquality(token, std::string("all"))) return std::make_pair(true,"");
 
 	if (pSampleLUN->contains_attribute_name(token)) return std::make_pair(true,"");
+
     std::ostringstream o;
-    bool needComma {false};
 
-    o << "invalid attribute name \"" << token << "\".  Valid LUN attribute names are ";
-
-    for (auto& pear : pSampleLUN->attributes)
-    {
-        if (needComma) o << ", ";
-        needComma = true;
-        o << "\"" << pear.first << "\"";
-    }
+    o << "Invalid attribute name \"" << token << "\".  Valid LUN attribute names are " << pSampleLUN-> valid_attribute_names();
 
     return std::make_pair(false,o.str());
 }
@@ -68,15 +62,11 @@ void AttributeNameCombo::clear()
 }
 
 
-std::pair<bool,std::string> AttributeNameCombo::set(std::string t, LUN* pSampleLUN)  //  serial_number+Port
+std::pair<bool,std::string> AttributeNameCombo::set(const std::string& t, LUN* pSampleLUN)  //  serial_number+Port
 {
-
 	// A valid attribute name combo token consists of one or more valid LUN-lister column header attribute names,
 	// or ivy knicknames yielding possibly processed versions of LUN-lister attribute values,
 	// joined into a single token using plus signs as separators.
-
-	// For example, where the LUN-lister "Parity Group" has the value "01-01", the ivy nickname PG has the value "1-1",
-	// and you can use PG to create rollups or csv files instead of Parity_Group.
 
 	// The upper/lower case of the text that the user supplies to create a rollup
 	// persists and shows in output csv files, but all comparisons for matches on
@@ -98,57 +88,73 @@ std::pair<bool,std::string> AttributeNameCombo::set(std::string t, LUN* pSampleL
 
 	clear();
 
-	attributeNameComboID=t;
+    std::string token {};
 
-	trim(attributeNameComboID);  // removes leading / trailing whitespace
+    for (unsigned int i = 0; i < t.size(); i++)
+    {
+        auto c = t[i];
 
-	if (0 == attributeNameComboID.length())
-	{
-		return std::make_pair(false,std::string("AttributeNameCombo::set() - called with null string."));
-	}
+        if (c == '+' || i == (t.size()-1))
+        {
+            if (i == (t.size()-1))
+            {
+                if (c == '+') { return std::make_pair(false, std::string("AttributeNameCombo::set(\""s + t + "\") - missing attribute name.")); }
+                token.push_back(c);
+            }
 
-	cursor = 0;
-	last_cursor = attributeNameComboID.length() -1;
-	next_char = attributeNameComboID[0];
+            trim(token);
 
-	std::string token;
+            if (token.size() > 2 && token[0] == '\"' && token[token.size()-1] == '\"')
+            {
+                // remove double-quotes surrounding token.
+                token.erase(token.size()-1,1);
+                token.erase(0,1);
+                trim(token);
+            }
 
-	while ( true )
-	{
-		// at start of attribute name
-		token.clear();
+            if (0 == token.length())
+            {
+                return std::make_pair(false,std::string("AttributeNameCombo::set(\""s + t + "\") - missing attribute name."));
+            }
 
-		while ( cursor <= last_cursor && '+' != next_char )
-		{
-			token.push_back(next_char);
-			consume();
-		}
+            token = LUN::normalize_attribute_name(token);
 
-		std::pair<bool,std::string> retval = isValidAttributeName(token, pSampleLUN);
+            std::pair<bool,std::string> retval = isValidAttributeName(token, pSampleLUN);
 
-		if (retval.first)  // either a LUN-lister column heading, or an ivy nickname
-		{
-			attributeNames.push_back(token);
-		}
-		else
-		{
-			std::ostringstream o;
-			o << "AttributeNameCombo::set() - " << retval.second;
-			return std::make_pair(false,o.str());
-		}
-
-		if (cursor > last_cursor) break;
-
-		if ('+' == next_char)
-		{
-			consume();
-		}
-	}
+            if (retval.first)  // either a LUN-lister column heading, or an ivy nickname
+            {
+                attributeNames.push_back(token);
+                if (attributeNameComboID.size() > 0) attributeNameComboID += "+"s;
+                attributeNameComboID += token;
+                token.clear();
+            }
+            else
+            {
+                std::ostringstream o;
+                o << "AttributeNameCombo::set() - " << retval.second;
+                return std::make_pair(false,o.str());
+            }
+        }
+        else
+        {
+            token.push_back(c);
+        }
+    }
 
 	isValid=true;
 
 	return std::make_pair(true,"");
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-- update ivy_cmddev to send IOPS rather than I/O count.
+DONE- update ivy_cmddev to send IOPS rather than I/O count.
 	- add timestamp to saved counter value from last time.
 	- compute rate and send that.
 	- remove the post-processing from ivy to compute the rates - clean ivy and put all the mechanisms in ivy_cmddev.
@@ -8,9 +8,9 @@
 
 - switch from CodeBlocks build to cmake or autotools.
 
-- remove "set iosequencer template"
+DONE (marked deprecated in doc, and when used, prominently shows message to user) - remove "set iosequencer template"
 
-- with a command device, check at end of test step if there is a failed component, and abort and fail the test step if so.
+DONE - with a command device, check at end of test step if there is a failed component, and abort and fail the test step if so.
 
 - restore -t tracing
 

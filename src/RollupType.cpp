@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -61,7 +61,6 @@
 #include "RollupType.h"
 #include "RollupSet.h"
 #include "ivy_engine.h"
-#include "HM800_tables.h"
 
 extern bool routine_logging, trace_evaluate;
 
@@ -166,7 +165,6 @@ bool RollupType::add_workload_detail_line(std::string& callers_error_message, Wo
 
 void RollupType::rebuild()
 {
-//*debug*/std::cout << std::endl << "void RollupType::rebuild() for " << attributeNameCombo.attributeNameComboID << std::endl;
     for (auto& pear : instances) delete pear.second; // RollupInstance*;
     instances.clear();
     rollupInstanceByWorkloadID.clear();
@@ -176,8 +174,6 @@ void RollupType::rebuild()
     for (auto& pear : m_s.workloadTrackers.workloadTrackerPointers)
     {
         WorkloadTracker* pWorkloadTracker = pear.second;
-
-//*debug*/{std::ostringstream o; o << std::endl << "RollupType::rebuild() - rollup = \""<< attributeNameCombo.attributeNameComboID << "\" - processing WorkloadTrackerPointers key=\"" << pear.first << "\", pWorkloadTracker->workloadID.workloadID=\"" << pWorkloadTracker->workloadID.workloadID << "\".  WorkloadLUN is " << pWorkloadTracker->workloadLUN.toString() << std::endl; log(m_s.masterlogfile,o.str()); std::cout << o.str();}
 
         rollupInstanceKey.clear();
 
@@ -195,15 +191,12 @@ void RollupType::rebuild()
             {
                 // build up RollupInstanceKey
 
-//*debug*/std::cout << "void RollupType::rebuild() attribute_name_token = " << attribute_name_token << std::endl;
-
                 if ( !first ) rollupInstanceKey.push_back( '+' );
                 first=false;
 
                 rollupInstanceKey += pWorkloadTracker->workloadLUN.attribute_value(attribute_name_token);
             }
         }
-//*debug*/std::cout << "void RollupType::rebuild() rollupInstanceKey = \"" << rollupInstanceKey << "\"." << std::endl;
 
         // Now we see if we already have that RollupInstance
 
@@ -212,292 +205,106 @@ void RollupType::rebuild()
         auto it = instances.find(toLower(rollupInstanceKey));
         if (instances.end() == it)
         {
-
-//*debug*/std::cout << "void RollupType::rebuild() instances[toLower(rollupInstanceKey=\"" << toLower(rollupInstanceKey) << "\"] = new RollupInstance(this, pRollupSet, attributeNameCombo.attributeNameComboID=\""<< attributeNameCombo.attributeNameComboID << "\", rollupInstanceKey=\""  << rollupInstanceKey << "\")" << std::endl;
-
             pRollupInstance = new RollupInstance(this, pRollupSet, attributeNameCombo.attributeNameComboID,rollupInstanceKey);
             instances[toLower(rollupInstanceKey)] = pRollupInstance;
         }
         else
         {
-//*debug*/std::cout << "void RollupType::rebuild() using existing rollup instance key = \"" << rollupInstanceKey << "\"." << std::endl;
             pRollupInstance = (*it).second;
         }
 
         pRollupInstance->workloadIDs.workloadIDs.push_back(pWorkloadTracker->workloadID);
         rollupInstanceByWorkloadID[toLower(pWorkloadTracker->workloadID.workloadID)] = pRollupInstance;
 
-        std::string serial = pWorkloadTracker->workloadLUN.attribute_value("serial_number");
+        std::string serial = pWorkloadTracker->workloadLUN.attribute_value("serial number");
 
         auto subsystem_it = m_s.subsystems.find(serial);
 
-        for (auto& attribute_value_pair : pWorkloadTracker->workloadLUN.attributes)
+        if (subsystem_it != m_s.subsystems.end())
         {
-            pRollupInstance->config_filter[serial][attribute_value_pair.first].insert(attribute_value_pair.second);
-        }
 
-        if (pWorkloadTracker->workloadLUN.contains_attribute_name("MP_core_set"))
-        {
-            std::string s = pWorkloadTracker->workloadLUN.attribute_value("MP_core_set");
-
-            while (s.length() > 0)
+            for (auto& pear : pWorkloadTracker->workloadLUN.attributes)
             {
-                size_t pluspos = s.find('+');
+                pRollupInstance->config_filter[serial][toLower(pear.second.first)].insert(pear.second.second);
+            }
 
-                if (pluspos != std::string::npos)
+            if (pWorkloadTracker->workloadLUN.contains_attribute_name("MP core set"))
+            {
+                std::string s = pWorkloadTracker->workloadLUN.attribute_value("MP core set");
+
+                unsigned int cursor = 0;
+
+                while (true)
                 {
-                    std::string piece = s.substr(0,pluspos);
-                    s.erase(0,1+pluspos);
+                    auto rc = get_next_field(s,cursor,'+');
+
+                    if (!rc.first) break;
+
                     if (routine_logging)
                     {
                         std::ostringstream o;
                         o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
-                          << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting MP_core " << piece
-                          << " into config_filter[serial=" << serial << "][MP_core].";
+                          << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting MP core " << rc.second
+                          << " into config_filter[serial=" << serial << "][MP core].";
                         log(m_s.masterlogfile,o.str());
                     }
-                    pRollupInstance->config_filter[serial][toLower("MP_core")].insert(piece);
-                    continue;
-                }
-
-                pRollupInstance->config_filter[serial][toLower("MP_core")].insert(s);
-                if (trace_evaluate)
-                {
-                    std::ostringstream o;
-                    o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
-                        << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting MP_core " << s << " into config_filter[serial=" << serial << "][MP_core].";
-                    log(m_s.masterlogfile,o.str());
-                }
-                break;
-            }
-        }
-        else
-        {
-            std::ostringstream o;
-            o << "RollupType::rebuild() for WorkloadTracker " << pWorkloadTracker->workloadID << " did not find attribute \"" << "MP_core_set" << "\"." << std::endl
-                << "This Workload\'s LUN has attributes " <<  pWorkloadTracker->workloadLUN.toString() << std::endl;
-            log(m_s.masterlogfile, o.str());
-        }
-
-        if (pWorkloadTracker->workloadLUN.contains_attribute_name("MP_number_set"))
-        {
-            std::string s = pWorkloadTracker->workloadLUN.attribute_value("MP_number_set");
-
-            while (s.length() > 0)
-            {
-                size_t pluspos = s.find('+');
-
-                if (pluspos != std::string::npos)
-                {
-                    std::string piece = s.substr(0,pluspos);
-                    s.erase(0,1+pluspos);
-                    if (routine_logging)
-                    {
-                        std::ostringstream o;
-                        o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
-                          << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting MP_number " << piece
-                          << " into config_filter[serial=" << serial << "][MP_number].";
-                        log(m_s.masterlogfile,o.str());
-                    }
-                    pRollupInstance->config_filter[serial][toLower("MP_number")].insert(piece);
-                    continue;
-                }
-
-                pRollupInstance->config_filter[serial][toLower("MP_number")].insert(s);
-                if (trace_evaluate)
-                {
-                    std::ostringstream o;
-                    o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
-                        << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting MP_number " << s << " into config_filter[serial=" << serial << "][MP_number].";
-                    log(m_s.masterlogfile,o.str());
-                }
-                break;
-            }
-        }
-
-
-        if (pWorkloadTracker->workloadLUN.contains_attribute_name("PG_names"))
-        {
-            std::string s = pWorkloadTracker->workloadLUN.attribute_value("PG_names");
-
-            while (s.length() > 0)
-            {
-                size_t pluspos = s.find('+');
-
-                if (pluspos != std::string::npos)
-                {
-                    std::string piece = s.substr(0,pluspos);
-                    s.erase(0,1+pluspos);
-                    if (routine_logging)
-                    {
-                        std::ostringstream o;
-                        o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
-                          << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting internal LDEV PG " << piece
-                          << " into config_filter[serial=" << serial << "][pg].";
-                        log(m_s.masterlogfile,o.str());
-                    }
-                    pRollupInstance->config_filter[serial][toLower("PG")].insert(piece);
-                    continue;
-                }
-
-                pRollupInstance->config_filter[serial][toLower("PG")].insert(s);
-                if (trace_evaluate)
-                {
-                    std::ostringstream o;
-                    o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting internal LDEV PG " << s << " into config_filter[serial=" << serial << "][pg].";
-                    log(m_s.masterlogfile,o.str());
-                }
-                break;
-            }
-        }
-
-        //- connect from DP-vols to the PGs in the associated pools.
-
-        // - for each workload LUN in a RollupInstance
-        //   	- if it has a "pool_id" attribute (is a DP-Vol, as pool vols can't show as LUNs.)
-        //   		- spin through that serial number's config's LDEVs.
-        //   			- if config LDEV is a pool vol with a matching poolID
-        //   				- for each PG behind that pool vol (up to 4 concatenations);
-        //   					- add PG to config_filter
-
-        if ( pWorkloadTracker->workloadLUN.contains_attribute_name("dp_vol") )
-        {
-            const std::string& pool_id = pWorkloadTracker->workloadLUN.attribute_value("pool_id");
-
-            if (0 == pool_id.length())
-            {
-                std::ostringstream o;
-                o << "In RollupType::rebuild(), when connecting DP vols to their underlying PGs, the workload LUN for " << pWorkloadTracker->workloadID.workloadID
-                  << ", which does have a \"dp_vol\" attribute, does not have a non-empty \"pool_id\" attribute." << std::endl;
-                std::cout << o.str();
-                log(m_s.masterlogfile, o.str());
-                m_s.kill_subthreads_and_exit();
-            }
-
-            // Now we post the pool vol PGs into the config filter - indirect PG
-            if (m_s.subsystems.end() != subsystem_it)
-            {
-                Subsystem* pSubsystem = subsystem_it->second;
-                if (0 == std::string("Hitachi RAID").compare(pSubsystem->type()))
-                {
-                    Hitachi_RAID_subsystem* pRAID = (Hitachi_RAID_subsystem*) pSubsystem;
-                    GatherData& configGD = pRAID->configGatherData;
-                    for (auto& LDEV_pair : configGD.data["LDEV"])
-                    {
-                        const std::string& LDEV = LDEV_pair.first;
-                        const std::map<std::string,metric_value>& att = LDEV_pair.second;
-//                        {
-//                            std::ostringstream o;
-//                            o << "In RollupType::rebuild(), examining subsystem ldev "  << LDEV << " to see if is a Pool Vol." << std::endl;
-//                            std::cout << o.str();
-//                            log(m_s.masterlogfile, o.str());
-//                        }
-                        auto subsystem_pool_vol_it = att.find("Pool_Vol");
-                        if (subsystem_pool_vol_it != att.end())
-                        {
-//                            {
-//                                std::ostringstream o;
-//                                o << "In RollupType::rebuild(), subsystem ldev "  << LDEV << " has the \"Pool_Vol\" attribute." << std::endl;
-//                                std::cout << o.str();
-//                                log(m_s.masterlogfile, o.str());
-//                            }
-
-                            auto subsystem_pool_id_it = att.find("Pool_ID");
-                            if (att.end() != subsystem_pool_id_it)
-                            {
-                                const std::string& subsystem_pool_id = subsystem_pool_id_it->second.string_value();
-                                if (0 == pool_id.compare(subsystem_pool_id))
-                                {
-                                    // This is a pool vol for our DP-Vol.  Add its
-                                    unsigned int concat;
-                                    auto concat_it = att.find("PG_concat");
-                                    if (att.end() != concat_it)
-                                    {
-                                        std::istringstream ci(concat_it->second.string_value());
-                                        ci >> concat;
-                                        for (unsigned int i=0; i < concat; i++)
-                                        {
-                                            std::ostringstream interleave;
-                                            interleave << "PG_concat_" << (1+i);
-                                            auto it = att.find(interleave.str());
-                                            if (it != att.end())
-                                            {
-//                                                {
-//                                                    std::ostringstream o;
-//                                                    o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
-//                                                      << " workloadID " << pWorkloadTracker->workloadID.workloadID
-//                                                      << " inserting pool LDEV " << LDEV << " indirect pool PG " << it->second.string_value()
-//                                                      << " into config_filter[serial=" << serial << "][pg]." << std::endl;
-//                                                    log(m_s.masterlogfile,o.str());
-//                                                    std::cout << o.str();
-//                                                }
-                                                pRollupInstance->config_filter[serial][toLower("PG")].insert(it->second.string_value());
-                                            }
-                                            else
-                                            {
-                                                std::ostringstream o;
-                                                o << "RollupType::rebuild() - subsystem pool volume " << serial << " " << LDEV << " has " << concat << " PG concatenations but does not have parity group attribute " << interleave.str() << std::endl;
-                                                std::cout << o.str();
-                                                log (m_s.masterlogfile, o.str());
-                                                m_s.kill_subthreads_and_exit();
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        std::ostringstream o;
-                                        o << "In RollupType::rebuild(), subsystem " << serial << " Pool Vol ldev "  << LDEV << " does not have the \"PG_concat\" attribute." << std::endl;
-                                        std::cout << o.str();
-                                        log(m_s.masterlogfile, o.str());
-                                        m_s.kill_subthreads_and_exit();
-                                    }
-                                }
-//                                else
-//                                {
-//                                    std::ostringstream o;
-//                                    o << "In RollupType::rebuild(), subsystem " << serial << " Pool_Vol ldev "  << LDEV << " is for Pool_ID = " << subsystem_pool_id << ", which is not the Pool_ID we are looking for, which is " << pool_id << "." << std::endl;
-//                                    std::cout << o.str();
-//                                    log(m_s.masterlogfile, o.str());
-//                                }
-                            }
-                            else
-                            {
-                                std::ostringstream o;
-                                o << "In RollupType::rebuild(), subsystem " << serial << " Pool_Vol ldev "  << LDEV << " does not have the \"Pool_ID\" attribute." << std::endl;
-                                std::cout << o.str();
-                                log(m_s.masterlogfile, o.str());
-                                m_s.kill_subthreads_and_exit();
-                            }
-                        }
-//                        else
-//                        {
-//                            std::ostringstream o;
-//                            o << "In RollupType::rebuild(), subsystem ldev "  << LDEV << " does not have the \"Pool_Vol\" attribute." << std::endl;
-//                            std::cout << o.str();
-//                            log(m_s.masterlogfile, o.str());
-//                        }
-                        // end - for each LDEV pair in subsystem config data
-                    }
-                }
-                else
-                {
-                    std::ostringstream o;
-                    o << "In RollupType::rebuild(), when connecting DP vols to their underlying PGs, the workload LUN for " << pWorkloadTracker->workloadID.workloadID
-                      << " is for the same subsystem serial number " << serial << " as the DP vol, but this subsystem type is not \"Hitachi RAID\"." << std::endl;
-                    std::cout << o.str();
-                    log(m_s.masterlogfile, o.str());
-                    m_s.kill_subthreads_and_exit();
+                    pRollupInstance->config_filter[serial][toLower("MP core")].insert(rc.second);
                 }
             }
             else
             {
                 std::ostringstream o;
-                o << "In RollupType::rebuild(), when connecting DP vols to their underlying PGs for the DP-Vol workload LUN for " << pWorkloadTracker->workloadID.workloadID
-                  << ", did not find a subsystem serial number " << serial << ".." << std::endl;
-                std::cout << o.str();
+                o << "RollupType::rebuild() for WorkloadTracker " << pWorkloadTracker->workloadID << " did not find attribute \"" << "MP core set" << "\"." << std::endl
+                    << "This Workload\'s LUN has attributes " <<  pWorkloadTracker->workloadLUN.toString() << std::endl;
                 log(m_s.masterlogfile, o.str());
-                m_s.kill_subthreads_and_exit();
+            }
 
+            if (pWorkloadTracker->workloadLUN.contains_attribute_name("MP number set"))
+            {
+                std::string s = pWorkloadTracker->workloadLUN.attribute_value("MP number set");
+
+                unsigned int cursor = 0;
+
+                while (true)
+                {
+                    auto rc = get_next_field(s,cursor,'+');
+
+                    if (!rc.first) break;
+
+                    if (routine_logging)
+                    {
+                        std::ostringstream o;
+                        o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
+                          << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting MP number " << rc.second
+                          << " into config_filter[serial=" << serial << "][MP number].";
+                        log(m_s.masterlogfile,o.str());
+                    }
+                    pRollupInstance->config_filter[serial][toLower("MP number")].insert(rc.second);
+                }
+            }
+
+            if (pWorkloadTracker->workloadLUN.contains_attribute_name("PG names"))
+            {
+                std::string s = pWorkloadTracker->workloadLUN.attribute_value("PG names");
+
+                unsigned int cursor = 0;
+
+                while (true)
+                {
+                    auto rc = get_next_field(s,cursor,'/');
+
+                    if (!rc.first) break;
+
+                    if (routine_logging)
+                    {
+                        std::ostringstream o;
+                        o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
+                          << " workloadID " << pWorkloadTracker->workloadID.workloadID << " inserting internal LDEV PG " << rc.second
+                          << " into config_filter[serial=" << serial << "][pg].";
+                        log(m_s.masterlogfile,o.str());
+                    }
+                    pRollupInstance->config_filter[serial][toLower("PG")].insert(rc.second);
+                }
             }
         }
 
@@ -515,9 +322,6 @@ void RollupType::rebuild()
 
 std::pair<bool,std::string> RollupType::makeMeasurementRollup(int firstMeasurementIndex, int lastMeasurementIndex)
 {
-
-//*debug*/ { std::ostringstream o; o << "RollupType::makeMeasurementRollup[" << attributeNameCombo.attributeNameComboID << "](, " << firstMeasurementIndex << " ," << lastMeasurementIndex << ")" << std::endl; std::cout << o.str(); log(m_s.masterlogfile, o.str());}
-
     measurementRollupAverageIOPSRunningStat.clear();
 
     std::string my_error_message;
@@ -525,7 +329,7 @@ std::pair<bool,std::string> RollupType::makeMeasurementRollup(int firstMeasureme
     {
         RollupInstance* pRollupInstance;
         pRollupInstance = pear.second;
-//*debug*/ { std::ostringstream o; o << "RollupType::makeMeasurementRollup[" << attributeNameCombo.attributeNameComboID << "]() for instance " << pRollupInstance->attributeNameComboID << '=' << pRollupInstance->rollupInstanceID << std::endl; std::cout << o.str(); log(m_s.masterlogfile, o.str());}
+
         auto retval = pRollupInstance->makeMeasurementRollup(firstMeasurementIndex, lastMeasurementIndex);
         if(!retval.first)
         {
@@ -535,8 +339,6 @@ std::pair<bool,std::string> RollupType::makeMeasurementRollup(int firstMeasureme
         }
 
         ivy_float durSec = pRollupInstance->measurementRollup.durationSeconds();
-
-//*debug*/ { std::ostringstream o; o << "RollupType::makeMeasurementRollup() - pRollupInstance->measurementRollup.durationSeconds() = " << durSec << std::endl; std::cout << o.str(); log(m_s.masterlogfile, o.str());}
 
         if (durSec <=0)
         {
@@ -551,14 +353,10 @@ std::pair<bool,std::string> RollupType::makeMeasurementRollup(int firstMeasureme
 
         ivy_float overallIOPS = pRollupInstance->measurementRollup.outputRollup.u.a.service_time.overall().count() / durSec;
 
-//*debug*/ { std::ostringstream o; o << "RollupType::makeMeasurementRollup() - ivy_float overallIOPS = pRollupInstance->measurementRollup.outputRollup.u.a.service_time.overall().count() / durSec = " << overallIOPS << std::endl; std::cout << o.str(); log(m_s.masterlogfile, o.str());}
-
         measurementRollupAverageIOPSRunningStat.push( overallIOPS );
 
         // OK, this is slightly wacky, tracking BytesPerSecond instead of decimal MB/s.  Reason: impossible to misinterpret units as binary or decimal.
         ivy_float overallBytesPerSec = pRollupInstance->measurementRollup.outputRollup.u.a.bytes_transferred.overall().sum() / durSec;
-
-//*debug*/ { std::ostringstream o; o << "RollupType::makeMeasurementRollup() - ivy_float overallBytesPerSec = pRollupInstance->measurementRollup.outputRollup.u.a.bytes_transferred.overall().sum() / durSec = " << overallBytesPerSec << std::endl; std::cout << o.str(); log(m_s.masterlogfile, o.str());}
 
         measurementRollupAverageBytesPerSecRunningStat.push( overallBytesPerSec );
 

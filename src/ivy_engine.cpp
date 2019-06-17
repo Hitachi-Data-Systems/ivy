@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -221,7 +221,7 @@ bool ivy_engine::some_subsystem_still_busy()
         else
         {
             std::ostringstream o;
-            o << "With cooldown_by_MP_busy=on, average MP_core % busy is " << std::fixed << std::setprecision(2) << (100.0 * avg_busy) << "%"
+            o << "With cooldown_by_MP_busy=on, average MP core % busy is " << std::fixed << std::setprecision(2) << (100.0 * avg_busy) << "%"
               << ", below the subsystem_busy_threshold " << std::fixed << std::setprecision(1) << (100.0 * m_s.subsystem_busy_threshold) << "% for " << cooldown_by_MP_busy_stay_down_count
               << " of the required " << cooldown_by_MP_busy_stay_down_count_limit << " subintervals." << std::endl;
             std::cout << o.str();
@@ -233,7 +233,7 @@ bool ivy_engine::some_subsystem_still_busy()
     {
         cooldown_by_MP_busy_stay_down_count = 0;
         std::ostringstream o;
-        o << "With cooldown_by_MP_busy=on, subsystem average MP_core % busy is " << std::fixed << std::setprecision(2) << (100.0 * avg_busy) << "%"
+        o << "With cooldown_by_MP_busy=on, subsystem average MP core % busy is " << std::fixed << std::setprecision(2) << (100.0 * avg_busy) << "%"
           << ", which is above subsystem_busy_threshold = " << std::fixed << std::setprecision(1) << (100.0 * m_s.subsystem_busy_threshold) << "%" << std::endl;
         std::cout << o.str();
         if (routine_logging) { log(masterlogfile,o.str()); }
@@ -821,15 +821,15 @@ std::string ivy_engine::focus_caption()
     }
     else if (have_measure
         && source == source_enum::RAID_subsystem
-        && subsystem_element == "MP_core"
-        && element_metric == "busy_percent")
+        && subsystem_element == "MP core"
+        && element_metric == "busy %")
     {
         o << ", "; // measure = MP_core_busy_percent
     }
     else if (have_measure
         && source == source_enum::RAID_subsystem
         && subsystem_element == "PG"
-        && element_metric == "busy_percent")
+        && element_metric == "busy %")
     {
         o << ", "; // measure = PG_busy_percent
     }
@@ -905,11 +905,11 @@ std::string ivy_engine::focus_caption()
         }
         else if (have_measure
             && source == source_enum::RAID_subsystem
-            && subsystem_element == "MP_core"
-            && element_metric == "busy_percent")
+            && subsystem_element == "MP core"
+            && element_metric == "busy %")
         {
             // measure = MP_core_busy_percent
-            o << "target MP_core busy = " << std::fixed << std::setprecision(2) << (100.0 * target_value) << "%";
+            o << "target MP core busy = " << std::fixed << std::setprecision(2) << (100.0 * target_value) << "%";
             o << ", operating range = { (" << low_IOPS << " IOPS, "
                 << std::fixed << std::setprecision(2) << (100.0*low_target)
                 << "%), (" << high_IOPS << " IOPS, "
@@ -918,7 +918,7 @@ std::string ivy_engine::focus_caption()
         else if (have_measure
             && source == source_enum::RAID_subsystem
             && subsystem_element == "PG"
-            && element_metric == "busy_percent")
+            && element_metric == "busy %")
         {
             // measure = PG_busy_percent
             o << "target PG busy = " << std::fixed << std::setprecision(2) << (100.0 * target_value) << "%";
@@ -1013,14 +1013,14 @@ std::string ivy_engine::focus_caption()
             o << "measure = response_time_seconds";
         }
         else if (source == source_enum::RAID_subsystem
-            && subsystem_element == "MP_core"
-            && element_metric == "busy_percent")
+            && subsystem_element == "MP core"
+            && element_metric == "busy %")
         {
             o << "measure = MP_core_busy_percent";
         }
         else if (source == source_enum::RAID_subsystem
             && subsystem_element == "PG"
-            && element_metric == "busy_percent")
+            && element_metric == "busy %")
         {
             o << "measure = PG_busy_percent";
         }
@@ -1381,7 +1381,7 @@ ivy_engine::createWorkload(
 		(
 			!workloadID.set
 			(
-				  p_LUN->attribute_value(std::string("ivyscript_hostname"))
+				  p_LUN->attribute_value(std::string("ivyscript hostname"))
 				+ std::string("+")
 				+ p_LUN->attribute_value(std::string("LUN_name"))
 				+ std::string("+")
@@ -1406,7 +1406,7 @@ ivy_engine::createWorkload(
 
 	for (auto& p_LUN : createWorkloadLUNs.LUNpointers)  // maybe come back later and do this for a set of LUNs in parallel, like we do for editWorkload().
 	{
-		std::string ivyscript_hostname = p_LUN->attribute_value(std::string("ivyscript_hostname"));
+		std::string ivyscript_hostname = p_LUN->attribute_value(std::string("ivyscript hostname"));
 
 		workloadID.set
 		(
@@ -1456,7 +1456,7 @@ ivy_engine::createWorkload(
 
 			p_host->commandString=std::string("[CreateWorkload]");
 
-			p_host->commandHost = p_LUN->attribute_value(std::string("ivyscript_hostname"));
+			p_host->commandHost = p_LUN->attribute_value(std::string("ivyscript hostname"));
 			p_host->commandLUN = p_LUN->attribute_value(std::string("LUN_name"));
 			p_host->commandWorkloadID = workloadID.workloadID;
 			p_host->commandIosequencerName = iosequencerName;
@@ -1736,17 +1736,6 @@ ivy_engine::create_rollup(
 
     if (!rc.first) return rc;
 
-    auto it = rollups.rollups.find(toLower(attributeNameComboText));
-    if (rollups.rollups.end() == it)
-    {
-        std::ostringstream o;
-        o << "<Error> ivy engine API - create rollup failed - internal programming error.  Unable to find the new RollupType we supposedly just made."<< std::endl;
-        log(m_s.masterlogfile,o.str());
-        std::cout << o.str();
-        kill_subthreads_and_exit();
-    }
-
-    //m_s.need_to_rebuild_rollups=true; - removed so scripting language builtins see up to date data structures
     rollups.rebuild();
 
     return rc;
@@ -1835,7 +1824,16 @@ ivy_engine::edit_rollup(const std::string& rollupText, const std::string& origin
 		std::string rollupsKey;
 		std::string my_error_message;
 
-		rollupsKey = toLower(listOfNameEqualsValueList.clauses.front()->name_token);
+		AttributeNameCombo anc;
+		auto rc = anc.set(listOfNameEqualsValueList.clauses.front()->name_token, &m_s.TheSampleLUN);
+		if (!rc.first)
+		{
+		    std::ostringstream o;
+		    o << "Edit rollup - invalid atrribute name combo \"" << listOfNameEqualsValueList.clauses.front()->name_token << "\" - " << rc.second;
+		    return std::make_pair(false,o.str());
+		}
+
+		rollupsKey = anc.attributeNameComboID;
 
 		if (!isPlusSignCombo(my_error_message, fieldsInAttributeNameCombo, rollupsKey ))
 		{
@@ -1850,11 +1848,11 @@ ivy_engine::edit_rollup(const std::string& rollupText, const std::string& origin
 		if (rollups.rollups.end() == it)
 		{
 			std::ostringstream o;
-//*debug*/		o << " rollupsKey=\"" << rollupsKey << "\" ";
+/*debug*/		o << " rollupsKey=\"" << rollupsKey << "\" ";
 			o << "No such rollup \"" << listOfNameEqualsValueList.clauses.front()->name_token << "\".  Valid choices are:";
 			for (auto& pear : rollups.rollups)
 			{
-//*debug*/			o << " key=\"" << pear.first << "\"";
+/*debug*/			o << " key=\"" << pear.first << "\"";
 				o << " " << pear.second->attributeNameCombo.attributeNameComboID;
 			}
             return std::make_pair(false,o.str());
@@ -2182,7 +2180,22 @@ ivy_engine::delete_rollup(const std::string& attributeNameComboText)
             return std::make_pair(false,msg);
         }
 
-        auto rc = m_s.rollups.deleteRollup(attributeNameComboText);
+        AttributeNameCombo anc {};
+
+        std::pair<bool,std::string>
+            rc = anc.set(attributeNameComboText, &m_s.TheSampleLUN);
+            // This is to handle spaces around attribute tokens & attribute names in quotes.
+
+        if ( !rc.first )
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine API - delete rollup for \"" << attributeNameComboText << "\" failed - " << rc.second << std::endl;
+            log(m_s.masterlogfile,o.str());
+            std::cout << o.str();
+            return std::make_pair(false,o.str());
+        }
+
+        rc = m_s.rollups.deleteRollup(anc.attributeNameComboID);
         if ( !rc.first )
         {
             std::ostringstream o;
@@ -2399,8 +2412,8 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
             go_parameters.contents[toLower("measure")] = "on";
             if (!go_parameters.contains("focus_rollup")) go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "RAID_subsystem";
-            go_parameters.contents[normalize_identifier("subsystem_element")] = "MP_core";
-            go_parameters.contents[normalize_identifier("element_metric")] = "busy_percent";
+            go_parameters.contents[normalize_identifier("subsystem_element")] = "MP core";
+            go_parameters.contents[normalize_identifier("element_metric")] = "busy %";
         }
         else if (normalized_identifier_equality(measure_parameter_value,std::string("PG_busy_percent")))
         {
@@ -2408,7 +2421,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
             if (!go_parameters.contains("focus_rollup")) go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "RAID_subsystem";
             go_parameters.contents[normalize_identifier("subsystem_element")] = "PG";
-            go_parameters.contents[normalize_identifier("element_metric")] = "busy_percent";
+            go_parameters.contents[normalize_identifier("element_metric")] = "busy %";
         }
         else if (normalized_identifier_equality(measure_parameter_value,std::string("CLPR_WP_percent")))
         {

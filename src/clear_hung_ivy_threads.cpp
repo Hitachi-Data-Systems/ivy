@@ -1,4 +1,4 @@
-//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
+//Copyright (c) 2016, 2017, 2018, 2019 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -96,7 +96,7 @@ root     32469 32465  0 Jun01 pts/2    00:01:40 /usr/local/bin/ivydriver sun159
 #ifdef development
 			kill_pids_command << "echo";
 #else
-			kill_pids_command << "kill";
+			kill_pids_command << "kill -9";
 #endif
 			for (auto& pid: kill_pids) kill_pids_command << " " << pid;
 			std::cout << "kill command for ssh pids \"" << kill_pids_command.str() << "\" output was: " << GetStdoutFromCommand(kill_pids_command.str()) << std::endl;
@@ -136,7 +136,7 @@ root     32469 32465  0 Jun01 pts/2    00:01:40 /usr/local/bin/ivydriver sun159
 #ifdef development
 			kill_pids_command << "echo";
 #else
-			kill_pids_command << "kill";
+			kill_pids_command << "kill -9";
 #endif
 			for (auto& pid: kill_pids) kill_pids_command << " " << pid;
 			std::cout << "kill command for ivymaster or ivydriver pids \"" << kill_pids_command.str() << "\" output was: " << GetStdoutFromCommand(kill_pids_command.str()) << std::endl;

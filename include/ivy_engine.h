@@ -315,46 +315,44 @@ public:
     // Section 1 is near the beginning of the csv line, section 2 is at the end.
 
     {
-        { "MP_core", {
-              { "busy_percent",                     fetch_metric + print_count_part_1 + print_avg_part_1 }
-            , { "io_buffers",                       fetch_metric +                      print_avg_part_2 + print_min_max_stddev_2 }
+        { "MP core", {
+              { "busy %",                     fetch_metric + print_count_part_1 + print_avg_part_1 }
+            , { "I/O buffers",                fetch_metric +                      print_avg_part_2 + print_min_max_stddev_2 }
          } }
         ,{ "CLPR", {
-              { "WP_percent",                       fetch_metric + print_count_part_1 + print_avg_part_1}
+              { "WP %",                       fetch_metric + print_count_part_1 + print_avg_part_1}
         } }
         ,{ "PG", {
-              {"busy_percent",                      fetch_metric + print_count_part_1 + print_avg_part_1 }
-            , {"random_read_busy_percent",          fetch_metric                      + print_avg_part_2 }
-            , {"random_write_busy_percent",         fetch_metric                      + print_avg_part_2 }
-            , {"seq_read_busy_percent",             fetch_metric                      + print_avg_part_2 }
-            , {"seq_write_busy_percent",            fetch_metric                      + print_avg_part_2 }
+              {"busy %",                      fetch_metric + print_count_part_1 + print_avg_part_1 }
+            , {"random read busy %",          fetch_metric                      + print_avg_part_2 }
+            , {"random write busy %",         fetch_metric                      + print_avg_part_2 }
+            , {"seq read busy %",             fetch_metric                      + print_avg_part_2 }
+            , {"seq write busy %",            fetch_metric                      + print_avg_part_2 }
          } }
         ,{ "LDEV", {
-              { "random_read_IOPS",                 fetch_metric + print_count_part_1 + print_avg_part_2 }
- //           , { "random_read_hit_percent",          fetch_metric + print_count_part_1 + print_avg_part_2 }
-            , { "random_write_IOPS",                fetch_metric                      + print_avg_part_2 }
-            , { "random_read_bytes_per_second",     fetch_metric                                         }
-            , { "random_write_bytes_per_second",    fetch_metric                                         }
-            , { "random_read_decimal_MB_per_second",                                    print_avg_part_2 }
-            , { "random_write_decimal_MB_per_second",                                   print_avg_part_2 }
-            , { "random_read_blocksize_KiB",                                            print_avg_part_2 }
-            , { "random_write_blocksize_KiB",                                           print_avg_part_2 }
-            , { "random_blocksize_KiB",                                                 print_avg_part_2 }
+              { "random read IOPS",           fetch_metric + print_count_part_1 + print_avg_part_2 }
+ //           , { "random read hit %",          fetch_metric + print_count_part_1 + print_avg_part_2 }
+            , { "random write IOPS",          fetch_metric                      + print_avg_part_2 }
+            , { "random read bytes/sec",      fetch_metric                                         }
+            , { "random write bytes/sec",     fetch_metric                                         }
+            , { "random read blocksize KiB",                                      print_avg_part_2 }
+            , { "random write blocksize KiB",                                     print_avg_part_2 }
+            , { "random blocksize KiB",                                           print_avg_part_2 }
 
-            , { "sequential_read_IOPS",             fetch_metric                      + print_avg_part_2 }
-            , { "sequential_write_IOPS",            fetch_metric                      + print_avg_part_2 }
-            , { "sequential_read_bytes_per_second", fetch_metric                                         }
-            , { "sequential_write_bytes_per_second",fetch_metric                                         }
-            , { "sequential_read_decimal_MB_per_second",                                print_avg_part_2 }
-            , { "sequential_write_decimal_MB_per_second",                               print_avg_part_2 }
-            , { "sequential_read_blocksize_KiB",                                        print_avg_part_2 }
-            , { "sequential_write_blocksize_KiB",                                       print_avg_part_2 }
-            , { "sequential_blocksize_KiB",                                             print_avg_part_2 }
+            , { "seq read IOPS",              fetch_metric                      + print_avg_part_2 }
+            , { "seq write IOPS",             fetch_metric                      + print_avg_part_2 }
+            , { "seq read bytes/sec",         fetch_metric                                         }
+            , { "seq write bytes/sec",        fetch_metric                                         }
+            , { "seq read decimal MB/sec",                                        print_avg_part_2 }
+            , { "seq write decimal MB/sec",                                       print_avg_part_2 }
+            , { "seq read blocksize KiB",                                         print_avg_part_2 }
+            , { "seq write blocksize KiB",                                        print_avg_part_2 }
+            , { "seq blocksize KiB",                                              print_avg_part_2 }
 
-            , { "read_IOPS_x_response_time_ms",     fetch_metric                      + print_avg_part_2 }
-            , { "write_IOPS_x_response_time_ms",    fetch_metric                      + print_avg_part_2 }
-            , { "read_service_time_ms",                                                 print_avg_part_2 }
-            , { "write_service_time_ms",                                                print_avg_part_2 }
+            , { "read IOPS x response time ms", fetch_metric                    + print_avg_part_2 }
+            , { "write IOPS x response time ms",fetch_metric                    + print_avg_part_2 }
+            , { "read service time ms",                                           print_avg_part_2 }
+            , { "write service time ms",                                          print_avg_part_2 }
         } }
     };
 

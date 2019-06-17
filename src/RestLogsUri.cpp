@@ -1,7 +1,27 @@
+//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
+//All Rights Reserved.
+//
+//   Licensed under the Apache License, Version 2.0 (the "License"); you may
+//   not use this file except in compliance with the License. You may obtain
+//   a copy of the License at
+//
+//         http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+//   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+//   License for the specific language governing permissions and limitations
+//   under the License.
+//
+//Authors: Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//
+//Support:  "ivy" is not officially supported by Hitachi Vantara.
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
+
 #include "RestHandler.h"
 #include "ivy_engine.h"
-#include "rapidjson/document.h"  
-#include "rapidjson/schema.h"  
+#include "rapidjson/document.h"
+#include "rapidjson/schema.h"
 
 extern ivy_engine m_s;
 
@@ -43,9 +63,7 @@ RestLogsUri::handle_put(http_request request)
     snprintf(json, sizeof(json), "%s", request.extract_string(true).get().c_str());
     std::cout << "JSON:\n" << json << std::endl;
 
-    //log(m_s.masterlogfile, "Kumaran");
-
-    rapidjson::Document document; 
+    rapidjson::Document document;
     if (document.Parse(json).HasParseError())
     {
         rc = false;
@@ -60,7 +78,7 @@ RestLogsUri::handle_put(http_request request)
 
     rapidjson::Value::MemberIterator logname = document.FindMember("logname");
     rapidjson::Value::MemberIterator logmessage = document.FindMember("message");
-    
+
     if (logname != document.MemberEnd())
         log(logname->value.GetString(), logmessage->value.GetString());
     else

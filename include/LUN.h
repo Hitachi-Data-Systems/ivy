@@ -13,35 +13,45 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
 #include <map>
+#include <set>
 #include <string>
 
 class LUN
 {
 public:
 //variables
-	std::map<std::string, std::string> attributes;
+	std::map<std::string /* normalized attribute name */, std::pair<std::string /* original name */, std::string /* value */>> attributes;
 
 //methods
 	LUN(){};
 
-	bool loadcsvline(std::string headerline, std::string dataline, std::string logfilename); // false on a failure to load the line properly
-	std::string attribute_value(std::string attribute_name);
-	bool contains_attribute_name(std::string attribute_name);
-	void set_attribute(std::string /* name */, std::string /* value */);
-	bool attribute_value_matches(std::string attribute_name, std::string value);
-	std::string toString();
-	void copyOntoMe(LUN* p_other); // This is used to make "the sample LUN" that has every attribute type seen in any LUN,
+	bool loadcsvline(const std::string& headerline, const std::string& dataline, const std::string& logfilename); // false on a failure to load the line properly
+
+	void set_attribute(const std::string& /* name */, const std::string& /* value */);
+
+	void copyOntoMe(const LUN* p_other); // This is used to make "the sample LUN" that has every attribute type seen in any LUN,
 		// and it's used to make a copy of a LUN in a workload tracker that we then add the workload attribute to.
+
 	void createNicknames(); // gives "host" the value of ivyscript_hostname   ... and ... ???, gives attribute "all" the value "all"?
 
-static std::string convert_to_lower_case_and_convert_nonalphameric_to_underscore(std::string column_title);
+	std::string attribute_value        (const std::string& attribute_name) const;
+	std::string original_name          (const std::string& attribute_name) const;
+	bool        contains_attribute_name(const std::string& attribute_name) const;
+	bool        attribute_value_matches(const std::string& attribute_name, const std::string& value) const;
+	std::string toString() const;
+	std::string valid_attribute_names() const;
+
+	void push_attribute_values(std::map<std::string /* LUN attribute name */, std::set<std::string> /* LUN attribute values */>&) const;
+    void push_attribute_names(std::set<std::string>& column_headers) const;
+
+static std::string normalize_attribute_name(const std::string& column_title);
 
 };
 

@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -100,7 +100,7 @@ void subsystem_summary_data::addIn(const subsystem_summary_data& other)
             {
                 headers << ",subsystem " << np << "avg " << element << ' ' << metric;
 
-                if (element == "MP_core" && metric == "busy_percent")
+                if (element == "MP core" && metric == "busy %")
                 {
                     headers << ",subsystem MP_core busy microseconds per I/O";
                 }
@@ -169,7 +169,7 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                 {
                     values << ",";
 
-                    if (element == "MP_core" && metric == "busy_percent")
+                    if (element == "MP core" && metric == "busy %")
                     {
                         values << ",";
                     }
@@ -197,7 +197,7 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                     {
                         values << ",";
 
-                        if (element == "MP_core" && metric == "busy_percent")
+                        if (element == "MP core" && metric == "busy %")
                         {
                             values << ",";
                         }
@@ -238,7 +238,7 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                             values << ',' << rs.avg();
                         }
 
-                        if (element == "MP_core" && metric == "busy_percent")
+                        if (element == "MP core" && metric == "busy %")
                         {
                             ivy_float microseconds = MP_microseconds_per_IO();
 
@@ -403,13 +403,13 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
 //            need_comma = true;
 //        }
 //    }
-//    else o << "< no CLPR data >";
+//    else o << " < no CLPR data >";
 
 
     auto pg_it = data.find("PG");
     if (pg_it != data.end())
     {
-        auto busy_it = pg_it->second.find("busy_percent");
+        auto busy_it = pg_it->second.find("busy %");
         if (busy_it != pg_it->second.end())
         {
             const RunningStat<ivy_float,ivy_int>& rs = busy_it->second;
@@ -420,10 +420,10 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
     }
     else o << "< no PG data >";
 
-    auto mp_it = data.find("MP_core");
+    auto mp_it = data.find("MP core");
     if (mp_it != data.end())
     {
-        auto busy_it = mp_it->second.find("busy_percent");
+        auto busy_it = mp_it->second.find("busy %");
         if (busy_it != mp_it->second.end())
         {
             const RunningStat<ivy_float,ivy_int>& rs = busy_it->second;
@@ -432,14 +432,14 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
             need_comma = true;
         }
     }
-    else o << " < no MP_core data >";
+    else o << " < no MP core data >";
 
     auto ldev_it = data.find("LDEV");
     if (ldev_it != data.end())
     {
-        // we take the count field from "random_read_IOPS", because this comes from higher up the food chain, rather than "IOPS" which is derived in part from random_read_IOPS.
+        // we take the count field from "random read IOPS", because this comes from higher up the food chain, rather than "IOPS" which is derived in part from random_read_IOPS.
 
-        std::string count_source_metric {"random_read_IOPS"};
+        std::string count_source_metric {"random read IOPS"};
 
         auto ait = ldev_it->second.find(count_source_metric);
         if (ait == ldev_it->second.end())
@@ -452,7 +452,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         ivy_float LDEV_count = ( (ivy_float) rsa.count() )     /    repetition_factor;
 
 
-        std::string metric  = "service_time_ms";
+        std::string metric  = "service time ms";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -472,7 +472,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float IOPS =  ait->second.sum() / repetition_factor;
 
-        metric  = "decimal_MB_per_second";
+        metric  = "decimal MB/sec";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -482,7 +482,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float decimal_MB_per_second =  ait->second.sum() / repetition_factor;
 
-        metric  = "read_service_time_ms";
+        metric  = "read service time ms";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -492,7 +492,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float read_service_time_ms =  ait->second.avg();
 
-        metric  = "read_IOPS";
+        metric  = "read IOPS";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -502,7 +502,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float read_IOPS =  ait->second.sum() / repetition_factor;
 
-        metric  = "read_decimal_MB_per_second";
+        metric  = "read decimal MB/sec";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -512,7 +512,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float read_decimal_MB_per_second =  ait->second.sum() / repetition_factor;
 
-        metric  = "write_service_time_ms";
+        metric  = "write service time ms";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -522,7 +522,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float write_service_time_ms =  ait->second.avg();
 
-        metric  = "write_IOPS";
+        metric  = "write IOPS";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -532,7 +532,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float write_IOPS =  ait->second.sum() / repetition_factor;
 
-        metric  = "write_decimal_MB_per_second";
+        metric  = "write decimal MB/sec";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -542,7 +542,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float write_decimal_MB_per_second =  ait->second.sum() / repetition_factor;
 
-        metric  = "random_blocksize_KiB";
+        metric  = "random blocksize KiB";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -553,7 +553,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         ivy_float random_blocksize_KiB =  ait->second.avg();
 
 
-        metric  = "random_IOPS";
+        metric  = "random IOPS";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -563,7 +563,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float random_IOPS =  ait->second.sum() / repetition_factor;
 
-        metric  = "random_decimal_MB_per_second";
+        metric  = "random decimal MB/sec";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -574,7 +574,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         ivy_float random_decimal_MB_per_second =  ait->second.sum() / repetition_factor;
 
 
-        metric  = "sequential_blocksize_KiB";
+        metric  = "seq blocksize KiB";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -585,7 +585,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         ivy_float sequential_blocksize_KiB =  ait->second.avg();
 
 
-        metric  = "sequential_IOPS";
+        metric  = "seq IOPS";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -595,7 +595,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float sequential_IOPS =  ait->second.sum() / repetition_factor;
 
-        metric  = "sequential_decimal_MB_per_second";
+        metric  = "seq decimal MB/sec";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -607,7 +607,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
 
 
 //-------------------------------------------------------------------------------
-        metric  = "random_read_blocksize_KiB";
+        metric  = "random read blocksize KiB";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -617,7 +617,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float random_read_blocksize_KiB =  ait->second.avg();
 
-        metric  = "random_read_IOPS";
+        metric  = "random read IOPS";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -627,7 +627,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float random_read_IOPS =  ait->second.sum() / repetition_factor;
 
-        metric  = "random_read_decimal_MB_per_second";
+        metric  = "random read decimal MB/sec";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -638,7 +638,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         ivy_float random_read_decimal_MB_per_second =  ait->second.sum() / repetition_factor;
 
 
-        metric  = "random_write_blocksize_KiB";
+        metric  = "random write blocksize KiB";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -649,7 +649,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         ivy_float random_write_blocksize_KiB =  ait->second.avg();
 
 
-        metric  = "random_write_IOPS";
+        metric  = "random write IOPS";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -659,7 +659,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float random_write_IOPS =  ait->second.sum() / repetition_factor;
 
-        metric  = "random_write_decimal_MB_per_second";
+        metric  = "random write decimal MB/sec";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -670,7 +670,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         ivy_float random_write_decimal_MB_per_second =  ait->second.sum() / repetition_factor;
 
 //-------------------------------------------------------------------------------
-        metric  = "sequential_read_blocksize_KiB";
+        metric  = "seq read blocksize KiB";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -681,7 +681,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         ivy_float sequential_read_blocksize_KiB =  ait->second.avg();
 
 
-        metric  = "sequential_read_IOPS";
+        metric  = "seq read IOPS";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -691,7 +691,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float sequential_read_IOPS =  ait->second.sum() / repetition_factor;
 
-        metric  = "sequential_read_decimal_MB_per_second";
+        metric  = "seq read decimal MB/sec";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -702,7 +702,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         ivy_float sequential_read_decimal_MB_per_second =  ait->second.sum() / repetition_factor;
 
 
-        metric  = "sequential_write_blocksize_KiB";
+        metric  = "seq write blocksize KiB";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -713,7 +713,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         ivy_float sequential_write_blocksize_KiB =  ait->second.avg();
 
 
-        metric  = "sequential_write_IOPS";
+        metric  = "seq write IOPS";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -723,7 +723,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         }
         ivy_float sequential_write_IOPS =  ait->second.sum() / repetition_factor;
 
-        metric  = "sequential_write_decimal_MB_per_second";
+        metric  = "seq write decimal MB/sec";
         ait = ldev_it->second.find(metric);
         if ( ait == ldev_it->second.end() )
         {
@@ -828,7 +828,10 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
             }
         }
     }
-    else o << "< no LDEV data >";
+    else
+    {
+        o << " < no LDEV data >";
+    }
 
     o << std::endl;
 
@@ -868,7 +871,7 @@ ivy_float subsystem_summary_data::decimal_MB_per_second()
     auto ldev_it = data.find("LDEV");
     if (ldev_it == data.end()) return -1.0;
 
-    auto ait = ldev_it->second.find("decimal_MB_per_second");
+    auto ait = ldev_it->second.find("decimal MB/sec");
     if ( ait == ldev_it->second.end() ) return -1.0;
 
     return ait->second.sum() / repetition_factor;
@@ -879,7 +882,7 @@ ivy_float subsystem_summary_data::service_time_ms()
     auto ldev_it = data.find("LDEV");
     if (ldev_it == data.end()) return -1.0;
 
-    auto ait = ldev_it->second.find("service_time_ms");
+    auto ait = ldev_it->second.find("service time ms");
     if ( ait == ldev_it->second.end() ) return -1.0;
 
     return ait->second.avg();
@@ -891,10 +894,10 @@ ivy_float subsystem_summary_data::MP_microseconds_per_IO()
 
     if (total_IOPS <= 0.0) return -1.0;
 
-    auto MP_it = data.find("MP_core");
+    auto MP_it = data.find("MP core");
     if (MP_it == data.end()) return -1.0;
 
-    auto metric_it = MP_it->second.find("busy_percent");
+    auto metric_it = MP_it->second.find("busy %");
     if ( metric_it == MP_it->second.end() ) return -1.0;
 
     if (metric_it ->second.count() == 0) return -1.0;
@@ -904,10 +907,10 @@ ivy_float subsystem_summary_data::MP_microseconds_per_IO()
 
 ivy_float subsystem_summary_data::avg_MP_core_busy_fraction()  // returns -1.0 if no data.
 {
-    auto MP_it = data.find("MP_core");
+    auto MP_it = data.find("MP core");
     if (MP_it == data.end()) return -1.0;
 
-    auto metric_it = MP_it->second.find("busy_percent");
+    auto metric_it = MP_it->second.find("busy %");
     if ( metric_it == MP_it->second.end() ) return -1.0;
 
     if (metric_it ->second.count() == 0) return -1.0;

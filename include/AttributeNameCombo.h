@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -21,15 +21,10 @@
 
 class AttributeNameCombo  // serial_number+Port
 {
-private:
-	char next_char;
-	int cursor, last_cursor;
-
-	void consume() { cursor++; if ( cursor <= last_cursor ) next_char = attributeNameComboID[cursor]; }
 
 public:
 //variables
-	std::string attributeNameComboID;  // for example, "serial_number+port"
+	std::string attributeNameComboID;  // for example, "serial number+port"
 	std::list<std::string> attributeNames;
 	bool isValid {false};
 
@@ -37,7 +32,7 @@ public:
 	AttributeNameCombo(){}
 	void clear();
 	void clone(AttributeNameCombo& other);
-	std::pair<bool,std::string> set(std::string text, LUN* p_SampleLUN);  // true if text was a valid attribute combo token
+	std::pair<bool,std::string> set(const std::string& text, LUN* p_SampleLUN);  // true if text was a valid attribute combo token
 };
 
 

@@ -13,7 +13,7 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Kumaran Subramaniam <kumaran.subramaniam@hitachivantara.com>
+//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
@@ -201,52 +201,52 @@ void rollup_Hitachi_RAID_data(const std::string& logfilename, Hitachi_RAID_subsy
                     std::string metric_name;
 
                     ivy_float random_read_IOPS;
-                    auto metric_it = ldev_it->second.find("random_read_IOPS");
+                    auto metric_it = ldev_it->second.find("random read IOPS");
                     if (metric_it == ldev_it->second.end()) random_read_IOPS = 0.0;
                     else                                    random_read_IOPS = metric_it->second.sum() / ssd.repetition_factor;
 
                     ivy_float random_write_IOPS;
-                    metric_it = ldev_it->second.find("random_write_IOPS");
+                    metric_it = ldev_it->second.find("random write IOPS");
                     if (metric_it == ldev_it->second.end()) random_write_IOPS = 0.0;
                     else                                    random_write_IOPS = metric_it->second.sum() / ssd.repetition_factor;
 
                     ivy_float sequential_read_IOPS;
-                    metric_it = ldev_it->second.find("sequential_read_IOPS");
+                    metric_it = ldev_it->second.find("seq read IOPS");
                     if (metric_it == ldev_it->second.end()) sequential_read_IOPS = 0.0;
                     else                                    sequential_read_IOPS = metric_it->second.sum() / ssd.repetition_factor;
 
                     ivy_float sequential_write_IOPS;
-                    metric_it = ldev_it->second.find("sequential_write_IOPS");
+                    metric_it = ldev_it->second.find("seq write IOPS");
                     if (metric_it == ldev_it->second.end()) sequential_write_IOPS = 0.0;
                     else                                    sequential_write_IOPS = metric_it->second.sum()/ ssd.repetition_factor;
 
                     ivy_float read_IOPS_x_response_time_ms;
-                    metric_it = ldev_it->second.find("read_IOPS_x_response_time_ms");
+                    metric_it = ldev_it->second.find("read IOPS x response time ms");
                     if (metric_it == ldev_it->second.end()) read_IOPS_x_response_time_ms = 0.0;
                     else                                    read_IOPS_x_response_time_ms = metric_it->second.sum()/ ssd.repetition_factor;
 
                     ivy_float write_IOPS_x_response_time_ms;
-                    metric_it = ldev_it->second.find("write_IOPS_x_response_time_ms");
+                    metric_it = ldev_it->second.find("write IOPS x response time ms");
                     if (metric_it == ldev_it->second.end()) write_IOPS_x_response_time_ms = 0.0;
                     else                                    write_IOPS_x_response_time_ms = metric_it->second.sum() / ssd.repetition_factor;
 
                     ivy_float random_read_bytes_per_second;
-                    metric_it = ldev_it->second.find("random_read_bytes_per_second");
+                    metric_it = ldev_it->second.find("random read bytes/sec");
                     if (metric_it == ldev_it->second.end()) random_read_bytes_per_second = 0.0;
                     else                                    random_read_bytes_per_second = metric_it->second.sum() / ssd.repetition_factor;
 
                     ivy_float random_write_bytes_per_second;
-                    metric_it = ldev_it->second.find("random_write_bytes_per_second");
+                    metric_it = ldev_it->second.find("random write bytes/sec");
                     if (metric_it == ldev_it->second.end()) random_write_bytes_per_second = 0.0;
                     else                                    random_write_bytes_per_second = metric_it->second.sum() / ssd.repetition_factor;
 
                     ivy_float sequential_read_bytes_per_second;
-                    metric_it = ldev_it->second.find("sequential_read_bytes_per_second");
+                    metric_it = ldev_it->second.find("seq read bytes/sec");
                     if (metric_it == ldev_it->second.end()) sequential_read_bytes_per_second = 0.0;
                     else                                    sequential_read_bytes_per_second = metric_it->second.sum() / ssd.repetition_factor;
 
                     ivy_float sequential_write_bytes_per_second;
-                    metric_it = ldev_it->second.find("sequential_write_bytes_per_second");
+                    metric_it = ldev_it->second.find("seq write bytes/sec");
                     if (metric_it == ldev_it->second.end()) sequential_write_bytes_per_second = 0.0;
                     else                                    sequential_write_bytes_per_second = metric_it->second.sum() / ssd.repetition_factor;
 
@@ -303,35 +303,35 @@ void rollup_Hitachi_RAID_data(const std::string& logfilename, Hitachi_RAID_subsy
 
 
                     {auto& x = ssd.data["LDEV"]["IOPS"];                                   x.clear(); x.push(IOPS);}
-                    {auto& x = ssd.data["LDEV"]["decimal_MB_per_second"];                  x.clear(); x.push(decimal_MB_per_second);}
+                    {auto& x = ssd.data["LDEV"]["decimal MB/sec"];                  x.clear(); x.push(decimal_MB_per_second);}
 
-                    {auto& x = ssd.data["LDEV"]["read_IOPS"];                              x.clear(); x.push(read_IOPS);}
-                    {auto& x = ssd.data["LDEV"]["read_decimal_MB_per_second"];             x.clear(); x.push(read_decimal_MB_per_second);}
+                    {auto& x = ssd.data["LDEV"]["read IOPS"];                              x.clear(); x.push(read_IOPS);}
+                    {auto& x = ssd.data["LDEV"]["read decimal MB/sec"];             x.clear(); x.push(read_decimal_MB_per_second);}
 
-                    {auto& x = ssd.data["LDEV"]["write_IOPS"];                             x.clear(); x.push(write_IOPS);}
-                    {auto& x = ssd.data["LDEV"]["write_decimal_MB_per_second"];            x.clear(); x.push(write_decimal_MB_per_second);}
+                    {auto& x = ssd.data["LDEV"]["write IOPS"];                             x.clear(); x.push(write_IOPS);}
+                    {auto& x = ssd.data["LDEV"]["write decimal MB/sec"];            x.clear(); x.push(write_decimal_MB_per_second);}
 
-                    {auto& x = ssd.data["LDEV"]["random_IOPS"];                            x.clear(); x.push(random_IOPS);}
-                    {auto& x = ssd.data["LDEV"]["random_decimal_MB_per_second"];           x.clear(); x.push(random_decimal_MB_per_second);}
+                    {auto& x = ssd.data["LDEV"]["random IOPS"];                            x.clear(); x.push(random_IOPS);}
+                    {auto& x = ssd.data["LDEV"]["random decimal MB/sec"];           x.clear(); x.push(random_decimal_MB_per_second);}
 
-                    {auto& x = ssd.data["LDEV"]["sequential_IOPS"];                        x.clear(); x.push(sequential_IOPS);}
-                    {auto& x = ssd.data["LDEV"]["sequential_decimal_MB_per_second"];       x.clear(); x.push(sequential_decimal_MB_per_second);}
+                    {auto& x = ssd.data["LDEV"]["seq IOPS"];                        x.clear(); x.push(sequential_IOPS);}
+                    {auto& x = ssd.data["LDEV"]["seq decimal MB/sec"];       x.clear(); x.push(sequential_decimal_MB_per_second);}
 
-                    {auto& x = ssd.data["LDEV"]["random_read_decimal_MB_per_second"];      x.clear(); x.push(random_read_decimal_MB_per_second);}
-                    {auto& x = ssd.data["LDEV"]["random_write_decimal_MB_per_second"];     x.clear(); x.push(random_write_decimal_MB_per_second);}
-                    {auto& x = ssd.data["LDEV"]["random_read_blocksize_KiB"];              x.clear(); x.push(random_read_blocksize_KiB);}
-                    {auto& x = ssd.data["LDEV"]["random_write_blocksize_KiB"];             x.clear(); x.push(random_write_blocksize_KiB);}
-                    {auto& x = ssd.data["LDEV"]["random_blocksize_KiB"];                   x.clear(); x.push(random_blocksize_KiB);}
+                    {auto& x = ssd.data["LDEV"]["random read decimal MB/sec"];      x.clear(); x.push(random_read_decimal_MB_per_second);}
+                    {auto& x = ssd.data["LDEV"]["random write decimal MB/sec"];     x.clear(); x.push(random_write_decimal_MB_per_second);}
+                    {auto& x = ssd.data["LDEV"]["random read blocksize KiB"];              x.clear(); x.push(random_read_blocksize_KiB);}
+                    {auto& x = ssd.data["LDEV"]["random write blocksize KiB"];             x.clear(); x.push(random_write_blocksize_KiB);}
+                    {auto& x = ssd.data["LDEV"]["random blocksize KiB"];                   x.clear(); x.push(random_blocksize_KiB);}
 
-                    {auto& x = ssd.data["LDEV"]["sequential_read_decimal_MB_per_second"];  x.clear(); x.push(sequential_read_decimal_MB_per_second);}
-                    {auto& x = ssd.data["LDEV"]["sequential_write_decimal_MB_per_second"]; x.clear(); x.push(sequential_write_decimal_MB_per_second);}
-                    {auto& x = ssd.data["LDEV"]["sequential_read_blocksize_KiB"];          x.clear(); x.push(sequential_read_blocksize_KiB);}
-                    {auto& x = ssd.data["LDEV"]["sequential_write_blocksize_KiB"];         x.clear(); x.push(sequential_write_blocksize_KiB);}
-                    {auto& x = ssd.data["LDEV"]["sequential_blocksize_KiB"];               x.clear(); x.push(sequential_blocksize_KiB);}
+                    {auto& x = ssd.data["LDEV"]["seq read decimal MB/sec"];  x.clear(); x.push(sequential_read_decimal_MB_per_second);}
+                    {auto& x = ssd.data["LDEV"]["seq write decimal MB/sec"]; x.clear(); x.push(sequential_write_decimal_MB_per_second);}
+                    {auto& x = ssd.data["LDEV"]["seq read blocksize KiB"];          x.clear(); x.push(sequential_read_blocksize_KiB);}
+                    {auto& x = ssd.data["LDEV"]["seq write blocksize KiB"];         x.clear(); x.push(sequential_write_blocksize_KiB);}
+                    {auto& x = ssd.data["LDEV"]["seq blocksize KiB"];               x.clear(); x.push(sequential_blocksize_KiB);}
 
-                    {auto& x = ssd.data["LDEV"]["service_time_ms"];                        x.clear(); x.push(service_time_ms);}
-                    {auto& x = ssd.data["LDEV"]["read_service_time_ms"];                   x.clear(); x.push(read_service_time_ms);}
-                    {auto& x = ssd.data["LDEV"]["write_service_time_ms"];                  x.clear(); x.push(write_service_time_ms);}
+                    {auto& x = ssd.data["LDEV"]["service time ms"];                        x.clear(); x.push(service_time_ms);}
+                    {auto& x = ssd.data["LDEV"]["read service time ms"];                   x.clear(); x.push(read_service_time_ms);}
+                    {auto& x = ssd.data["LDEV"]["write service time ms"];                  x.clear(); x.push(write_service_time_ms);}
                 }
             }
         }
