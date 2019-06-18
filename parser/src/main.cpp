@@ -396,8 +396,8 @@ int main(int argc, char* argv[])
 
     {
         std::ostringstream o;
-        o << "ivy engine shutdown subthreads ";
-        if (strc.first) o << "successful"; else o << "unsuccessful";
+        o << "ivy engine shutdown subthreads complete.";
+//        if (strc.first) o << "successful"; else o << "unsuccessful";
         o << std::endl;
         std::cout << o.str();
         log (m_s.masterlogfile,o.str());

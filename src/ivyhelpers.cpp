@@ -158,17 +158,25 @@ void log(std::string filename, std::string s) {
 
 	now.setToNow();
 
+    std::ostream* p_ostream = &std::cout;
+
     std::ofstream o;
 
-    o.open(filename, ios::out | ios::app );
+    bool is_ofstream = filename != "<none>"s;
 
-    o << now.format_as_datetime_with_ns() << " "<< s;
+    if (is_ofstream)
+    {
+        o.open(filename, ios::out | ios::app );
+        p_ostream = &o;
+    }
 
-	if (s.length() > 0 && '\n' != s[s.length()-1]) o << std::endl;
+    (*p_ostream) << now.format_as_datetime_with_ns() << " "<< s;
 
-	o.flush();
+	if (s.length() > 0 && '\n' != s[s.length()-1]) (*p_ostream) << std::endl;
 
-    o.close();
+	(*p_ostream).flush();
+
+    if (is_ofstream) o.close();
 }
 
 void ivy_log(std::string filename, std::string s) {log(filename,s);} // crutch for Builtin.cpp

@@ -941,8 +941,8 @@ void init_builtin_table()
     binopfunc(csv_column_header,csv_column_header,string,string,int)
     binopfunc(csv_columns_in_row,csv_columns_in_row,int,string,int)
     binopfunc(csv_row,csv_row,string,string,int)
-    binopfunc(csv_column,csv_row,string,string,int)
-    binopfunc(csv_column,csv_row,string,string,string)
+    binopfunc(csv_column,csv_column,string,string,int)
+    binopfunc(csv_column,csv_column,string,string,string)
 
 
     #if defined(_DEBUG)

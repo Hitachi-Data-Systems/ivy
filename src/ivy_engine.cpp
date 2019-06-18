@@ -3001,10 +3001,13 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         )
         {
             ostringstream o;
+            o << "low_IOPS = \"" << go_parameters.retrieve("low_IOPS") << "\", high_IOPS = \"" << go_parameters.retrieve("high_IOPS") << "\"" << std::endl
+                << "low_target = \"" << go_parameters.retrieve("low_target") << "\", target_value = \"" << go_parameters.retrieve("target_value")
+                << "\", high_target = \"" <<  go_parameters.retrieve("high_target") << "\"." << std::endl;
             o << std::endl << "<Error> ivy engine API - go() - [Go] statement - when DFC = PID is used, the user must specify positive values for \n"
                               "the parameters target_value, low_IOPS, low_target, high_IOPS, and high_target.  Furthermore, high_IOPS must be\n"
-                              "greater than low_IOPS and high_target must be greater than low_larget, and the target_value must be greater than\n"
-                              "low_target and less than high_target." << std::endl << std::endl;
+                              "greater than low_IOPS and high_target must be greater than low_larget, and the target_value must be between\n"
+                              "low_target and high_target." << std::endl << std::endl;
             log(masterlogfile,o.str());
             std::cout << o.str();
             kill_subthreads_and_exit();
@@ -3066,10 +3069,13 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         )
         {
             ostringstream o;
+            o << "low_IOPS = \"" << go_parameters.retrieve("low_IOPS") << "\", high_IOPS = \"" << go_parameters.retrieve("high_IOPS") << "\"" << std::endl
+                << "low_target = \"" << go_parameters.retrieve("low_target") << "\", target_value = \"" << go_parameters.retrieve("target_value")
+                << "\", high_target = \"" <<  go_parameters.retrieve("high_target") << "\"." << std::endl;
             o << std::endl << "<Error> ivy engine API - go() - [Go] statement - when DFC = PID is used, the user must specify positive values for \n"
                               "the parameters target_value, low_IOPS, low_target, high_IOPS, and high_target.  Furthermore, high_IOPS must be\n"
-                              "greater than low_IOPS and high_target must be greater than low_larget, and the target_value must be greater than\n"
-                              "low_target and less than high_target." << std::endl << std::endl;
+                              "greater than low_IOPS and high_target must be greater than low_larget, and the target_value must be between\n"
+                              "low_target and high_target." << std::endl << std::endl;
             log(masterlogfile,o.str());
             std::cout << o.str();
             kill_subthreads_and_exit();

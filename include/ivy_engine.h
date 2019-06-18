@@ -201,8 +201,8 @@ public:
         };
 
 	std::string outputFolderRoot {default_outputFolderRoot}; // actually the default is in ivy_pgm.h
-	std::string masterlogfile {"./ivy_default_log_file.txt"};
-	std::string ivy_engine_logfile {"./ivy_engine_API_calls.txt"};
+	std::string masterlogfile      { "<none>"s };
+	std::string ivy_engine_logfile { "<none>"s };
 
 	// Values of the following are updated where appropriate to communicate to csv file producing code on loop iterations
 	std::string testName;
