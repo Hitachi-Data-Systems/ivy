@@ -33,9 +33,11 @@ Look in the doc subfolder and read the "01.Introduction_to_ivy" PowerPoint or .p
 See src subfolder.  ivy is built using the CodeBlocks IDE.
 
 ## Binary Linux executables
-The binaries in the bin folder were built on RHEL 6 with g++ 4.9.2 and associated libstdc++.  The binaries are statically linked with libstdc++ and dynamically linked with libc.
+Download version 3.20.03 from https://hcpanywhere.hitachivantara.com/u/qlXteyNV7QG4Ve16/ivy.3.20.03.bin.zip?l
 
-I've also built and run ivy on a CentOS 7 platform also with with g++ 4.9.2, with no issues.
+The binaries for LUN_discovery are included.
+
+These binaries were built on RHEL 7.2.  The binaries are statically linked with libstdc++ and dynamically linked with libc.
 
 ## The LUN_discovery tool set is required to run ivy
 [LUN_discovery on github](https://github.com/Hitachi-Data-Systems/LUN_discovery)
