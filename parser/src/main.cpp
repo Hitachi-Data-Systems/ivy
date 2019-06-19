@@ -381,11 +381,19 @@ int main(int argc, char* argv[])
 
         o << "********* Total run time    " << duration.format_as_duration_HMMSS()
             << " for test name \"" << m_s.testName << "\"" << std::endl << std::endl;
-        for (auto s : m_s.warning_messages)
-        {
-            o << s << std::endl;
-        }
 
+        if (m_s.warning_messages.size() > 0)
+        {
+            o << "**********************************************************************************" << std::endl;
+            o << "***                                                                            ***" << std::endl;
+            o << "*** Will now repeat <Warning> messages previously shown while ivy was running. ***" << std::endl;
+            o << "***                                                                            ***" << std::endl;
+            o << "**********************************************************************************" << std::endl << std::endl;
+            for (auto s : m_s.warning_messages)
+            {
+                o << s << std::endl;
+            }
+        }
         std::cout << o.str();
         log(m_s.masterlogfile, o.str());
     }

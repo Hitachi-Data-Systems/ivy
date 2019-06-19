@@ -243,7 +243,7 @@ void Subsystem::print_subinterval_csv_line_set( std::string subfolder_leaf_name 
                 auto x = gathers[t].data.find(element_type);
                 if (x == gathers[t].data.end()) continue;  // not all element types appear at t=0
 
-                instance_file << quote_wrap_except_number(instance_pair.first,m_s.formula_wrapping) << ","; // instance name
+                instance_file << quote_wrap_LDEV_PG_leading_zero_number(instance_pair.first,m_s.formula_wrapping) << ","; // instance name
 
                 if (t==0) instance_file << "t=0";
                 else      instance_file << (t-1); // subinterval number
@@ -259,7 +259,7 @@ void Subsystem::print_subinterval_csv_line_set( std::string subfolder_leaf_name 
 
                     if (att_it != metric_map.end())
                     {
-                        instance_file << quote_wrap_except_number(att_it->second.string_value(),m_s.formula_wrapping);
+                        instance_file << quote_wrap_LDEV_PG_leading_zero_number(att_it->second.string_value(),m_s.formula_wrapping);
                     }
                 }
                 instance_file << std::endl;

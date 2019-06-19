@@ -151,7 +151,7 @@ void LUNpointerList::print_csv_file(std::ostream& o)
 
 			if (pLUN->contains_attribute_name(header))
 			{
-				o << quote_wrap_except_number(pLUN->attribute_value(header),m_s.formula_wrapping);
+				o << quote_wrap_LDEV_PG_leading_zero_number(pLUN->attribute_value(header),m_s.formula_wrapping);
 			}
 		}
 		o << std::endl;

@@ -41,6 +41,6 @@ int main (int arc, char* argv[])
     {
         std::cout
             << "for input string   \"" << s << "\" - " << countCSVlineUnquotedCommas(s) << std::endl
-            << "wrapped up you get \"" << quote_wrap_csvline_except_numbers(s) << "\" - " << countCSVlineUnquotedCommas(quote_wrap_csvline_except_numbers(s))  << std::endl << std::endl;
+            << "wrapped up you get \"" << quote_wrap_csvline_LDEV_PG_leading_zero_number(s) << "\" - " << countCSVlineUnquotedCommas(quote_wrap_csvline_LDEV_PG_leading_zero_number(s))  << std::endl << std::endl;
     }
 }

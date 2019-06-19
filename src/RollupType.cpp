@@ -547,7 +547,7 @@ void RollupType::print_measurement_summary_csv_line()
             << ',' << getDataValidationCsvValues();
 
         {
-            std::ostringstream g; g << quote_wrap_csvline_except_numbers(o.str(), m_s.formula_wrapping) << std::endl;
+            std::ostringstream g; g << quote_wrap_csvline_LDEV_PG_leading_zero_number(o.str(), m_s.formula_wrapping) << std::endl;
             fileappend(measurement_rollup_data_validation_csv_filename,g.str());
         }
 

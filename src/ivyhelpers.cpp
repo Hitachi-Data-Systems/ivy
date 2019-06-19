@@ -68,6 +68,9 @@ std::regex HHMMSS_regex( std::string( R"ivy(([[:digit:]]+):(([012345])?[[:digit:
 std::regex frag_regex( R"(frag=>(.*)<=[\r\n\t ]*)" );
 std::regex last_regex( R"(last=>(.*)<=[\r\n\t ]*)" );
 
+std::regex LDEV_regex( R"([[:xdigit:]]{2}:[[:xdigit:]]{2})" );
+std::regex PG_regex  ( R"([[:digit:]]{1,2}-[[:digit:]]{1,2})" );
+
 void format_for_log_trailing_slashr_slashn(std::string s)
 {
 	for (int i = -1 + s.length(); i >= 0 && ('\r' == s[i] || '\n' == s[i]); i--)
@@ -865,19 +868,22 @@ std::string quote_wrap(const std::string s)
 }
 
 
-std::string quote_wrap_except_number(const std::string s, bool formula_wrapping)
+std::string quote_wrap_LDEV_PG_leading_zero_number(const std::string s, bool formula_wrapping)
 // This is so that Excel won't try to interpret strings, only numbers.  Lets PGs and LDEVs look normal when you double-click on an ivy csv file.
 {
-    if (formula_wrapping) return s;
-    if (stringCaseInsensitiveEquality("true",s)) return s;
-    if (stringCaseInsensitiveEquality("false",s)) return s;
-    if (s.size() == 0) return s;
-    if ( (!std::regex_match(s,leading_zero_regex)) && std::regex_match(s,float_number_optional_trailing_percent_regex)) return s;
-    if (s.size() >=2 && s[0] == '\"' && s[s.size()-1] == '\"') return std::string("=")+s; // already double-quoted, just put equals sign on.
-    return std::string("=\"") + s + std::string("\"");
+    if (!formula_wrapping) return s;
+
+    if (std::regex_match(s,leading_zero_regex)
+     || std::regex_match(s,LDEV_regex)
+     || std::regex_match(s,PG_regex) )
+    {
+        return std::string("=\"") + s + std::string("\"");
+    }
+
+    return s;
 }
 
-std::string quote_wrap_csvline_except_numbers(const std::string csvline, bool formula_wrapping) // This is specifically so that when you double-click on an ivy csv file to launch Excel, it won't think LDEV names are times, etc.
+std::string quote_wrap_csvline_LDEV_PG_leading_zero_number(const std::string csvline, bool formula_wrapping) // This is specifically so that when you double-click on an ivy csv file to launch Excel, it won't think LDEV names are times, etc.
 {
     std::ostringstream o;
 
@@ -898,18 +904,18 @@ std::string quote_wrap_csvline_except_numbers(const std::string csvline, bool fo
     {
         if (last_char == 0) // if there is only the one character that is not a comma
         {
-            return quote_wrap_except_number(csvline,formula_wrapping);
+            return quote_wrap_LDEV_PG_leading_zero_number(csvline,formula_wrapping);
         }
 
         if (advanceToNextUnquotedComma(csvline, cursor))
         {
-            o << quote_wrap_except_number(csvline.substr(0,cursor),formula_wrapping) << ',';
+            o << quote_wrap_LDEV_PG_leading_zero_number(csvline.substr(0,cursor),formula_wrapping) << ',';
             last_comma = cursor;
         }
         else
         {
             // no comma was found at all
-            return quote_wrap_except_number(csvline,formula_wrapping);
+            return quote_wrap_LDEV_PG_leading_zero_number(csvline,formula_wrapping);
         }
     }
 
@@ -926,7 +932,7 @@ std::string quote_wrap_csvline_except_numbers(const std::string csvline, bool fo
         {
             if ( cursor > (last_comma + 1) ) // if between the commas there was text to process
             {
-                o << quote_wrap_except_number(csvline.substr(last_comma+1,cursor-(last_comma+1)),formula_wrapping);
+                o << quote_wrap_LDEV_PG_leading_zero_number(csvline.substr(last_comma+1,cursor-(last_comma+1)),formula_wrapping);
             }
             o << ',';
             last_comma=cursor;
@@ -934,7 +940,7 @@ std::string quote_wrap_csvline_except_numbers(const std::string csvline, bool fo
         else
         {
             // there were more characters, but no comma
-            o << quote_wrap_except_number(csvline.substr(last_comma+1, csvline.size()-(last_comma+1)),formula_wrapping);
+            o << quote_wrap_LDEV_PG_leading_zero_number(csvline.substr(last_comma+1, csvline.size()-(last_comma+1)),formula_wrapping);
             return o.str();
         }
     }

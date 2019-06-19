@@ -388,7 +388,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
     std::ostringstream o;
     bool need_comma = false;
 
-    o << "rollup filtered subsystem data: ";
+    o << "rollup subsystem data: ";
 
     //This bit commented out as there's a separate thumbnail for CLPR data
 //    auto clpr_it = data.find("CLPR");
@@ -414,7 +414,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         {
             const RunningStat<ivy_float,ivy_int>& rs = busy_it->second;
             if (need_comma) o << ", ";
-            o << rs.count() << " PG"; if (rs.count()>1) o << "s"; o << " average " << std::fixed << std::setprecision(2) << (100.*rs.avg()) << " % busy";
+            o << rs.count() << " PG"; if (rs.count()>1) o << "s"; o << " " << std::fixed << std::setprecision(2) << (100.*rs.avg()) << " % busy";
             need_comma = true;
         }
     }
@@ -428,7 +428,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         {
             const RunningStat<ivy_float,ivy_int>& rs = busy_it->second;
             if (need_comma) o << ", ";
-            o << rs.count() << " MP cores average " << std::fixed << std::setprecision(2) << (100.*rs.avg()) << " % busy";
+            o << rs.count() << " MP cores " << std::fixed << std::setprecision(2) << (100.*rs.avg()) << " % busy";
             need_comma = true;
         }
     }
@@ -815,7 +815,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
             {
                 o << "IOPS = " << std::fixed << std::setprecision(2) << IOPS;
                 o << "; serv time = " << std::fixed << std::setprecision(3) << service_time_ms << " ms";
-                o << "; transfer rate = " << std::fixed << std::setprecision(2) << (decimal_MB_per_second/(1.024*1.024)) << " MiB/s";
+                o << "; " << std::fixed << std::setprecision(2) << (decimal_MB_per_second/(1.024*1.024)) << " MiB/s";
 
                 if (random_IOPS > 0.0 )
                 {

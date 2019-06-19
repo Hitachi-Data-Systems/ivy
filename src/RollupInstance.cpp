@@ -969,14 +969,14 @@ void RollupInstance::print_common_columns(std::ostream& os)
     std::string I_string; {std::ostringstream o; o << I; I_string = o.str();}
     std::string D_string; {std::ostringstream o; o << D; D_string = o.str();}
 
-    os << "," << quote_wrap_except_number( std::string("p=") + P_string + std::string("/i=") + I_string + std::string("/d=") + D_string ,m_s.formula_wrapping);
-    os << "," << quote_wrap_except_number(P_string,m_s.formula_wrapping);
-    os << "," << quote_wrap_except_number(I_string,m_s.formula_wrapping);
-    os << "," << quote_wrap_except_number(D_string,m_s.formula_wrapping);
-    os << "," << quote_wrap_except_number(attributeNameComboID,m_s.formula_wrapping);
-    os << "," << quote_wrap_except_number(rollupInstanceID,m_s.formula_wrapping);
-    os << "," << quote_wrap_except_number(m_s.testName,m_s.formula_wrapping);
-    os << "," << quote_wrap_except_number(m_s.stepName,m_s.formula_wrapping);
+    os << "," << quote_wrap_LDEV_PG_leading_zero_number( std::string("p=") + P_string + std::string("/i=") + I_string + std::string("/d=") + D_string ,m_s.formula_wrapping);
+    os << "," << quote_wrap_LDEV_PG_leading_zero_number(P_string,m_s.formula_wrapping);
+    os << "," << quote_wrap_LDEV_PG_leading_zero_number(I_string,m_s.formula_wrapping);
+    os << "," << quote_wrap_LDEV_PG_leading_zero_number(D_string,m_s.formula_wrapping);
+    os << "," << quote_wrap_LDEV_PG_leading_zero_number(attributeNameComboID,m_s.formula_wrapping);
+    os << "," << quote_wrap_LDEV_PG_leading_zero_number(rollupInstanceID,m_s.formula_wrapping);
+    os << "," << quote_wrap_LDEV_PG_leading_zero_number(m_s.testName,m_s.formula_wrapping);
+    os << "," << quote_wrap_LDEV_PG_leading_zero_number(m_s.stepName,m_s.formula_wrapping);
 
 }
 
@@ -1378,7 +1378,7 @@ void RollupInstance::print_subinterval_csv_line(
     }
 
     {
-        std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str(), m_s.formula_wrapping) << std::endl;
+        std::ostringstream o; o << quote_wrap_csvline_LDEV_PG_leading_zero_number(csvline.str(), m_s.formula_wrapping) << std::endl;
         fileappend(by_subinterval_csv_filename,o.str());
     }
 }
@@ -1861,7 +1861,7 @@ void RollupInstance::print_measurement_summary_csv_line()
 
 
             {
-                std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str(),m_s.formula_wrapping) << std::endl;
+                std::ostringstream o; o << quote_wrap_csvline_LDEV_PG_leading_zero_number(csvline.str(),m_s.formula_wrapping) << std::endl;
                 fileappend(measurement_rollup_by_test_step_csv_filename,o.str());
                 fileappend(measurement_rollup_by_test_step_csv_type_filename,o.str());
             }
@@ -1925,7 +1925,7 @@ void RollupInstance::print_measurement_summary_csv_line()
             csvline << ',' << rollupInstanceID ; // rollupInstanceID;
 
             {
-                std::ostringstream o; o << quote_wrap_csvline_except_numbers(csvline.str(), m_s.formula_wrapping) << std::endl;
+                std::ostringstream o; o << quote_wrap_csvline_LDEV_PG_leading_zero_number(csvline.str(), m_s.formula_wrapping) << std::endl;
                 fileappend(measurement_rollup_by_test_step_csv_filename,o.str());
             }
         }

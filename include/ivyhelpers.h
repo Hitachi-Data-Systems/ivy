@@ -47,6 +47,8 @@ extern std::regex has_trailing_fractional_zeros_regex;
 extern std::regex frag_regex;
 extern std::regex last_regex;
 
+extern std::regex LDEV_regex;
+extern std::regex PG_regex;
 
 extern std::string indent_increment;
 
@@ -132,8 +134,8 @@ unsigned int unsigned_int(const std::string&, std::string name_associated_with_v
 
 std::string render_string_harmless(const std::string s);
 std::string quote_wrap(const std::string s);
-std::string quote_wrap_except_number(const std::string s, bool formula_wrapping);
-std::string quote_wrap_csvline_except_numbers(const std::string csvline, bool formula_wrapping); // This is specifically so that when you double-click on an ivy csv file to launch Excel, it won't think LDEV names are times, etc.
+std::string quote_wrap_LDEV_PG_leading_zero_number(const std::string s, bool formula_wrapping);
+std::string quote_wrap_csvline_LDEV_PG_leading_zero_number(const std::string csvline, bool formula_wrapping); // This is specifically so that when you double-click on an ivy csv file to launch Excel, it won't think LDEV names are times, etc.
 
 std::string column_header_to_identifier(const std::string&s);
 std::string munge_to_identifier(const std::string&s);
