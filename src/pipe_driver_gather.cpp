@@ -401,6 +401,57 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
 
         tn_sub_gather_end.setToNow();
         getUR_JnlTime.push(ivytime(tn_sub_gather_end - gatherStart));
+
+        gatherStart.setToNow();
+        if (m_s.storcsv) try
+        {
+            send_and_get_OK("get MP_busy_detail");
+            try
+            {
+                process_ivy_cmddev_response(currentGD, gatherStart);
+            }
+            catch (std::invalid_argument& iaex)
+            {
+                std::ostringstream o;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"get MP_busy_detail\"), std::invalid_argument saying \"" << iaex.what() << "\"." << std::endl;
+                log(logfilename,o.str());
+                kill_ssh_and_harvest();
+                commandComplete=true;
+                commandSuccess=false;
+                commandErrorMessage = o.str();
+                dead=true;
+                s_lk.unlock();
+                master_slave_cv.notify_all();
+                return;
+            }
+            catch (std::runtime_error& reex)
+            {
+                std::ostringstream o;
+                o << "pipe_driver_subthread for remote ivy_cmddev CLI - failed parsing output from command (\"getMP_busy_detailUR_Jnl\"), std::runtime_error saying \"" << reex.what() << "\"." << std::endl;
+                log(logfilename,o.str());
+                kill_ssh_and_harvest();
+                commandComplete=true;
+                commandSuccess=false;
+                commandErrorMessage = o.str();
+                dead=true;
+                s_lk.unlock();
+                master_slave_cv.notify_all();
+                return;
+            }
+        }
+        catch (std::runtime_error& reex)
+        {
+            std::ostringstream o;
+            o << "\"get MP_busy_detail\" command sent to ivy_cmddev failed saying \"" << reex.what() << "\"." << std::endl;
+            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+            kill_ssh_and_harvest();
+            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+            master_slave_cv.notify_all();
+            return;
+        }
+
+        tn_sub_gather_end.setToNow();
+        getMP_busy_detail_Time.push(ivytime(tn_sub_gather_end - gatherStart));
     }
 
 

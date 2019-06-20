@@ -103,6 +103,7 @@ public:
 	RunningStat<ivy_float, ivy_int> getLDEVIOTime;
 	RunningStat<ivy_float, ivy_int> getPORTIOTime;
 	RunningStat<ivy_float, ivy_int> getUR_JnlTime;
+	RunningStat<ivy_float, ivy_int> getMP_busy_detail_Time;
 
 	ivytime gather_scheduled_start_time;
 

@@ -3911,7 +3911,8 @@ void ivy_engine::print_latency_csvfiles()
                                   "get MP seconds",
                                   "get LDEV seconds",
                                   "get PORT seconds",
-                                  "get UR Jnl seconds"            })
+                                  "get UR Jnl seconds",
+                                  "get MP busy detail seconds" })
     {
         gather_latency_header << "," << s << " avg";
         gather_latency_header << "," << s << " min";
@@ -3946,6 +3947,7 @@ void ivy_engine::print_latency_csvfiles()
                 latency_line << ',' << pear.second->getLDEVIOTime         .avg() << ',' << pear.second->getLDEVIOTime         .min() << ',' << pear.second->getLDEVIOTime         .max() << ',' << pear.second->getLDEVIOTime         .count();
                 latency_line << ',' << pear.second->getPORTIOTime         .avg() << ',' << pear.second->getPORTIOTime         .min() << ',' << pear.second->getPORTIOTime         .max() << ',' << pear.second->getPORTIOTime         .count();
                 latency_line << ',' << pear.second->getUR_JnlTime         .avg() << ',' << pear.second->getUR_JnlTime         .min() << ',' << pear.second->getUR_JnlTime         .max() << ',' << pear.second->getUR_JnlTime         .count();
+                latency_line << ',' << pear.second->getMP_busy_detail_Time.avg() << ',' << pear.second->getMP_busy_detail_Time.min() << ',' << pear.second->getMP_busy_detail_Time.max() << ',' << pear.second->getMP_busy_detail_Time.count();
                 latency_line << std::endl;
 
                 fileappend(subsystem_latency_filename,latency_line.str());
