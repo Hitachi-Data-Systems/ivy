@@ -38,9 +38,7 @@
 std::string metric_value::toString()
 {
     std::ostringstream o;
-    o   << "{ start = \"" << start.format_as_datetime_with_ns()
-        << "\", complete = " << complete.format_as_datetime_with_ns()
-        << "\", value = \"" << value << "\" }";
+    o   << "{ value = \"" << value << "\" }";
 	return o.str();
 }
 
@@ -87,10 +85,7 @@ std::ostream& operator<<(std::ostream& o, const GatherData& gd)
 				const metric_value& mv = banana.second;
 
 				o << "{ element=\"" << element << "\", instance=\"" << instance << "\", metric=\"" << metric << "\", value=\"" ;
-				o << mv.string_value();
-				o << "\", start=\"" << mv.gather_start().format_as_datetime_with_ns()
-					<< "\", complete=\"" << mv.gather_complete().format_as_datetime_with_ns()
-					<< " }" << std::endl;
+				o << mv.string_value() << "\" }" << std::endl;
 			}
 		}
 	}

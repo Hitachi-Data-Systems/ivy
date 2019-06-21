@@ -222,7 +222,6 @@ public:
 		token_number{false},
 		token_quoted_string {false};
 	std::string element, instance, attribute;
-	ivytime complete { ivytime(0) };
 	ivytime duration; // most recent "gather" duration.
 	ivytime time_in_hand_before_subinterval_end;
         // This is the amount of time from when we receive the OK from ivydriver that all workload threads have
@@ -232,7 +231,7 @@ public:
 
 // ivy_cmddev methods:
 	void get_token();  // throws std::invalid_argument, std::runtime_error
-	void process_ivy_cmddev_response(GatherData& gd, ivytime start); // throws std::invalid_argument, std::runtime_error
+	void process_ivy_cmddev_response(GatherData& gd); // throws std::invalid_argument, std::runtime_error
     void pipe_driver_gather(std::unique_lock<std::mutex>&,bool /*true for t=0 gather*/);
     void process_cmddev_commands(std::unique_lock<std::mutex>&);
     void process_ivydriver_commands(std::unique_lock<std::mutex>&);

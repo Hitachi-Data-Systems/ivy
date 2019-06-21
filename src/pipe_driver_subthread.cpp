@@ -1805,7 +1805,6 @@ void pipe_driver_subthread::get_token()
         parse_line = get_line_from_pipe(ivytime(MAXWAITFORIVYCMDDEV), "reading a line of a response from ivy_cmddev");
         line_number++;
         parse_cursor=0;
-        complete.setToNow();
     }
 
     // Push back first character of token
@@ -1945,14 +1944,13 @@ void pipe_driver_subthread::get_token()
 }
 
 
-void pipe_driver_subthread::process_ivy_cmddev_response(GatherData& gd, ivytime start) // throws std::invalid_argument, std::runtime_error
+void pipe_driver_subthread::process_ivy_cmddev_response(GatherData& gd) // throws std::invalid_argument, std::runtime_error
 // Sorry - realize that this is not the best parser - come back and re-do later.
 {
 
     parse_line = get_line_from_pipe(ivytime(MAXWAITFORIVYCMDDEV), "reading a line of a response from ivy_cmddev");
     line_number=1;
     parse_cursor=0;
-    complete.setToNow();
 
     // overall opening {
 
@@ -2101,7 +2099,7 @@ void pipe_driver_subthread::process_ivy_cmddev_response(GatherData& gd, ivytime 
                 log(logfilename, o.str());
                 throw std::invalid_argument(o.str());
             }
-            gd.data[element][instance][attribute] = metric_value(start, complete, token);
+            gd.data[element][instance][attribute] = metric_value(token);
         }
         // we found closing '}' for attribute pairs
         get_token();
