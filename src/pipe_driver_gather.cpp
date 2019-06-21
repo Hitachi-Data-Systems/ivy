@@ -403,7 +403,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         getUR_JnlTime.push(ivytime(tn_sub_gather_end - gatherStart));
 
         gatherStart.setToNow();
-        if (m_s.storcsv) try
+        try
         {
             send_and_get_OK("get MP_busy_detail");
             try
