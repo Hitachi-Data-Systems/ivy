@@ -822,7 +822,7 @@ std::string ivy_engine::focus_caption()
     else if (have_measure
         && source == source_enum::RAID_subsystem
         && subsystem_element == "MP core"
-        && element_metric == "busy %")
+        && element_metric == "Busy %")
     {
         o << ", "; // measure = MP_core_busy_percent
     }
@@ -836,7 +836,7 @@ std::string ivy_engine::focus_caption()
     else if (have_measure
         && source == source_enum::RAID_subsystem
         && subsystem_element == "CLPR"
-        && element_metric == "WP_percent")
+        && element_metric == "WP %")
     {
         o << ", "; // measure = CLPR_WP_percent
     }
@@ -2121,8 +2121,8 @@ ivy_engine::edit_rollup(const std::string& rollupText, const std::string& origin
     if (routine_logging)
     {
         std::ostringstream o;
-        o << "edit rollup - overall execution time = " << std::fixed << std::setprecision(1) << (100.*editRollupExecutionTime.getlongdoubleseconds()) << " ms" << std::endl
-            << "edit workload interlock time "
+        o << "edit rollup - overall execution time = " << std::fixed << std::setprecision(1) << (100.*editRollupExecutionTime.getlongdoubleseconds()) << " ms "
+            << ", edit workload interlock time "
             << " - average " << std::fixed << std::setprecision(1) << (100.*editWorkloadInterlockTimeSeconds.avg()) << " ms"
             << " - min " << std::fixed << std::setprecision(1) << (100.*editWorkloadInterlockTimeSeconds.min()) << " ms"
             << " - max " << std::fixed << std::setprecision(1) << (100.*editWorkloadInterlockTimeSeconds.max()) << " ms"
@@ -2413,7 +2413,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
             if (!go_parameters.contains("focus_rollup")) go_parameters.contents[normalize_identifier("focus_rollup")] = "all";
             go_parameters.contents[toLower("source")] = "RAID_subsystem";
             go_parameters.contents[normalize_identifier("subsystem_element")] = "MP core";
-            go_parameters.contents[normalize_identifier("element_metric")] = "busy %";
+            go_parameters.contents[normalize_identifier("element_metric")] = "Busy %";
         }
         else if (normalized_identifier_equality(measure_parameter_value,std::string("PG_busy_percent")))
         {

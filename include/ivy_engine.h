@@ -232,7 +232,7 @@ public:
 //    bool have_within         {false};
 //    bool have_max_above_or_below{false};
 //    ivy_float within {-1};
-//    unsigned int max_above_or_below;
+//    unsigned int max_above_or_below4
 
     // universal
 	std::string stepName;
@@ -316,7 +316,7 @@ public:
 
     {
         { "MP core", {
-              { "busy %",                     fetch_metric + print_count_part_1 + print_avg_part_1 }
+              { "Busy %",                     fetch_metric + print_count_part_1 + print_avg_part_1 }
             , { "I/O buffers",                fetch_metric +                      print_avg_part_2 + print_min_max_stddev_2 }
          } }
         ,{ "CLPR", {

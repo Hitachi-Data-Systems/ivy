@@ -115,7 +115,7 @@ public:
 
         // The first time ivy ran with this feature, the specification was:
         //    {
-        //        { "MP core",     { "busy %", "I/O buffers" } },
+        //        { "MP core",     { "Busy %", "I/O buffers" } },
         //        { "CLPR",        { "WP_percent"                 } }
         //    };
 

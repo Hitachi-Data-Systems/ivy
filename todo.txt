@@ -34,11 +34,11 @@ DONE - with a command device, check at end of test step if there is a failed com
 - test using LVM and impact LUN discovery / SCSI Inquiry
 - test with multipath software (HDLM / MPIO)
 
-- validate with "top" to see if linux CPU is being reported correctly
+DONE/FIXED - validate with "top" to see if linux CPU is being reported correctly
 
 - in Excel ivy csv file loader spreadsheet - make column titles frozen when you scroll down in long csv files.
 
-- Fix DF port numbers to be 0A, 1A, not 1A 2A. - update:  This is a bug in the subsystem - the ports reported by SCSI inquiry are 1A, 2A.
+CLOSED - Fix DF port numbers to be 0A, 1A, not 1A 2A. - update:  This is a bug in the subsystem - the ports reported by SCSI inquiry are 1A, 2A.
 
 -  for pid, look at if it would help to mark any subinterval where IOPS was at min_IOPS
    as invalid, like if WP were out of range for measure=on.
@@ -52,10 +52,10 @@ DONE - with a command device, check at end of test step if there is a failed com
   Maybe you could offer a tree on the left that shows rollups that you pick from.
   You could pick things you wanted to monitor, and arrange them on the display area.
 
-- examine whether to remove the timestamps from the metric_value object and
+DONE/FIXED- examine whether to remove the timestamps from the metric_value object and
   perhaps have ivy_cmddev provide data with individual I/O timestamps instead ...
 
-- make ivy run other than as root.  	
+CLOSED - need to be root to access raw LUNs - make ivy run other than as root.  	
  
 - test [EditRollup] with IOPS increments  / multipliers
 

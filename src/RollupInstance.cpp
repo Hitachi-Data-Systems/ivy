@@ -589,17 +589,17 @@ void RollupInstance::perform_PID()
                 {
                     on_way_up = true;
                     monotone_count = 1;
-                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - initial IOPS movement is upwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - focus metric value = " << std::fixed << this_measurement << " - initial IOPS movement is upwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                 }
                 else if (total_IOPS < total_IOPS_last_time)
                 {
                     on_way_down = true;
                     monotone_count = 1;
-                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - initial IOPS movement is downwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - focus metric value = " << std::fixed << this_measurement << " - initial IOPS movement is downwards (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                 }
                 else
                 {
-                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - always calculated exactly same IOPS this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - focus metric value = " << std::fixed << this_measurement << " - always calculated exactly same IOPS this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                 }
             }
             else
@@ -621,10 +621,10 @@ void RollupInstance::perform_PID()
                     error_integral = total_IOPS / I;       // adjusts the cumulative error total to according to new I, new IOPS.
                     adaptive_PID_subinterval_count = 0;    // other things get reset from this
                     m_s.last_gain_adjustment_subinterval = m_s.harvesting_subinterval; // warmup extends until at least the last gain adjustmenty
-                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID
-                        << " - increasing gain because over at least  " << m_s.balanced_step_direction_by
-                        << " IOPS adjustments, over two thirds of the adjustments were in the same direction"
-                        << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                    {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - focus metric value = " << std::fixed << this_measurement << " - increasing gain because over at least  "
+                        << m_s.balanced_step_direction_by << " IOPS adjustments, over two thirds of the adjustments were in the same direction"
+                        << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle."
+                        << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                     b_count++;
 
                     gain_history
@@ -675,7 +675,7 @@ void RollupInstance::perform_PID()
                                 total_IOPS = base_IOPS;              // set new starting IOPS to be at midpoint of swing.
                                 error_integral = total_IOPS / I;     // adjusts the cumulative error total to according to new I, new IOPS.
                                 m_s.last_gain_adjustment_subinterval = m_s.harvesting_subinterval; // warmup extends until at least the last gain adjustmenty
-                                {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw inflection " << (on_way_up ? "upwards" : "downwards")
+                                {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - focus metric value = " << std::fixed << this_measurement << " - saw inflection " << (on_way_up ? "upwards" : "downwards")
                                     << ", size of swing is " << std::fixed << std::setprecision(2) << (100.*swing_fraction_of_IOPS) << "% of its midpoint IOPS.  "
                                     << "Due to excessive swing size in both directions reducing gain at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                                 adaptive_PID_subinterval_count = 0;  // other things get reset from this
@@ -698,7 +698,7 @@ void RollupInstance::perform_PID()
 
                                 // This becomes the starting point for a new swing in the other direction.
                                 previous_inflection = this_inflection;
-                                {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw inflection " << (on_way_up ? "upwards" : "downwards")
+                                {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - focus metric value = " << std::fixed << this_measurement << " - saw inflection " << (on_way_up ? "upwards" : "downwards")
                                     << ", size of swing is " << std::fixed << std::setprecision(2) << (100.*swing_fraction_of_IOPS) << "% of its midpoint IOPS"
                                     << ", starting new swing at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                             }
@@ -707,7 +707,7 @@ void RollupInstance::perform_PID()
                         {
                             previous_inflection = this_inflection;
                             have_previous_inflection = true;
-                            {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - saw first inflection (" << (on_way_up ? "upwards" : "downwards") << ") this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
+                            {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - focus metric value = " << std::fixed << this_measurement << " - saw first inflection (" << (on_way_up ? "upwards" : "downwards") << ") this adaptive PID cycle at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                         }
                     }
                     else
@@ -723,9 +723,8 @@ void RollupInstance::perform_PID()
                             error_integral = total_IOPS / I;       // adjusts the cumulative error total to according to new I, new IOPS.
                             adaptive_PID_subinterval_count = 0;    // other things get reset from this
                             m_s.last_gain_adjustment_subinterval = m_s.harvesting_subinterval; // warmup extends until at least the last gain adjustmenty
-                            {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID
-                                << " - increasing gain because over at least " << m_s.max_monotone
-                                << " consecutive subintervals, all IOPS adjustments were in the same direction"
+                            {std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - focus metric value = " << std::fixed << this_measurement << " - increasing gain because over at least "
+                                << m_s.max_monotone << " consecutive subintervals, all IOPS adjustments were in the same direction"
                                 << " at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str()); }
                             m_count++;
 
@@ -742,8 +741,10 @@ void RollupInstance::perform_PID()
                         }
                         else
                         {
-                            std::ostringstream o;
-                            o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - IOPS kept going " << (on_way_up ? "upwards" : "downwards") << " (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval " << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl; std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str());
+                            std::ostringstream o; o << "PID loop for " << attributeNameComboID << "=" << rollupInstanceID << " - focus metric value = " << std::fixed << this_measurement << " - IOPS kept going "
+                                << (on_way_up ? "upwards" : "downwards") << " (" << std::fixed << std::setprecision(2) << delta_percent << "%) at subinterval "
+                                << adaptive_PID_subinterval_count << " of the current adaptive PID cycle." << std::endl;
+                            std::cout << o.str(); if (routine_logging) log(m_s.masterlogfile,o.str());
                         }
                     }
                 }

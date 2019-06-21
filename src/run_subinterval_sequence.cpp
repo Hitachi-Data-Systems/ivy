@@ -588,7 +588,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
              << ", subinterval " << m_s.rollups.current_index() << " to complete. "
              << "  Start " << (*( m_s.rollups.p_current_start_time() )).format_as_datetime_with_ns()
              << ", end " << (*( m_s.rollups.p_current_end_time() )).format_as_datetime_with_ns()
-             << "  Duration " << m_s.subintervalLength.format_as_duration_HMMSSns() << std::endl;
+             << "  Duration " << m_s.subintervalLength.format_as_duration_HMMSS() << std::endl;
             log(m_s.masterlogfile,o.str());
             std::cout << o.str();
         }
