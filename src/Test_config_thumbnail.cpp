@@ -70,7 +70,7 @@ std::ostream& operator<<(std::ostream& o, const Test_config_thumbnail& tct)
         }
     }
 
-    if (tct.drives_by_PG.size() > 0)
+    if (m_s.haveCmdDev && tct.drives_by_PG.size() > 0)
     {
         o << std::endl << "Drive counts:" << std::endl;
         for (auto& pear /* "HM800 - 410034" */: tct.drives_by_PG)
@@ -173,7 +173,7 @@ void Test_config_thumbnail::add(LUN* pLUN)
 
         unsigned int pg_names_cursor = 0;
 
-        while (true)
+        while (m_s.haveCmdDev)
         {
             auto rc = get_next_field(pg_names,pg_names_cursor,'/');
 

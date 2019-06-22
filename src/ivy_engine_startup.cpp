@@ -864,10 +864,10 @@ std::pair<bool /*success*/, std::string /* message */>
     }
     else if (cooldown_WP_watch_set.size() == 0)
     {
-        std::ostringstream o;
-        o << "No command devices for RAID_subsystem LDEVs, so cooldown_by_wp settings will not have any effect." << std::endl;
-        log(masterlogfile,o.str());
-        std::cout << o.str();
+//        std::ostringstream o;
+//        o << "No command devices for RAID_subsystem LDEVs, so cooldown_by_wp settings will not have any effect." << std::endl;
+//        log(masterlogfile,o.str());
+//        std::cout << o.str();
     }
     else
     {

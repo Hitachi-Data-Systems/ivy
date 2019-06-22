@@ -87,7 +87,7 @@ public:
         // Special processing is performed for the "all=all" rollup instance.
 
         // Here we we make a "not_participating" filter produced by spinning through the instances of each type of
-        // subsystem configuration data and if the attribute=value pair is not in all=all's config_filter,
+        // subsystem configuration data and iff the attribute=value pair is not in all=all's config_filter,
         // we include it in the not_participating_filter.
 
         // We then make a "not_participating" performance data summary by filtering using the "not_participating" filter.

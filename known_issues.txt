@@ -1,3 +1,0 @@
-- if the "parity group" LUN attribute from SCSI Inquiry does not report for any test LUNs, csvfile::remove_empty_columns() has an exception not to remove this empty column from "showluns.sh" output, as if the "Parity Group" column is missing, subsystem PG % busy reports as 0%.  Once this is fixed, take out the exception from csvfile::remove_empty_columns.
-
-- an ivyscript interpreter bug has occurred when a variable is declared inside an inner loop, an error which went away when the declaration of the variable was made outside the loop.  No plans to fix this, as it would take weeks of time to understand how the ivyscript interpreter works and then fix the issue.  We are transitioning to the REST API, so ivyscript use will be deprecated.

@@ -125,7 +125,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
 
             try
             {
-                process_ivy_cmddev_response(currentGD, gatherStart);
+                process_ivy_cmddev_response(currentGD);
             }
             catch (std::invalid_argument& iaex)
             {
@@ -176,7 +176,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
             send_and_get_OK("get MP_busy");
             try
             {
-                process_ivy_cmddev_response(currentGD, gatherStart);
+                process_ivy_cmddev_response(currentGD);
             }
             catch (std::invalid_argument& iaex)
             {
@@ -229,7 +229,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
                 send_and_get_OK("get LDEVIO");
                 try
                 {
-                    process_ivy_cmddev_response(currentGD, gatherStart);
+                    process_ivy_cmddev_response(currentGD);
                 }
                 catch (std::invalid_argument& iaex)
                 {
@@ -306,7 +306,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
             send_and_get_OK("get PORTIO");
             try
             {
-                process_ivy_cmddev_response(currentGD, gatherStart);
+                process_ivy_cmddev_response(currentGD);
             }
             catch (std::invalid_argument& iaex)
             {
@@ -357,7 +357,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
             send_and_get_OK("get UR_Jnl");
             try
             {
-                process_ivy_cmddev_response(currentGD, gatherStart);
+                process_ivy_cmddev_response(currentGD);
             }
             catch (std::invalid_argument& iaex)
             {
@@ -403,12 +403,12 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         getUR_JnlTime.push(ivytime(tn_sub_gather_end - gatherStart));
 
         gatherStart.setToNow();
-        if (m_s.storcsv) try
+        try
         {
             send_and_get_OK("get MP_busy_detail");
             try
             {
-                process_ivy_cmddev_response(currentGD, gatherStart);
+                process_ivy_cmddev_response(currentGD);
             }
             catch (std::invalid_argument& iaex)
             {

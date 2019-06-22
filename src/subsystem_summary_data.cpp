@@ -100,17 +100,17 @@ void subsystem_summary_data::addIn(const subsystem_summary_data& other)
             {
                 headers << ",subsystem " << np << "avg " << element << ' ' << metric;
 
-                if (element == "MP core" && metric == "busy %")
+                if (element == "MP core" && metric == "Busy %")
                 {
-                    headers << ",subsystem MP_core busy microseconds per I/O";
+                    headers << ",Subsystem MP core busy microseconds per I/O";
                 }
             }
 
             if (metric_pair.second & print_min_max_stddev_1   )
             {
-                headers << ",subsystem " << np << "min " << element << ' ' << metric;
-                headers << ",subsystem " << np << "max " << element << ' ' << metric;
-                headers << ",subsystem " << np << "std dev " << element << ' ' << metric;
+                headers << ",subsystem " << np << "Min " << element << ' ' << metric;
+                headers << ",subsystem " << np << "Max " << element << ' ' << metric;
+                headers << ",subsystem " << np << "Std Dev " << element << ' ' << metric;
             }
         }
     }
@@ -169,7 +169,7 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                 {
                     values << ",";
 
-                    if (element == "MP core" && metric == "busy %")
+                    if (element == "MP core" && metric == "Busy %")
                     {
                         values << ",";
                     }
@@ -197,7 +197,7 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                     {
                         values << ",";
 
-                        if (element == "MP core" && metric == "busy %")
+                        if (element == "MP core" && metric == "Busy %")
                         {
                             values << ",";
                         }
@@ -238,7 +238,7 @@ std::string subsystem_summary_data::csvValuesPartOne(unsigned int divide_count_b
                             values << ',' << rs.avg();
                         }
 
-                        if (element == "MP core" && metric == "busy %")
+                        if (element == "MP core" && metric == "Busy %")
                         {
                             ivy_float microseconds = MP_microseconds_per_IO();
 
@@ -423,7 +423,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
     auto mp_it = data.find("MP core");
     if (mp_it != data.end())
     {
-        auto busy_it = mp_it->second.find("busy %");
+        auto busy_it = mp_it->second.find("Busy %");
         if (busy_it != mp_it->second.end())
         {
             const RunningStat<ivy_float,ivy_int>& rs = busy_it->second;
@@ -897,7 +897,7 @@ ivy_float subsystem_summary_data::MP_microseconds_per_IO()
     auto MP_it = data.find("MP core");
     if (MP_it == data.end()) return -1.0;
 
-    auto metric_it = MP_it->second.find("busy %");
+    auto metric_it = MP_it->second.find("Busy %");
     if ( metric_it == MP_it->second.end() ) return -1.0;
 
     if (metric_it ->second.count() == 0) return -1.0;
@@ -910,7 +910,7 @@ ivy_float subsystem_summary_data::avg_MP_core_busy_fraction()  // returns -1.0 i
     auto MP_it = data.find("MP core");
     if (MP_it == data.end()) return -1.0;
 
-    auto metric_it = MP_it->second.find("busy %");
+    auto metric_it = MP_it->second.find("Busy %");
     if ( metric_it == MP_it->second.end() ) return -1.0;
 
     if (metric_it ->second.count() == 0) return -1.0;

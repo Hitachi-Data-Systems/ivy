@@ -37,23 +37,16 @@ struct metric_value
 //	   between any two data points you have.
 
 public:
-	ivytime start;
-	ivytime complete;
 	std::string value;
 
 //methods
 	metric_value(){};
-	metric_value(ivytime s, ivytime c, std::string v) : start(s), complete(c), value(v) {};
-	metric_value(const metric_value& mv) { start=mv.start; complete=mv.complete; value=mv.value; }
+	metric_value(const std::string& v) : value(v) {};
+	metric_value(const metric_value& mv) { value=mv.value; }
 
-	metric_value& operator=(const metric_value& mv) { start=mv.start; complete=mv.complete; value=mv.value; return *this;}
+	metric_value& operator=(const metric_value& mv) { value=mv.value; return *this; }
 
     std::string toString();
-
-
- 	ivytime gather_start() const { return start; }
-	ivytime gather_midpoint() const { return start + ivytime(0.5 * (ivytime(complete-start).getlongdoubleseconds())); }
-	ivytime gather_complete() const { return complete; }
 
 	std::string string_value() const {return value;}
 

@@ -43,7 +43,7 @@ void pipe_driver_subthread::process_cmddev_commands(std::unique_lock<std::mutex>
 
             try
             {
-                process_ivy_cmddev_response(p_Hitachi_RAID_subsystem->configGatherData, gatherStart);
+                process_ivy_cmddev_response(p_Hitachi_RAID_subsystem->configGatherData);
             }
             catch (std::invalid_argument& iaex)
             {
