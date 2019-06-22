@@ -26,7 +26,8 @@ enum class dedupe_method
     serpentine,
     target_spread,
     constant_ratio,
-    static_method
+    static_method,
+    dedupsets,
 };
 
 std::string valid_dedupe_methods();

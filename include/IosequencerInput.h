@@ -37,6 +37,9 @@ public:
 // Look in ivydefines.h for the default values, gathered together in one spot
 
 	unsigned int
+
+        dedupsets{dedupsets_default},
+
 		blocksize_bytes{blocksize_bytes_default},
 
 		maxTags{maxTags_default};   // make sure someone is going to notice if they haven't set this.
@@ -128,6 +131,7 @@ public:
 	bool defaultPattern() { return pat == pattern_default; }
 	bool defaultDedupeMethod() { return dedupe_type == dedupe_method_default; }
 	bool defaultDedupe() { return dedupe == dedupe_default; }
+	bool defaultDedupsets() { return dedupsets_default == dedupsets; }
 	bool defaultCompressibility() { return compressibility == compressibility_default; }
 	bool default_dedupe_unit() { return dedupe_unit_bytes == dedupe_unit_bytes_default; }
 	bool default_fraction_zero_pattern() { return fraction_zero_pattern == 0.0; }

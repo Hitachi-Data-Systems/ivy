@@ -43,6 +43,7 @@
 		",fractionRead"
 		",dedupe"
 		",dedupe_method"
+		",dedupsets"
 		",pattern"
 		",RangeStart"
 		",RangeEnd"
@@ -75,6 +76,8 @@ std::string IosequencerInputRollup::CSVcolumnValues(bool detail)
 	    o << ',' << '\"' << getParameterTextValueByName("dedupe_method",detail) << '\"';
 	}
 
+	o << ',' << '\"' << getParameterTextValueByName("dedupesets",detail) << '\"';
+	
 	if (std::string("1") == getParameterTextValueByName("fractionRead",detail))
 	{
 	    o << ',' << "\"N/A\"";

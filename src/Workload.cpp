@@ -674,6 +674,7 @@ unsigned int Workload::generate_an_IO()
 
                 case dedupe_method::constant_ratio:
                 case dedupe_method::static_method:
+                case dedupe_method::dedupsets:
 
                     // Handled elsewhere, as the seed generation depends on the LBA.
 

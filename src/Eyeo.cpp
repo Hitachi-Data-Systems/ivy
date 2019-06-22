@@ -389,6 +389,17 @@ void Eyeo::generate_pattern()
                             goto past_random_pattern_8byte_write;
                         }
                     }
+                    else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::dedupsets)
+                    {
+                        pWorkload->block_seed = dedupsets_sub_block_starting_seed( i * 8 );
+                        if (pWorkload->block_seed == 0)
+                        {
+                            void* p = (void*) (eyeocb.aio_buf + (i * 8));
+                            memset(p,0x00,dedupe_unit_bytes);
+                            i += ((dedupe_unit_bytes/8)-1);
+                            goto past_random_pattern_8byte_write;
+                        }
+                    }
                     else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::serpentine) {
                         // Do nothing special.
                     }
@@ -429,6 +440,18 @@ past_random_pattern_8byte_write:;
                     else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::static_method)
                     {
                         pWorkload->block_seed = fixed_pattern_sub_block_starting_seed( i * 8 );
+                        if (pWorkload->block_seed == 0)
+                        {
+                            void* p = (void*) (eyeocb.aio_buf + (i * 8));
+                            memset(p,0x00,dedupe_unit_bytes);
+                            i += ((dedupe_unit_bytes/8)-1);
+                            p_c += dedupe_unit_bytes;
+                            goto past_ascii_pattern_8byte_write;
+                        }
+                    }
+                    else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::dedupsets)
+                    {
+                        pWorkload->block_seed = dedupsets_sub_block_starting_seed( i * 8 );
                         if (pWorkload->block_seed == 0)
                         {
                             void* p = (void*) (eyeocb.aio_buf + (i * 8));
@@ -506,6 +529,18 @@ past_ascii_pattern_8byte_write:;
                         else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::static_method)
                         {
                             pWorkload->block_seed = fixed_pattern_sub_block_starting_seed(piece * dedupe_unit_bytes);
+                            if (pWorkload->block_seed == 0)
+                            {
+                                void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
+                                memset(p,0x00,dedupe_unit_bytes);
+                                i += ((dedupe_unit_bytes/8)-1);
+                                p_uint64 = (uint64_t*) (eyeocb.aio_buf + (piece+1)*dedupe_unit_bytes);
+                                goto past_trailing_blanks_pattern_8byte_write;
+                            }
+                        }
+                        else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::dedupsets)
+                        {
+                            pWorkload->block_seed = dedupsets_sub_block_starting_seed(piece * dedupe_unit_bytes);
                             if (pWorkload->block_seed == 0)
                             {
                                 void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
@@ -607,6 +642,16 @@ past_trailing_blanks_pattern_8byte_write:;
                         else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::static_method)
                         {
                             pWorkload->block_seed = fixed_pattern_sub_block_starting_seed(piece * dedupe_unit_bytes);
+                            if (pWorkload->block_seed == 0)
+                            {
+                                void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
+                                memset(p,0x00,dedupe_unit_bytes);
+                                goto past_trailing_gobbldegook_pattern_write;
+                            }
+                        }
+                        else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::dedupsets)
+                        {
+                            pWorkload->block_seed = dedupsets_sub_block_starting_seed(piece * dedupe_unit_bytes);
                             if (pWorkload->block_seed == 0)
                             {
                                 void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
@@ -732,28 +777,77 @@ uint64_t Eyeo::fixed_pattern_sub_block_starting_seed(uint64_t offset_within_this
 }
 
 
+uint64_t Eyeo::dedupsets_filtered_sub_block_number(uint64_t offset_within_this_Eyeo_buffer)
+{
+
+    const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
+
+    uint64_t unfiltered_sub_block_number = (((uint64_t) eyeocb.aio_offset) + offset_within_this_Eyeo_buffer) / dedupe_unit_bytes;
+
+    if (unfiltered_sub_block_number == 0)
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error.  Eyeo::dedupsets_filtered_sub_block_number() was called for block zero.  We never write to block zero, so we don\'t over-write partition table / boot sector."
+                << "  This Eyeo toString() = " << toString();
+        std::cout << o.str();
+        throw std::runtime_error(o.str());
+    }
+
+    const long double& dedupe_percent = (long double) 1.0 - ((long double) 1.0 / pWorkload->p_current_IosequencerInput->dedupe);
+
+    uint64_t n           = (uint64_t) (((long double)(unfiltered_sub_block_number  ))*(1.0-dedupe_percent));
+    uint64_t n_minus_one = (uint64_t) (((long double)(unfiltered_sub_block_number-1))*(1.0-dedupe_percent));
+
+    if (n == n_minus_one) return 0;
+
+    return n;
+}
 
 
+uint64_t Eyeo::dedupsets_sub_block_starting_seed(uint64_t offset_within_this_Eyeo_buffer)
+{
+    const  uint64_t init_seed = 0x0123456789abcdefULL;
+    static uint64_t curr_seed = init_seed;
+    static uint64_t dedup_cnt = 0;
+    uint64_t block_seed;
 
+    // If this block should be zero-filled, filtered_sub_block_number will be 0.
 
+    uint64_t filtered_sub_block_number = zero_pattern_filtered_sub_block_number(offset_within_this_Eyeo_buffer);
 
+    if (filtered_sub_block_number == 0)
+    {
+        return 0;
+    }
 
+    // If this block should be a duplicate, filtered_sub_block_number will be 0.
 
+    const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
+    filtered_sub_block_number = dedupsets_filtered_sub_block_number(filtered_sub_block_number * dedupe_unit_bytes);
 
+    if (filtered_sub_block_number == 0)
+    {
+        const uint64_t& dedupsets = pWorkload->p_current_IosequencerInput->dedupsets;
 
+        // Figure out which duplicate seed to use.
 
+        if (dedup_cnt++ >= dedupsets)
+        {
+            curr_seed = init_seed;
+            dedup_cnt = 0;
+        }
 
+        xorshift64star(curr_seed);
 
+        block_seed = curr_seed;
+    }
+    else
+    {
+        block_seed = 1 + filtered_sub_block_number;
+    }
 
+    // XOR block_seed with hash of (host plus LUN).
 
-
-
-
-
-
-
-
-
-
-
+    return pWorkload->uint64_t_hash_of_host_plus_LUN ^ block_seed;
+}
