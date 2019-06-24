@@ -351,28 +351,17 @@ std::pair<bool,std::string> RollupSet::makeMeasurementRollup(unsigned int firstM
 
     if (not_participating.size() > 0)
     {
-        if (not_participating.size() < 3)
-        {
-            std::ostringstream o;
-            o << "RollupSet::makeMeasurementRollup() - The total number of subintervals in the \"not_participating\" sequence is " << not_participating.size() << "." << std::endl
-                << "There must be at least three - one warmup subinterval, one measurement subinterval, and one cooldown subinterval," << std::endl
-                << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization." << std::endl;
-            log(m_s.masterlogfile, o.str());
-            m_s.kill_subthreads_and_exit();
-        }
-
         if
-        (!(	// not:
-                    firstMeasurementIndex > 0 && firstMeasurementIndex < (not_participating.size()-1)
-                    && lastMeasurementIndex > 0 && lastMeasurementIndex < (not_participating.size()-1)
-                    && firstMeasurementIndex <= lastMeasurementIndex
-        ))
+        (
+            not_participating.size() == 0
+            || firstMeasurementIndex < 0
+            || firstMeasurementIndex > lastMeasurementIndex
+            || lastMeasurementIndex >= not_participating.size()
+        )
         {
             std::ostringstream o;
             o   << "RollupSet::makeMeasurementRollup() - Invalid first (" << firstMeasurementIndex << ") and last (" << lastMeasurementIndex << ") measurement period indices "
-                << "for \"not_participating\", whose size is " << not_participating.size() << "." << std::endl
-                << "There must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, " << std::endl
-                << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
+                << "for \"not_participating\", whose size is " << not_participating.size() << " subintervals." << std::endl << "There must be at least one subinterval of data." << std::endl;
             log(m_s.masterlogfile, o.str());
             std::cout << o.str();
             m_s.kill_subthreads_and_exit();

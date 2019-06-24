@@ -72,26 +72,17 @@ void RollupInstance::printMe(std::ostream& o)
 
 std::pair<bool,std::string> RollupInstance::makeMeasurementRollup(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
 {
-		if (subintervals.sequence.size() < 3)
-		{
-			std::ostringstream o;
-			o << "RollupInstance::makeMeasurementRollup() - The total number of subintervals in the sequence is " << subintervals.sequence.size()
-			<< std::endl << "and there must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, "
-			<< std::endl << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
-			return std::make_pair(false,o.str());
-		}
-
 		if
-		(!(	// not:
-			   firstMeasurementIndex >0 && firstMeasurementIndex < (subintervals.sequence.size()-1)
-			&& lastMeasurementIndex >0 && lastMeasurementIndex < (subintervals.sequence.size()-1)
-			&& firstMeasurementIndex <= lastMeasurementIndex
-		))
+		(
+		    subintervals.sequence.size() < 1
+		    || firstMeasurementIndex < 0
+		    || firstMeasurementIndex > lastMeasurementIndex
+		    || lastMeasurementIndex >= subintervals.sequence.size()
+		)
 		{
 			std::ostringstream o;
-			o << "RollupInstance::makeMeasurementRollup() - Invalid first (" << firstMeasurementIndex << ") and last (" << lastMeasurementIndex << ") measurement period indices."
-			<< std::endl << " There must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, "
-			<< std::endl << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
+			o << "RollupInstance::makeMeasurementRollup() - Invalid first (" << firstMeasurementIndex << ") and last (" << lastMeasurementIndex << ") measurement period indices "
+			<< "with " << subintervals.sequence.size() << " subintervals of data." << std::endl << "There must be at least one measurement subinterval." << std::endl;
 			return std::make_pair(false,o.str());
 		}
 
@@ -1529,7 +1520,15 @@ void RollupInstance::print_measurement_summary_csv_line()
             csvline << m_s.testName << ',' << m_s.stepNNNN << ',' << m_s.stepName;
 
             ivytime warmup_start    = m_s.rollups.starting_ending_times[0].first;
-            ivytime warmup_complete = m_s.rollups.starting_ending_times[m_s.firstMeasurementIndex-1].second;
+            ivytime warmup_complete;
+            if (m_s.firstMeasurementIndex == 0)
+            {
+                warmup_complete = warmup_start;
+            }
+            else
+            {
+                warmup_complete = m_s.rollups.starting_ending_times[m_s.firstMeasurementIndex-1].second;
+            }
             m_s.warmup_duration = warmup_complete - warmup_start;
 
             ivytime start    = m_s.rollups.starting_ending_times[m_s.firstMeasurementIndex].first;
@@ -1548,8 +1547,8 @@ void RollupInstance::print_measurement_summary_csv_line()
 
             bool subsystem_IOPS_as_fraction_of_host_IOPS_failure
                 = subsystem_IOPS_as_fraction_of_host_IOPS > 0
-                && ( subsystem_IOPS_as_fraction_of_host_IOPS < 0.9
-                  || subsystem_IOPS_as_fraction_of_host_IOPS > 1.1
+                && ( subsystem_IOPS_as_fraction_of_host_IOPS < 0.85
+                  || subsystem_IOPS_as_fraction_of_host_IOPS > 1.15
                    );
 
 
@@ -1568,7 +1567,7 @@ void RollupInstance::print_measurement_summary_csv_line()
 
             validation_errors += m_s.rollups.passesDataVariationValidation().second;
 
-            if (subsystem_IOPS_as_fraction_of_host_IOPS_failure) validation_errors += std::string("[subsystem IOPS is more thean 10% different from host IOPS.]");
+            if (subsystem_IOPS_as_fraction_of_host_IOPS_failure) validation_errors += std::string("[subsystem IOPS is more than 15% different from host IOPS.]");
 
             csvline << ',' << validation_errors;
 

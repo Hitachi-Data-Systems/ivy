@@ -338,7 +338,8 @@ public:
             , {"seq write busy %",            fetch_metric                      + print_avg_part_2 }
          } }
         ,{ "LDEV", {
-              { "random read IOPS",           fetch_metric + print_count_part_1 + print_avg_part_2 }
+              { "IOPS",                                      print_count_part_1 + print_avg_part_1 }
+            , { "random read IOPS",           fetch_metric                      + print_avg_part_2 }
  //           , { "random read hit %",          fetch_metric + print_count_part_1 + print_avg_part_2 }
             , { "random write IOPS",          fetch_metric                      + print_avg_part_2 }
             , { "random read bytes/sec",      fetch_metric                                         }

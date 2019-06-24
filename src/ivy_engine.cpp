@@ -563,26 +563,18 @@ void ivy_engine::write_clear_script()
 
 std::pair<bool,std::string> ivy_engine::make_measurement_rollup_CPU(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
 {
-		if (cpu_by_subinterval.size() < 3)
-		{
-			std::ostringstream o;
-			o << "ivy_engine::make_measurement_rollup_CPU() - The total number of subintervals in the cpu_by_subinterval sequence is " << cpu_by_subinterval.size()
-			<< std::endl << "and there must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, "
-			<< std::endl << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
-			return std::make_pair(false,o.str());
-		}
-
 		if
-		(!(	// not:
-			   firstMeasurementIndex >0 && firstMeasurementIndex < (cpu_by_subinterval.size()-1)
-			&& lastMeasurementIndex >0 && lastMeasurementIndex < (cpu_by_subinterval.size()-1)
-			&& firstMeasurementIndex <= lastMeasurementIndex
-		))
+		(
+		    cpu_by_subinterval.size() == 0
+		    || firstMeasurementIndex < 0
+		    || firstMeasurementIndex > lastMeasurementIndex
+		    || lastMeasurementIndex >= cpu_by_subinterval.size()
+		)
 		{
 			std::ostringstream o;
-			o << "ivy_engine::make_measurement_rollup_CPU() - Invalid first (" << firstMeasurementIndex << ") and last (" << lastMeasurementIndex << ") measurement period indices."
-			<< std::endl << " There must be at least one warmup subinterval, one measurement subinterval, and one cooldown subinterval, "
-			<< std::endl << "due to TCP/IP network time jitter when each test host hears the \"Go\" command.  This means we don't depend on NTP or clock synchronization.";
+			o << "ivy_engine::make_measurement_rollup_CPU() - Invalid first (" << firstMeasurementIndex << ") and last (" << lastMeasurementIndex << ") measurement period indices "
+			<< "with " << cpu_by_subinterval.size() << " subintervals of test host CPU busy data." << std::endl
+			<< "There must be at least one subinterval of data" << std::endl;
 			return std::make_pair(false,o.str());
 		}
 
@@ -2610,10 +2602,12 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         std::cout << o.str();
         kill_subthreads_and_exit();
     }
-    if (warmup_seconds < subinterval_seconds)
+
+    if (warmup_seconds < 0 || (warmup_seconds > 0 && warmup_seconds < subinterval_seconds))
     {
         ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid warmup_seconds parameter \"" << go_parameters.retrieve("warmup_seconds") << "\".  Must be at least as long as subinterval_seconds = ." << subinterval_seconds << std::endl;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid warmup_seconds parameter \"" << go_parameters.retrieve("warmup_seconds")
+            << "\".  Must be either zero or at least as long as subinterval_seconds = " << subinterval_seconds << "." << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
