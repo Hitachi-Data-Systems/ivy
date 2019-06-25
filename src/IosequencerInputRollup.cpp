@@ -43,7 +43,7 @@
 		",fractionRead"
 		",dedupe"
 		",dedupe_method"
-		",dedupsets"
+		",duplicate_set_size"
 		",pattern"
 		",RangeStart"
 		",RangeEnd"
