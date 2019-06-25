@@ -110,11 +110,11 @@ std::string JSON_SCHEMA = R"( {
                 "RangeEnd": { "$ref": "#/definitions/percentageschema" },
                 "blocksize": { "type" : "integer" },
                 "dedupe": { "type" : "number" },
-                "dedupsets": { "type" : "number" },
+                "duplicate_set_size": { "type" : "number" },
                 "dedupe_method": {
                     "anyof": [
                           { "type": {
-                              "enum": [ "serpentine", "target_spread", "constant_ratio", "static", "dedupsets"] }
+                              "enum": [ "serpentine", "target_spread", "constant_ratio", "static"] }
                           }
                     ]
                 },

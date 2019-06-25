@@ -124,8 +124,8 @@ public:
         // Then finally, for non-zero sub-blocks, it returns the 64-but hash of the workload ID
         // XORed with the sub-block number, including duplicates as shown in the series immediately above.
 
-    uint64_t dedupsets_filtered_sub_block_number(uint64_t offset_within_this_Eyeo_buffer);
-	uint64_t dedupsets_sub_block_starting_seed(uint64_t offset_within_this_Eyeo_buffer);
+    uint64_t duplicate_set_filtered_sub_block_number(uint64_t offset_within_this_Eyeo_buffer);
+	uint64_t duplicate_set_sub_block_starting_seed(uint64_t offset_within_this_Eyeo_buffer);
 
 private:
 

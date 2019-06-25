@@ -27,7 +27,6 @@ enum class dedupe_method
     target_spread,
     constant_ratio,
     static_method,
-    dedupsets,
 };
 
 std::string valid_dedupe_methods();

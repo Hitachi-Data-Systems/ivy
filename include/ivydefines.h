@@ -36,7 +36,7 @@ const std::string ivy_version {"3.20.05"};
 #define default_outputFolderRoot "."
 #define SLAVEUSERID "root"
 #define MAX_MAXTAGS 8192
-#define MAX_DEDUPSETS 1073741824LL
+#define MAX_DUPSETSIZE 1073741824LL
 #define BUF_ALIGNMENT_BOUNDARY_SIZE 4096
 #define MAX_IOS_LAUNCH_AT_ONCE 128
 #define MAX_IOEVENTS_REAP_AT_ONCE 128
@@ -118,7 +118,7 @@ const std::string ivy_version {"3.20.05"};
 const ivy_float min_subinterval_seconds {3.0};
 const ivy_float max_subinterval_seconds {3600.0};
 
-const int dedupsets_default {128};
+const int duplicate_set_size_default {128};
 const int blocksize_bytes_default {8192};
 const int dedupe_unit_bytes_default {8192};
 const int maxTags_default{1};   // make sure someone is going to notice if they haven't set this.
@@ -130,7 +130,7 @@ const ivy_float	rangeEnd_default {1.0};    // default is 1.0 maps to the last al
 const ivy_float	seqStartPoint_default{0.0}; // This defines where a sequential thread will start mapped from 0.0
                                                          // at the rangeStart point up to 1.0 at the rangeEnd point.
 const pattern pattern_default {pattern::random};
-const dedupe_method dedupe_method_default {dedupe_method::dedupsets};
+const dedupe_method dedupe_method_default {dedupe_method::static_method};
 const ivy_float dedupe_default {1.0};
 const ivy_float compressibility_default {0.0};
 

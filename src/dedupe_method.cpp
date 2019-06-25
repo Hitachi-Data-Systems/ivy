@@ -35,7 +35,6 @@ dedupe_method parse_dedupe_method(std::string s)
     if (stringCaseInsensitiveEquality(s,std::string("target_spread")))   { return dedupe_method::target_spread; }
     if (stringCaseInsensitiveEquality(s,std::string("constant_ratio")))  { return dedupe_method::constant_ratio; }
     if (stringCaseInsensitiveEquality(s,std::string("static")))          { return dedupe_method::static_method; }
-    if (stringCaseInsensitiveEquality(s,std::string("dedupsets")))       { return dedupe_method::dedupsets; }
 
     return dedupe_method::invalid;
 }
@@ -48,7 +47,6 @@ std::string dedupe_method_to_string(dedupe_method dm)
         case dedupe_method::target_spread:   return "target_spread";
         case dedupe_method::constant_ratio:  return "constant_ratio";
         case dedupe_method::static_method:   return "static";
-        case dedupe_method::dedupsets:       return "dedupsets";
         case dedupe_method::invalid:
         default:
         {

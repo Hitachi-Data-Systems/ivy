@@ -38,7 +38,7 @@ public:
 
 	unsigned int
 
-        dedupsets{dedupsets_default},
+        duplicate_set_size{duplicate_set_size_default},
 
 		blocksize_bytes{blocksize_bytes_default},
 
@@ -131,7 +131,7 @@ public:
 	bool defaultPattern() { return pat == pattern_default; }
 	bool defaultDedupeMethod() { return dedupe_type == dedupe_method_default; }
 	bool defaultDedupe() { return dedupe == dedupe_default; }
-	bool defaultDedupsets() { return dedupsets_default == dedupsets; }
+	bool defaultDuplicateSetSize() { return duplicate_set_size_default == duplicate_set_size; }
 	bool defaultCompressibility() { return compressibility == compressibility_default; }
 	bool default_dedupe_unit() { return dedupe_unit_bytes == dedupe_unit_bytes_default; }
 	bool default_fraction_zero_pattern() { return fraction_zero_pattern == 0.0; }
