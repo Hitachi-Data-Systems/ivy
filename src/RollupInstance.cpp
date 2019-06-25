@@ -96,6 +96,9 @@ std::pair<bool,std::string> RollupInstance::makeMeasurementRollup(unsigned int f
             if (subsystem_data_by_subinterval.size() > i) measurement_subsystem_data.addIn(subsystem_data_by_subinterval[i]);
 		}
 
+		measurement_Total_IOPS_setting = measurementRollup.inputRollup.get_Total_IOPS_Setting(1 + lastMeasurementIndex - firstMeasurementIndex);
+		Total_IOPS_setting_string = IosequencerInputRollup::Total_IOPS_Setting_toString(measurement_Total_IOPS_setting);
+
 		return std::make_pair(true,"");
 }
 
@@ -1096,6 +1099,7 @@ void RollupInstance::print_by_subinterval_header()
     o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
     if ( m_s.haveCmdDev ) { o << Test_config_thumbnail::csv_headers(); }
     o << IosequencerInputRollup::CSVcolumnTitles();
+    o << ",Rollup Total IOPS Setting";
     o << avgcpubusypercent::csvTitles();
 
     if (m_s.haveCmdDev)
@@ -1209,6 +1213,8 @@ void RollupInstance::print_subinterval_csv_line(
     if (m_s.haveCmdDev) { csvline << test_config_thumbnail.csv_columns(); }
 
     csvline << subintervals.sequence[i].inputRollup.CSVcolumnValues(true); // true shows how many occurences of each value, false shows "multiple"
+
+    csvline << "," << IosequencerInputRollup::Total_IOPS_Setting_toString(subintervals.sequence[i].inputRollup.get_Total_IOPS_Setting());
 
     {
         csvline << ','; // host CPU % busy - cols
@@ -1432,6 +1438,7 @@ void RollupInstance::print_measurement_summary_csv_line()
 
                 if (m_s.haveCmdDev) { o << test_config_thumbnail.csv_headers(); }
                 o << IosequencerInputRollup::CSVcolumnTitles();
+                o << ",Rollup Total IOPS Setting";
                 o << m_s.measurement_rollup_CPU.csvTitles();
 
                 if (std::string("all") == toLower(attributeNameComboID) && std::string("all") == toLower(rollupInstanceID))
@@ -1490,18 +1497,21 @@ void RollupInstance::print_measurement_summary_csv_line()
             }
         }
 
+        ivy_float seconds = measurementRollup.durationSeconds();
+
         ivy_float subsystem_IOPS = 0.0;
         ivy_float application_IOPS = 0.0;
+        {
+            const RunningStat<ivy_float,ivy_int>& st = measurementRollup.outputRollup.overall_service_time_RS();
+            application_IOPS = st.count() / seconds;
+        }
         ivy_float subsystem_IOPS_as_fraction_of_host_IOPS = -1.0;
-        ivy_float seconds = measurementRollup.durationSeconds();
 
         if (m_s.haveCmdDev)
         {
             subsystem_IOPS = measurement_subsystem_data.IOPS();
             if (subsystem_IOPS > 0)
             {
-                RunningStat<ivy_float,ivy_int> st = measurementRollup.outputRollup.overall_service_time_RS();
-                application_IOPS = st.count() / seconds;
                 if (application_IOPS > 0)
                 {
                     subsystem_IOPS_as_fraction_of_host_IOPS = subsystem_IOPS / application_IOPS;
@@ -1551,8 +1561,27 @@ void RollupInstance::print_measurement_summary_csv_line()
                   || subsystem_IOPS_as_fraction_of_host_IOPS > 1.15
                    );
 
+            bool failed_to_achieve_total_IOPS_setting {false};
 
-            if ( m_s.have_timeout_rollup || !m_s.rollups.passesDataVariationValidation().first || subsystem_IOPS_as_fraction_of_host_IOPS_failure)
+            if (measurement_Total_IOPS_setting != -1.0)
+            {
+                if
+                (
+                       application_IOPS < (0.85 * measurement_Total_IOPS_setting)
+                    || application_IOPS > (1.15 * measurement_Total_IOPS_setting)
+                )
+                {
+                    failed_to_achieve_total_IOPS_setting = true;
+                }
+            }
+
+            if
+            (
+                   m_s.have_timeout_rollup
+                || !m_s.rollups.passesDataVariationValidation().first
+                || subsystem_IOPS_as_fraction_of_host_IOPS_failure
+                || failed_to_achieve_total_IOPS_setting
+            )
             {
                 csvline << "invalid"; // subintervalIndex;
             }
@@ -1568,6 +1597,7 @@ void RollupInstance::print_measurement_summary_csv_line()
             validation_errors += m_s.rollups.passesDataVariationValidation().second;
 
             if (subsystem_IOPS_as_fraction_of_host_IOPS_failure) validation_errors += std::string("[subsystem IOPS is more than 15% different from host IOPS.]");
+            if (failed_to_achieve_total_IOPS_setting) validation_errors += std::string("[Achieved IOPS is more than 15% different from Rollup Total IOPS Setting.]");
 
             csvline << ',' << validation_errors;
 
@@ -1578,6 +1608,8 @@ void RollupInstance::print_measurement_summary_csv_line()
 
             csvline << measurementRollup.inputRollup.CSVcolumnValues(true);
                 // true shows how many occurences of each value, false shows "multiple"
+
+            csvline << "," << Total_IOPS_setting_string;
 
             csvline << ','; // CPU - 2 columns
             if (stringCaseInsensitiveEquality(std::string("host"),pRollupType->attributeNameCombo.attributeNameComboID))

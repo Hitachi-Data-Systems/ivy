@@ -168,6 +168,8 @@ public:
     std::string measurement_rollup_by_test_step_csv_filename;      // goes in measurementRollupFolder
     std::string measurement_rollup_by_test_step_csv_type_filename; // goes in measurementRollupFolder
 
+    ivy_float measurement_Total_IOPS_setting;
+    std::string Total_IOPS_setting_string;
 
 
 // methods
