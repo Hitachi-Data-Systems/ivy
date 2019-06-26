@@ -45,6 +45,7 @@ enum class source_enum { error, workload, RAID_subsystem } ;
 enum class category_enum { error, overall, read, write, random, sequential, random_read, random_write, sequential_read, sequential_write };
 enum class accumulator_type_enum { error, bytes_transferred, service_time, response_time };
 enum class accessor_enum { error, avg, count, min, max, sum, variance, standardDeviation };
+enum class cooldown_mode {off, on, last };
 
 std::string source_enum_to_string     (source_enum);
 std::string category_enum_to_string   (category_enum);
@@ -97,8 +98,10 @@ public:
         // that it's past the first cooldown subinterval, and that edit_rollup "all=all" "IOPS=0"
         // has been sent out, and subsystem gathers need to resume to support the
         // cooldown_by_wp and cooldown_by_MP_busy features to operate.
-	bool cooldown_by_wp {true};  // whether the feature has been selected in the ivyscript program
-	bool cooldown_by_MP_busy {true};  // whether the feature has been selected in the ivyscript program
+
+	cooldown_mode cooldown_by_wp      {cooldown_mode::last};  // whether the feature has been selected in the ivyscript program
+	cooldown_mode cooldown_by_MP_busy {cooldown_mode::last};  // whether the feature has been selected in the ivyscript program
+
 	bool in_cooldown_mode {false}; // whether the ivy engine is in cooldown mode after SUCCESS or FAILURE
     unsigned int cooldown_by_MP_busy_stay_down_count_limit;  // set using Go parameter cooldown_by_MP_busy_stay_down_time_seconds defaulting to one subinterval, and that you can set to "5:00" to mean 5 minutes or "1:00:00" to mean an hour.
         // The Go parameter in seconds / minutes / hours is converted to a subinterval count in cooldown_by_MP_busy_stay_down_count_limit;
@@ -252,6 +255,24 @@ public:
     // source = RAID_subsystem
     std::string subsystem_element; // e.g. PG
     std::string element_metric;    // e.g. busy_percent
+
+
+    // dfc = IOPS_staircase
+    ivy_float staircase_starting_IOPS {-1.0};
+    ivy_float staircase_ending_IOPS {-1.0};
+    ivy_float staircase_step {-1.0};
+    unsigned int staircase_steps {0};
+
+    bool have_IOPS_staircase {false};
+    bool have_staircase_starting_IOPS {false};
+    bool have_staircase_ending_IOPS {false};
+    bool have_staircase_step {false};
+    bool have_staircase_step_percent_increment {false};
+    bool have_staircase_steps {false};
+    std::string staircase_starting_IOPS_parameter;
+    std::string staircase_ending_IOPS_parameter;
+    std::string staircase_step_parameter;
+    std::string staircase_steps_parameter;
 
     // dfc = pid
     std::string target_value_parameter; /* ==> */ ivy_float target_value {-1.};

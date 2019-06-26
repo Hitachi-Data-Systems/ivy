@@ -1,3 +1,9 @@
+add cooldown_by_sidefile.
+
+DONE - add Rollup Total IOPS Setting column.
+
+DONE - enable warmup_seconds to be set to zero.
+
 DONE- update ivy_cmddev to send IOPS rather than I/O count.
 	- add timestamp to saved counter value from last time.
 	- compute rate and send that.
@@ -28,8 +34,8 @@ DONE - with a command device, check at end of test step if there is a failed com
 
 // maybe we have a measure_focus_rollup and a pid_focus_rollup and they default to focus_rollup?
 // How hard would it be to have measure and pid each on their own focus_rollup?
-        
-- Write .xls output instead of .csv output so that the formula ="xxx" can be removed.  
+
+- Write .xls output instead of .csv output so that the formula ="xxx" can be removed.
 
 - test using LVM and impact LUN discovery / SCSI Inquiry
 - test with multipath software (HDLM / MPIO)
@@ -55,8 +61,8 @@ CLOSED - Fix DF port numbers to be 0A, 1A, not 1A 2A. - update:  This is a bug i
 DONE/FIXED- examine whether to remove the timestamps from the metric_value object and
   perhaps have ivy_cmddev provide data with individual I/O timestamps instead ...
 
-CLOSED - need to be root to access raw LUNs - make ivy run other than as root.  	
- 
+CLOSED - need to be root to access raw LUNs - make ivy run other than as root.
+
 - test [EditRollup] with IOPS increments  / multipliers
 
 - catch a "kill" signal and shut down subtasks gently

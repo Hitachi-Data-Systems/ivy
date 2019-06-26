@@ -189,7 +189,7 @@ bool ivy_engine::some_cooldown_WP_not_empty()
         {
             {
                 std::ostringstream o;
-                o << "With cooldown_by_wp = on, a CLPR Write Pending % is " << std::fixed << std::setprecision(2) << (100.0 * wp) << "%"
+                o << "With cooldown_by_wp = on/last, a CLPR Write Pending % is " << std::fixed << std::setprecision(2) << (100.0 * wp) << "%"
                   << ", which is above subsystem_WP_threshold = " << std::fixed << std::setprecision(1) << (100.0 * m_s.subsystem_WP_threshold) << "%" << std::endl;
                 std::cout << o.str();
                 if (routine_logging) { log(masterlogfile,o.str()); }
@@ -2237,6 +2237,20 @@ ivy_engine::go(const std::string& parameters)
     have_workload = false;
     have_RAID_subsystem = false;
 
+    have_staircase_starting_IOPS = false;
+    have_staircase_ending_IOPS = false;
+    have_staircase_step = false;
+    have_staircase_step_percent_increment = false;
+    have_staircase_steps = false;
+    staircase_starting_IOPS=-1.0;
+    staircase_ending_IOPS=-1.0;
+    staircase_step = -1.0;
+    staircase_steps = 0;
+    staircase_starting_IOPS_parameter.clear();
+    staircase_ending_IOPS_parameter.clear();
+    staircase_step_parameter.clear();
+    staircase_steps_parameter.clear();
+
     goStatementsSeen++;
 
     get_go.setToNow();
@@ -2278,6 +2292,8 @@ ivy_engine::go(const std::string& parameters)
         "For dfc = PID, additional valid parameters are:\n"
         "    target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step,\n"
         "    ballpark_seconds, max_monotone, balanced_step_direction_by.\n\n"
+        "For dfc = IOPS_staircase, additional valid parameters are:\n"
+        "    starting_IOPS, ending_IOPS, step, steps.\n\n"
         "For measure = on, additional valid parameters are:\n"
         "    accuracy_plus_minus, confidence, max_wp, min_wp, max_wp_change, timeout_seconds\n\n."
         "For dfc=pid or measure=on, must have either source = workload, or source = RAID_subsystem.\n"
@@ -2322,7 +2338,6 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
     if (go_parameters.contains(std::string("dfc")))
     {
-
         std::string controllerName = go_parameters.retrieve("dfc");
 
         if (stringCaseInsensitiveEquality("pid", controllerName))
@@ -2335,26 +2350,19 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
             if (!go_parameters.contains(std::string("balanced_step_direction_by"))) go_parameters.contents[normalize_identifier(std::string("balanced_step_direction_by"))] = std::string("12");
             if (!go_parameters.contains(std::string("max_monotone")))               go_parameters.contents[normalize_identifier(std::string("max_monotone"))]     = std::string("5");
         }
+        else if (stringCaseInsensitiveEquality("IOPS_staircase", controllerName))
+        {
+            have_IOPS_staircase = true;
+            valid_parameter_names += ", dfc, starting_IOPS, ending_IOPS, step, steps";
+        }
         else
         {
             std::ostringstream o;
-            o << std::endl << "<Error> ivy engine API go() - \"dfc\", if specified, may only be set to \"pid\"." << std::endl << std::endl;
+            o << std::endl << "<Error> ivy engine API go() - \"dfc\", if specified, may only be set to \"pid\" or \"IOPS_staircase\"." << std::endl << std::endl;
             std::cout << o.str();
             log(masterlogfile,o.str());
             kill_subthreads_and_exit();
         }
-
-//        std::map<std::string, MeasureController*>::iterator controller_it = availableControllers.find(toLower(controllerName));
-//
-//        if (availableControllers.end() == controller_it)
-//        {
-//            std::ostringstream o;
-//            o << std::endl << "Failed - Dynamic Feedback Controller (dfc) \"" << controllerName << "\" not found. Valid values are:" << std::endl;
-//            for (auto& pear : availableControllers) o << pear.first << std::endl;
-//            std::cout << o.str();
-//            log(masterlogfile,o.str());
-//            kill_subthreads_and_exit();
-//        }
 
         the_dfc.reset();
     }
@@ -2731,10 +2739,11 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     parameter_value = go_parameters.retrieve("cooldown_by_wp");
     if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
            || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
-           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) cooldown_by_wp = true;
+           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) cooldown_by_wp = cooldown_mode::on;
     else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
            || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
-           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) cooldown_by_wp = false;
+           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) cooldown_by_wp = cooldown_mode::off;
+    else if ( stringCaseInsensitiveEquality(std::string("last"),  parameter_value) ) cooldown_by_wp = cooldown_mode::last;
     else
     {
         ostringstream o;
@@ -2760,10 +2769,11 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     parameter_value = go_parameters.retrieve("cooldown_by_MP_busy");
     if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
            || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
-           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) cooldown_by_MP_busy = true;
+           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) cooldown_by_MP_busy = cooldown_mode::on;
     else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
            || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
-           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) cooldown_by_MP_busy = false;
+           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) cooldown_by_MP_busy = cooldown_mode::off;
+    else if ( stringCaseInsensitiveEquality(std::string("last"),  parameter_value) ) cooldown_by_MP_busy = cooldown_mode::last;
     else
     {
         ostringstream o;
@@ -2983,6 +2993,195 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         }
     }
 
+    if (have_IOPS_staircase)
+    {
+        // valid_parameter_names += ", starting_IOPS, ending_IOPS, step, steps";
+
+        //----------------------------------- starting_IOPS
+        if (go_parameters.contains("starting_IOPS"))
+        {
+            have_staircase_starting_IOPS = true;
+
+            staircase_starting_IOPS_parameter = go_parameters.retrieve("starting_IOPS");
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFC = IOPS_staircase - when setting \"starting_IOPS\" parameter to value \""
+                    << staircase_starting_IOPS_parameter << "\": ";
+
+                staircase_starting_IOPS = number_optional_trailing_percent(staircase_starting_IOPS_parameter,where_the.str());
+            }
+
+            if (staircase_starting_IOPS <= 0.0)
+            {
+                ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid starting_IOPS parameter \"" << staircase_starting_IOPS_parameter << "\".  Must be greater than zero." << std::endl << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+        }
+        else
+        {
+            std::string e = "<Error> ivy engine API - for DFC = IOPS_staircase, must provide the \"staring_IOPS\" parameter.\n\n";
+            log(masterlogfile,e);
+            std::cout << e; std::cout.flush();
+            kill_subthreads_and_exit();
+        }
+
+        //----------------------------------- ending_IOPS
+        if (go_parameters.contains("ending_IOPS"))
+        {
+            have_staircase_ending_IOPS = true;
+
+            staircase_ending_IOPS_parameter = go_parameters.retrieve("ending_IOPS");
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFC = IOPS_staircase - when setting \"ending_IOPS\" parameter to value \""
+                    << staircase_ending_IOPS_parameter << "\": ";
+
+                staircase_ending_IOPS = number_optional_trailing_percent(staircase_ending_IOPS_parameter,where_the.str());
+            }
+
+            if (staircase_ending_IOPS <= 0.0)
+            {
+                ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid ending_IOPS parameter \"" << staircase_ending_IOPS_parameter << "\".  Must be greater than zero." << std::endl << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+        }
+
+        //----------------------------------- step
+        if (go_parameters.contains("step"))
+        {
+            have_staircase_step = true;
+
+            staircase_step_parameter = go_parameters.retrieve("step");
+
+            trim(staircase_step_parameter);
+
+            if (staircase_step_parameter.size() > 0 && staircase_step_parameter[0] == '+')
+            {
+                have_staircase_step_percent_increment = true;
+                staircase_step_parameter.erase(0,1);
+                trim(staircase_step_parameter);
+            }
+            else
+            {
+                have_staircase_step_percent_increment = false;
+            }
+
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFC = IOPS_staircase - when setting \"step\" parameter to value \""
+                    << go_parameters.retrieve("step") << "\": ";
+
+                staircase_step = number_optional_trailing_percent(staircase_step_parameter,where_the.str());
+            }
+
+            if (staircase_step <= 0.0)
+            {
+                ostringstream o;
+                o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid \"step\" parameter \"" << go_parameters.retrieve("step") << "\".  Must be greater than zero." << std::endl << std::endl;
+                log(masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+        }
+
+        //----------------------------------- steps
+        if (go_parameters.contains("steps"))
+        {
+            have_staircase_steps = true;
+
+            staircase_steps_parameter = go_parameters.retrieve("steps");
+
+            trim(staircase_steps_parameter);
+
+            {
+                std::ostringstream where_the;
+                where_the << "go_statement(), DFC = IOPS_staircase - when setting \"steps\" parameter to value \""
+                    << staircase_steps_parameter << "\": ";
+
+                staircase_steps = unsigned_int(staircase_steps_parameter,where_the.str());
+            }
+        }
+
+        if (have_staircase_starting_IOPS && have_staircase_ending_IOPS && (staircase_starting_IOPS >= staircase_ending_IOPS))
+        {
+            ostringstream o;
+            o << std::endl << "<Error> ivy engine API - go() - [Go] statement - starting_IOPS = \"" << staircase_starting_IOPS_parameter << "\" must be less than ending_IOPS = \"" << staircase_ending_IOPS_parameter << "\"." << std::endl << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+
+        bool OK_combinations =
+               ( have_staircase_starting_IOPS &&   have_staircase_ending_IOPS && (!have_staircase_step) &&   have_staircase_steps  )
+            || ( have_staircase_starting_IOPS &&   have_staircase_ending_IOPS &&   have_staircase_step  && (!have_staircase_steps) )
+            || ( have_staircase_starting_IOPS && (!have_staircase_ending_IOPS)&&   have_staircase_step  &&   have_staircase_steps  );
+        if (!OK_combinations)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine API - go() for DFC = IOPS_staircase - invalid combination of parameters \"staring_IOPS\"";
+            if (have_staircase_ending_IOPS) o << " + \"ending_IOPS\"";
+            if (have_staircase_step       ) o << " + \"step\"";
+            if (have_staircase_steps      ) o << " + \"steps\"";
+            o << "." << std::endl
+                << "Valid combinations are:" << std::endl
+                << "   \"staring_IOPS\" + \"ending_IOPS\" + \"step\"" << std::endl
+                << "   \"staring_IOPS\" + \"ending_IOPS\" + \"steps\" where \"steps\" is positive." << std::endl
+                << "   \"staring_IOPS\" + \"step\" + \"steps\"" << std::endl
+                ;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+
+
+        if(have_staircase_ending_IOPS && have_staircase_steps && staircase_steps == 0)
+        {
+            ostringstream o;
+            o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid \"steps\" parameter \"" << staircase_steps_parameter << "\".  When ending_IOPS is provided, \"steps\" must be greater than zero." << std::endl << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+
+        if ( have_staircase_starting_IOPS && have_staircase_ending_IOPS && (!have_staircase_step) && have_staircase_steps )
+        {
+            // Reduce from three flavours to two
+
+            staircase_step = (staircase_ending_IOPS - staircase_starting_IOPS) / ((ivy_float) staircase_steps);
+            have_staircase_step = true;
+            have_staircase_steps = false;
+        }
+
+//        {
+//            std::ostringstream o;
+//            o << "debug: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl << std::endl;
+//
+//            if (go_parameters.contains("starting_IOPS")) { o << "go_parameters.retrieve(\"starting_IOPS\") = \"" << go_parameters.retrieve("starting_IOPS");} else {o << "don't have go_parameter \"starting_IOPS\"";} o << std::endl;
+//            if (go_parameters.contains("ending_IOPS"))   { o << "go_parameters.retrieve(\"ending_IOPS\") = \""   << go_parameters.retrieve("ending_IOPS");}   else {o << "don't have go_parameter \"ending_IOPS\"";} o << std::endl;
+//            if (go_parameters.contains("step"))          { o << "go_parameters.retrieve(\"step\") = \""          << go_parameters.retrieve("step");}          else {o << "don't have go_parameter \"step\"";} o << std::endl;
+//            if (go_parameters.contains("steps"))         { o << "go_parameters.retrieve(\"steps\") = \""         << go_parameters.retrieve("steps");}         else {o << "don't have go_parameter \"steps\"";} o << std::endl;
+//
+//            o << "starting_IOPS = " << staircase_starting_IOPS
+//                << ", ending_IOPS = " << staircase_ending_IOPS
+//                << ", staircase_step = " << staircase_step
+//                << ", staircase_steps = " << staircase_steps
+//                << std::endl;
+//            o << "have_staircase_starting_IOPS = " << (have_staircase_starting_IOPS ? "true" : "false") << std::endl;
+//            o << "have_staircase_ending_IOPS = " << (have_staircase_ending_IOPS ? "true" : "false") << std::endl;
+//            o << "have_staircase_step = " << (have_staircase_step ? "true" : "false") << std::endl;
+//            o << "have_staircase_step_percent_increment = " << (have_staircase_step_percent_increment ? "true" : "false") << std::endl;
+//            o << "have_staircase_steps = " << (have_staircase_steps ? "true" : "false") << std::endl;
+//            std::cout << o.str();
+//            log(masterlogfile,o.str());
+//        }
+    }
+
     if (have_pid)
     {
         // valid_parameter_names += ", dfc, target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step, ballpark_seconds, max_monotone, balanced_step_direction_by";
@@ -3011,7 +3210,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         target_value_parameter = go_parameters.retrieve("target_value");
         {
             std::ostringstream where_the;
-            where_the << "go_statement(), DFCcategory::PID - when setting \"target_value\" parameter to value \""
+            where_the << "go_statement(), DFC = PID - when setting \"target_value\" parameter to value \""
                 << target_value_parameter << "\": ";
 
             target_value = number_optional_trailing_percent(target_value_parameter,where_the.str());
@@ -3021,7 +3220,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         low_IOPS_parameter = go_parameters.retrieve("low_IOPS");
         {
             std::ostringstream where_the;
-            where_the << "go_statement(), DFCcategory::PID - when setting \"low_IOPS\" parameter to value \""
+            where_the << "go_statement(), DFC = PID - when setting \"low_IOPS\" parameter to value \""
                 << low_IOPS_parameter << "\": ";
 
             low_IOPS = number_optional_trailing_percent(low_IOPS_parameter,where_the.str());
@@ -3031,7 +3230,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         low_target_parameter = go_parameters.retrieve("low_target");
         {
             std::ostringstream where_the;
-            where_the << "go_statement(), DFCcategory::PID - when setting \"low_target\" parameter to value \""
+            where_the << "go_statement(), DFC = PID - when setting \"low_target\" parameter to value \""
                 << low_target_parameter << "\": ";
 
             low_target = number_optional_trailing_percent(low_target_parameter,where_the.str());
@@ -3040,7 +3239,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         high_IOPS_parameter = go_parameters.retrieve("high_IOPS");
         {
             std::ostringstream where_the;
-            where_the << "go_statement(), DFCcategory::PID - when setting \"high_IOPS\" parameter to value \""
+            where_the << "go_statement(), DFC = PID - when setting \"high_IOPS\" parameter to value \""
                 << high_IOPS_parameter << "\": ";
 
             high_IOPS = number_optional_trailing_percent(high_IOPS_parameter,where_the.str());
@@ -3050,7 +3249,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         high_target_parameter = go_parameters.retrieve("high_target");
         {
             std::ostringstream where_the;
-            where_the << "go_statement(), DFCcategory::PID - when setting \"high_target\" parameter to value \""
+            where_the << "go_statement(), DFC = PID - when setting \"high_target\" parameter to value \""
                 << high_target_parameter << "\": ";
 
             high_target = number_optional_trailing_percent(high_target_parameter,where_the.str());
@@ -3082,7 +3281,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
             max_IOPS_parameter = go_parameters.retrieve("max_IOPS");
             {
                 std::ostringstream where_the;
-                where_the << "go_statement(), DFCcategory::PID - when setting \"max_IOPS\" parameter to value \""
+                where_the << "go_statement(), DFC = PID - when setting \"max_IOPS\" parameter to value \""
                     << max_IOPS_parameter << "\": ";
 
                 max_IOPS = number_optional_trailing_percent(max_IOPS_parameter,where_the.str());
