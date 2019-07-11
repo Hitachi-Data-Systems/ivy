@@ -1379,7 +1379,18 @@ std::pair<bool /*false means attempt to read past the end*/, std::string /*field
     }
 }
 
+std::string convert_commas_to_semicolons(const std::string s)
+{
+    std::string r {};
 
+    for (auto& c : s)
+    {
+        if (c == ',') r.push_back(';');
+        else          r.push_back(c);
+    }
+
+    return r;
+}
 
 
 

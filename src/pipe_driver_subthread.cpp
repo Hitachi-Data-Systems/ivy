@@ -323,7 +323,7 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
             ostringstream logmsg;
             logmsg << "<Warning> For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe() - child has exited."
             << "  pid = " << ssh_pid << ", after waitpid(ssh_pid, &pid_status, WNOHANG), pid_status = 0x" << std::hex << std::uppercase << pid_status;
-            //m_s.warning_messages.push_back(logmsg.str());
+            //m_s.warning_messages.insert(logmsg.str());
             log(logfilename,logmsg.str());
             // return false;  - Commented out to see if this can occur spuriously 2016-09-25
         }
@@ -515,7 +515,7 @@ std::string pipe_driver_subthread::get_line_from_pipe
                 << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl << std::endl
                 << "<Warning>[from " << ivyscript_hostname << "]" << s.substr(9,s.size()-9) << std::endl << std::endl
                 << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl << std::endl;
-            m_s.warning_messages.push_back(o.str());
+            m_s.warning_messages.insert(o.str());
             log (logfilename, o.str());
             log (m_s.masterlogfile, o.str());
             std::cout << o.str();
@@ -1206,15 +1206,15 @@ void pipe_driver_subthread::threadRun()
                         // In "Go!<5,0>"  the <5,0> is the subinterval length as an ivytime::toString() representation - <seconds,nanoseconds>
                         // In "Go!<5,0>-spinloop" the optional "-spinloop" tells ivydriver workload threads to continuously check for things to do without ever waiting.
                         || 0==std::string("continue").compare(commandString)
-                        || 0==std::string("cooldown").compare(commandString)
+                        //|| 0==std::string("cooldown").compare(commandString)
                         || 0==std::string("stop").compare(commandString)
 
                         // No matter which one of these commands we got, we send it and then we gather the subinterval result lines.
                     )
                     {
-                        // Here we separate out sending the Go!/continue/cooldown/stop for which we get an OK.
-                        // Originally, after sending the Go!/continue/cooldown/stop, we simply waited for the [CPU] line to appear.
-                        // Now we get an OK after Go!/continue/cooldown/stop command has been posted to all the test
+                        // Here we separate out sending the Go!/continue/stop for which we get an OK.
+                        // Originally, after sending the Go!/continue/stop, we simply waited for the [CPU] line to appear.
+                        // Now we get an OK after Go!/continue/stop command has been posted to all the test
                         // host's workload threads.  This is so that we can print a message showing how much time
                         // we had in hand, i.e. how much margin we have in terms of the length of the subinterval in seconds.
 
@@ -1274,6 +1274,35 @@ void pipe_driver_subthread::threadRun()
                     }
                     else if ( 0 == commandString.compare(std::string("get subinterval result")))
                     {
+///* debug */ ivytime one; one.setToNow();
+///* debug */                        {
+///* debug */                            std::ostringstream o;
+///* debug */                            o << std::endl;
+///* debug */                            o << "=======" << "pipe_driver_subthread::threadRun() for host " << ivyscript_hostname << " - received \"get subinterval result\" from master but haven't sent to remote yet." << std::endl;
+///* debug */                            ivytime now;
+///* debug */
+///* debug */                            now.setToNow();
+///* debug */
+///* debug */                            o << "=======" << "now: "  << now.format_as_datetime_with_ns() << std::endl;
+///* debug */                            o << "=======" << m_s.subintervalStart.format_as_datetime_with_ns()
+///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from_now() << " seconds from now) "
+///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from(m_s.get_go) << " seconds from Go! time) "
+///* debug */                                    << std::endl
+///* debug */                                << "=======" << m_s.subintervalEnd.format_as_datetime_with_ns()
+///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from_now() << " seconds from now) "
+///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
+///* debug */                                    << std::endl
+///* debug */                                << "=======" << m_s.nextSubintervalEnd.format_as_datetime_with_ns()
+///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from_now() << " seconds from now) "
+///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
+///* debug */                                    << std::endl
+///* debug */                                << std::endl;
+///* debug */
+///* debug */
+///* debug */                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str());
+///* debug */                            std::cout << o.str();
+///* debug */                        }
+
                         std::string hostCPUline;
 
                         try
@@ -1291,6 +1320,35 @@ void pipe_driver_subthread::threadRun()
                             master_slave_cv.notify_all();
                             return;
                         }
+
+///* debug */                        {
+///* debug */                            std::ostringstream o;
+///* debug */                            o << std::endl << "=======" << "pipe_driver_subthread::threadRun() for host " << ivyscript_hostname << " - received CPU line from remote." << std::endl
+///* debug */                             << "=======" << hostCPUline << std::endl;
+///* debug */                            ivytime now;
+///* debug */
+///* debug */                            now.setToNow();
+///* debug */
+///* debug */                            o << "=======" << "now: "  << now.format_as_datetime_with_ns() << " - delay from getting get subinterval result from master ";
+///* debug */ o << (now-one).format_as_duration_HMMSSns()<< std::endl;
+///* debug */                            o << "=======" << m_s.subintervalStart.format_as_datetime_with_ns()
+///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from_now() << " seconds from now) "
+///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from(m_s.get_go) << " seconds from Go! time) "
+///* debug */                                    << std::endl
+///* debug */                                << "=======" << m_s.subintervalEnd.format_as_datetime_with_ns()
+///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from_now() << " seconds from now) "
+///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
+///* debug */                                    << std::endl
+///* debug */                                << "=======" << m_s.nextSubintervalEnd.format_as_datetime_with_ns()
+///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from_now() << " seconds from now) "
+///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
+///* debug */                                    << std::endl
+///* debug */                                << std::endl;
+///* debug */
+///* debug */
+///* debug */                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str());
+///* debug */                            std::cout << o.str();
+///* debug */                        }
 
                         ivytime now;
 
@@ -1365,8 +1423,8 @@ void pipe_driver_subthread::threadRun()
 
                                 if (m_s.last_command_was_stop)
                                 {
-                                    detail_line_timeout_seconds = m_s.subinterval_seconds * 1.4;
-                                    // longer because "stop" command invokes "catch in flight I/Os" which can take extra time.
+                                    detail_line_timeout_seconds = m_s.subinterval_seconds + 10;
+                                    // longer because "stop" command invokes "catch in flight I/Os" which can take extra time, if there are stuck I/Os that need to be cancelled.
                                     // There is no need to be prompt reading detail lines once we are stopped.
                                 }
                                 else

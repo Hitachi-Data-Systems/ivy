@@ -12,7 +12,7 @@
 				<Option working_dir="/home/ian/Desktop" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="/home/ian/Desktop/a.ivyscript" />
+				<Option parameters="-log /home/ian/Desktop/eh.ivyscript" />
 				<Compiler>
 					<Add option="-pthread" />
 					<Add directory="include" />
@@ -463,6 +463,9 @@
 			<Option target="remove_empty_columns" />
 			<Option target="ivycore" />
 		</Unit>
+		<Unit filename="include/multi_measure.h">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="include/pattern.h">
 			<Option target="ivymaster" />
 			<Option target="ivydriver" />
@@ -804,6 +807,21 @@
 		<Unit filename="src/ivy_engine.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="src/ivy_engine_create_delete_rollup.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/ivy_engine_create_delete_workload.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/ivy_engine_edit_rollup.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/ivy_engine_get_set.cpp">
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/ivy_engine_go.cpp">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="src/ivy_engine_startup.cpp">
 			<Option target="ivymaster" />
 		</Unit>
@@ -857,8 +875,14 @@
 		<Unit filename="src/makedict.cpp">
 			<Option target="makedict" />
 		</Unit>
+		<Unit filename="src/measurement.cpp">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="src/memcpy.c">
 			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/multi_measure.cpp">
+			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/pattern.cpp">
 			<Option target="ivymaster" />

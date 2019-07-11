@@ -46,6 +46,34 @@ using namespace std;
 
 #include "ivytime.h"
 
+ivytime ivytime_reference_delta (0);
+
+// NOTE:
+//
+// ivytime uses the Linux-specific call clock_gettime(CLOCK_MONOTONIC_RAW,&t)
+// which records the number of hardware clock cycles since boot.
+//
+// This is because we were having issues with NTP changing the clock,
+// which caused ivy to think that the interlocks were timing out.
+//
+// Now all the internal timings are in CLOCK_MONOTONIC_RAW times,
+// but when we print the times out for humans to read, we adjust
+// by a delta time difference "ivytime_reference_delta" which is
+// what needs to be added to an internal time to make it appropriate
+// for humands.
+//
+// This value's constructor initializes it to zero, meaning that
+// nobody has attempted to print out a time yet.
+//
+// The first time somebody tries to print out a time, we get two times,
+// one the CLOCK_MONOTONIC_RAW, and one CLOCK_REALTIME, and the
+// difference between the two is set into ivytime_reference_delta.
+//
+// Thus if NTP or something/somebody else changes the clock while
+// ivy is running, that difference won't be picked up by ivy.
+// In other words, the timestamps in logs will all be consistent
+// with each other, but they may be out by, for example, a minute
+// from the times other applications or the OS show.
 
 bool ivytime::isValid() const
 {
@@ -118,7 +146,7 @@ std::string ivytime::toString() const
 	return o.str();
 }
 
-bool ivytime::fromString(std::string s)
+bool ivytime::durationFromString(std::string s)
 {
 	istringstream is(s);
 	char c;
@@ -137,19 +165,49 @@ bool ivytime::fromString(std::string s)
 	return true;
 }
 
+// This was commented out when ivytime_reference_delta & CLOCK_MONOTONIC_RAW
+// were added.
+//
+//bool ivytime::fromString(std::string s)
+//{
+//	istringstream is(s);
+//	char c;
+//	is >> c;
+//	if (is.fail() || c!='<') {t.tv_sec=0;t.tv_nsec=0; return false;}
+//	is >> t.tv_sec;
+//	if (is.fail()) {t.tv_sec=0;t.tv_nsec=0; return false;}
+//	is >> c;
+//	if (is.fail() || c!=',') {t.tv_sec=0;t.tv_nsec=0; return false;}
+//	is >> t.tv_nsec;
+//	if (is.fail()) {t.tv_sec=0;t.tv_nsec=0; return false;}
+//	is >> c;
+//	if (is.fail() || c!='>' ) {t.tv_sec=0;t.tv_nsec=0; return false;}
+//	is >> c;
+//	if (!is.eof()) {t.tv_sec=0;t.tv_nsec=0; return false;}
+//
+// If you put it back into service, check to make sure this line
+// does the trick to convert to a CLOCK_MONOTONIC_RAW time:
+//  (*this) = (*this) - get_ivytime_reference_delta();
+//	return true;
+//}
+
+
 ivytime::~ivytime() {
 	return;
 }
+
 
 ivytime::ivytime(const ivytime & rhs) {
 	t.tv_sec=rhs.t.tv_sec;
 	t.tv_nsec=rhs.t.tv_nsec;
 }
 
+
 ivytime::ivytime(const ivytime* rhs) {
 	t.tv_sec=rhs->t.tv_sec;
 	t.tv_nsec=rhs->t.tv_nsec;
 }
+
 
 ivytime::ivytime(const struct timespec& source) {
 	t.tv_sec=source.tv_sec;
@@ -188,6 +246,7 @@ ivytime::ivytime(uint64_t seconds, uint64_t nanoseconds){
 	return;
 }
 
+
 ivytime& ivytime::operator=(const ivytime& rhs) {
 	if(this == &rhs) return *this;
 	this->t.tv_sec=rhs.t.tv_sec;
@@ -195,15 +254,18 @@ ivytime& ivytime::operator=(const ivytime& rhs) {
 	return *this;
 }
 
+
 bool ivytime::operator==(const ivytime& rhs) const {
 	if ((t.tv_sec==rhs.t.tv_sec) && (t.tv_nsec==rhs.t.tv_nsec)) {return true;}
 	return false;
 }
 
+
 bool ivytime::operator!=(const ivytime& rhs) const {
 	if ((t.tv_sec!=rhs.t.tv_sec) || (t.tv_nsec!=rhs.t.tv_nsec)) {return true;}
 	return false;
 }
+
 
 bool ivytime::operator<(const ivytime& rhs) const {
 	if (t.tv_sec < rhs.t.tv_sec) {return true;}
@@ -211,11 +273,13 @@ bool ivytime::operator<(const ivytime& rhs) const {
 	return false;
 }
 
+
 bool ivytime::operator>(const ivytime& rhs) const {
 	if (t.tv_sec > rhs.t.tv_sec) {return true;}
 	if ((t.tv_sec == rhs.t.tv_sec) && (t.tv_nsec>rhs.t.tv_nsec)) {return true;}
 	return false;
 }
+
 
 bool ivytime::operator<=(const ivytime& rhs) const {
 	if (t.tv_sec < rhs.t.tv_sec) return true;
@@ -223,11 +287,13 @@ bool ivytime::operator<=(const ivytime& rhs) const {
 	return false;
 }
 
+
 bool ivytime::operator>=(const ivytime& rhs) const {
 	if (t.tv_sec > rhs.t.tv_sec) return true;
 	if ((t.tv_sec==rhs.t.tv_sec) && (t.tv_nsec >= rhs.t.tv_nsec)) return true;
 	return false;
 }
+
 
 const ivytime ivytime::operator+ (const ivytime &rhs) const
 {
@@ -240,6 +306,7 @@ const ivytime ivytime::operator+ (const ivytime &rhs) const
 
 	return result;
 }
+
 
 const ivytime ivytime::operator- (const ivytime &rhs) const{
 
@@ -303,6 +370,7 @@ long double ivytime::seconds_from(const ivytime& t)
 	return delta.getlongdoubleseconds();
 }
 
+
 std::string ivytime::duration_from_now()
 {
 	ivytime now;
@@ -313,6 +381,7 @@ std::string ivytime::duration_from_now()
 	return delta.format_as_duration_HMMSSns();
 }
 
+
 std::string ivytime::duration_from(const ivytime& t)
 {
     ivytime delta = *this - t;   // positive deltas are in the future
@@ -321,12 +390,13 @@ std::string ivytime::duration_from(const ivytime& t)
 }
 
 
-
-
 std::string ivytime::format_as_datetime() const {
 	// 2012-04-15 HH:MM:SS - 19 characters plus terminating null makes buffer size 20
+
+	ivytime adjusted = (*this) + get_ivytime_reference_delta();
+
 	char timebuffer[20];
-	strftime(timebuffer,20,"%Y-%m-%d %H:%M:%S",localtime(&t.tv_sec));
+	strftime(timebuffer,20,"%Y-%m-%d %H:%M:%S",localtime(&adjusted.t.tv_sec));
 	std::ostringstream os;
 	os << timebuffer;
 	return os.str();
@@ -351,10 +421,12 @@ std::string ivytime::format_as_hex_dot_hex() const
 
 std::string ivytime::format_as_datetime_with_ns() const {
 	// 2012-04-15 HH:MM:SS - 19 characters plus terminating null makes buffer size 20
+	ivytime adjusted = (*this) + get_ivytime_reference_delta();
+
 	char timebuffer[20];
-	strftime(timebuffer,20,"%Y-%m-%d %H:%M:%S",localtime(&t.tv_sec));
+	strftime(timebuffer,20,"%Y-%m-%d %H:%M:%S",localtime(&adjusted.t.tv_sec));
 	std::ostringstream os;
-	os << timebuffer << '.' << std::setw(9) << std::setfill ('0') << t.tv_nsec;
+	os << timebuffer << '.' << std::setw(9) << std::setfill ('0') << adjusted.t.tv_nsec;
 	return os.str();
 }
 
@@ -463,28 +535,59 @@ ivytime::operator long double() {
 
 ivytime::operator time_t() { return t.tv_sec;}
 
-void ivytime::setToNow() {
+void ivytime::setToNow()
+{
 	int rc;
-	if ((rc=clock_gettime(CLOCK_REALTIME,&t))!= 0)
+
+	if ((rc=clock_gettime(CLOCK_MONOTONIC_RAW,&t))!= 0)
 	{
-		std::cerr<<"clock_gettime(CLOCK_REALTIME,) failed with return code " << rc << std::endl;
+	    std::ostringstream o;
+		o <<"<Error> internal programming error - clock_gettime(CLOCK_MONOTONIC_RAW,) failed with return code " << rc << " - errno = " << errno << " - " << strerror(errno) << std::endl;
 		t.tv_sec=0;
 		t.tv_nsec=0;
+		std::cout << o.str();
+		throw std::runtime_error(o.str());
 	}
+
 	return;
 }
+
+
+ivytime& ivytime::get_ivytime_reference_delta() const
+{
+    if (ivytime_reference_delta == ivytime(0))
+    {
+        int rc;
+
+        ivytime monotonic, realtime;
+
+        if ((rc=clock_gettime(CLOCK_MONOTONIC_RAW,&monotonic.t))!= 0)
+        {
+            std::ostringstream o;
+            o <<"<Error> internal programming error - clock_gettime(CLOCK_MONOTONIC_RAW,) failed with return code " << rc << " - errno = " << errno << " - " << strerror(errno) << std::endl;
+            std::cout << o.str();
+            throw std::runtime_error(o.str());
+        }
+
+        if ((rc=clock_gettime(CLOCK_REALTIME,&realtime.t))!= 0)
+        {
+            std::ostringstream o;
+            o <<"<Error> internal programming error - clock_gettime(CLOCK_MONOTONIC_RAW,) failed with return code " << rc << " - errno = " << errno << " - " << strerror(errno) << std::endl;
+            std::cout << o.str();
+            throw std::runtime_error(o.str());
+        }
+
+        ivytime_reference_delta = realtime - monotonic;
+    }
+
+    return ivytime_reference_delta;
+}
+
+
 uint64_t ivytime::Milliseconds() const {
 	return (((uint64_t)t.tv_sec)*1000) + (((uint64_t)t.tv_nsec)/1000000);
 }
 
-void ivytime::roundUpToStartOfMinute() {
-	if (t.tv_nsec > 0) {
-		t.tv_sec++;
-		t.tv_nsec=0;
-	}
-	t.tv_sec = (t.tv_sec+59) / 60;
-	t.tv_sec = 60 * t.tv_sec;
-}
 
 void ivytime::setFromNanoseconds(uint64_t Nanoseconds) {
 	uint64_t seconds;
@@ -503,3 +606,4 @@ uint64_t ivytime::getAsNanoseconds() const {
 long double ivytime::getlongdoubleseconds() const {
 	return ((long double)t.tv_sec) + (((long double)t.tv_nsec)/((long double)1000000000));
 }
+

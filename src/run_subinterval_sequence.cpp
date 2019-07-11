@@ -33,6 +33,116 @@ extern bool spinloop;
 
 extern void say_and_log(const std::string& s);
 
+//#define TRACE_RSS
+
+//========================================================================================
+//
+// NOTE: Open up doc/run_subinterval_sequence_outline.txt along side, and keep it updated.
+//
+//========================================================================================
+
+void process_completed_measurement()
+{
+/*debug*/{std::ostringstream d; d << "debug: Entering process_completed_measurement().\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
+    measurement& m = m_s.current_measurement();
+
+    for (int i = m.first_subinterval; i <= m.last_subinterval; i++)
+    {
+        m_s.measurement_by_subinterval.push_back(m_s.measurements.size() -1);
+    }
+
+    {
+        std::ostringstream o;
+        o << "Making measurement rollups from subinterval " << m.firstMeasurementIndex << " to " << m.lastMeasurementIndex << "." << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+    }
+
+    auto retval = m_s.rollups.makeMeasurementRollup();
+    if (!retval.first)
+    {
+        std::ostringstream o;
+        o << std::endl << "writhe and fail, gasping that the RollupSet::makeMeasurementRollup()\'s last words were - " << retval.second << std::endl
+            << std::endl << "Source code reference: function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+        m_s.kill_subthreads_and_exit();
+        exit(-1);
+    }
+
+    retval = m.make_measurement_rollup_CPU();
+    if (!retval.first)
+    {
+        std::ostringstream o;
+        o << std::endl << "writhe and fail, gasping that ivy_engine::make_measurement_rollup_CPU()\'s last words were - " << retval.second << std::endl
+            << std::endl << "Source code reference: function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+        m_s.kill_subthreads_and_exit();
+        exit(-1);
+    }
+}
+
+bool process_successful_measurement() // returns true if we have started the next measurement, false if we are done and the subinterval sequence is ending.
+{
+/*debug*/{std::ostringstream d; d << "debug: Entering process_successful_measurement().\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
+    {
+        std::ostringstream o;
+        o << "Successful valid measurement, either fixed duration, or using the \"measure\" feature." << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+    }
+
+    measurement& m = m_s.current_measurement();
+
+    m.success = true;
+    process_completed_measurement();
+
+    return m_s.start_new_measurement();
+}
+
+void process_failed_measurement()
+{
+/*debug*/{std::ostringstream d; d << "debug: Entering process_failed_measurement().\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
+    if (nullptr == m_s.p_focus_rollup)
+    {
+        std::ostringstream o;
+        o << std::endl << "Writhe and fail, gasping that although the test result was FAILURE, we didn\'t have a pointer to the focus rollup." << std::endl
+            << "Error occurred in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+        m_s.kill_subthreads_and_exit();
+        exit(-1);
+    }
+
+    {
+        std::ostringstream o;
+        o << "Measurement timed out without reaching target accuracy.  Making measurement rollup for best subsequence that got the closest to the target for all instances of the focus rollup." << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+    }
+
+    if (!m_s.p_focus_rollup->p_wurst_RollupInstance->best_first_last_valid)
+    {
+        std::ostringstream o;
+        o << std::endl << "Dreaded internal programming error.  Writhe and fail, gasping that the wurst RollupInstance didn\'t have valid best subsequence first and last indexes." << std::endl
+            << "Error occurred in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+        m_s.kill_subthreads_and_exit();
+        exit(-1);
+    }
+
+    m_s.current_measurement().firstMeasurementIndex = m_s.p_focus_rollup->p_wurst_RollupInstance->best_first;
+    m_s.current_measurement().lastMeasurementIndex  = m_s.p_focus_rollup->p_wurst_RollupInstance->best_last;
+    m_s.current_measurement().have_timeout_rollup = true;
+
+    measurement& m = m_s.current_measurement();
+
+    m.success = false;
+    process_completed_measurement();
+}
+
 void run_subinterval_sequence(MeasureController* p_MeasureController)
 {
     {
@@ -55,6 +165,10 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     }
 
     // First we clean out the existing subinterval sequences in the rollups in case it was still full of stuff from a previous test step.
+
+    m_s.clear_measurements();
+    m_s.start_new_measurement();
+
     m_s.harvesting_subinterval = -1;
     m_s.last_gain_adjustment_subinterval = -1;
     m_s.rollups.resetSubintervalSequence();
@@ -62,8 +176,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     m_s.MeasureCtlr_failure_point = -1;  // where cooldown extends to wait for WP to empty, this is the point where we declared failure and stopped driving I/O.
 
-//    m_s.have_best_of_wurst = false;
-    m_s.have_timeout_rollup = false;
+    m_s.current_measurement().have_timeout_rollup = false;
 
     m_s.cooldown_by_MP_busy_stay_down_count = 0;
 
@@ -84,10 +197,12 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     m_s.overallGatherTimeSeconds.clear();
     m_s.cruiseSeconds.clear();
     m_s.continueCooldownStopAckSeconds.clear();
+    m_s.subinterval_start_end_times.clear();
 
     m_s.now_doing_suppress_perf_cooldown = false;
     m_s.suppress_perf_cooldown_subinterval_count = 0;
 
+    m_s.measurement_by_subinterval.clear();
 
     // Check for failed subsystem components
     if (m_s.haveCmdDev & m_s.check_failed_component)
@@ -175,6 +290,20 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         }
     }
 
+    // Restore saved IOPS if a previous step had set IOPS=pause for cooldown
+
+    auto restore_rc = m_s.edit_rollup("all=all","IOPS=restore",true);
+
+    if (!restore_rc.first)
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error - edit_rollup(\"all=all\",\"IOPS=restore\" failed - trying to restore IOPS after possible previous step cooldown - " << restore_rc.second <<  std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+        m_s.kill_subthreads_and_exit();
+        exit ( -1);
+    }
+
     // If we have command devices, we perform a t=0 gather.
 
     // Most Hitachi RAID metrics take the form of cumulative rollover event counters.
@@ -184,7 +313,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     // Even when we have the -suppress_perf command line option, we still perform the t=0 gather
     // before I/O starts running, because
-    // 1) some config data appears in performance data - ["subsystem"],["supsystem"]
+    // 1) some config data appears in performance data - ["subsystem"],["subsystem"]
     //    "max_MP_io_buffers" & "total_LDEV_capacity_512_sectors", and this gets
     //    copied to the configuration data from the t=0 gather, and
     // 2) with both -suppress_perf and (cooldown_by_wp and/or cooldown by _MP_busy) we are
@@ -203,6 +332,9 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     if (m_s.haveCmdDev)
     {
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to perform t=0 gather.\n"; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
         t0_gather_start.setToNow();
 
         std::chrono::system_clock::time_point leftnow {std::chrono::system_clock::now()};
@@ -319,7 +451,6 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     // end of t=0 gather
 
-    m_s.have_timeout_rollup = false;
 
     if (m_s.have_pid || m_s.have_measure)
     {
@@ -336,19 +467,23 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     m_s.rollups.make_step_rollup_subfolders();
 
     // On the other end, iosequencer threads are waiting to start.  This is because when you first
-    // create the thread, it sets up the first two subintervals with the parameters specified,
+    // create a workload, it sets up the first two subintervals with the parameters specified,
     // and then when a subinterval sequence ends, once ivydriver stops upon command and sends the last
     // subinterval detail lines, it will set up the first two subintervals to have identical subinterval
-    // input parameters to the last completed subinterval.  This is a starting point for any ModifyWorkload
-    // commands that may follow.
+    // input parameters to the last completed subinterval.  This is a starting point for any EditWorkload
+    // commands that may follow.  EditWorkload is the command that gets sent to ivydriver as a result
+    // of an EditRollup at the ivy engine API level.
 
     // post "Go!" command to start the iosequencer threads running
 
-    m_s.subintervalStart   = m_s.get_go;
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to post Go!\n"; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+    m_s.current_measurement().warmup_start.setToNow();
+
+    m_s.subintervalStart = m_s.current_measurement().warmup_start;
     m_s.subintervalEnd     = m_s.subintervalStart + m_s.subintervalLength;
     m_s.nextSubintervalEnd = m_s.subintervalEnd   + m_s.subintervalLength;
-
-
 
     for (auto& pear : m_s.host_subthread_pointers)
     {
@@ -384,7 +519,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     // But there was no retrieval of the -1 subinterval ... straight from Go! to continue.
 
-    // retrieve the "OK" from the Go! command
+    // retrieve confirmation of the Go! command.
 
     for (auto& pear : m_s.host_subthread_pointers)
     {
@@ -420,9 +555,16 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         }
         pear.second->master_slave_cv.notify_all();
     }
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Received confirmations of Go!\n"; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
     // Wait 1/4 of a subinterval
     std::this_thread::sleep_for(std::chrono::milliseconds((unsigned int)(0.25 * 1000 * m_s.subinterval_seconds)));
+
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to send \"continue\" 1/4 of the way through subinterval zero..\n"; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
     // Send "continue" command
     for (auto& pear : m_s.host_subthread_pointers)
@@ -462,6 +604,10 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     for (auto& pear : m_s.command_device_subthread_pointers)
     {
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to issue gather command to " << pear.first << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+
         pear.second->gather_scheduled_start_time = m_s.subintervalEnd - ivytime(pear.second->perSubsystemGatherTime.avg());
 
         {
@@ -481,49 +627,60 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         pear.second->master_slave_cv.notify_all();
     }
 
+    // wait to get until all test hosts confirm receipt of "continue"
+
+    for (auto& pear : m_s.host_subthread_pointers)
+    {
+        {
+            std::unique_lock<std::mutex> s_lk(pear.second->master_slave_lk);
+
+            if
+            ( ! pear.second->master_slave_cv.wait_for
+                (
+                    s_lk,
+                    std::chrono::milliseconds( (unsigned int)(1000 * m_s.subinterval_seconds)),
+                    [&]() { return pear.second->commandComplete; }
+                )
+            )
+            {
+                // timed out.
+
+                std::ostringstream o;
+                o << "<Error> Timed out waiting to get acknowledgement from ivydriver of command \"" << pear.second->commandString
+                    << "\" - host " << pear.first << std::endl
+                    << "Source code reference line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
+                log(m_s.masterlogfile,o.str());
+                m_s.kill_subthreads_and_exit();
+            }
+
+            if (!pear.second->commandSuccess)
+            {
+                ostringstream o;
+                o << "<Error> \"" << pear.second->commandString << "\" failed - " << pear.second->commandErrorMessage << std::endl
+                    << "Source code reference line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
+                log(m_s.masterlogfile,o.str());
+                m_s.kill_subthreads_and_exit();
+            }
+            pear.second->command=false;
+            pear.second->commandComplete=false;
+            pear.second->commandSuccess=false;
+            pear.second->commandErrorMessage.clear();
+        }
+        pear.second->master_slave_cv.notify_all();
+    }
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: All hosts confirmed receipt of \"continue\" during subinterval zero.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+
     // We are approaching the end of subinterval zero.
 
-    while (true) // loop starts where we wrap around having just said "continue", or "stop", but not yet waited for a response.
+    while (true) // loop starts where we have received confirmation of continue/stop and are waiting for the end of a subinterval
     {
-        // wait to get until OK for command from all hosts for the "continue" or "stop"
-
-        for (auto& pear : m_s.host_subthread_pointers)
-        {
-            {
-                std::unique_lock<std::mutex> s_lk(pear.second->master_slave_lk);
-
-                if
-                ( ! pear.second->master_slave_cv.wait_for
-                    (
-                        s_lk,
-                        std::chrono::milliseconds( (unsigned int)(1000 * m_s.subinterval_seconds)),
-                        [&]() { return pear.second->commandComplete; }
-                    )
-                )
-                {
-                    // timed out.
-
-                    std::ostringstream o;
-                    o << "<Error> Timed out waiting to get acknowledgement from ivydriver of command \"" << pear.second->commandString
-                        << "\" - host " << pear.first << std::endl
-                        << "Source code reference line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
-                    log(m_s.masterlogfile,o.str());
-                    m_s.kill_subthreads_and_exit();
-                }
-
-                if (!pear.second->commandSuccess)
-                {
-                    ostringstream o;
-                    o << "<Error> \"" << pear.second->commandString << "\" failed - " << pear.second->commandErrorMessage << std::endl
-                        << "Source code reference line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
-                    log(m_s.masterlogfile,o.str());
-                    m_s.kill_subthreads_and_exit();
-                }
-            }
-            pear.second->master_slave_cv.notify_all();
-        }
 
         m_s.harvesting_subinterval++;
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Top of loop and about to send out \"get subinterval result\" for subinterval " << m_s.harvesting_subinterval << ".\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
         ivytime now; now.setToNow();
 
@@ -533,8 +690,34 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             m_s.subintervalEnd     = m_s.nextSubintervalEnd;
             m_s.nextSubintervalEnd = m_s.subintervalEnd + m_s.subintervalLength;
         }
+///* debug */                        {
+///* debug */                            std::ostringstream o;
+///* debug */                            o << std::endl << "+++++++" << "run_subinterval_sequence() - have just moved subinterval start/end/next ahead." << std::endl;
+///* debug */                            ivytime now;
+///* debug */
+///* debug */                            now.setToNow();
+///* debug */
+///* debug */                            o << "+++++++" << "now: "  << now.format_as_datetime_with_ns() << std::endl;
+///* debug */                            o << "+++++++" << m_s.subintervalStart.format_as_datetime_with_ns()
+///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from_now() << " seconds from now) "
+///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from(m_s.get_go) << " seconds from Go! time) "
+///* debug */                                    << std::endl
+///* debug */                                << "+++++++" << m_s.subintervalEnd.format_as_datetime_with_ns()
+///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from_now() << " seconds from now) "
+///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
+///* debug */                                    << std::endl
+///* debug */                                << "+++++++" << m_s.nextSubintervalEnd.format_as_datetime_with_ns()
+///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from_now() << " seconds from now) "
+///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
+///* debug */                                    << std::endl
+///* debug */                                << std::endl;
+///* debug */                            log(m_s.masterlogfile,o.str());
+///* debug */    for (auto& pear : m_s.host_subthread_pointers) { log(pear.second->logfolder,o.str());}
+///* debug */                            std::cout << o.str();
+///* debug */                        }
 
-        // send out get subinterval result
+
+        // send out "get subinterval result"
         for (auto& pear : m_s.host_subthread_pointers)
         {
             {
@@ -569,6 +752,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             if (routine_logging) log(m_s.masterlogfile,o.str());
         }
 
+        m_s.subinterval_start_end_times.push_back(std::make_pair(m_s.subintervalStart,m_s.subintervalEnd));
+
         m_s.rollups.startNewSubinterval(m_s.subintervalStart,m_s.subintervalEnd);
 
         m_s.cpu_by_subinterval.push_back(s);  // ivy_engine: std::vector<Subinterval_CPU> cpu_by_subinterval;
@@ -586,8 +771,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             std::ostringstream o;
             o<< "Waiting for step name " << m_s.stepName
              << ", subinterval " << m_s.rollups.current_index() << " to complete. "
-             << "  Start " << (*( m_s.rollups.p_current_start_time() )).format_as_datetime_with_ns()
-             << ", end " << (*( m_s.rollups.p_current_end_time() )).format_as_datetime_with_ns()
+             << "  Start " << m_s.subintervalStart.format_as_datetime()
+             << ", end " << m_s.subintervalEnd.format_as_datetime()
              << "  Duration " << m_s.subintervalLength.format_as_duration_HMMSS() << std::endl;
             log(m_s.masterlogfile,o.str());
             std::cout << o.str();
@@ -624,6 +809,9 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             }
             pear.second->master_slave_cv.notify_all();
         }
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: All hosts confirmed \"get subinterval result\" complete.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
         ivytime hosts_sent_up;
         hosts_sent_up.setToNow();
@@ -632,6 +820,9 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         if (m_s.haveCmdDev)
         {
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to wait for subsystem gathers to complete.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
             std::chrono::system_clock::time_point leftnow {std::chrono::system_clock::now()};
             int timeout_seconds {2};
             for (auto& pear : m_s.command_device_subthread_pointers)
@@ -687,12 +878,6 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             {
                 std::ostringstream o;
 
-//                o << "\"" << m_s.testName << "\" " << m_s.stepNNNN << " \"" << m_s.stepName << "\" bottom of subinterval " << m_s.rollups.current_index() << " - overall gather time was " << tn_gather_time.format_as_duration_HMMSSns()
-//                  << "     " << m_s.getWPthumbnail(m_s.rollups.current_index()) << std::endl << std::endl;
-
-//                o << "\"all=all\" rollup\'s configuration under test:" << std::endl
-//                  << m_s.rollups.get_all_equals_all_instance()->test_config_thumbnail;
-
                 o  << "all=all " << m_s.rollups.get_all_equals_all_instance()->subsystem_data_by_subinterval.back().thumbnail() << std::endl;
 
                 m_s.subsystem_thumbnail = o.str();
@@ -702,9 +887,15 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     log(m_s.masterlogfile,o.str());
                 }
             }
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Subsystem gathers complete.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 	    }
 
         // Barrier 1
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Barrier 1.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
         ivytime barrier_1_time;
 
@@ -716,6 +907,9 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         long double sendup_time = ivytime(barrier_1_time - m_s.subintervalEnd).getlongdoubleseconds();
 
         // print the by-subinterval "provisional" csv line with a blank "warmup" / "measurement" / "cooldown" column
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to print the by-subinterval \"provisional\" csv line.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
         if (m_s.stepcsv) for (auto& pear: m_s.rollups.rollups)
         {
             for (auto& peach : pear.second->instances)
@@ -754,14 +948,12 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 ivytime n; n.setToNow();
                 ivytime rollup_time = n - m_s.subintervalStart;
 
-
                 ivytime test_duration = n - m_s.test_start_time;
                 ivytime step_duration = n - m_s.get_go;
 
                 std::ostringstream o;
                 o << test_duration.format_as_duration_HMMSS() << " into test \"" << m_s.testName << "\"" << std::endl;
                 o << step_duration.format_as_duration_HMMSS() << " into " << m_s.stepNNNN << " \"" << m_s.stepName << "\" at subinterval " << m_s.harvesting_subinterval << std::endl << std::endl;
-                //o << " rollups complete at " << rollup_time.format_as_duration_HMMSSns() << " after subinterval end." << std::endl;
 
                 o << allAllSubintervalOutput.thumbnail(allAllSubintervalRollup.durationSeconds()) << std::endl;
 
@@ -820,12 +1012,15 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         m_s.min_sequential_fill_progress = 1.0; // reset for next subinterval
 
 
-        if (!(EVALUATE_SUBINTERVAL_CONTINUE==m_s.lastEvaluateSubintervalReturnCode)) break;
+        if (!(EVALUATE_SUBINTERVAL_CONTINUE==m_s.lastEvaluateSubintervalReturnCode))
+        {
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Breaking from loop because m_s.lastEvaluateSubintervalReturnCode is not CONTINUE.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+            // this completes processing of the final subinterval.
+            break;
+        }
 
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-// comment block that was here now moved to end of file
-/////////////////////////////////////////////////////////////////////////////////////////////////////
         if (m_s.have_pid || m_s.have_measure)
         {
             if (m_s.p_focus_rollup == nullptr) throw std::runtime_error("<Error> internal programming error - run_subinterval_sequence() - have_pid and or have_measure are set, but m_s.p_focus_rollup == nullptr.");
@@ -833,7 +1028,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             for (auto& pear : m_s.p_focus_rollup->instances)
             {
                 pear.second->collect_and_push_focus_metric();
-                if (m_s.have_pid) pear.second->perform_PID();
+                if (m_s.have_pid) pear.second->perform_PID(); // this uses edit_rollup(), which sends out the IOPS adjustment & receives confirmation.
             }
 
             std::string s = m_s.focus_caption();
@@ -843,20 +1038,24 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         if (m_s.in_cooldown_mode)
         {
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: In cooldown mode.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+            p_MeasureController->step_over_cooldown_subinterval();
+
+            m_s.current_measurement().cooldown_end     = m_s.subintervalEnd;
+            m_s.current_measurement().last_subinterval = m_s.harvesting_subinterval;
+
             if (m_s.suppress_subsystem_perf)
             {
                 m_s.suppress_perf_cooldown_subinterval_count++;
                 m_s.now_doing_suppress_perf_cooldown = true;
             }
 
-            ivytime now; now.setToNow();
-
-            m_s.cooldown_duration = now - m_s.cooldown_start;
-
-            if (m_s.suppress_subsystem_perf && ((m_s.cooldown_by_wp != cooldown_mode::off) || (m_s.cooldown_by_MP_busy != cooldown_mode::off)) && m_s.suppress_perf_cooldown_subinterval_count <= 2 )
+            if (m_s.suppress_subsystem_perf
+                && ((m_s.cooldown_by_wp != cooldown_mode::off) || (m_s.cooldown_by_MP_busy != cooldown_mode::off))
+                && m_s.suppress_perf_cooldown_subinterval_count <= 2 )
             {
-                m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
-
                 std::ostringstream o;
                 o << "With -suppress_perf this is IOPS=0 cooldown subinterval " << (m_s.suppress_perf_cooldown_subinterval_count)
                     << " with subsystem gathers turned back on." << std::endl;
@@ -869,25 +1068,42 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
              || ( (m_s.cooldown_by_wp      != cooldown_mode::off) && m_s.some_cooldown_WP_not_empty() )
             )
             {
-                m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
+                //m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
 
                 std::ostringstream o;
-                o << "Cooldown duration " << m_s.cooldown_duration.format_as_duration_HMMSS() << "  not complete, will do another cooldown subinterval." << std::endl;
+                o << "Cooldown duration " << m_s.current_measurement().cooldown_duration().format_as_duration_HMMSS() << "  not complete, will do another cooldown subinterval." << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
             }
             else
             {
                 std::ostringstream o;
-                o << "Cooldown duration " << m_s.cooldown_duration.format_as_duration_HMMSS() << " complete, posting DFC return code from last test subinterval before running cooldown subintervals." << std::endl;
+                o << "Cooldown duration " << m_s.current_measurement().cooldown_duration().format_as_duration_HMMSS() << " complete, posting DFC return code from last test subinterval before running cooldown subintervals." << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
                 m_s.lastEvaluateSubintervalReturnCode = m_s.eventualEvaluateSubintervalReturnCode;
-                    // which is success or failure
+
+                if (m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS)
+                {
+                    if (process_successful_measurement())
+                    {
+                        // we have started the next measurement
+                        m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
+                    }
+                    // else we leavelastEvaluateSubintervalReturnCode set to SUCCESS/FAILURE
+                }
+                else
+                {
+                    process_failed_measurement();
+                    // will break from loop after processing the last subinterval.
+                }
             }
         }
-        else
+        else // not m_s.in_cooldown_mode
         {
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Not in cooldown mode.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
             m_s.lastEvaluateSubintervalReturnCode = p_MeasureController->evaluateSubinterval();
 
             {
@@ -909,37 +1125,90 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 log(m_s.masterlogfile,o.str());
             }
 
+
             if
             (
-                    (
-                        m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS
-                        ||
-                        m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_FAILURE
-                    )
-                &&  (
-                         ( (m_s.cooldown_by_wp      != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_cooldown_WP_not_empty() ) )
-                      || ( (m_s.cooldown_by_MP_busy != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_subsystem_still_busy()  ) )
-                    )
+                m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS
+                ||
+                m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_FAILURE
             )
             {
-                m_s.eventualEvaluateSubintervalReturnCode = m_s.lastEvaluateSubintervalReturnCode;
-                m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: SUCCESS or FAILURE.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
-                m_s.in_cooldown_mode = true;
-                m_s.cooldown_start.setToNow();
+                m_s.current_measurement().last_subinterval = m_s.harvesting_subinterval;
+                m_s.current_measurement().cooldown_end     = m_s.subintervalEnd;
 
-                std::ostringstream o;
-                o << "DFC posted SUCCESS or FAILURE, but cooldown being extended by cooldown_by_wp or cooldown_by_MP_busy." << std::endl;
+                //bool going_to_do_another_measurement = false;
 
-                std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
+
+
+                if
+                (
+                     ( (m_s.cooldown_by_wp      != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_cooldown_WP_not_empty() ) )
+                  || ( (m_s.cooldown_by_MP_busy != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_subsystem_still_busy()  ) )
+                )
+                {
+                    m_s.eventualEvaluateSubintervalReturnCode = m_s.lastEvaluateSubintervalReturnCode;
+                    m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
+
+                    m_s.in_cooldown_mode = true;
+
+                    auto errc = m_s.edit_rollup("all=all","IOPS=pause",true);
+
+                    if (!errc.first)
+                    {
+                        std::ostringstream o;
+                        o << "<Error> Internal programming error.  When entering cooldown mode, edit_rollup(\"all=all\",\"IOPS=pause\") failed - " << errc.second << std::endl
+                            << "Source code reference line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
+                        log(m_s.masterlogfile,o.str());
+                        m_s.kill_subthreads_and_exit();
+                    }
+
+                    m_s.current_measurement().measure_end = m_s.subintervalEnd;
+
+                    std::ostringstream o;
+                    o << "DFC posted SUCCESS or FAILURE, but cooldown being extended by cooldown_by_wp or cooldown_by_MP_busy." << std::endl;
+
+                    std::cout << o.str();
+                    log(m_s.masterlogfile,o.str());
+                }
+                else
+                {
+                    // finished measurement without any cooldown subintervals
+
+                    if (m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS)
+                    {
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to process_successful_measurement() .\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+                        if (process_successful_measurement())
+                        {
+                            // we have started the next measurement
+                            m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
+                        }
+                    }
+                    else
+                    {
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to process_failed_measurement() .\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+
+                        process_failed_measurement();
+                        // will break from loop after processing the last subinterval.
+                    }
+                }
             }
         }
 
 
-        ivytime before_continue_cooldown_stop;
-        before_continue_cooldown_stop.setToNow();
+        ivytime before_continue_stop;
+        before_continue_stop.setToNow();
 
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to send out continue or stop.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
         // Iterate over all hosts, posting command to run another subinterval, or to stop at the end of the current subinterval.
         for (auto& pear : m_s.host_subthread_pointers)
         {
@@ -947,15 +1216,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
                 if (EVALUATE_SUBINTERVAL_CONTINUE == m_s.lastEvaluateSubintervalReturnCode)
                 {
-                    if (m_s.in_cooldown_mode)
-                    {
-                        pear.second->commandString = "cooldown";
-                    }
-                    else
-                    {
-                        pear.second->commandString = "continue";
-                    }
-
+                    pear.second->commandString = "continue";
                     m_s.last_command_was_stop = false;
                 }
                 else
@@ -971,7 +1232,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             pear.second->master_slave_cv.notify_all();
         }
 
-        // Wait for all ivydrivers to confirm continue, cooldown, or stop receipt
+        // Wait for all ivydrivers to confirm receipt of continue or stop.
         for (auto& pear : m_s.host_subthread_pointers)
         {
             {
@@ -1004,15 +1265,21 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     log(m_s.masterlogfile,o.str());
                     m_s.kill_subthreads_and_exit();
                 }
-                // Note that we don't reset commandComplete, etc.
+                pear.second->command=false;
+                pear.second->commandComplete=false;
+                pear.second->commandSuccess=false;
+                pear.second->commandErrorMessage.clear();
             }
             pear.second->master_slave_cv.notify_all();
         }
 
-        ivytime after_continue_cooldown_stop;
-        after_continue_cooldown_stop.setToNow();
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Have receipt of continue or stop.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+        ivytime after_continue_stop;
+        after_continue_stop.setToNow();
 
-        m_s.continueCooldownStopAckSeconds.push( ivytime( after_continue_cooldown_stop - before_continue_cooldown_stop).getlongdoubleseconds() );
+        m_s.continueCooldownStopAckSeconds.push( ivytime( after_continue_stop - before_continue_stop).getlongdoubleseconds() );
 
 
         ivytime first_gather_or_subinterval_end = m_s.nextSubintervalEnd;
@@ -1067,6 +1334,10 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         for (auto& pear : m_s.command_device_subthread_pointers)
         {
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to issue next scheduled gather.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+
             {
                 pipe_driver_subthread*& p_pds = pear.second;
 
@@ -1091,6 +1362,9 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 p_pds->master_slave_cv.notify_all();
             }
         }
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Barrier 2.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
         ivytime barrier_2_time;
         barrier_2_time.setToNow();
@@ -1138,14 +1412,23 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         m_s.centralProcessingTimeSeconds     .push(CP_seconds);
         m_s.gatherBeforeSubintervalEndSeconds.push(m_s.earliest_gather_before_subinterval_end);
         m_s.cruiseSeconds                    .push(cruise_seconds);
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Bottom of loop.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
     }
 
-//*debug*/{std::ostringstream o; o << "After subinterval sequence but before calculating measurement interval stuff." << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
+    // have broken out of subinterval loop.
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Have broken out of loop.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
     // Check for failed subsystem components
     if (m_s.haveCmdDev & m_s.check_failed_component)
     {
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to check for failed components.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
         m_s.have_failed_component = false;
         m_s.failed_component_message.clear();
 
@@ -1227,11 +1510,14 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             std::cout << m_s.failed_component_message;
             m_s.kill_subthreads_and_exit();
         }
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Finished check for failed components.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+
     }
 
 
-    ivytime warmup_start, warmup_duration, measurement_start, measurement_duration, cooldown_start, cooldown_end, cooldown_duration;
-
+    std::cout << "Printing csv files." << std::endl;
 
     // print csv files with real-time subsystem data
 
@@ -1244,98 +1530,24 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     {
         pear.second->print_subinterval_csv_line_set( pear.second->serial_number + std::string(".perf"));
     }
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Past printing storcsv.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
-    if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode
-     || EVALUATE_SUBINTERVAL_FAILURE == m_s.lastEvaluateSubintervalReturnCode)
+
+    for (unsigned int m = 0; m < m_s.measurements.size(); m++)
     {
-
-        if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode)
-        {
-            {
-                std::ostringstream o;
-                o << "Successful valid measurement, either fixed duration, or using the \"measure\" feature." << std::endl;
-                std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
-            }
-            m_s.firstMeasurementIndex = p_MeasureController->firstMeasurementSubintervalIndex();
-            m_s.lastMeasurementIndex  = p_MeasureController->lastMeasurementSubintervalIndex();
-        }
-        else
-        {
-            if (nullptr == m_s.p_focus_rollup)
-            {
-                std::ostringstream o;
-                o << std::endl << "Writhe and fail, gasping that although the test result was FAILURE, we didn\'t have a pointer to the focus rollup." << std::endl
-                    << "Error occurred in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
-                std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
-                m_s.kill_subthreads_and_exit();
-                exit(-1);
-            }
-
-            {
-                std::ostringstream o;
-                o << "Measurement timed out without reaching target accuracy.  Making measurement rollup for best subsequence that got the closest to the target for all instances of the focus rollup." << std::endl;
-                std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
-            }
-
-            if (!m_s.p_focus_rollup->p_wurst_RollupInstance->best_first_last_valid)
-            {
-                std::ostringstream o;
-                o << std::endl << "Dreaded internal programming error.  Writhe and fail, gasping that the wurst RollupInstance didn\'t have valid best subsequence first and last indexes." << std::endl
-                    << "Error occurred in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
-                std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
-                m_s.kill_subthreads_and_exit();
-                exit(-1);
-            }
-
-            m_s.firstMeasurementIndex = m_s.p_focus_rollup->p_wurst_RollupInstance->best_first;
-            m_s.lastMeasurementIndex  = m_s.p_focus_rollup->p_wurst_RollupInstance->best_last;
-            m_s.have_timeout_rollup = true;
-        }
-
-        {
-            std::ostringstream o;
-            o << "Making measurement rollups from subinterval " << m_s.firstMeasurementIndex << " to " << m_s.lastMeasurementIndex << "." << std::endl;
-            std::cout << o.str();
-            log(m_s.masterlogfile,o.str());
-        }
-        // Dropping the first few and last few subintervals, build the measurement rollup set
-
-        auto retval = m_s.rollups.makeMeasurementRollup(m_s.firstMeasurementIndex, m_s.lastMeasurementIndex);
-        if (!retval.first)
-        {
-            std::ostringstream o;
-            o << std::endl << "writhe and fail, gasping that the RollupSet::makeMeasurementRollup()\'s last words were - " << retval.second << std::endl
-                << std::endl << "Source code reference: function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
-            std::cout << o.str();
-            log(m_s.masterlogfile,o.str());
-            m_s.kill_subthreads_and_exit();
-            exit(-1);
-        }
-
-        retval = m_s.make_measurement_rollup_CPU(m_s.firstMeasurementIndex, m_s.lastMeasurementIndex);
-        if (!retval.first)
-        {
-            std::ostringstream o;
-            o << std::endl << "writhe and fail, gasping that ivy_engine::make_measurement_rollup_CPU()\'s last words were - " << retval.second << std::endl
-                << std::endl << "Source code reference: function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
-            std::cout << o.str();
-            log(m_s.masterlogfile,o.str());
-            m_s.kill_subthreads_and_exit();
-            exit(-1);
-        }
+        m_s.rollups.print_measurement_summary_csv_line(m);
     }
-
-
-    std::cout << "Printing csv files." << std::endl;
-
-    m_s.rollups.print_measurement_summary_csv_line();
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Past print_measurement_summary_csv_line.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
 
     if (m_s.stepcsv) m_s.print_latency_csvfiles();
 
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: Past print_latency_csvfiles.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
     if (m_s.stepcsv && m_s.have_pid)
     {
         if (m_s.p_focus_rollup == nullptr) throw std::runtime_error("<Error> internal programming error - run_subinterval_sequence() - have_pid when printing pid csv files, but m_s.p_focus_rollup == nullptr.");
@@ -1459,156 +1671,4 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 }
 
 
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-// comment block that was moved here as noted earlier
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        // if we said "stop" the last time around, we still go through the top of the loop
-        // again to wait for the last subinterval to finish, and we break from the loop here.
-
-        // A subinterval is now complete, including posting all the iosequencer detail lines
-        // into the various rollups.
-
-        // This next bit of code generalizes the concept of dynamic feedback control and
-        // uses a "MeasureController" pure virtual class with an "evaluateSubinterval()" function
-        // that each type of feedback control has to implement.
-
-        // At the end of each subinterval and with the rollups ready to analyze, we
-        // invoke the MeasureController's evaluateSubinterval() routine.
-
-        // The evaluateSubinterval routine analyzes what to do, looking at the sequence of
-        // subinterval input and output data so far.  Overall rollups as well as by any rollups
-        // you found convenient.  (By whatever you are controlling.)
-
-        // Note that the DFC is called once at the end of a subinterval once results
-        // have been posted into all rollups.
-
-        // When ivy was first written, there were separate fixed, measure, and PID DFCs, but now
-        // 1) The cooldown_by_wp function was moved from the measure DFC to run_subinterval_sequence
-        //     so that it works no matter which DFC is used.
-        // 2) The concept of the focus metric used by both PID and measure=on was introduced.
-        //    Now, run_subinterval_sequence calls for the focus metric to be gathered after each subinterval
-        //    if the have_pid or have_measure flags are on.
-        // 3) The PID loop function was moved from the PID_DFC, which was removed, to the rollup instance
-        //    where the focus_metric vector is.  If the go statement specified dfc=pid, when
-        //    run_subinterval_sequence gathers the focus metric value, it also does a PID loop calculation
-        //    of a new total_IOPS and uses edit rollup to send to that rollup instance.
-        // 3) Since the focus metric vector by subinterval is by rollup instance, the function to evaluate the
-        //    statistical validity of a subsequence was put in the rollup instance that had the data.
-        // 4) This left only MeasureCtlr standing, as the function of the Fixed_DFC became an if
-        //    statement in the Measure DFC.
-
-        // So paradoxically, after the dust settled and we can freely mix fine-grained PID loop and measure
-        // functionality where when you say [go] dfc=pid, you are selecting something that run_subinterval_sequence does,
-        // and when you say measure=on, it calles the one thing derived from the DFC class.
-        // Maybe come back and take another look at terminology at least later.
-
-        // The DFC signals that it is done issuing any more editRollup commands
-        // by saying either "continue", or "stop".
-
-        // This gets propagated out to all workload threads and they behave accordingling
-        // once they get to the end of the current subinterval and look to see what
-        // instruction had been posted for them.
-
-        // Well, the DFC doesn't say "stop".  It says one of two things, both of which
-        // are propagated as "stop" to all the lower layers.  A test host workload thread
-        // when it stops goes into "waiting for command" state.
-
-        // The basic DFC has a csv file structure that is along the lines of the vdbench "summary.html"
-        // concept.  A subinterval sequence, with a mid-stream measurement period sample averaged
-        // the measurement period subintervals only ignoring the "warmup" and "cooldown"
-
-        // Each "test step" has a step number like step0003 and a step name (which you are encouraged
-        // to highlight the salient point by using).
-
-        // When the ivyscript "Go!" command is executed, the workload threads have whatever most recent
-        // input parameters that were set.
-
-        // At the end of each subinterval, and after all the the rollups have been performed,
-        // ivymaster prints out a csv line for that subinterval in the csv file for that rollup instance.
-        // Rollup instances occur in rollup type folders.
-
-        // There are two places you find the set of rollup folders by rollup type.
-
-        // For each test step a subfolder is created, and within that test step subfolder
-        // we find the rollup folder structure within which each rollup instance like "Port=2A"
-        // has a csvfile line for each subinterval.
-
-        // The data by subinterval in the test step folders is raw data, meaning that
-        // we haven't yet said we made a successful valid repeatable measurement.
-
-        // If the DFC said "success", it makes available the subinterval sequence
-        // "first" and "last" indexes of the "measurement period".
-
-        // Analogous to "summary.html", we now build a set of rollup folders in the main
-        // output folder for the test, in the same folder that has the individual subfolders by step.
-
-        // For each rollup instance, like "host=sun159", we compute the "measurement" as the average
-        // from to the first to last measurement period subintervals this test step [subfolder].
-        // So this writes one "measurement" line in the csv files for each test step.
-        // If you describe in the step name the thing that is varying with this step, it can make it easier to read the data in Excel.
-
-        // There is a default rollup type "all" that only has one instance "all".
-
-        // So instead of looking for summary.html, look in the output folder for the "all" folder and click on the all=all item.
-
-        // On the other hand, if various data validation mechanisms fail, we won't get a measurement
-        // for that step, and appropriate error mechanisms are written.
-
-        // If the DFC says "failure", we print the appropriate csv file data line whose ID preamble
-        // is normal, but then which payload part has an error message.
-
-
-
-        // Here please peruse some earlier material ...
-
-
-
-        // Note that at the point the evaluateSubinterval() routine decides to stop, the next
-        // and last subinterval has already started, and the iosequencer thread won't stop
-        // until it reaches the end of that last subinterval.  The data from the last subinterval
-        // will show in the subinterval-by-subinterval detail csv files, but it cannot become
-        // part of valid measurement data because we always require at least one subinterval
-        // worth of data be dropped from the end.  (We need to drop at least one subinterval
-        // from the end because tests start only as fast as TCP/IP delivers the "Go!" command
-        // to each test host, and in this way we don't need NTP synchronisation between test hosts,
-        // but we have perhaps a jitter of 1/10 second between subinterval start/end times across
-        // the various test hosts. So we have to drop the last subinterval, because otherwise
-        // you would see the effects on some hosts of other hosts stopping a tenth of a second
-        // before the end of a subinterval.)
-
-        // When we get "success", the MeasureController object is ready for you to call its
-        // firstMeasurementSubintervalIndex() and lastMeasurementSubintervalIndex() methods which define the set of consecutive subintevals
-        // to roll up to get the overall test step results to post in the summary.csv file.
-
-        // A return code of EVALUATE_SUBINTERVAL_FAILURE also means stop at the end of the currently
-        // running subinterval, but in this case we are abandoning the test without a range
-        // of consecutive subintervals comprising valid measurement data.
-
-        // "Failure" means the test didn't stabilize with a time limit.
-
-
-// design change 2015-12-07
-
-// Sorry, the terminology has changed.  What is called a DFC now only decides when we have "seen enough".
-
-// What's different is that now the DFC has been broken into three separate functions
-
-// 1) PID loop, 2) Seen enough and stop, 3) cooldown until WP is empty
-
-// Both the PID loop and the "measure" or "seen enough & stop" feature look at the "focus metric",
-// so for each rollup instance in the focus rollup, we first collect the focus metric.
-
-// Then if we have PID, we run the PID loop on each focus rollup instance.
-
-// Then we run either the fixed or the measure DFC.
-
-// If the DFC resports SUCCESS or FAILURE, then if cooldown_by_WP is on, and WP is not empty, we turn on
-// cooldown mode and run another subinterval.
-
-// Now that you have seen that explanation, before we do any of the above, if we are already in cooldown
-// mode we keep doing that until WP is empty.  The measure DFC already has set the first/last measurement
-// subinterval values.
 

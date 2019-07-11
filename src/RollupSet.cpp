@@ -67,36 +67,6 @@ void RollupSet::rebuild()
     for (auto& pear : rollups) pear.second->rebuild();
 }
 
-void RollupSet::printMe(std::ostream& o)
-{
-    o << "RollupSet::printMe()" <<std::endl;
-
-    ivytime duration = measurement_starting_ending_times.second - measurement_starting_ending_times.first;
-
-    o << "Measurement start time " << measurement_starting_ending_times.first.format_as_datetime_with_ns()
-      << " to " << measurement_starting_ending_times.second.format_as_datetime_with_ns()
-      << " duration " << duration.format_as_duration_HMMSSns()
-      << std::endl;
-
-    for (unsigned int i=0; i < starting_ending_times.size(); i++)
-    {
-        duration = starting_ending_times[i].second - starting_ending_times[i].first;
-        o << "subinterval " << i << " start time " << starting_ending_times[i].first.format_as_datetime_with_ns()
-          << " to " << starting_ending_times[i].second.format_as_datetime_with_ns()
-          << " duration " << duration.format_as_duration_HMMSSns()
-          << std::endl;
-    }
-
-    o << "rollups.size() = " << rollups.size() << std::endl;
-
-    for (auto& pear : rollups)
-    {
-        o << std::endl << "for rollups key = \"" << pear.first << "\":" << std::endl;
-        pear.second->printMe(o);
-    }
-
-    return;
-}
 
 
 std::string RollupSet::debugListRollups()
@@ -272,8 +242,6 @@ std::pair<bool,std::string> RollupSet::deleteRollup(std::string attributeNameCom
 
 void RollupSet::resetSubintervalSequence()
 {
-    starting_ending_times.clear();
-
     subintervalIndex = -1;
 
     for  (auto& pear : rollups)
@@ -295,10 +263,6 @@ void RollupSet::resetSubintervalSequence()
 
 void RollupSet::startNewSubinterval(ivytime start, ivytime end)
 {
-
-    SubintervalRollup blankSubintervalRollup(start,end);
-
-
     for  (auto& pear : rollups)
     {
         RollupType* pRollupType	= pear.second;
@@ -306,21 +270,22 @@ void RollupSet::startNewSubinterval(ivytime start, ivytime end)
         for (auto& peach : pRollupType->instances)
         {
             RollupInstance* pRollupInstance = peach.second;
-            pRollupInstance->subintervals.sequence.push_back(blankSubintervalRollup);
+            pRollupInstance->subintervals.sequence.emplace_back(start,end);
         }
     }
     subintervalIndex++;
-    starting_ending_times.push_back(std::pair<ivytime,ivytime>(start,end));
 }
 
 
-std::pair<bool,std::string> RollupSet::makeMeasurementRollup(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex)
+std::pair<bool,std::string> RollupSet::makeMeasurementRollup()
 {
+    measurement& m = m_s.current_measurement();
+
     {
         std::ostringstream o;
-        o << "Making measurement rollup from subinterval " << firstMeasurementIndex << " to " << lastMeasurementIndex << "." << std::endl
-            << "Measurement from " << starting_ending_times[firstMeasurementIndex].first.format_as_datetime_with_ns() << " to "
-            << starting_ending_times[lastMeasurementIndex].second.format_as_datetime_with_ns() << std::endl;
+        o << "Making measurement rollup from subinterval " << m.firstMeasurementIndex << " to " << m.lastMeasurementIndex << "." << std::endl
+            << "Measurement from " << m.measure_start.format_as_datetime_with_ns() << " to "
+            << m.measure_end.format_as_datetime_with_ns() << std::endl;
         log(m_s.masterlogfile, o.str());
         std::cout << o.str();
         log(m_s.masterlogfile, o.str());
@@ -328,18 +293,13 @@ std::pair<bool,std::string> RollupSet::makeMeasurementRollup(unsigned int firstM
 
     std::string my_message;
 
-    measurement_starting_ending_times.first = starting_ending_times[firstMeasurementIndex].first;
-    measurement_starting_ending_times.second = starting_ending_times[lastMeasurementIndex].second;
-    measurement_first_index = firstMeasurementIndex;
-    measurement_last_index = lastMeasurementIndex;
-
     for (auto& pear : rollups)
     {
         RollupType* pRollupType = pear.second;
 
 //*debug*/ { std::ostringstream o; o << "RollupSet::makeMeasurementRollup(, " << firstMeasurementIndex << " ," << lastMeasurementIndex << ").  About to make measurement rollup in rollup type " << pRollupType->attributeNameCombo.attributeNameComboID << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
 
-        auto rv = pRollupType->makeMeasurementRollup(firstMeasurementIndex, lastMeasurementIndex);
+        auto rv = pRollupType->makeMeasurementRollup();
 
         if (!rv.first)
         {
@@ -354,24 +314,24 @@ std::pair<bool,std::string> RollupSet::makeMeasurementRollup(unsigned int firstM
         if
         (
             not_participating.size() == 0
-            || firstMeasurementIndex < 0
-            || firstMeasurementIndex > lastMeasurementIndex
-            || lastMeasurementIndex >= not_participating.size()
+            || m.firstMeasurementIndex < 0
+            || m.firstMeasurementIndex > m.lastMeasurementIndex
+            || m.lastMeasurementIndex >= ((int)not_participating.size())
         )
         {
             std::ostringstream o;
-            o   << "RollupSet::makeMeasurementRollup() - Invalid first (" << firstMeasurementIndex << ") and last (" << lastMeasurementIndex << ") measurement period indices "
+            o   << "RollupSet::makeMeasurementRollup() - Invalid first (" << m.firstMeasurementIndex << ") and last (" << m.lastMeasurementIndex << ") measurement period indices "
                 << "for \"not_participating\", whose size is " << not_participating.size() << " subintervals." << std::endl << "There must be at least one subinterval of data." << std::endl;
             log(m_s.masterlogfile, o.str());
             std::cout << o.str();
             m_s.kill_subthreads_and_exit();
         }
 
-        not_participating_measurement.data.clear();
+        not_participating_measurement.emplace_back();
 
-        for (unsigned int i=firstMeasurementIndex; i <= lastMeasurementIndex; i++)
+        for (int i=m.firstMeasurementIndex; i <= m.lastMeasurementIndex; i++)
         {
-            not_participating_measurement.addIn(not_participating[i]);
+            not_participating_measurement.back().addIn(not_participating[i]);
         }
     }
 
@@ -400,11 +360,11 @@ std::pair<bool,std::string> RollupSet::passesDataVariationValidation()
     return std::make_pair(retval,s);
 }
 
-void RollupSet::print_measurement_summary_csv_line()
+void RollupSet::print_measurement_summary_csv_line(unsigned int measurement_index)
 {
     for (auto& pear : rollups)  // For each RollupType
     {
-        pear.second->print_measurement_summary_csv_line();
+        pear.second->print_measurement_summary_csv_line(measurement_index);
     }
 
 }

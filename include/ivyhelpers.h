@@ -84,6 +84,7 @@ std::string convert_non_alphameric_or_hyphen_or_period_to_underscore(std::string
 std::string convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(std::string s);
 std::string convert_non_alphameric_or_hyphen_or_equals_to_underscore(std::string s);
 std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(std::string);
+std::string convert_commas_to_semicolons(const std::string);
 bool stringCaseInsensitiveEquality(std::string s1, std::string s2);
 
 bool looksLikeHostname(std::string s);

@@ -172,8 +172,6 @@ struct IvyDriver
 	std::string remainder;
 	std::string subinterval_duration_as_string;
 
-    bool cooldown_flag;
-
     bool spinloop {false};
 
     std::vector<std::string> workload_thread_error_messages {};
@@ -206,6 +204,8 @@ struct IvyDriver
     void log_TestLUN_ownership();
 
     void log_iosequencer_settings(const std::string&);
+
+    void check_CPU_temperature();
 };
 
 extern struct IvyDriver ivydriver;
@@ -249,10 +249,9 @@ extern struct IvyDriver ivydriver;
 //     then when we have the lock, we post "keep_going", and turn on ivydriver posted command.
 //     This is how the workload threads keep running at the end of the first subinterval.
 //
-// "continue" or "cooldown"
-//     We record with a flag if it was cooldown.
+// "continue"
 //     We iterate over all the threads, waiting (FOREVER?!) to get the lock.
-//     We post "keep going" and pass along the cooldown flag.
+//     We post "keep going".
 //     We say OK to pipe_driver_subthread.
 //
 // "stop"

@@ -259,7 +259,6 @@ ivy_float IosequencerInputRollup::get_Total_IOPS_Setting(unsigned int subinterva
             std::string e = "<Error> internal programming error - IosequencerInputRollup::get_Total_IOPS_Setting() - IOPS setting \""s + pear.first
                 + "\" is not \"max\" and does not look like a floating point number."s;
             std::cout << std::endl << e << std::endl << std::endl;
-            log(m_s.masterlogfile,e);
             throw std::runtime_error(e);
         }
         {

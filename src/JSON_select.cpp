@@ -294,7 +294,7 @@ bool JSON_select_clause::ldev_matches(LUN* p_LUN)
         std::ostringstream o;
         o << "<Warning> JSON_select_clause has null pointer to list of attribute value pointers." << std::endl << "Select clause is:  " << (*this) << std::endl
             << "in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
-        m_s.warning_messages.push_back(o.str());
+        m_s.warning_messages.insert(o.str());
         log(m_s.masterlogfile, o.str());
         std::cout << o.str();
 		return false;
@@ -318,7 +318,7 @@ bool JSON_select_clause::ldev_matches(LUN* p_LUN)
         std::ostringstream o;
         o << "<Warning> JSON_select_clause::ldev_matches() - LUN LDEV attribute value \"" << lun_ldev_string << "\" did not parse as an LDEV." << std::endl
             << "in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
-        m_s.warning_messages.push_back(o.str());
+        m_s.warning_messages.insert(o.str());
         log(m_s.masterlogfile, o.str());
         std::cout << o.str();
 		return false;
@@ -334,7 +334,7 @@ bool JSON_select_clause::ldev_matches(LUN* p_LUN)
             o << "<Warning> In JSON_select_clause::ldev_matches() at line " << __LINE__ << " of source file " << __FILE__
                 << ", ignoring null pointer in list of pointers to attribute values." << std::endl
                 << "Select clause is:  " << (*this) << std::endl;
-            m_s.warning_messages.push_back(o.str());
+            m_s.warning_messages.insert(o.str());
             log(m_s.masterlogfile, o.str());
             std::cout << o.str();
             continue;
@@ -484,7 +484,7 @@ bool JSON_select_clause::pg_matches(LUN* p_LUN)
         std::ostringstream o;
         o << "<Warning> In function " << __FUNCTION__ << " in file " << __FILE__ << " at line " << __LINE__
             << " - null pointer to list of attribute value pointers.  Select clause is " << (*this);
-        m_s.warning_messages.push_back(o.str());
+        m_s.warning_messages.insert(o.str());
         log(m_s.masterlogfile, o.str());
         std::cout << o.str();
 		return false;
@@ -524,7 +524,7 @@ bool JSON_select_clause::pg_matches(LUN* p_LUN)
             {
                 std::ostringstream o; o << "<Warning> At " << __FILE__ << " line " << __LINE__ << " in function " << __FUNCTION__
                     << " - Within the LUN's \"PG names\" = \"" << pg_names << "\", the individual PG string \"" << pg << "\" does not look like a parity group (digits hyphen digits)." << std::endl;
-                m_s.warning_messages.push_back(o.str());
+                m_s.warning_messages.insert(o.str());
                 log(m_s.masterlogfile, o.str());
                 return false;
             }
@@ -535,7 +535,7 @@ bool JSON_select_clause::pg_matches(LUN* p_LUN)
                 {
                     std::ostringstream o; o << "<Warning> At " << __FILE__ << " line " << __LINE__ << " in function " << __FUNCTION__ << " - "
                         << " ignoring a null pointer in the list of pointers to value strings." << std::endl;
-                    m_s.warning_messages.push_back(o.str());
+                    m_s.warning_messages.insert(o.str());
                     log(m_s.masterlogfile, o.str());
                     continue;
                 }
@@ -579,7 +579,7 @@ bool JSON_select_clause::host_matches(LUN* p_LUN)
         std::ostringstream o;
         o << "<Warning> JSON_select_clause::host_matches called with NULL pointer to LUN." << std::endl
             << "in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
-        m_s.warning_messages.push_back(o.str());
+        m_s.warning_messages.insert(o.str());
         log(m_s.masterlogfile, o.str());
 		return false;
 	}
@@ -606,7 +606,7 @@ bool JSON_select_clause::host_matches(LUN* p_LUN)
         {
             std::ostringstream o; o << "<Warning> At " << __FILE__ << " line " << __LINE__ << " in function " << __FUNCTION__ << " - "
                 << " ignoring a null pointer in the list of pointers to values." << std::endl;
-            m_s.warning_messages.push_back(o.str());
+            m_s.warning_messages.insert(o.str());
             log(m_s.masterlogfile, o.str());
             std::cout << o.str();
             continue;
@@ -638,7 +638,7 @@ bool JSON_select_clause::host_matches(LUN* p_LUN)
             {
                 std::ostringstream o; o << "<Warning> At " << __FILE__ << " line " << __LINE__ << " in function " << __FUNCTION__ << " - "
                     << " ignoring select clause host range specification \"" << s << "\" where the starting host comes after the ending host." << std::endl;
-                m_s.warning_messages.push_back(o.str());log(m_s.masterlogfile, o.str());
+                m_s.warning_messages.insert(o.str());log(m_s.masterlogfile, o.str());
                 std::cout << o.str();
                 continue;
             }
@@ -655,7 +655,7 @@ bool JSON_select_clause::host_matches(LUN* p_LUN)
             std::ostringstream o; o << "<Warning> At " << __FILE__ << " line " << __LINE__ << " in function " << __FUNCTION__ << " - "
                 << " ignoring a select clause host attribute value \"" << s
                 << "\" that doesn\'t look like a single hostname like shovel or a hostname range like shovel32-47 or an IPV4 dotted quad like 192.168.0.0." << std::endl;
-            m_s.warning_messages.push_back(o.str());
+            m_s.warning_messages.insert(o.str());
             log(m_s.masterlogfile, o.str());
             std::cout << o.str();
         }
@@ -673,7 +673,7 @@ bool JSON_select_clause::host_matches(LUN* p_LUN)
             std::ostringstream o;
             o << "<Warning> JSON_select_clausehost_matches() - LUN had neither \"ivyscript hostname\" nor \"hostname\" parity_group attributes or their values are at most whitespace" << std::endl
                 << "in function " << __FUNCTION__ << " at line " << __LINE__ << " of file " << __FILE__ << std::endl;
-            m_s.warning_messages.push_back(o.str());
+            m_s.warning_messages.insert(o.str());
             log(m_s.masterlogfile, o.str());
             std::cout << o.str();
             return false;

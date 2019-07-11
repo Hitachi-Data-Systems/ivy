@@ -72,7 +72,6 @@ public:
 	void waitUntilThisTime() const;
 	void wait_for_this_long() const;
 	uint64_t Milliseconds() const;
-	void roundUpToStartOfMinute();
 	void setFromNanoseconds(uint64_t Nanoseconds);
 	uint64_t getAsNanoseconds() const;
 	long double getlongdoubleseconds() const;
@@ -84,11 +83,17 @@ public:
 	std::string duration_from(const ivytime& t);
 
 	std::string toString() const;
-	bool fromString(std::string);
+	bool durationFromString(std::string);
+	//bool fromString(std::string);
 	bool isValid() const;
 	void normalize(); // fix what may be an invalid representation after an operation such as plus or minus.
     void normalize_round(); // you just keep calling this until isValid()
 
+private:
+    ivytime& get_ivytime_reference_delta() const;
 };
+
+extern ivytime ivytime_reference_delta; // DO NOT refer to this yourself.  See notes at top of ivytime.cpp.
+
 
 

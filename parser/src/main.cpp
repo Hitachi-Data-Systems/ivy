@@ -154,6 +154,13 @@ std::string get_running_user()
 
 int main(int argc, char* argv[])
 {
+    char hostname[HOST_NAME_MAX + 1];
+    hostname[HOST_NAME_MAX] = 0x00;
+    if (0 != gethostname(hostname,HOST_NAME_MAX))
+    {
+        std::cout << "<Error> internal programming error - gethostname(hostname,HOST_NAME_MAX)) failed errno " << errno << " - " << strerror(errno) << "." << std::endl;
+        return -1;
+    }
 
     {
         std::ostringstream o;
@@ -178,7 +185,7 @@ int main(int argc, char* argv[])
 #ifdef __GLIBCXX__
     o << " - libstdc++ date " << __GLIBCXX__;
 #endif
-        o << " starting." << std::endl << std::endl;
+        o << " - starting on " << hostname << "." << std::endl << std::endl;
         std::cout << o.str();
     }
 
@@ -367,7 +374,8 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-        std::cout << "<Error> unsuccessful compile." << std::endl;
+        std::cout << "<Error> unsuccessful compile." << std::endl << std::endl;
+        context.show_syntax_error_location();
     }
 
     ivytime finish_time; finish_time.setToNow();

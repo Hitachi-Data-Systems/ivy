@@ -54,7 +54,7 @@ void Workload::prepare_to_run()
 {
 #if defined(IVYDRIVER_TRACE)
     { workload_callcount_prepare_to_run++; if (workload_callcount_prepare_to_run <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_prepare_to_run << ") "
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_prepare_to_run << ") "
         << "            Entering Workload::prepare_to_run()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
@@ -166,7 +166,7 @@ void Workload::build_Eyeos()
 {
 #if defined(IVYDRIVER_TRACE)
     { workload_callcount_build_Eyeos++; if (workload_callcount_build_Eyeos <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_build_Eyeos << ") "
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_build_Eyeos << ") "
         << "            Entering Workload::build_Eyeos()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
@@ -264,7 +264,7 @@ void Workload::switchover()
                / seconds_ivytime.getlongdoubleseconds();
 
             std::ostringstream o;
-            o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_switchover << ") "
+            o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_switchover << ") "
                 << "            Entering Workload::switchover() - subinterval_number " << subinterval_number
                 << " workload_cumulative_launch_count = " << workload_cumulative_launch_count
                 << " doing " << cumulative_launches_per_second << " cumulative I/O launches per second"
@@ -297,7 +297,7 @@ unsigned int /* number of I/Os popped and processed.  */
 {
 #if defined(IVYDRIVER_TRACE)
     { workload_callcount_pop_and_process_an_Eyeo++; if (workload_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_pop_and_process_an_Eyeo << ") "
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_pop_and_process_an_Eyeo << ") "
         << "            Entering Workload::pop_and_process_an_Eyeo()."; } }
 #endif
 
@@ -413,7 +413,7 @@ unsigned int /* number of I/Os popped and processed.  */
 		    if (p_dun->return_value == -1)
 		    {
                 std::ostringstream o;
-                o << "<Warning> Thread for core " << pWorkloadThread->core << "  " << workloadID << " - I/O failed return code = " << p_dun->return_value << ", errno = " << errno << " - " << strerror(errno) << p_dun->toString() << std::endl;
+                o << "<Warning> Thread for physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread<< "  " << workloadID << " - I/O failed return code = " << p_dun->return_value << ", errno = " << errno << " - " << strerror(errno) << p_dun->toString() << std::endl;
 
                 pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
 
@@ -424,7 +424,7 @@ unsigned int /* number of I/Os popped and processed.  */
             {
                 int err = -p_dun->return_value;
                 std::ostringstream o;
-                o << "<Warning> Thread for core " << pWorkloadThread->core << "  " << workloadID << " - I/O failed return code = " << p_dun->return_value
+                o << "<Warning> Thread for physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << "  " << workloadID << " - I/O failed return code = " << p_dun->return_value
                     << " (" << strerror(err) << ") " << p_dun->toString() << std::endl;
 
                 pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
@@ -434,7 +434,7 @@ unsigned int /* number of I/Os popped and processed.  */
             }
 		} else {
 			std::ostringstream o;
-			o << "<Warning> Thread for core " << pWorkloadThread->core << "  " << workloadID << "- I/O only transferred " << p_dun->return_value << " out of requested " << p_current_IosequencerInput->blocksize_bytes << std::endl;
+			o << "<Warning> Thread for physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << "  " << workloadID << "- I/O only transferred " << p_dun->return_value << " out of requested " << p_current_IosequencerInput->blocksize_bytes << std::endl;
 
             pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
 
@@ -457,7 +457,7 @@ unsigned int /* number of I/Os popped and processed.  */
     if (workload_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS)
     {
         std::ostringstream o;
-        o << "(core" << pWorkloadThread->core << '-' << workloadID << ") =|= popped and processed " << p_dun->thumbnail();
+        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ") =|= popped and processed " << p_dun->thumbnail();
         log(pWorkloadThread->slavethreadlogfile,o.str());
     }
 #endif
@@ -470,7 +470,7 @@ Eyeo* Workload::front_launchable_IO(const ivytime& now)
 {
 #if defined(IVYDRIVER_TRACE)
     { workload_callcount_front_launchable_IO++; if (workload_callcount_front_launchable_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_front_launchable_IO << ") "
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_front_launchable_IO << ") "
         << ")             Entering Workload::front_launchable_IO(" << now.format_as_datetime_with_ns() << ") " << brief_status(); log(pWorkloadThread->slavethreadlogfile,o.str()); }
     pTestLUN->abort_if_queue_depths_corrupted("Workload::front_launchable_IO",workload_callcount_front_launchable_IO); }
 #endif
@@ -503,7 +503,7 @@ Eyeo* Workload::front_launchable_IO(const ivytime& now)
     if (workload_callcount_front_launchable_IO <= FIRST_FEW_CALLS)
     {
         std::ostringstream o;
-        o << "(core" << pWorkloadThread->core << '-' << workloadID << ") =|= front launchable is  " << pEyeo->thumbnail();
+        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ") =|= front launchable is  " << pEyeo->thumbnail();
         log(pWorkloadThread->slavethreadlogfile,o.str());
     }
 #endif
@@ -516,7 +516,7 @@ void Workload::load_IOs_to_LaunchPad()
 {
 #if defined(IVYDRIVER_TRACE)
     { workload_callcount_load_IOs_to_LaunchPad++; if (workload_callcount_load_IOs_to_LaunchPad <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_load_IOs_to_LaunchPad << ") "
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_load_IOs_to_LaunchPad << ") "
         << "            Entering Workload::load_IOs_to_LaunchPad() " << brief_status(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
@@ -544,7 +544,7 @@ void Workload::load_IOs_to_LaunchPad()
         if (workload_callcount_load_IOs_to_LaunchPad <= FIRST_FEW_CALLS)
         {
             std::ostringstream o;
-            o << "(core" << pWorkloadThread->core << '-' << workloadID << ") =|= loading to LaunchPad " << pEyeo->thumbnail();
+            o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ") =|= loading to LaunchPad " << pEyeo->thumbnail();
             log(pWorkloadThread->slavethreadlogfile,o.str());
         }
 #endif
@@ -558,13 +558,11 @@ unsigned int Workload::generate_an_IO()
 {
 #if defined(IVYDRIVER_TRACE)
     { workload_callcount_generate_an_IO++; if (workload_callcount_generate_an_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << workloadID << ':' << workload_callcount_generate_an_IO << ") "
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_generate_an_IO << ") "
         << "            Entering Workload::generate_an_IO() " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
     if (precomputeQ.size() >= precomputedepth) return 0;
-
-    if (pWorkloadThread->cooldown) return 0;
 
     if (0.0 == p_current_IosequencerInput->IOPS) return 0;
 
@@ -726,7 +724,7 @@ unsigned int Workload::generate_an_IO()
     if (workload_callcount_generate_an_IO <= FIRST_FEW_CALLS)
     {
         std::ostringstream o;
-        o << "(core" << pWorkloadThread->core << '-' << workloadID << ") =|= generated " << p_Eyeo->thumbnail();
+        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ") =|= generated " << p_Eyeo->thumbnail();
         log(pWorkloadThread->slavethreadlogfile,o.str());
     }
 #endif

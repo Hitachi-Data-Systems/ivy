@@ -36,6 +36,20 @@ public:
 
 // Look in ivydefines.h for the default values, gathered together in one spot
 
+	bool have_saved_IOPS{false};
+    ivy_float saved_IOPS {0.0};
+            // This is used with the cooldown_by_xxxx features.
+            // The cooldown_by_xxx features set "IOPS=pause", which
+            // saves the IOPS value, and then turns on have_saved_IOPS
+            // and sets IOPS to 0.0.
+
+            // run subinterval sequence(), before starting subinterval zero,
+            // sends out "edit_rollup("all=all", "IOPS=restore")
+            // and then if there is a saved value, it is restored.
+
+            // If IOPS is set to any value other than "save" or "restore",
+            // have_saved_IOPS is turned off.
+
 	unsigned int
 		blocksize_bytes{blocksize_bytes_default},
 

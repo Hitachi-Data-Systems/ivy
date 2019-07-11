@@ -861,6 +861,10 @@ namespace yy
 	void ivy::error(location const &loc, const std::string& s)
 	{
 		std::cerr << "error at " << loc << ": " << s << std::endl;
+		context_ref.syntax_error_first_line = loc.begin.line;
+		context_ref.syntax_error_first_column = loc.begin.column;
+		context_ref.syntax_error_last_line = loc.end.line;
+		context_ref.syntax_error_last_column = loc.end.column;
 		context_ref.unsuccessful_compile = true;
 	}
 }

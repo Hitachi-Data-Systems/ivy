@@ -20,6 +20,8 @@
 #pragma once
 
 #include <regex>
+#include <vector>
+#include <set>
 
 #include "SymbolTableEntry.h"
 #include "Frame.h"
@@ -88,6 +90,9 @@ public:
     bool unsuccessful_compile {false};
     int warning_count {0};
     std::string compile_msg {};
+    unsigned int syntax_error_first_line, syntax_error_first_column, syntax_error_last_line, syntax_error_last_column;
+    std::vector<std::string> source_lines_for_error {};
+    std::set<std::string> inklude_file_names {};
 
 // methods
     Ivy_pgm(const std::string& f, const std::string& tn);
@@ -119,6 +124,9 @@ public:
     Stmt* make_Stmt_return(const yy::location&, Xpr* p_xpr);
 
     void snapshot(std::ostream&);
+
+    void load_source_file_for_error_location(const std::string& f);
+    void show_syntax_error_location();
 };
 
 

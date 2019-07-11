@@ -64,57 +64,6 @@
 
 extern bool routine_logging, trace_evaluate;
 
-void RollupType::printMe(std::ostream& o)
-{
-    o << std::endl << std::endl << "RollupType::printMe(ostream& o) for " << attributeNameCombo.attributeNameComboID;
-
-    if (nocsv)
-    {
-        o << " nocsv=true";
-    }
-    else
-    {
-        o << " nocsv=false";
-    }
-
-    if (haveQuantityValidation)
-    {
-        o << ", haveQuantityValidation=true with quantityRequired=" << quantityRequired;
-    }
-    else
-    {
-        o << ", haveQuantityValidation=false";
-    }
-
-    if (have_maxDroopMaxtoMinIOPS)
-    {
-        o << ", have_maxDroopMaxtoMinIOPS=true with maxDroopMaxToMinIOPS=" << maxDroopMaxToMinIOPS;
-    }
-    else
-    {
-        o << ", have_maxDroopMaxtoMinIOPS=false";
-    }
-
-    o << std::endl;
-
-    o << "For std::map<std::string /*rollupInstanceName*/, RollupInstance*> instances:" << std::endl;
-
-    for (auto& pear : instances)
-    {
-        o << "instances[" << pear.first << "]: " << std::endl;
-        pear.second->printMe(o);
-    }
-
-
-    o << std::endl << "For std::map<std::string /*workloadID*/, RollupInstance*> rollupInstanceByWorkloadID:" << std::endl;
-
-    for (auto& pear : rollupInstanceByWorkloadID)
-    {
-        o << "rollupInstanceByWorkloadID[" << pear.first << "] = " << pear.second-> attributeNameComboID << " : " << pear.second->rollupInstanceID << std::endl;
-    }
-}
-
-
 RollupType::RollupType
 (
     RollupSet* prs
@@ -320,9 +269,13 @@ void RollupType::rebuild()
 }
 
 
-std::pair<bool,std::string> RollupType::makeMeasurementRollup(int firstMeasurementIndex, int lastMeasurementIndex)
+std::pair<bool,std::string> RollupType::makeMeasurementRollup()
 {
     measurementRollupAverageIOPSRunningStat.clear();
+
+    measurement& m = m_s.current_measurement();
+
+    long double duration = m.duration().getlongdoubleseconds();
 
     std::string my_error_message;
     for (auto& pear : instances)
@@ -330,7 +283,7 @@ std::pair<bool,std::string> RollupType::makeMeasurementRollup(int firstMeasureme
         RollupInstance* pRollupInstance;
         pRollupInstance = pear.second;
 
-        auto retval = pRollupInstance->makeMeasurementRollup(firstMeasurementIndex, lastMeasurementIndex);
+        auto retval = pRollupInstance->makeMeasurementRollup();
         if(!retval.first)
         {
             std::ostringstream o;
@@ -338,43 +291,35 @@ std::pair<bool,std::string> RollupType::makeMeasurementRollup(int firstMeasureme
             return std::make_pair(false,o.str());
         }
 
-        ivy_float durSec = pRollupInstance->measurementRollup.durationSeconds();
-
-        if (durSec <=0)
         {
-            std::ostringstream o;
-            o << "RollupType::makeMeasurementRollup() - aborting - m_s.measurementRollup.durationSeconds() returned "
-              << durSec << " for a start time of \""
-              << pRollupInstance->measurementRollup.startIvytime.format_as_datetime_with_ns() << " and ending at "
-              << pRollupInstance->measurementRollup.endIvytime.format_as_datetime_with_ns() << ".";
-            return std::make_pair(false,o.str());
+            SubintervalOutput& mro = pRollupInstance->current_measurement().measurementRollup.outputRollup;
+
+            ivy_float overallIOPS = mro.u.a.service_time.overall().count() / duration;
+
+            measurementRollupAverageIOPSRunningStat.push( overallIOPS );
+
+            // OK, this is slightly wacky, tracking BytesPerSecond instead of decimal MB/s.  Reason: impossible to misinterpret units as binary or decimal.
+            ivy_float overallBytesPerSec = mro.u.a.bytes_transferred.overall().sum() / duration;
+
+            measurementRollupAverageBytesPerSecRunningStat.push( overallBytesPerSec );
+
+            if (mro.u.a.bytes_transferred.overall().count() >0)
+            {
+                measurementRollupAverageBlocksizeBytesRunningStat.push
+                (
+                    mro.u.a.bytes_transferred.overall().sum()
+                    / mro.u.a.bytes_transferred.overall().count()
+                );
+            }
+
+            measurementRollupAverageServiceTimeRunningStat.push( mro.u.a.service_time.overall().avg() );
+
+            if (mro.u.a.response_time.overall().count() >0)
+            {
+                measurementRollupAverageResponseTimeRunningStat.push( mro.u.a.response_time.overall().avg() );
+            }
         }
 
-
-        ivy_float overallIOPS = pRollupInstance->measurementRollup.outputRollup.u.a.service_time.overall().count() / durSec;
-
-        measurementRollupAverageIOPSRunningStat.push( overallIOPS );
-
-        // OK, this is slightly wacky, tracking BytesPerSecond instead of decimal MB/s.  Reason: impossible to misinterpret units as binary or decimal.
-        ivy_float overallBytesPerSec = pRollupInstance->measurementRollup.outputRollup.u.a.bytes_transferred.overall().sum() / durSec;
-
-        measurementRollupAverageBytesPerSecRunningStat.push( overallBytesPerSec );
-
-        if (pRollupInstance->measurementRollup.outputRollup.u.a.bytes_transferred.overall().count() >0)
-        {
-            measurementRollupAverageBlocksizeBytesRunningStat.push
-            (
-                pRollupInstance->measurementRollup.outputRollup.u.a.bytes_transferred.overall().sum()
-                / pRollupInstance->measurementRollup.outputRollup.u.a.bytes_transferred.overall().count()
-            );
-        }
-
-        measurementRollupAverageServiceTimeRunningStat.push( pRollupInstance->measurementRollup.outputRollup.u.a.service_time.overall().avg() );
-
-        if (pRollupInstance->measurementRollup.outputRollup.u.a.response_time.overall().count() >0)
-        {
-            measurementRollupAverageResponseTimeRunningStat.push( pRollupInstance->measurementRollup.outputRollup.u.a.response_time.overall().avg() );
-        }
     }
 
     return std::make_pair(true,"");
@@ -467,7 +412,7 @@ void RollupType::make_step_subfolder()
     }
 }
 
-void RollupType::print_measurement_summary_csv_line()
+void RollupType::print_measurement_summary_csv_line(unsigned int measurement_index)
 {
     struct stat struct_stat;
 
@@ -553,11 +498,8 @@ void RollupType::print_measurement_summary_csv_line()
 
     }
 
-    for (auto& peer : instances) peer.second->print_measurement_summary_csv_line();
+    for (auto& peer : instances) peer.second->print_measurement_summary_csv_line(measurement_index);
 }
-
-
-
 
 
 

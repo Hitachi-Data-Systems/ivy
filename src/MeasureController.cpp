@@ -22,17 +22,3 @@
 
 MeasureController::~MeasureController(){}
 
-std::string MeasureController::test_phase(unsigned int subinterval_index)
-{
-    if (EVALUATE_SUBINTERVAL_SUCCESS == m_s.lastEvaluateSubintervalReturnCode)
-    {
-        if ( subinterval_index < firstMeasurementSubintervalIndex() )
-            return std::string("warmup");
-        else if ( subinterval_index <= lastMeasurementSubintervalIndex() )
-            return std::string("measurement");
-        else
-            return std::string("cooldown");
-    }
-    else
-        return std::string("warmup");
-}

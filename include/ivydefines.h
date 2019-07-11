@@ -83,11 +83,10 @@ const std::string ivy_version {"3.20.05"};
 // go statement universal parameters
 #define subinterval_seconds_default_int 5
 #define subinterval_seconds_default std::string("5")
-#define warmup_seconds_default      std::string("5")
 #define measure_seconds_default     std::string("60")
-#define cooldown_by_wp_default      std::string("last")
+#define cooldown_by_wp_default      std::string("on")
 #define subsystem_WP_threshold_default std::string("1.5%")
-#define cooldown_by_MP_busy_default std::string("last")
+#define cooldown_by_MP_busy_default std::string("on")
 #define subsystem_busy_threshold_default std::string("5%")
 
 // measure = on parameters
