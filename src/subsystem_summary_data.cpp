@@ -819,11 +819,11 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
 
                 if (random_IOPS > 0.0 )
                 {
-                    o << "; rand blk = " << std::fixed << std::setprecision(2) << random_blocksize_KiB << " KiB";
+                    o << "; rand blk = " << std::fixed << std::setprecision(random_blocksize_KiB == ceil(random_blocksize_KiB) ? 0 : 2) << random_blocksize_KiB << " KiB";
                 }
                 if (sequential_IOPS > 0.0 )
                 {
-                    o << "; seq blk = " << std::fixed << std::setprecision(2) << sequential_blocksize_KiB << " KiB";
+                    o << "; seq blk = " << std::fixed << std::setprecision(sequential_blocksize_KiB == ceil(sequential_blocksize_KiB) ? 0 : 2) << sequential_blocksize_KiB << " KiB";
                 }
             }
         }

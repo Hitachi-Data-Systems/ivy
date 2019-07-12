@@ -1906,7 +1906,15 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
             {
                 std::ostringstream o;
 
-                o << "Measurement " << measurement_index << " summary for \"all=all\" rollup: " << mro.thumbnail(mr.durationSeconds()) << std::endl;
+                if (m_s.have_IOPS_staircase)
+                {
+                    o << "Measurement " << measurement_index << " s";
+                }
+                else
+                {
+                    o << "S";
+                }
+                o << "ummary for \"all=all\" rollup: " << mro.thumbnail(mr.durationSeconds()) << std::endl;
 
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
