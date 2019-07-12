@@ -1558,13 +1558,12 @@ bool ivy_engine::start_new_measurement()
 
     if (measurements.size() == 0)
     {
-        multi_measure_initialize_first();
-
         measurements.emplace_back();
+
+        multi_measure_initialize_first();
 
         current_measurement().first_subinterval = 0;
         current_measurement().warmup_start = m_s.subintervalStart;
-        current_measurement().edit_rollup_text = current_measurement_edit_rollup_text;
     }
     else
     {
@@ -1574,9 +1573,10 @@ bool ivy_engine::start_new_measurement()
 
         measurements.emplace_back();
 
+        multi_measure_edit_rollup_total_IOPS();
+
         current_measurement().first_subinterval = 1 + measurements[measurements.size()-2].last_subinterval;
         current_measurement().warmup_start      =     measurements[measurements.size()-2].cooldown_end;
-        current_measurement().edit_rollup_text = current_measurement_edit_rollup_text;
     }
 
     return true;

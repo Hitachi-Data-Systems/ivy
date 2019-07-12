@@ -138,13 +138,6 @@ std::pair<bool,std::string> RollupSet::addRollupType
 // [CreateRollup] host               [nocsv] [quantity] 16 [maxDroopMaxtoMinIOPS] 25 %
 // error_message is clear()ed upon entry and is set with an error message if it returns false
 {
-//*debug*/ std::cout << "bool RollupSet::addRollupType (callers_error_message,\"" <<  attributeNameComboText << "\",";
-//*debug*/ if (nocsvSection) std::cout << "true,"; else std::cout << "false,";
-//*debug*/ if (quantitySection) std::cout << "true,"; else std::cout << "false,";
-//*debug*/ if (maxDroopMaxtoMinIOPSSection) std::cout << "true"; else std::cout << "false";
-//*debug*/ std::cout << ", quantity = " << quantity << ", maxDroop = " << maxDroop << ")" << std::endl;
-//*debug*/ std::cout << "m_s.TheSampleLUN = " << m_s.TheSampleLUN.toString() << std::endl;
-
     AttributeNameCombo aNC;
 
     std::pair<bool,std::string> retval = aNC.set(attributeNameComboText, &(m_s.TheSampleLUN));
@@ -283,9 +276,7 @@ std::pair<bool,std::string> RollupSet::makeMeasurementRollup()
 
     {
         std::ostringstream o;
-        o << "Making measurement rollup from subinterval " << m.firstMeasurementIndex << " to " << m.lastMeasurementIndex << "." << std::endl
-            << "Measurement from " << m.measure_start.format_as_datetime_with_ns() << " to "
-            << m.measure_end.format_as_datetime_with_ns() << std::endl;
+        o << "Making measurement rollup from subinterval " << m.firstMeasurementIndex << " to " << m.lastMeasurementIndex << "." << std::endl;
         log(m_s.masterlogfile, o.str());
         std::cout << o.str();
         log(m_s.masterlogfile, o.str());
@@ -296,8 +287,6 @@ std::pair<bool,std::string> RollupSet::makeMeasurementRollup()
     for (auto& pear : rollups)
     {
         RollupType* pRollupType = pear.second;
-
-//*debug*/ { std::ostringstream o; o << "RollupSet::makeMeasurementRollup(, " << firstMeasurementIndex << " ," << lastMeasurementIndex << ").  About to make measurement rollup in rollup type " << pRollupType->attributeNameCombo.attributeNameComboID << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str());}
 
         auto rv = pRollupType->makeMeasurementRollup();
 

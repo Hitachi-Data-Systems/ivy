@@ -34,8 +34,6 @@ ivy_engine::go(const std::string& parameters)
         log(ivy_engine_logfile,o.str());
     }
 
-//*debug*/std::string debug_console_input; static bool have_already_waited {false}; if (!have_already_waited) { std::cout << "debug: pausing while you could attach a debugger - hit return to resume." << std::endl; std::getline(std::cin,debug_console_input); } have_already_waited = true;
-
     std::pair<bool,std::string> rc {};
 
     if ( !haveHosts )
@@ -927,10 +925,10 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
                 staircase_steps = unsigned_int(staircase_steps_parameter,where_the.str());
             }
 
-            if (staircase_steps == 0)
+            if (staircase_steps < 2)
             {
                 ostringstream o;
-                o << std::endl << "<Error> ivy engine API -\"go\" - invalid \"steps\" parameter \"" << staircase_steps_parameter << "\".  Must be greater than zero." << std::endl
+                o << std::endl << "<Error> ivy engine API -\"go\" - invalid \"steps\" parameter \"" << staircase_steps_parameter << "\".  Must be greater than one." << std::endl
                     << "To increase IOPS by a percentage each step, prefix the step size with a + sign," << std::endl
                     << "as in step = \"+10%\" or step = \"+0.10\", both of which are equivalent." << std::endl << std::endl;
                 log(masterlogfile,o.str());
@@ -976,10 +974,11 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         }
 
 
-        if(have_staircase_ending_IOPS && have_staircase_steps && staircase_steps == 0)
+        if(have_staircase_ending_IOPS && have_staircase_steps && staircase_steps < 2)
         {
             ostringstream o;
-            o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid \"steps\" parameter \"" << staircase_steps_parameter << "\".  When ending_IOPS is provided, \"steps\" must be greater than zero." << std::endl << std::endl;
+            o << std::endl << "<Error> ivy engine API - go() - [Go] statement - invalid \"steps\" parameter \"" << staircase_steps_parameter
+                << "\".  When ending_IOPS is provided, \"steps\" must be greater than one." << std::endl << std::endl;
             log(masterlogfile,o.str());
             std::cout << o.str();
             kill_subthreads_and_exit();
@@ -989,7 +988,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         {
             // Reduce number of flavours of the case where we have a fixed number of steps
 
-            staircase_step = (staircase_ending_IOPS - staircase_starting_IOPS) / ((ivy_float) staircase_steps);
+            staircase_step = (staircase_ending_IOPS - staircase_starting_IOPS) / ((ivy_float) (staircase_steps - 1));
             have_staircase_step = true;
             have_staircase_steps = false;
         }
@@ -1000,7 +999,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
             staircase_ending_IOPS = staircase_starting_IOPS;
 
-            for (unsigned int i = 0; i < staircase_steps; i++)
+            for (unsigned int i = 1; i < staircase_steps; i++)
             {
                 if (have_staircase_step_percent_increment)
                 {
@@ -1391,11 +1390,22 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     run_subinterval_sequence(&the_dfc);
 
     rc.first=true;
+    {
+        std::ostringstream o;
 
-    rc.second = current_measurement().step_times_line(0); //// XXXXXXXXXXXXXXXXXXXXXXX  hard coded measurement zero for now.
-    log(masterlogfile, rc.second);
-    std::cout << rc.second;
+        for (unsigned int i = 0; i < measurements.size(); i++)
+        {
+            o << measurements[i].step_times_line(i);
+        }
 
+        rc.second = o.str();
+
+        m_s.step_duration_lines += o.str();
+
+        log(masterlogfile, rc.second);
+
+        std::cout << rc.second;
+    }
     return rc;
 }
 

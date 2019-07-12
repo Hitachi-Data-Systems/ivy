@@ -23,12 +23,22 @@
 std::string measurement::step_times_line(unsigned int measurement_number) const
 {
     std::ostringstream o;
-    o << "********* " << m_s.stepNNNN << " measurement " << measurement_number
-        << " duration "      << duration()         .format_as_duration_HMMSS()
+    o << "********* " << m_s.stepNNNN;
+
+    if (m_s.have_IOPS_staircase) { o << " measurement " << measurement_number; }
+
+    o    << " duration "      << duration()         .format_as_duration_HMMSS()
         << " = warmup "      << warmup_duration()  .format_as_duration_HMMSS()
         << " + measurement " << measure_duration() .format_as_duration_HMMSS()
         << " + cooldown "    << cooldown_duration().format_as_duration_HMMSS()
-        << " for step name \"" << m_s.stepName << "\"" << std::endl;
+        << " for step name \"" << m_s.stepName;
+
+    if (m_s.have_IOPS_staircase)
+    {
+        o << ":" << edit_rollup_text;
+    }
+
+    o << "\"" << std::endl;
 
     return o.str();
 }

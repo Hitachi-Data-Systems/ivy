@@ -1001,10 +1001,6 @@ void pipe_driver_subthread::threadRun()
 
         if (routine_logging) { log(logfilename, std::string("remote slave said its hostname is \"")+hostname+std::string("\".")); }
 
-
-//*debug*/std::cout << "debug: waiting 60 seconds to allow showluns.sh run with another ivy hammering a lun, slowing the binary search for the LUN size.\n";
-//*debug*/sleep(60);
-
         // Retrieve list of luns visible on the slave host
         if (!pCmdDevLUN)
         {
@@ -1274,35 +1270,6 @@ void pipe_driver_subthread::threadRun()
                     }
                     else if ( 0 == commandString.compare(std::string("get subinterval result")))
                     {
-///* debug */ ivytime one; one.setToNow();
-///* debug */                        {
-///* debug */                            std::ostringstream o;
-///* debug */                            o << std::endl;
-///* debug */                            o << "=======" << "pipe_driver_subthread::threadRun() for host " << ivyscript_hostname << " - received \"get subinterval result\" from master but haven't sent to remote yet." << std::endl;
-///* debug */                            ivytime now;
-///* debug */
-///* debug */                            now.setToNow();
-///* debug */
-///* debug */                            o << "=======" << "now: "  << now.format_as_datetime_with_ns() << std::endl;
-///* debug */                            o << "=======" << m_s.subintervalStart.format_as_datetime_with_ns()
-///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from_now() << " seconds from now) "
-///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from(m_s.get_go) << " seconds from Go! time) "
-///* debug */                                    << std::endl
-///* debug */                                << "=======" << m_s.subintervalEnd.format_as_datetime_with_ns()
-///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from_now() << " seconds from now) "
-///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
-///* debug */                                    << std::endl
-///* debug */                                << "=======" << m_s.nextSubintervalEnd.format_as_datetime_with_ns()
-///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from_now() << " seconds from now) "
-///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
-///* debug */                                    << std::endl
-///* debug */                                << std::endl;
-///* debug */
-///* debug */
-///* debug */                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str());
-///* debug */                            std::cout << o.str();
-///* debug */                        }
-
                         std::string hostCPUline;
 
                         try
@@ -1320,35 +1287,6 @@ void pipe_driver_subthread::threadRun()
                             master_slave_cv.notify_all();
                             return;
                         }
-
-///* debug */                        {
-///* debug */                            std::ostringstream o;
-///* debug */                            o << std::endl << "=======" << "pipe_driver_subthread::threadRun() for host " << ivyscript_hostname << " - received CPU line from remote." << std::endl
-///* debug */                             << "=======" << hostCPUline << std::endl;
-///* debug */                            ivytime now;
-///* debug */
-///* debug */                            now.setToNow();
-///* debug */
-///* debug */                            o << "=======" << "now: "  << now.format_as_datetime_with_ns() << " - delay from getting get subinterval result from master ";
-///* debug */ o << (now-one).format_as_duration_HMMSSns()<< std::endl;
-///* debug */                            o << "=======" << m_s.subintervalStart.format_as_datetime_with_ns()
-///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from_now() << " seconds from now) "
-///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from(m_s.get_go) << " seconds from Go! time) "
-///* debug */                                    << std::endl
-///* debug */                                << "=======" << m_s.subintervalEnd.format_as_datetime_with_ns()
-///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from_now() << " seconds from now) "
-///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
-///* debug */                                    << std::endl
-///* debug */                                << "=======" << m_s.nextSubintervalEnd.format_as_datetime_with_ns()
-///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from_now() << " seconds from now) "
-///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
-///* debug */                                    << std::endl
-///* debug */                                << std::endl;
-///* debug */
-///* debug */
-///* debug */                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str());
-///* debug */                            std::cout << o.str();
-///* debug */                        }
 
                         ivytime now;
 

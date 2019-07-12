@@ -23,5 +23,5 @@
 #include "ivydefines.h"
 
 void multi_measure_initialize_first();
-bool multi_measure_proceed_to_next(); // returns true if we have started a new measurement.
-
+bool multi_measure_proceed_to_next(); // returns true if we are starting a new measurement.
+void multi_measure_edit_rollup_total_IOPS();

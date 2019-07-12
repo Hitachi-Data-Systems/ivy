@@ -385,7 +385,9 @@ int main(int argc, char* argv[])
 
         std::ostringstream o;
 
-        o << std::endl << "********* ivy run complete." << std::endl <<  m_s.step_times.str();
+        o << std::endl << "Step times summary:" << std::endl << m_s.step_duration_lines;
+
+        o << std::endl << "********* ivy run complete." << std::endl;
 
         o << "********* Total run time    " << duration.format_as_duration_HMMSS()
             << " for test name \"" << m_s.testName << "\"" << std::endl << std::endl;

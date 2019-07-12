@@ -66,7 +66,9 @@ int MeasureCtlr::evaluateSubinterval()
         // if we say success at subinterval min_warmup_subintervals + min_sample_size, there's one more running that will be a cooldown subinterval
     {
         std::ostringstream o;
-        o << "This is measurement " << m_s.measurements.size() << " subinterval number " << ( current - m_s.current_measurement().first_subinterval )
+        o << "This is";
+        if (m_s.have_IOPS_staircase) { o << " measurement " << (m_s.measurements.size() -1 );}
+        o << " subinterval number " << ( current - m_s.current_measurement().first_subinterval )
             << " (from zero) of at least " << ( m_s.min_warmup_count + m_s.min_measure_count )
             << " subintervals to accommodate " << m_s.warmup_seconds << " warmup_seconds and " << m_s.measure_seconds
             << " measure_seconds with subintervals " << m_s.subinterval_seconds << " seconds long." << std::endl << std::endl;
@@ -215,15 +217,12 @@ int MeasureCtlr::evaluateSubinterval()
 
 
 
-//*debug*/ {std::ostringstream o; o << ""<< std::endl;std::cout<<o.str();log(m_s.masterlogfile,o.str());}
 	std::map<std::pair<std::string, Subsystem*>, RunningStat<ivy_float, ivy_int>> wp_by_CLPR;
 
 	for (int fromLast=0; fromLast <= (current - max(m_s.last_gain_adjustment_subinterval,m_s.current_measurement().first_subinterval + m_s.min_warmup_count)) /* drop at least one subinterval */; fromLast++)
 	{
 		unsigned int now_processing;
 		now_processing = current - fromLast;
-
-//*debug*/ {std::ostringstream o; o << "current=" << current << ", fromLast=" << fromLast << ", now_processing " << now_processing << std::endl;std::cout<<o.str();log(m_s.masterlogfile,o.str());}
 
 		// we see if Write Pending was within the slew (plus or minus) limit.  We only consider subinterval subsequences if WP is "stable", or at least not slewing too much over the potential measurement period
 		if (!m_s.suppress_subsystem_perf) for (auto& pear : m_s.cooldown_WP_watch_set)

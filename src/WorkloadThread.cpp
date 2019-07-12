@@ -747,8 +747,6 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         {
             ivytime next_this_LUN = pTestLUN->next_scheduled_io();
 
-//{if (debug_epoll_count++ < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: next I/O for " << pTestLUN->host_plus_lun << " is " << next_this_LUN.format_as_datetime_with_ns(); if (ivytime(0) != next_this_LUN) { ivytime dur =  next_this_LUN - now; o << " which is " << dur.format_as_duration_HMMSSns() << " from now."; } log(slavethreadlogfile,o.str()); }}
-
             if (next_overall_io == ivytime(0))
             {
                 next_overall_io = next_this_LUN;
@@ -758,7 +756,6 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
                 next_overall_io = next_this_LUN;
             }
         }
-//{if (debug_epoll_count < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: next overall I/O is " << next_overall_io.format_as_datetime_with_ns() << ", subinterval end = " << thread_view_subinterval_end.format_as_datetime_with_ns(); log(slavethreadlogfile,o.str()); }}
 
         ivytime wait_until_this_time = thread_view_subinterval_end;
 
@@ -777,11 +774,8 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         {
             wait_duration = wait_until_this_time - now;
         }
-//{if (debug_epoll_count < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: wait duration is " << wait_duration.format_as_duration_HMMSSns(); log(slavethreadlogfile,o.str()); }}
 
         int wait_ms = static_cast<int>(wait_duration.Milliseconds());
-
-//{if (debug_epoll_count < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: wait milliseconds is " << wait_ms; log(slavethreadlogfile,o.str()); }}
 
         int epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, wait_ms);
 

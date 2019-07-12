@@ -34,9 +34,8 @@ void multi_measure_initialize_first()
         current_IOPS_staircase_total_IOPS = m_s.staircase_starting_IOPS;
 
         std::ostringstream o;
-        o << "total_IOPS = \"" << std::fixed << std::setprecision(2) << current_IOPS_staircase_total_IOPS << "\"";
-
-        m_s.current_measurement_edit_rollup_text = o.str();
+        o << "total_IOPS = " << std::fixed << std::setprecision(0) << current_IOPS_staircase_total_IOPS;
+        m_s.measurements[0].edit_rollup_text = o.str();
 
         auto rc = m_s.edit_rollup("all=all", o.str(), true);
 
@@ -80,16 +79,21 @@ bool multi_measure_proceed_to_next()  // returns true if we have started a new m
 
     if (m_s.have_staircase_ending_IOPS)
     {
-        if (current_IOPS_staircase_total_IOPS > (1.001) * m_s.staircase_ending_IOPS)
+        if (current_IOPS_staircase_total_IOPS > (1.001 * m_s.staircase_ending_IOPS))
         {
             return false;
         }
     }
 
+    return true;
+}
+
+void multi_measure_edit_rollup_total_IOPS()
+{
     {
         std::ostringstream to_value;
 
-        to_value << "total_IOPS = \"" << current_IOPS_staircase_total_IOPS << "\"";
+        to_value << "total_IOPS = " << std::fixed << std::setprecision(0) << current_IOPS_staircase_total_IOPS;
 
         auto rc = m_s.edit_rollup("all=all", to_value.str(), true);
         if (!rc.first)
@@ -101,7 +105,8 @@ bool multi_measure_proceed_to_next()  // returns true if we have started a new m
             std::cout << std::endl << o.str() << std::endl;
             m_s.kill_subthreads_and_exit();
         }
+        m_s.current_measurement().edit_rollup_text = to_value.str();
     }
 
-    return true;
+    return;
 }

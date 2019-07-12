@@ -218,14 +218,6 @@ public:
 	        return measurements.back();
         }
 
-    std::string current_measurement_edit_rollup_text {};
-        // This is set by multi_measure_initialize_first() or multi_measure_proceed_to_next()
-        // when they issue the edit_rollup() to set the parameters for a measurement.
-        // This then gets copied into the "measurement" object when it gets created
-        // shortly after.
-
-        // This then is concatenated to the step name for the description of the measurement within the step.
-
 	RunningStat<ivy_float, ivy_int> createWorkloadExecutionTimeSeconds;
 	RunningStat<ivy_float, ivy_int> deleteWorkloadExecutionTimeSeconds;
 	RunningStat<ivy_float, ivy_int> editWorkloadInterlockTimeSeconds;
@@ -343,7 +335,7 @@ public:
 
     std::string max_IOPS_parameter;   /* ==> */ ivy_float max_IOPS {0.};
 
-
+    std::string step_duration_lines;
 
     MeasureCtlr the_dfc;
 
@@ -461,8 +453,6 @@ public:
     std::string goParameters;
     ParameterValueLookupTable go_parameters;
     std::map<std::string, MeasureController*> availableControllers;
-
-    std::ostringstream step_times;
 
     ivy_float non_random_sample_correction_factor {non_random_sample_correction_factor_default /*in ivydefines.h */};
 

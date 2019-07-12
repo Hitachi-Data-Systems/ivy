@@ -270,8 +270,6 @@ ivy_engine::createWorkload(
 			<< " seconds - maximum " << createWorkloadExecutionTimeSeconds.max()
 			<< " seconds." << std::endl;
 
-/*debug*/ std::cout<< o.str();
-
 		log(masterlogfile,o.str());
 	}
 
@@ -462,8 +460,6 @@ ivy_engine::deleteWorkload(
 			<< " - average " << deleteWorkloadExecutionTimeSeconds.avg()
 			<< " seconds - minimum " << deleteWorkloadExecutionTimeSeconds.min()
 			<< " seconds - maximum " << deleteWorkloadExecutionTimeSeconds.max() << " seconds." << std::endl;
-
-/*debug*/ std::cout<< o.str();
 
 		log(masterlogfile,o.str());
 	}

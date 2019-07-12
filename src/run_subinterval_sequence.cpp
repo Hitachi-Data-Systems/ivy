@@ -43,19 +43,11 @@ extern void say_and_log(const std::string& s);
 
 void process_completed_measurement()
 {
-/*debug*/{std::ostringstream d; d << "debug: Entering process_completed_measurement().\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
     measurement& m = m_s.current_measurement();
 
     for (int i = m.first_subinterval; i <= m.last_subinterval; i++)
     {
         m_s.measurement_by_subinterval.push_back(m_s.measurements.size() -1);
-    }
-
-    {
-        std::ostringstream o;
-        o << "Making measurement rollups from subinterval " << m.firstMeasurementIndex << " to " << m.lastMeasurementIndex << "." << std::endl;
-        std::cout << o.str();
-        log(m_s.masterlogfile,o.str());
     }
 
     auto retval = m_s.rollups.makeMeasurementRollup();
@@ -85,7 +77,6 @@ void process_completed_measurement()
 
 bool process_successful_measurement() // returns true if we have started the next measurement, false if we are done and the subinterval sequence is ending.
 {
-/*debug*/{std::ostringstream d; d << "debug: Entering process_successful_measurement().\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
     {
         std::ostringstream o;
         o << "Successful valid measurement, either fixed duration, or using the \"measure\" feature." << std::endl;
@@ -103,7 +94,6 @@ bool process_successful_measurement() // returns true if we have started the nex
 
 void process_failed_measurement()
 {
-/*debug*/{std::ostringstream d; d << "debug: Entering process_failed_measurement().\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
     if (nullptr == m_s.p_focus_rollup)
     {
         std::ostringstream o;
@@ -690,32 +680,6 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             m_s.subintervalEnd     = m_s.nextSubintervalEnd;
             m_s.nextSubintervalEnd = m_s.subintervalEnd + m_s.subintervalLength;
         }
-///* debug */                        {
-///* debug */                            std::ostringstream o;
-///* debug */                            o << std::endl << "+++++++" << "run_subinterval_sequence() - have just moved subinterval start/end/next ahead." << std::endl;
-///* debug */                            ivytime now;
-///* debug */
-///* debug */                            now.setToNow();
-///* debug */
-///* debug */                            o << "+++++++" << "now: "  << now.format_as_datetime_with_ns() << std::endl;
-///* debug */                            o << "+++++++" << m_s.subintervalStart.format_as_datetime_with_ns()
-///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from_now() << " seconds from now) "
-///* debug */                                    << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from(m_s.get_go) << " seconds from Go! time) "
-///* debug */                                    << std::endl
-///* debug */                                << "+++++++" << m_s.subintervalEnd.format_as_datetime_with_ns()
-///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from_now() << " seconds from now) "
-///* debug */                                    << " = m_s.subintervalEnd     (" << m_s.subintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
-///* debug */                                    << std::endl
-///* debug */                                << "+++++++" << m_s.nextSubintervalEnd.format_as_datetime_with_ns()
-///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from_now() << " seconds from now) "
-///* debug */                                    << " = m_s.nextSubintervalEnd (" << m_s.nextSubintervalEnd.duration_from(m_s.get_go) << " seconds from Go! time) "
-///* debug */                                    << std::endl
-///* debug */                                << std::endl;
-///* debug */                            log(m_s.masterlogfile,o.str());
-///* debug */    for (auto& pear : m_s.host_subthread_pointers) { log(pear.second->logfolder,o.str());}
-///* debug */                            std::cout << o.str();
-///* debug */                        }
-
 
         // send out "get subinterval result"
         for (auto& pear : m_s.host_subthread_pointers)
@@ -1068,7 +1032,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
              || ( (m_s.cooldown_by_wp      != cooldown_mode::off) && m_s.some_cooldown_WP_not_empty() )
             )
             {
-                //m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
+                m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
 
                 std::ostringstream o;
                 o << "Cooldown duration " << m_s.current_measurement().cooldown_duration().format_as_duration_HMMSS() << "  not complete, will do another cooldown subinterval." << std::endl;
@@ -1082,21 +1046,6 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
                 m_s.lastEvaluateSubintervalReturnCode = m_s.eventualEvaluateSubintervalReturnCode;
-
-                if (m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS)
-                {
-                    if (process_successful_measurement())
-                    {
-                        // we have started the next measurement
-                        m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
-                    }
-                    // else we leavelastEvaluateSubintervalReturnCode set to SUCCESS/FAILURE
-                }
-                else
-                {
-                    process_failed_measurement();
-                    // will break from loop after processing the last subinterval.
-                }
             }
         }
         else // not m_s.in_cooldown_mode
@@ -1140,14 +1089,34 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 m_s.current_measurement().last_subinterval = m_s.harvesting_subinterval;
                 m_s.current_measurement().cooldown_end     = m_s.subintervalEnd;
 
-                //bool going_to_do_another_measurement = false;
+                bool going_to_do_another_measurement = false;
 
+                if (m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS)
+                {
+                    going_to_do_another_measurement = process_successful_measurement();
+
+                    if (going_to_do_another_measurement)
+                    {
+                        // we have started the next measurement
+                        m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
+                    }
+                }
+                else
+                {
+                    process_failed_measurement();
+                }
 
 
                 if
                 (
-                     ( (m_s.cooldown_by_wp      != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_cooldown_WP_not_empty() ) )
-                  || ( (m_s.cooldown_by_MP_busy != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_subsystem_still_busy()  ) )
+                    (!going_to_do_another_measurement)
+
+                    &&
+
+                    (
+                         ( (m_s.cooldown_by_wp      != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_cooldown_WP_not_empty() ) )
+                      || ( (m_s.cooldown_by_MP_busy != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_subsystem_still_busy()  ) )
+                    )
                 )
                 {
                     m_s.eventualEvaluateSubintervalReturnCode = m_s.lastEvaluateSubintervalReturnCode;
@@ -1166,38 +1135,11 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                         m_s.kill_subthreads_and_exit();
                     }
 
-                    m_s.current_measurement().measure_end = m_s.subintervalEnd;
-
                     std::ostringstream o;
                     o << "DFC posted SUCCESS or FAILURE, but cooldown being extended by cooldown_by_wp or cooldown_by_MP_busy." << std::endl;
 
                     std::cout << o.str();
                     log(m_s.masterlogfile,o.str());
-                }
-                else
-                {
-                    // finished measurement without any cooldown subintervals
-
-                    if (m_s.lastEvaluateSubintervalReturnCode == EVALUATE_SUBINTERVAL_SUCCESS)
-                    {
-#ifdef TRACE_RSS
-{std::ostringstream trss; trss << "TRACE_RSS: About to process_successful_measurement() .\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
-#endif
-                        if (process_successful_measurement())
-                        {
-                            // we have started the next measurement
-                            m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
-                        }
-                    }
-                    else
-                    {
-#ifdef TRACE_RSS
-{std::ostringstream trss; trss << "TRACE_RSS: About to process_failed_measurement() .\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
-#endif
-
-                        process_failed_measurement();
-                        // will break from loop after processing the last subinterval.
-                    }
                 }
             }
         }

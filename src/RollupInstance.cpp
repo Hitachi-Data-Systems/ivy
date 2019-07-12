@@ -115,6 +115,7 @@ std::pair<bool,std::string> RollupInstance::makeMeasurementRollup()
                     mt.subsystem_IOPS_as_fraction_of_host_IOPS_failure
                         =  mt.subsystem_IOPS_as_fraction_of_host_IOPS < 0.85
                         || mt.subsystem_IOPS_as_fraction_of_host_IOPS > 1.15;
+                    if (mt.subsystem_IOPS_as_fraction_of_host_IOPS_failure) m.subsystem_IOPS_as_fraction_of_host_IOPS_failure = true;
                 }
             }
 
@@ -126,7 +127,7 @@ std::pair<bool,std::string> RollupInstance::makeMeasurementRollup()
                     || mt.application_IOPS > (1.15 * mt.IOPS_setting)
                 )
                 {
-                    mt.failed_to_achieve_total_IOPS_setting = true;
+                    m.failed_to_achieve_total_IOPS_setting = mt.failed_to_achieve_total_IOPS_setting = true;
                 }
             }
         }
@@ -800,7 +801,6 @@ void RollupInstance::perform_PID()
     }
 
     print_subinterval_column();
-
 }
 
 std::pair<bool,ivy_float> RollupInstance::isValidMeasurementStartingFrom(unsigned int n)
@@ -1184,7 +1184,6 @@ void RollupInstance::print_subinterval_csv_line(
     bool is_provisional // if provisional, don't try to print "warmup" / "measurement" / "cooldown"
 )
 {
-//*debug*/{std::ostringstream d; d << "debug: RollupInstance::print_subinterval_csv_line(i = " << i << ", is_provisional = " << (is_provisional ? "true" : "false") << ") - entry.\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
     std::ostringstream csvline;
 
     csvline << ivy_version;
@@ -1206,7 +1205,6 @@ void RollupInstance::print_subinterval_csv_line(
             << ',' << duration.format_as_duration_HMMSSns()
             << ',' ; // beginning of the Write Pending field
 
-//*debug*/{std::ostringstream d; d << "debug: csvline so far: \"" << csvline.str() << "\".\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
     if ( m_s.cooldown_WP_watch_set.size() && (!m_s.suppress_subsystem_perf) )
     {
         try
@@ -1226,10 +1224,18 @@ void RollupInstance::print_subinterval_csv_line(
 
     csvline << ',' << i;
 
-//*debug*/{std::ostringstream d; d << "debug: m_s.measurements.size() = " << m_s.measurements.size() << ", m_s.measurement_by_subinterval.size() = " << m_s.measurement_by_subinterval.size() << ".\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
-    csvline << ','; if ((!is_provisional) && i < m_s.measurement_by_subinterval.size()) { csvline << m_s.measurements[m_s.measurement_by_subinterval[i]].phase(i); }
-//*debug*/{std::ostringstream d; d << "debug: csvline so far: \"" << csvline.str() << "\".\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
-
+    csvline << ',';
+    if (!is_provisional)
+    {
+        if (i < m_s.measurement_by_subinterval.size())
+        {
+            csvline << m_s.measurements[m_s.measurement_by_subinterval[i]].phase(i);
+        }
+        else
+        {
+            csvline << "cooldown";
+        }
+    }
     csvline << ',' << pRollupType->attributeNameCombo.attributeNameComboID;
 
     csvline << ',' << rollupInstanceID;
@@ -1401,7 +1407,6 @@ void RollupInstance::print_subinterval_csv_line(
         std::ostringstream o; o << quote_wrap_csvline_LDEV_PG_leading_zero_number(csvline.str(), m_s.formula_wrapping) << std::endl;
         fileappend(by_subinterval_csv_filename,o.str());
     }
-//*debug*/{std::ostringstream d; d << "debug: RollupInstance::print_subinterval_csv_line(i = " << i << ", is_provisional = " << (is_provisional ? "true" : "false") << ") - exit.\n"; std::cout << d.str(); log(m_s.masterlogfile,d.str());}
 }
 
 
@@ -1897,11 +1902,11 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
             }
 
             if (0 == std::string("all").compare(attributeNameComboID)
-                    && 0 == std::string("all").compare(rollupInstanceID)    )
+             && 0 == std::string("all").compare(rollupInstanceID)    )
             {
                 std::ostringstream o;
 
-                o << "Measurement summary for \"all=all\" rollup: " << mro.thumbnail(mr.durationSeconds()) << std::endl;
+                o << "Measurement " << measurement_index << " summary for \"all=all\" rollup: " << mro.thumbnail(mr.durationSeconds()) << std::endl;
 
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());

@@ -1822,9 +1822,9 @@ void IvyDriver::check_CPU_temperature()
         {
             std::cout << "<Error> CPU temperature has hit the maximum limit and CPU operation has been throttled.  Test aborting." << std::endl;
         }
-        else if (digital_readouts.min() <= 2.0)
+        else if (digital_readouts.min() <= 3.0)
         {
-            std::cout << "<Warning> CPU temperature is within 2 degrees C of the maximum limit.  Machine checks have been observed in this range.  Check dmesg & /var/log/messages." << std::endl;
+            std::cout << "<Warning> CPU temperature is within 3 degrees C of the maximum limit.  Machine checks have been observed in this range.  Check dmesg & /var/log/messages." << std::endl;
         }
     }
 

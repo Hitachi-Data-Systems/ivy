@@ -451,43 +451,6 @@ ivy_engine::edit_rollup(const std::string& rollupText, const std::string& origin
         }
     }
 
-//    // print out pipe_driver_subthread's workloads_by_text
-//    {
-//        std::ostringstream o;
-//        o << "debug: printing out workloads_by_text" << std::endl;
-//        for (auto& pear : host_subthread_pointers)
-//        {
-//            const std::string& host = pear.first;
-//            o << "debug:    host  \"" << host << "\"" << std::endl;
-//
-//            pipe_driver_subthread* p_host = pear.second;
-//
-//            bool need_comma = false;
-//
-//            o << "debug:      ";
-//
-//            for (auto& peach : p_host->workloads_by_text)
-//            {
-//                if (need_comma) o << "," << std::endl << "debug:      ";
-//                need_comma = true;
-//                o << "< \"" << peach.first << "\" { ";
-//
-//                bool need_comma2 = false;
-//                for (auto& plum : peach.second.workloadIDs)
-//                {
-//                    if (need_comma2) o << ", ";
-//                    need_comma2 = true;
-//                    o << plum.workloadID;
-//                }
-//
-//                o << " } >";
-//            }
-//        }
-//        o << std::endl << "debug: end." << std::endl;
-//        std::cout << o.str();
-//        log(masterlogfile,o.str());
-//    }
-
     // Originally, when there was only one command for each host, they were launched
     // in parallel.  Now with multiple versions of IOPS for total_IOPS + skew,
     // serializing all commands one host at a time, one command at a time.
