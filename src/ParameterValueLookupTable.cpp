@@ -238,11 +238,6 @@ std::pair<bool,string> ParameterValueLookupTable::containsOnlyValidParameterName
 			identifier_length++;
 		}
 		valid_parameter_names.insert(normalize_identifier(s.substr(identifier_start,identifier_length)));
-
-//*debug*/ os << "/*debug*/ valid_parameter_names contains ";
-//*debug*/	for (auto& s: valid_parameter_names) os << " \"" << s << '\"';
-//*debug*/	os << std::endl;
-
 	}
 
     std::ostringstream o;
@@ -269,7 +264,9 @@ std::map<std::string,std::string> ParameterValueLookupTable::parameter_name_rehy
     {"cooldownbympbusy",        "cooldown_by_MP_busy"},
     {"cooldownbympbusystaydowntimeseconds",        "cooldown_by_MP_busy_stay_down_time_seconds"},
     {"cooldownbywp",            "cooldown_by_WP"},
+    {"dfc",                     "DFC"},
     {"element_metric",          "element_metric"},
+    {"endingiops",              "ending_IOPS"},
     {"focusrollup",             "focus_rollup"},
     {"gainstep",                "gain_step"},
     {"highiops",                "high_IOPS"},
@@ -288,6 +285,7 @@ std::map<std::string,std::string> ParameterValueLookupTable::parameter_name_rehy
     {"sequentialfill",          "sequential_fill"},
     {"servicetimeseconds",      "service_time_seconds"},
     {"skipldev",                "skip_LDEV"},
+    {"startingiops",            "starting_IOPS"},
     {"subintervalseconds",      "subinterval_seconds"},
     {"subsystembusythreshold",  "subsystem_busy_threshold"},
     {"subsystemelement",        "subsystem_element"},

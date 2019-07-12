@@ -336,12 +336,6 @@ void csvfile::remove_empty_columns()
         bool leeg;
 
         leeg = true;
-//*debug*/        {
-//*debug*/            const std::string& header = raw_values[0][col];
-//*debug*/            if (stringCaseInsensitiveEquality(header,std::string("Parity Group"))) continue;
-//*debug*/            if (stringCaseInsensitiveEquality(header,std::string("Parity_Group"))) continue;
-//*debug*/            if (stringCaseInsensitiveEquality(header,std::string("PG"))) continue;
-//*debug*/        }
 
         for (unsigned int row = 1; row < (raw_values.size()); row++)
         {

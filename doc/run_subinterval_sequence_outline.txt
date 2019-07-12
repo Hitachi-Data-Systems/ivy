@@ -1,0 +1,157 @@
+Run subinterval sequence outline
+--------------------------------
+
+"print" means write to std::cout.
+"write" means write something to a csv file.
+
+- "cooldown_mode" is turned on when after the end of a measurement,
+  we have cooldown_by_xxx, and a subsystem still busy.  When
+  cooldown_mode is turned on, we send out edit_rollup("all=all", "IOPS=0").
+
+- m_s.subintervalStart, m_s.subintervalEnd, m_s.nextSubintervalEnd,
+  and m_s.harvesting_subinterval refer to the just-completed subinterval
+  that is being processed by the master host, not the subinterval
+  that ivydriver is running.  These master host times get moved
+  forward once the master host has finished all its processing,
+  and it is about to wait for the end of the subinterval that
+  ivydriver is running.
+
+----------------------------------------------------------
+
+- reset stuff from previous test step, make step subfolder
+
+- [if cmd dev] - check for failed subsystem component.
+
+- [if cmd dev] - start t=0 gathers & wait for them to complete
+
+- Send "Go" & wait for OK
+
+- wait 1/4 subinterval
+
+- Send "continue"
+	- ivydriver at host needs to receive "continue"/"cooldown"/"stop"
+	  before the end of the subinterval, so this jump-start the cycle.
+
+- [if cmd dev] - send gather command timed to complete at subinterval end based on avg t=0 gather time.
+
+- wait to get OK for continue before end of first subinterval.
+
+== TOP == top of loop approaching end of subinterval
+
+	- send out "get subinterval result".  This command sits in
+	  ivydriver, waiting for the end of the running subinterval
+	  to be acted upon.
+
+	- push new empty SubintervalRollup in each RollupInstance
+	- push new empty subinterval in ivy_engine CPU vector.
+	- push new empty subsystem_summary_data onto "non-participating" rollup.
+	- push new empty subsystem_summary_data into vector for each rollup instance.
+
+	- print "Waiting for subinterval ..."
+
+	- Wait for test hosts to say complete for "get subinterval result"
+		- this means the subinterval results have been posted.
+
+	- [if cmd dev] wait for subsystem gathers to complete
+
+== BARRIER 1 ==  "send up" complete - results from previous subinterval have been posted.
+
+	- write provisional subinterval line in all rollups.
+		- warmup/measure/cooldown column value is left blank.
+
+	- Find all=all rollup and use it to print subinterval summary line.
+	- [if cmd dev] also print subsystem activity thumbnail.
+
+	- set "keep filling" only if sequential_fill=on & not wrapped around yet.
+
+	- BREAK from loop if last subinterval return code was not "CONTINUE",
+		- This completes processing for the very last subinterval.
+
+	- if "measure" or "pid"
+		- collect and push focus metric
+		- if pid, perform PID & send out new IOPS & get confirmation.
+
+	- if in_cooldown_mode
+		- set measurement cooldown_end to m_s.subintervalEnd.
+		- set current measurement's last subinterval index.
+
+		- if subsystem gathers suppressed
+			- increment suppress_perf_cooldown_subinterval_count
+			- turn on "now_doing_suppress_perf_cooldown"
+
+		- if subsystem gathers suppressed
+		   & have cooldown_by_xxx
+		   & this is 1st or 2nd cooldown subinterval wtih IOPS = 0
+			- print "With -suppress_perf this is IOPS = 0 subinterval nn
+			  with gathers turned back on.
+
+		- else if doing cooldown_by_xxx and not complete
+			- print "Cooldown not complete ..."
+
+		- else cooldown is complete
+			- print "cooldown complete"
+			- set last subinterval r.c. to saved "eventual" r.c.
+	- else not in_cooldown_mode
+		- m_s.lastEvaluateSubintervalReturnCode = p_MeasureController->evaluateSubinterval();
+
+		- print CONTINUE / SUCCESS / FAILURE.
+		- set current measurement's last subinterval index.
+
+		- if SUCCESS or FAILURE
+            - if success
+                - process successful measurement
+                - if going to do another measurement
+                    - set subinterval return code to CONTINUE
+            - else FAILURE
+                - process failed measurement
+
+            - if not going to do another measurement and we are doing cooldown_by_xxx and these are still busy / need more
+                - set eventual return co
+                - save SUCCESS / FAILURE in "eventual r.c."
+                - set subinterval r.c. to CONTINUE
+                - set in_cooldown_mode to true.
+                - edit_rollup("all=all","IOPS=pause");
+
+	- send out "continue" or "stop"
+
+	- wait for hosts to confirm "continue" or "stop".
+
+	- calculate host_sendup_adjustment as average send-up time
+	  (== TOP == to == barrier 1 ==) minus std dev.
+
+	- [if cmd dev] - issue gather scheduled to complete based on
+	  average gather time to end at == TOP == plus host sendup adjustment.
+
+== BARRIER 2 =================== all master host work is done, wait for subinterval end.
+
+	- wait to get acknowledgement of receipt of continue / stop before end of subinterval.
+	- record interlock / protocol times
+
+== LOOP BACK TO TOP ===================
+
+- have broken out of loop, having gathers complete for final subinterval
+
+- [if cmd dev] check for failed components
+
+- write csv files
+	- print measurement summary csv line
+	- re-print by-subinterval csv files, filling in column for "warmup"/"measure"/cooldown.
+- print step time statistics line
+
+- return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -497,3 +497,140 @@ void Ivy_pgm::end_Block() {
     /*debug*/ if (trace_parser)  std::cout << "Back to level "<<blockStack.size() <<" at offset "<<blockStack.front()->next_avail <<" within "<<blockStack.front()->frame_Name()<<" Frame"<<std::endl;
 
 }
+
+void Ivy_pgm::show_syntax_error_location()
+{
+    std::cout << "Syntax error is from line " << syntax_error_first_line << " column " << syntax_error_first_column
+        << " to line " << syntax_error_last_line << " column " << syntax_error_last_column << "." << std::endl << std::endl;
+
+    std::cout << "========================================================================" << std::endl << std::endl;
+
+    std::cout << "Note: To have the syntax error location more accurately pointed out," << std::endl
+        << "      please put your inklude statements by themselves on a line." << std::endl << std::endl;
+
+    std::cout << "========================================================================" << std::endl << std::endl;
+
+    load_source_file_for_error_location(ivyscript_filename);
+
+    for (unsigned int line_number = 1; line_number <= source_lines_for_error.size(); line_number++)
+    {
+        const std::string& line = source_lines_for_error[line_number - 1];
+
+        std::cout << line << std::endl;
+
+        if (line_number == syntax_error_first_line)
+        {
+            for (unsigned int i = 1; i < syntax_error_first_column; i++)
+            {
+                std::cout << " ";
+            }
+
+            std::cout << "|";
+
+            if (line_number == syntax_error_last_line)
+            {
+                // all on one line
+                if (syntax_error_last_column > syntax_error_first_column)
+                {
+                    for (unsigned int i = syntax_error_first_column + 1; i < syntax_error_last_column; i++)
+                    {
+                        std::cout << "=";
+                    }
+                    std::cout << "|";
+                }
+
+            }
+            std::cout << std::endl;
+
+            for (unsigned int i = 1; i < syntax_error_first_column; i++)
+            {
+                std::cout << " ";
+            }
+            std::cout << "Syntax error" << std::endl;
+
+            for (unsigned int i = 1; i < syntax_error_first_column; i++)
+            {
+                std::cout << " ";
+            }
+            std::cout << "============" << std::endl;
+        }
+        else if (line_number > syntax_error_first_line && line_number < syntax_error_last_line)
+        {
+            for(unsigned int i = 0; i < (line.size() - 1); i++)
+            {
+                std::cout << "=";
+            }
+            std::cout << std::endl<< std::endl;
+        }
+        else if (line_number != syntax_error_first_line && line_number == syntax_error_last_line)
+        {
+            for (unsigned int i = 1; i < syntax_error_last_column; i++)
+            {
+                std::cout << "=";
+            }
+            std::cout << "|" << std::endl << std::endl;
+        }
+    }
+
+    std::cout << "========================================================================" << std::endl;
+}
+
+std::regex inklude_regex( R"([ \t]*[iI][nN][kK][lL][uU][dD][eE][ \t]*([^ \t].*[^ \t])[ \t]*)" ); // whitespace inklude whitespace (something starting & ending with a non space/tab) whitespace
+
+void Ivy_pgm::load_source_file_for_error_location(const std::string& f)
+{
+    auto it = inklude_file_names.find(f);
+
+    if (inklude_file_names.end() != it)
+    {
+        std::cout << "<Error> Ivy_pgm::load_source_file_for_error_location() - inklude file loop, second time loading \"" << ivyscript_filename << "\"." << std::endl;
+        exit(-1);
+    }
+
+    inklude_file_names.insert(f);
+
+    std::ifstream ifs(f);
+
+    if (!ifs)
+    {
+        std::cout << "<Error> Ivy_pgm::load_source_file_for_error_location() - failed opening \"" << f << "\"." << std::endl;
+        exit(-1);
+    }
+
+    std::smatch entire_match;
+    std::ssub_match sub;
+
+    for (std::string line; std::getline(ifs,line); )
+    {
+        source_lines_for_error.push_back(line);
+
+        if (std::regex_match(line, entire_match, inklude_regex))
+        {
+            sub = entire_match[1];
+            load_source_file_for_error_location(sub.str());
+        }
+    }
+
+    ifs.close();
+
+    return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

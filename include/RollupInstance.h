@@ -34,6 +34,22 @@ class RollupType;
 
 enum class SuccessFailAbort { success, fail, abort };
 
+struct measurement_things
+{
+    ivy_float IOPS_setting {-1.0};
+    ivy_float application_IOPS {-1.0};
+    ivy_float subsystem_IOPS {-1.0};
+    ivy_float subsystem_IOPS_as_fraction_of_host_IOPS {-1.0};
+
+    std::string Total_IOPS_setting_string;
+
+    bool subsystem_IOPS_as_fraction_of_host_IOPS_failure {false};
+    bool failed_to_achieve_total_IOPS_setting {false};
+
+    SubintervalRollup measurementRollup {};
+    subsystem_summary_data subsystem_data {};
+};
+
 
 class RollupInstance   // 410123+3B
 // This is the granularity of Dynamic Feedback Control both for looking at data and
@@ -43,7 +59,15 @@ public:
 // variables
 	std::string attributeNameComboID;
 	std::string rollupInstanceID;
-	SubintervalRollup measurementRollup;
+
+    std::vector<measurement_things> things_by_measurement {};
+
+    measurement_things& current_measurement()
+    {
+        if (things_by_measurement.size() == 0) throw std::runtime_error("RollupInstance::current_measurement() called when things_by_measurementsize() == 0/");
+        return things_by_measurement.back();
+    }
+
 	SequenceOfSubintervalRollup subintervals;
 	RollupType* pRollupType; // my parent
 	RollupSet* pRollupSet; // my grandparent
@@ -99,7 +123,7 @@ public:
         // The "not_participating.csv" file only has the subsystem performance summary columns.
 
     std::vector<subsystem_summary_data> subsystem_data_by_subinterval;
-    subsystem_summary_data measurement_subsystem_data;
+
     Test_config_thumbnail test_config_thumbnail;
 
     std::vector<ivy_float> focus_metric_vector;  // used only for the focus rollup type.
@@ -169,7 +193,6 @@ public:
     std::string measurement_rollup_by_test_step_csv_type_filename; // goes in measurementRollupFolder
 
 
-
 // methods
 	RollupInstance(RollupType* pRT, RollupSet* pRS, std::string nameCombo, std::string valueCombo)
 		: attributeNameComboID(nameCombo), rollupInstanceID(valueCombo), pRollupType(pRT), pRollupSet(pRS)
@@ -181,11 +204,10 @@ public:
 	bool sendDynamicFeedbackControlParameterUpdate(std::string updates);
 
 
-	std::pair<bool,std::string> makeMeasurementRollup(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);
+	std::pair<bool,std::string> makeMeasurementRollup();
 
 	std::string getIDprefixTitles() {return "Test Name,Step Number,Step Name,Start Time,End Time,Subinterval Number,Subinterval Phase,Rollup Type,Rollup Instance,";}
 	std::string getIDprefixValues(std::string phase, ivytime start_time, ivytime end_time);
-	void printMe(std::ostream&);
     std::string config_filter_contents();
     void rebuild_test_config_thumbnail();
     ivy_float get_focus_metric(unsigned int /* subinterval_number */);
@@ -218,6 +240,6 @@ public:
         // as this is very handy when looking at the by-subinterval csv files, to see exactly the behaviour in each phase, and
         // to know which subinterval lines were rolled up in the measurement.
 
-    void print_measurement_summary_csv_line();
+    void print_measurement_summary_csv_line(unsigned int measurement_index);
 };
 

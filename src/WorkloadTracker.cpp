@@ -46,8 +46,6 @@ WorkloadTracker::WorkloadTracker(std::string ID, std::string iosequencer_name, L
 		workloadLUN.set_attribute("Workload"s, o.str());
 	}
 
-//*debug*/std::cout << "WorkloadTracker::WorkloadTracker - workloadLUN = " << workloadLUN.toString() << std::endl;
-
 	return;
 }
 

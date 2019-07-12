@@ -45,6 +45,7 @@ enum class source_enum { error, workload, RAID_subsystem } ;
 enum class category_enum { error, overall, read, write, random, sequential, random_read, random_write, sequential_read, sequential_write };
 enum class accumulator_type_enum { error, bytes_transferred, service_time, response_time };
 enum class accessor_enum { error, avg, count, min, max, sum, variance, standardDeviation };
+enum class cooldown_mode {off, on };
 
 std::string source_enum_to_string     (source_enum);
 std::string category_enum_to_string   (category_enum);
@@ -53,6 +54,50 @@ std::string accessor_enum_to_string   (accessor_enum);
 
 accumulator_type_enum string_to_accumulator_type_enum (const std::string&);
 std::string accumulator_types();
+
+struct measurement
+{
+    int first_subinterval {-1};
+    int firstMeasurementIndex {-1};
+    int lastMeasurementIndex {-1};
+    int last_subinterval {-1};
+
+//    bool have_best_of_wurst {false};  That would be leverworst, natuurlijk.
+
+    unsigned int best_of_wurst_first, best_of_wurst_last;
+
+	Subinterval_CPU measurement_rollup_CPU;
+		// Built by RollupSet::makeMeasurementRollup()
+		// Used for measurement_rollup csv file lines.
+
+	ivytime warmup_start {0};
+	ivytime measure_start {0};
+	ivytime measure_end {0};
+	ivytime cooldown_end {0};
+
+    std::string edit_rollup_text {};
+
+	bool success {false};
+	bool have_timeout_rollup {false};
+	bool subsystem_IOPS_as_fraction_of_host_IOPS_failure {false};
+	bool failed_to_achieve_total_IOPS_setting {false};
+
+// methods
+    unsigned int measurement_subinterval_count() { return 1 + lastMeasurementIndex - firstMeasurementIndex; }
+
+    ivytime warmup_duration()   const { return measure_start  - warmup_start; }
+    ivytime measure_duration()  const { return measure_end    - measure_start; }
+    ivytime cooldown_duration() const { return cooldown_end   - measure_end; }
+    ivytime duration()          const { return cooldown_end   - warmup_start; }
+
+    std::string step_times_line(unsigned int measurement_number) const;
+
+    std::pair<bool,std::string>  make_measurement_rollup_CPU();
+
+    std::string phase(int subinterval_number) const;
+
+    std::string toString() const;
+};
 
 
 class ivy_engine {
@@ -97,8 +142,10 @@ public:
         // that it's past the first cooldown subinterval, and that edit_rollup "all=all" "IOPS=0"
         // has been sent out, and subsystem gathers need to resume to support the
         // cooldown_by_wp and cooldown_by_MP_busy features to operate.
-	bool cooldown_by_wp {true};  // whether the feature has been selected in the ivyscript program
-	bool cooldown_by_MP_busy {true};  // whether the feature has been selected in the ivyscript program
+
+	cooldown_mode cooldown_by_wp      {cooldown_mode::on};  // whether the feature has been selected in the ivyscript program
+	cooldown_mode cooldown_by_MP_busy {cooldown_mode::on};  // whether the feature has been selected in the ivyscript program
+
 	bool in_cooldown_mode {false}; // whether the ivy engine is in cooldown mode after SUCCESS or FAILURE
     unsigned int cooldown_by_MP_busy_stay_down_count_limit;  // set using Go parameter cooldown_by_MP_busy_stay_down_time_seconds defaulting to one subinterval, and that you can set to "5:00" to mean 5 minutes or "1:00:00" to mean an hour.
         // The Go parameter in seconds / minutes / hours is converted to a subinterval count in cooldown_by_MP_busy_stay_down_count_limit;
@@ -107,11 +154,6 @@ public:
     unsigned int suppress_perf_cooldown_subinterval_count {0};
 	ivy_float subsystem_busy_threshold { -1. }; // this gets set when parsing go parameters, see subsystem_busy_threshold_default
 	ivy_float subsystem_WP_threshold { -1. }; // this gets set when parsing go parameters, see subsystem_busy_threshold_default
-	ivytime cooldown_start;
-
-	ivytime warmup_duration;
-	ivytime measurement_duration;
-	ivytime cooldown_duration;
 
     int harvesting_subinterval;
 
@@ -129,6 +171,10 @@ public:
 	std::vector<std::thread> ivymaster_RMLIB_threads;
 
 	std::map<std::string, Subsystem*> subsystems;  // key is subsystem serial number.
+
+	typedef std::pair<ivytime, ivytime> ivytime_pair;
+
+	std::vector<ivytime_pair> subinterval_start_end_times;
 
 	std::vector<Subinterval_CPU> cpu_by_subinterval;
 		// At the beginning of a subinterval, the ivymaster main thread builds an empty Subinterval_CPU
@@ -150,9 +196,6 @@ public:
 
 		// This makes it possible to offer the feature where if the rollup is named "host", we only show the
 		// CPU data for that one host instead of showing CPU data over all cores on all hosts.
-	Subinterval_CPU measurement_rollup_CPU;
-		// Built by RollupSet::makeMeasurementRollup()
-		// Used for measurement_rollup csv file lines.
 
 	std::list<std::string> hosts;
 	void write_clear_script();  // this writes out "clear_hung_threads.sh"
@@ -162,6 +205,18 @@ public:
 	//bool need_to_rebuild_rollups {false}; // deleted 2015-12-21 to have data structures up to date for ivyscript builtin functions.
 		// A [CreateWorkload] or [DeleteWorkload] statement turns this on.
 		// A [Go] or an [EditRollup] will rebuild the rollups if this flag is on before they do anything else, and then they turn the flag off.
+
+
+	std::vector<measurement> measurements {};
+	    // this will only have more than one measurement when using DFC = IOPS_staircase.
+
+    std::vector<unsigned int> measurement_by_subinterval {};  // when there are multiple measurements, this returns the measurement index
+
+	measurement& current_measurement()
+	    {
+	        if (measurements.size() == 0) throw runtime_error("current_measurement() called with measurements.size() == 0.");
+	        return measurements.back();
+        }
 
 	RunningStat<ivy_float, ivy_int> createWorkloadExecutionTimeSeconds;
 	RunningStat<ivy_float, ivy_int> deleteWorkloadExecutionTimeSeconds;
@@ -253,6 +308,23 @@ public:
     std::string subsystem_element; // e.g. PG
     std::string element_metric;    // e.g. busy_percent
 
+
+    // dfc = IOPS_staircase
+    ivy_float staircase_starting_IOPS {-1.0};
+    ivy_float staircase_ending_IOPS {-1.0};
+    ivy_float staircase_step {-1.0};
+    unsigned int staircase_steps {0};
+
+    bool have_IOPS_staircase {false};
+    bool have_staircase_ending_IOPS {false};
+    bool have_staircase_step {false};
+    bool have_staircase_step_percent_increment {false};
+    bool have_staircase_steps {false};
+    std::string staircase_starting_IOPS_parameter;
+    std::string staircase_ending_IOPS_parameter;
+    std::string staircase_step_parameter;
+    std::string staircase_steps_parameter;
+
     // dfc = pid
     std::string target_value_parameter; /* ==> */ ivy_float target_value {-1.};
         // number with optional trailing % sign.
@@ -263,7 +335,7 @@ public:
 
     std::string max_IOPS_parameter;   /* ==> */ ivy_float max_IOPS {0.};
 
-
+    std::string step_duration_lines;
 
     MeasureCtlr the_dfc;
 
@@ -338,7 +410,8 @@ public:
             , {"seq write busy %",            fetch_metric                      + print_avg_part_2 }
          } }
         ,{ "LDEV", {
-              { "random read IOPS",           fetch_metric + print_count_part_1 + print_avg_part_2 }
+              { "IOPS",                                      print_count_part_1 + print_avg_part_1 }
+            , { "random read IOPS",           fetch_metric                      + print_avg_part_2 }
  //           , { "random read hit %",          fetch_metric + print_count_part_1 + print_avg_part_2 }
             , { "random write IOPS",          fetch_metric                      + print_avg_part_2 }
             , { "random read bytes/sec",      fetch_metric                                         }
@@ -381,14 +454,8 @@ public:
     ParameterValueLookupTable go_parameters;
     std::map<std::string, MeasureController*> availableControllers;
 
-    std::ostringstream step_times;
-
     ivy_float non_random_sample_correction_factor {non_random_sample_correction_factor_default /*in ivydefines.h */};
 
-//    bool have_best_of_wurst {false};  That would be leverworst, natuurlijk.
-
-    unsigned int best_of_wurst_first, best_of_wurst_last;
-    bool have_timeout_rollup {false};
 
     // for the following, see initialization to default values in ivy_engine
     ivy_float gain_step;                      // The amount to increase / decrease gain in the adaptive PID approach.  2.0 works exactly same as 0.5
@@ -419,7 +486,6 @@ public:
 
     std::string thing {};  // something you can set a value into to test ivy_engine_set and ivy_engine_get
 
-    unsigned int firstMeasurementIndex, lastMeasurementIndex;
 
     std::string subsystem_thumbnail {};
 
@@ -427,14 +493,20 @@ public:
 
     bool iosequencer_template_was_used {false};
 
-    std::list<std::string> warning_messages {};
+    std::set<std::string> warning_messages {};
+
 
 // methods
 
+    void clear_measurements();
+    bool start_new_measurement();
+
     void print_iosequencer_template_deprecated_msg();
+
 	void kill_subthreads_and_exit();
+
 	void error(std::string);
-	std::pair<bool, std::string> make_measurement_rollup_CPU(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);
+
 	std::string getWPthumbnail(int subinterval_index); // throws std::invalid_argument.    Shows WP for each CLPR on the watch list as briefly as possible.
 
     ivy_float get_rollup_metric

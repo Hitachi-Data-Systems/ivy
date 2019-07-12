@@ -323,7 +323,7 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
             ostringstream logmsg;
             logmsg << "<Warning> For host " << ivyscript_hostname << ", pipe_driver_subthread::read_from_pipe() - child has exited."
             << "  pid = " << ssh_pid << ", after waitpid(ssh_pid, &pid_status, WNOHANG), pid_status = 0x" << std::hex << std::uppercase << pid_status;
-            //m_s.warning_messages.push_back(logmsg.str());
+            //m_s.warning_messages.insert(logmsg.str());
             log(logfilename,logmsg.str());
             // return false;  - Commented out to see if this can occur spuriously 2016-09-25
         }
@@ -515,7 +515,7 @@ std::string pipe_driver_subthread::get_line_from_pipe
                 << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl << std::endl
                 << "<Warning>[from " << ivyscript_hostname << "]" << s.substr(9,s.size()-9) << std::endl << std::endl
                 << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl << std::endl;
-            m_s.warning_messages.push_back(o.str());
+            m_s.warning_messages.insert(o.str());
             log (logfilename, o.str());
             log (m_s.masterlogfile, o.str());
             std::cout << o.str();
@@ -1001,10 +1001,6 @@ void pipe_driver_subthread::threadRun()
 
         if (routine_logging) { log(logfilename, std::string("remote slave said its hostname is \"")+hostname+std::string("\".")); }
 
-
-//*debug*/std::cout << "debug: waiting 60 seconds to allow showluns.sh run with another ivy hammering a lun, slowing the binary search for the LUN size.\n";
-//*debug*/sleep(60);
-
         // Retrieve list of luns visible on the slave host
         if (!pCmdDevLUN)
         {
@@ -1206,15 +1202,15 @@ void pipe_driver_subthread::threadRun()
                         // In "Go!<5,0>"  the <5,0> is the subinterval length as an ivytime::toString() representation - <seconds,nanoseconds>
                         // In "Go!<5,0>-spinloop" the optional "-spinloop" tells ivydriver workload threads to continuously check for things to do without ever waiting.
                         || 0==std::string("continue").compare(commandString)
-                        || 0==std::string("cooldown").compare(commandString)
+                        //|| 0==std::string("cooldown").compare(commandString)
                         || 0==std::string("stop").compare(commandString)
 
                         // No matter which one of these commands we got, we send it and then we gather the subinterval result lines.
                     )
                     {
-                        // Here we separate out sending the Go!/continue/cooldown/stop for which we get an OK.
-                        // Originally, after sending the Go!/continue/cooldown/stop, we simply waited for the [CPU] line to appear.
-                        // Now we get an OK after Go!/continue/cooldown/stop command has been posted to all the test
+                        // Here we separate out sending the Go!/continue/stop for which we get an OK.
+                        // Originally, after sending the Go!/continue/stop, we simply waited for the [CPU] line to appear.
+                        // Now we get an OK after Go!/continue/stop command has been posted to all the test
                         // host's workload threads.  This is so that we can print a message showing how much time
                         // we had in hand, i.e. how much margin we have in terms of the length of the subinterval in seconds.
 
@@ -1365,8 +1361,8 @@ void pipe_driver_subthread::threadRun()
 
                                 if (m_s.last_command_was_stop)
                                 {
-                                    detail_line_timeout_seconds = m_s.subinterval_seconds * 1.4;
-                                    // longer because "stop" command invokes "catch in flight I/Os" which can take extra time.
+                                    detail_line_timeout_seconds = m_s.subinterval_seconds + 10;
+                                    // longer because "stop" command invokes "catch in flight I/Os" which can take extra time, if there are stuck I/Os that need to be cancelled.
                                     // There is no need to be prompt reading detail lines once we are stopped.
                                 }
                                 else

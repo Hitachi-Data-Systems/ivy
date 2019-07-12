@@ -1,4 +1,4 @@
-//Copyright (c) 2016, 2017, 2018 Hitachi Vantara Corporation
+//Copyright (c) 2019 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,31 +17,11 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
+
 #pragma once
 
-#include "MeasureController.h"
+#include "ivydefines.h"
 
-class MeasureCtlr : public MeasureController
-{
-public:
-// variables
-	int current {-1};
-
-	bool seq_fill_extending {false};
-
-//methods
-	MeasureCtlr() : MeasureController() {}
-
-	std::string name() override {return std::string("Measure");}
-
-	int evaluateSubinterval() override;
-
-	void step_over_cooldown_subinterval() override { current++; }
-
-	void reset() override;
-
-	virtual DFCcategory category() override {return DFCcategory::measure;}
-
-};
-
-
+void multi_measure_initialize_first();
+bool multi_measure_proceed_to_next(); // returns true if we are starting a new measurement.
+void multi_measure_edit_rollup_total_IOPS();

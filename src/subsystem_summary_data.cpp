@@ -736,7 +736,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
 
         if (detailed_thumbnail)
         {   // not detailed_thumbnail
-            o << ", " << LDEV_count << " LDEVs, totals over LDEVs:" << std::endl;
+            o << ", " << std::fixed << std::setprecision(0) << LDEV_count << " LDEVs, totals over LDEVs:" << std::endl;
 
             if (IOPS>0.0) o << std::fixed << std::setw(10) << std::setprecision(3) << service_time_ms;
             else          o << "     -.---";
@@ -805,7 +805,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         else
         {   // not detailed_thumbnail
 
-            o << ", " << LDEV_count << " LDEVs: ";
+            o << ", " << std::fixed << std::setprecision(0) << LDEV_count << " LDEVs: ";
 
             if (IOPS <= 0.0)
             {
@@ -819,11 +819,11 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
 
                 if (random_IOPS > 0.0 )
                 {
-                    o << "; rand blk = " << std::fixed << std::setprecision(2) << random_blocksize_KiB << " KiB";
+                    o << "; rand blk = " << std::fixed << std::setprecision(random_blocksize_KiB == ceil(random_blocksize_KiB) ? 0 : 2) << random_blocksize_KiB << " KiB";
                 }
                 if (sequential_IOPS > 0.0 )
                 {
-                    o << "; seq blk = " << std::fixed << std::setprecision(2) << sequential_blocksize_KiB << " KiB";
+                    o << "; seq blk = " << std::fixed << std::setprecision(sequential_blocksize_KiB == ceil(sequential_blocksize_KiB) ? 0 : 2) << sequential_blocksize_KiB << " KiB";
                 }
             }
         }
@@ -834,23 +834,6 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
     }
 
     o << std::endl;
-
-//    {
-//        o << std::endl << std::endl << "vomit entire contents of subsystem_summary_data count/average:" << std::endl;
-//
-//        for (auto& pear : data)
-//        {
-//            o << pear.first << " { ";
-//            bool need_inner_comma {false};
-//            for (auto& peach : pear.second)
-//            {
-//                if (need_inner_comma) o << ", ";
-//                need_inner_comma = true;
-//                o << std::endl <<  peach.first << " count = " << peach.second.count() << " / avg = " << peach.second.avg() << " / sum = " << peach.second.sum();
-//            }
-//            o << std::endl << " }" << std::endl << std::endl;
-//        }
-//    }
 
     return o.str();
 }

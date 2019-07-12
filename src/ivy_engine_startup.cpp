@@ -531,8 +531,8 @@ std::pair<bool /*success*/, std::string /* message */>
                                 u_lk,
                                 leftnow + std::chrono::seconds(ivy_ssh_timeout),
                                 [&p_pipe_driver_subthread](){return p_pipe_driver_subthread->startupComplete || p_pipe_driver_subthread->dead;}
+                            )
                         )
-                    )
                         {
                             if (p_pipe_driver_subthread->startupSuccessful)
                             {

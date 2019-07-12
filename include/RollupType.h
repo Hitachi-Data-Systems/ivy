@@ -89,17 +89,15 @@ public:
 
 	std::pair<bool,std::string> passesDataVariationValidation();
 
-	std::pair<bool,std::string> makeMeasurementRollup(int firstMeasurementIndex, int lastMeasurementIndex);
+	std::pair<bool,std::string> makeMeasurementRollup();
 
 	static	std::string getDataValidationCsvTitles();
 
 	std::string getDataValidationCsvValues();
 
-	void printMe(std::ostream&);
-
 	void make_step_subfolder(); // and print config thumbnail etc.
 
-    void print_measurement_summary_csv_line();
+    void print_measurement_summary_csv_line(unsigned int measurement_index);
 };
 
 

@@ -30,7 +30,9 @@
 #include "ivydefines.h"
 
 #include "IosequencerInputRollup.h"
+#include "ivy_engine.h"
 
+using namespace std::string_literals;
 
 /*static*/ std::string IosequencerInputRollup::CSVcolumnTitles()
 {
@@ -240,4 +242,64 @@ std::string IosequencerInputRollup::getParameterTextValueByName(std::string para
 		return std::string("multiple");
 	}
 }
+
+ivy_float IosequencerInputRollup::get_Total_IOPS_Setting(unsigned int subinterval_count)
+{
+	std::map<std::string,std::map<std::string,long int>>::iterator IOPS_it = values_seen.find(toUpper("IOPS"));
+
+	if (values_seen.end() == IOPS_it) { return 0.0; }
+
+	std::map<std::string /* metric value */, long int /* count */>& value_map = IOPS_it->second;
+
+	if (value_map.find("max") != value_map.end()) return -1;
+
+    ivy_float total {0.0};
+
+    for (const auto& pear : value_map)
+    {
+        if (!regex_match(pear.first,float_number_regex))
+        {
+            std::string e = "<Error> internal programming error - IosequencerInputRollup::get_Total_IOPS_Setting() - IOPS setting \""s + pear.first
+                + "\" is not \"max\" and does not look like a floating point number."s;
+            std::cout << std::endl << e << std::endl << std::endl;
+            throw std::runtime_error(e);
+        }
+        {
+            std::istringstream is(pear.first);
+            ivy_float v;
+            is >> v;
+            total += v * ((ivy_float) pear.second);
+        }
+    }
+    return total / ((ivy_float) subinterval_count);
+}
+
+
+std::string IosequencerInputRollup::Total_IOPS_Setting_toString(const ivy_float v)
+{
+    if ( v == -1.0 ) return "max"s;
+    {
+        std::ostringstream o;
+        o << std::fixed << std::setprecision(2) << v;
+        return o.str();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

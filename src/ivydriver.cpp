@@ -175,6 +175,8 @@ int IvyDriver::main(int argc, char* argv[])
         return -1;
     }
 
+    system ("modprobe msr"); // this may be needed for check_CPU_temperature() to work.
+
 	initialize_io_time_clip_levels();
 
     for (int arg_index = 1 /*skipping executable name*/ ; arg_index < argc ; arg_index++ )
@@ -324,14 +326,16 @@ int IvyDriver::main(int argc, char* argv[])
 
         for (const auto& v : hyperthreads_per_core)
         {
-            o << "core " << v.first << " has hyperthreads ";
+            o << std::endl << "core " << v.first << " has hyperthreads ";
 
             for (auto& p : v.second)
             {
                 o << p << "  ";
             }
-            o << std::endl;
+
         }
+        o << std::endl;
+
         log(slavelogfile,o.str());
     }
 
@@ -365,16 +369,16 @@ int IvyDriver::main(int argc, char* argv[])
     for (auto& pear : hyperthreads_to_start_subthreads_on)
     {
         unsigned int physical_core = pear.first;
-        unsigned int core_hyperthread = pear.second;
+        unsigned int hyperthread = pear.second;
 
-        WorkloadThread* p_WorkloadThread = new WorkloadThread(&ivydriver_main_mutex,core_hyperthread);
+        WorkloadThread* p_WorkloadThread = new WorkloadThread(&ivydriver_main_mutex,physical_core,hyperthread);
 
-        all_workload_threads[core_hyperthread]=p_WorkloadThread;
+        all_workload_threads[hyperthread]=p_WorkloadThread;
 
         {
             std::ostringstream o;
 
-            o << IVYDRIVERLOGFOLDERROOT << IVYDRIVERLOGFOLDER << "/log.ivydriver." << hostname << ".core_" << physical_core << "_hyperthread_" << core_hyperthread;
+            o << IVYDRIVERLOGFOLDERROOT << IVYDRIVERLOGFOLDER << "/log.ivydriver." << hostname << ".core_" << physical_core << "_hyperthread_" << hyperthread;
 
             o << ".txt";
 
@@ -393,7 +397,7 @@ int IvyDriver::main(int argc, char* argv[])
             {
                 std::ostringstream o;
                 o << "<Error> ivydriver waited more than one second for workload thread for core "
-                    << physical_core << ", hyperthread " << core_hyperthread <<  " to start up." << std::endl
+                    << physical_core << " hyperthread " << hyperthread <<  " to start up." << std::endl
                     << "Source code reference " << __FILE__ << " line " << __LINE__ << std::endl;
                 say(o.str());
                 log(slavelogfile, o.str());
@@ -406,7 +410,7 @@ int IvyDriver::main(int argc, char* argv[])
 
         cpu_set_t aff_mask;
         CPU_ZERO(&aff_mask);
-        CPU_SET(core_hyperthread, &aff_mask);
+        CPU_SET(hyperthread, &aff_mask);
 
         if (0 !=  pthread_setaffinity_np
                     (
@@ -418,7 +422,7 @@ int IvyDriver::main(int argc, char* argv[])
         {
             std::ostringstream o;
             o << "<Warning> was unsuccessful to set CPU processor affinity for core "
-                << physical_core << ", hyperthread " << core_hyperthread << "." << std::endl
+                << physical_core << " hyperthread " << hyperthread << "." << std::endl
                 << "Source code reference " << __FILE__ << " line " << __LINE__ << std::endl;
             say(o.str());
             log(slavelogfile, o.str());
@@ -504,7 +508,7 @@ int IvyDriver::main(int argc, char* argv[])
                 {
                     std::ostringstream o;
                     o << "<Warning> ivydriver pid is " << getpid() << ", and";
-                    for (auto& pear : all_workload_threads) {o << " core " << pear.second->core << "\'s tid is " << pear.second->my_tid;}
+                    for (auto& pear : all_workload_threads) {o << " physical core " << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << "\'s tid is " << pear.second->my_tid;}
                     o << "." << std::endl;
                     say(o.str());
                 }
@@ -527,8 +531,7 @@ int IvyDriver::main(int argc, char* argv[])
 
 		else  if (startsWith(std::string("Go!"),input_line,subinterval_duration_as_string)) { go(); }
 
-		else if ( 0 == input_line.compare(std::string("continue"))
-		       || 0 == input_line.compare(std::string("cooldown")) )
+		else if ( 0 == input_line.compare(std::string("continue")) )
         {
             continue_or_cooldown();
         }
@@ -597,6 +600,8 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
     ivytime limit_time = subinterval_ending_time + quarter_subinterval;
 
 	// harvest CPU counters and send CPU line.
+
+	check_CPU_temperature();
 
 	int rc;
 
@@ -669,8 +674,8 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
         if ( n > thread_limit_time)
         {
             std::ostringstream o;
-            o << "<Error> Excessive latency over 1/4 of the way through the next subinterval for workload thread for core "
-                << pear.first << " to post results from the previous subinterval at "
+            o << "<Error> Excessive latency over 1/4 of the way through the next subinterval for workload thread for physical core "
+                << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << " to post results from the previous subinterval at "
                 << __FILE__ << " line " << __LINE__ << " in ivydriver main thread routine waitForSubintervalEndThenHarvest()." << std::endl;
             say(o.str());
             killAllSubthreads();
@@ -690,8 +695,8 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
                            [&wlt] { return wlt.ivydriver_main_posted_command == false; }))  // WorkloadThread turns this off when switching to a new subingerval
                 {
                     std::ostringstream o;
-                    o << "<Error> Excessive latency over 1/4 of the way through the next subinterval for workload thread for core "
-                        << pear.first << " to post results from the previous subinterval at "
+                    o << "<Error> Excessive latency over 1/4 of the way through the next subinterval for workload thread for physical core "
+                        << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << " to post results from the previous subinterval at "
                         << __FILE__ << " line " << __LINE__ << " in ivydriver main thread routine waitForSubintervalEndThenHarvest()." << std::endl;
                     say(o.str());
                     log(slavelogfile, o.str());
@@ -735,7 +740,7 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
                                 std::ostringstream o;
                                 o << "<Error> Internal programming error at " << __FILE__ << " line " << __LINE__
                                     << " - ivydriver main thread routine waitForSubintervalEndThenHarvest(): "
-                                    << " WorkloadThread for core " << wlt.core
+                                    << " WorkloadThread for physical core " << wlt.physical_core << " hyperthread " << wlt.hyperthread
                                     << " workload ID " << workloadID
                                     << " interlocked at subinterval end, but WorkloadThread hadn\'t marked subinterval ready-to-send.";
                                 say(o.str());
@@ -777,7 +782,7 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 
             pear.second->slaveThreadConditionVariable.notify_all();  // probably superfluous
 
-            // (The command to the workload will be posted later, after we get "continue", "cooldown", or "stop".)
+            // (The command to the workload will be posted later, after we get "continue" or "stop".)
         }
         // end nested block for fresh WorkloadThread reference
     }
@@ -1308,7 +1313,7 @@ void IvyDriver::go()
     test_start_time.setToNow();
     next_to_harvest_subinterval=0; otherSubinterval=1;
 
-    if (!subinterval_duration.fromString(subinterval_duration_as_string))
+    if (!subinterval_duration.durationFromString(subinterval_duration_as_string))
     {
         ostringstream o;
         o << "<Error> received command \"" << rtrim(input_line) << "\", saw \"Go!\" with a subinterval duration ivytime string representation of \""
@@ -1353,7 +1358,6 @@ void IvyDriver::go()
             wrkldThread.ivydriver_main_says = MainThreadCommand::start;
             if(routine_logging) {log(wrkldThread.slavethreadlogfile,"[logged here by ivydriver main thread] ivydriver main thread posted \"start\" command.");}
 
-            wrkldThread.cooldown = false;
             wrkldThread.slaveThreadConditionVariable.notify_all();
         }
     }
@@ -1386,15 +1390,6 @@ void IvyDriver::continue_or_cooldown()
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvyDriver::continue_or_cooldown()."; log(slavelogfile,o.str()); } }
 #endif
 
-    if (0 == input_line.compare(std::string("cooldown")))
-    {
-        cooldown_flag=true;
-    }
-    else
-    {
-        cooldown_flag=false;
-    }
-
     for (auto& pear : workload_threads)
     {
         { // lock
@@ -1403,7 +1398,7 @@ void IvyDriver::continue_or_cooldown()
             if (ThreadState::running != pear.second->state)
             {
                 ostringstream o;
-                o << "<Error> received \"continue\" or \"cooldown\" command, but thread for core " << pear.first
+                o << "<Error> received \"continue\" command, but thread for core " << pear.first
                     << " was in " << threadStateToString(pear.second->state)
                     << " state, not in \"running\" state."
                     << "  dying_words = \"" << pear.second->dying_words << "\"." << std::endl;
@@ -1417,13 +1412,11 @@ void IvyDriver::continue_or_cooldown()
 
             pear.second->ivydriver_main_posted_command=true;
             pear.second->ivydriver_main_says=MainThreadCommand::keep_going;
-            pear.second->cooldown = cooldown_flag;
 
             if (routine_logging)
             {
                 std::ostringstream o;
-                o << "[logged here by ivydriver main thread] ivydriver main thread posted \"keep_going\" command with cooldown_flag = "
-                    << (cooldown_flag ? "true" : "false") << ".";
+                o << "[logged here by ivydriver main thread] ivydriver main thread posted \"keep_going\" command.";
                 log(pear.second->slavethreadlogfile,o.str());
             }
         }
@@ -1680,7 +1673,7 @@ void IvyDriver::log_TestLUN_ownership()
     {
         WorkloadThread* pWorkloadThread = pear.second;
 
-        o << std::endl << "core " << pWorkloadThread->core << " owns ";
+        o << std::endl << "physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << " owns ";
 
         if (pWorkloadThread->pTestLUNs.size() == 0)
         {
@@ -1688,25 +1681,33 @@ void IvyDriver::log_TestLUN_ownership()
         }
         else
         {
+            unsigned int wt_LUNs      = 0;
+            unsigned int wt_workloads = 0;
+
             for (auto& pTestLUN : pWorkloadThread->pTestLUNs)
             {
                 testLUN_count++;
+                wt_LUNs++;
 
-                o << std::endl << "   TestLUN " << pTestLUN->host_plus_lun << " which has workloads"
-                    << std::endl;
+                //o << std::endl << "   TestLUN " << pTestLUN->host_plus_lun << " which has workloads"
+                //    << std::endl;
 
-                for (auto& pear : pTestLUN->workloads)
-                {
-                    o << "      " << pear.first << " - "<< pear.second.brief_status() << std::endl;
+                wt_workloads   += pTestLUN->workloads.size();
+                workload_count += pTestLUN->workloads.size();
 
-                    for (unsigned int i = 0; i <= 1; i++)
-                    {
-                         o << "         subinterval_array[" << i << "]'s IosequencerInput is " << pear.second.subinterval_array[i].input.toStringFull() << endl;
-                    }
-
-                    workload_count++;
-                }
+//                for (auto& pear : pTestLUN->workloads)
+//                {
+//                    o << "      " << pear.first << " - "<< pear.second.brief_status() << std::endl;
+//
+//                    for (unsigned int i = 0; i <= 1; i++)
+//                    {
+//                         o << "         subinterval_array[" << i << "]'s IosequencerInput is " << pear.second.subinterval_array[i].input.toStringFull() << endl;
+//                    }
+//
+//
+//                }
             }
+            o << wt_LUNs << " TestLUNs with a total of " << wt_workloads << " workloads." << std::endl;
         }
     }
 
@@ -1761,6 +1762,74 @@ void IvyDriver::log_iosequencer_settings(const std::string& s)
     return;
 }
 
+void IvyDriver::check_CPU_temperature()
+{
+    unsigned int cpu = 0;
+
+    RunningStat<double,long> digital_readouts;
+
+    while(true)
+    {
+        {
+            std::ostringstream msr;
+
+            msr << "/dev/cpu/" << cpu << "/msr";
+
+            int fd = open(msr.str().c_str(), O_RDONLY);
+
+            if (fd < 0) break;
+
+            uint64_t IA32_THERM_STATUS {0};
+
+            ssize_t rc = pread(fd,&IA32_THERM_STATUS, 8, 0x19C);
+
+            if (8 != rc)
+            {
+                std::ostringstream o;
+
+                o << "Failed trying to pread(fd = " << fd << ",&IA32_THERM_STATUS, 8, 0x19C) from \"" << msr.str() << "\".  return code was " << rc;
+
+                if (rc <0) { o << " errno = " << errno << " - " << strerror(errno); }
+
+                o << "." << std::endl;
+
+                log(slavelogfile, o.str());
+
+                return;
+            }
+
+            close(fd);
+
+            cpu++;
+
+            uint32_t x = (uint32_t) IA32_THERM_STATUS & 0x00000000FFFFFFFF;
+
+            x = x >> 16;
+
+            uint32_t digital_readout = x & 0x0000007F;
+
+            x = x >> 15;
+
+            uint32_t reading_valid = x & 0x00000001;
+
+            if (reading_valid != 0 ) digital_readouts.push((double) digital_readout);
+        }
+    }
+
+    if (digital_readouts.count() > 0)
+    {
+        if (digital_readouts.min() == 0.0)
+        {
+            std::cout << "<Error> CPU temperature has hit the maximum limit and CPU operation has been throttled.  Test aborting." << std::endl;
+        }
+        else if (digital_readouts.min() <= 3.0)
+        {
+            std::cout << "<Warning> CPU temperature is within 3 degrees C of the maximum limit.  Machine checks have been observed in this range.  Check dmesg & /var/log/messages." << std::endl;
+        }
+    }
+
+    return ;
+}
 
 
 

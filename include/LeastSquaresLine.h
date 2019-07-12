@@ -128,14 +128,14 @@ public:
 
         	build_needed = true;
 
-/*debug*/	std::cout << "COPY points from here" << std::endl << std::endl;
-/*debug*/	int debug_i=0;
-/*debug*/	for (auto& point : points)
-/*debug*/	{
-/*debug*/		std::cout << debug_i++ << ',' << std::fixed << std::setprecision(1) << point.first << "," << std::fixed << std::setprecision(3) << (100.*point.second) << '%' << std::endl;
-/*debug*/	}
-/*debug*/
-/*debug*/	std::cout << std::endl << "COPY points to here" << std::endl;
+///*debug*/	std::cout << "COPY points from here" << std::endl << std::endl;
+///*debug*/	int debug_i=0;
+///*debug*/	for (auto& point : points)
+///*debug*/	{
+///*debug*/		std::cout << debug_i++ << ',' << std::fixed << std::setprecision(1) << point.first << "," << std::fixed << std::setprecision(3) << (100.*point.second) << '%' << std::endl;
+///*debug*/	}
+///*debug*/
+///*debug*/	std::cout << std::endl << "COPY points to here" << std::endl;
 
         	return o.str();
         }

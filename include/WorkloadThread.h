@@ -36,6 +36,8 @@
 #include "Subinterval.h"
 #include "DedupeTargetSpreadRegulator.h"
 
+//#define IVYDRIVER_TRACE
+
 enum class ThreadState
 {
     undefined,
@@ -70,7 +72,9 @@ public:
 	pid_t my_tid;
 	pid_t my_pgid;
 
-	unsigned int core;
+	unsigned int physical_core;
+
+	unsigned int hyperthread;
 
 	std::thread std_thread;
 
@@ -107,8 +111,6 @@ public:
 
     bool dieImmediately{false};
 
-    bool cooldown {false};
-
 	std::vector<TestLUN*>::iterator pTestLUN_reap_IOs_bookmark;
     std::vector<TestLUN*>::iterator pTestLUN_pop_bookmark;
     std::vector<TestLUN*>::iterator pTestLUN_generate_bookmark;
@@ -138,7 +140,7 @@ public:
 #endif
 
 //methods
-	WorkloadThread(std::mutex*,unsigned int /*core*/);
+	WorkloadThread(std::mutex*,unsigned int /*physical_core*/, unsigned int /*hyperthread*/);
 
 	inline ~WorkloadThread() {}
 
@@ -164,7 +166,7 @@ public:
     void post_Warning_for_main_thread_to_say(const std::string&);
 
     void close_all_fds();
-
+    void check_for_long_running_IOs();
 #ifdef IVYDRIVER_TRACE
     void log_bookmark_counters();
 #endif

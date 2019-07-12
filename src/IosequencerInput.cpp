@@ -366,42 +366,64 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 
 		if ( 0 == parameterValue.length() ) { return std::make_pair(false, "IOPS may not be set to the null string."); }
 
-		if ( stringCaseInsensitiveEquality(parameterValue, std::string("max")) )
+		if ( stringCaseInsensitiveEquality(parameterValue, std::string("pause")) )
 		{
-			IOPS=-1;
-		} else {
-			std::string stripped_value = parameterValue;
-
-			bool relativeAdd {false};
-			bool relativeMultiply {false};
-
-			if ('+' == parameterValue[0])
+			if (!have_saved_IOPS)
 			{
-				relativeAdd = true;
-				parameterValue.erase(0,1);  // hopefully this erases the first character
-				trim(parameterValue);
-			}
-			else if ('*' == parameterValue[0])
-			{
-				relativeMultiply = true;
-				parameterValue.erase(0,1);  // hopefully this erases the first character
-				trim(parameterValue);
-			}
-
-			std::istringstream is(parameterValue);
-			ivy_float ld;
-
-			if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) )
-			{
-                std::ostringstream o;
-                o << "invalid IOPS parameter value \"" << parameterValue << "\".  OK: IOPS=max, IOPS=100, iops = + 10 (adds 10 to IOPS), iops = *1.25 (increases IOPS by 25%)";
-                return std::make_pair(false,o.str());
-			}
-
-			if (relativeAdd)           IOPS += ld;
-			else if (relativeMultiply) IOPS *= ld;
-			else                       IOPS  = ld;
+                have_saved_IOPS = true;
+                saved_IOPS = IOPS;
+                IOPS=0.000001; // temporary workaround for bug - possible race condition where setting IOPS to 0 (zero) here caused some WorkloadThreads to randomly go into a spinloop.
+            }
 		}
+		else if ( stringCaseInsensitiveEquality(parameterValue, std::string("restore")) )
+		{
+		    if (have_saved_IOPS)
+		    {
+		        have_saved_IOPS = false;
+		        IOPS=saved_IOPS;
+		    }
+		}
+		else
+		{
+		    have_saved_IOPS = false;
+
+            if ( stringCaseInsensitiveEquality(parameterValue, std::string("max")) )
+            {
+                IOPS=-1;
+            } else {
+                std::string stripped_value = parameterValue;
+
+                bool relativeAdd {false};
+                bool relativeMultiply {false};
+
+                if ('+' == parameterValue[0])
+                {
+                    relativeAdd = true;
+                    parameterValue.erase(0,1);
+                    trim(parameterValue);
+                }
+                else if ('*' == parameterValue[0])
+                {
+                    relativeMultiply = true;
+                    parameterValue.erase(0,1);
+                    trim(parameterValue);
+                }
+
+                std::istringstream is(parameterValue);
+                ivy_float ld;
+
+                if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) )
+                {
+                    std::ostringstream o;
+                    o << "invalid IOPS parameter value \"" << parameterValue << "\".  OK: IOPS=max, IOPS=100, iops = + 10 (adds 10 to IOPS), iops = *1.25 (increases IOPS by 25%)";
+                    return std::make_pair(false,o.str());
+                }
+
+                if (relativeAdd)           IOPS += ld;
+                else if (relativeMultiply) IOPS *= ld;
+                else                       IOPS  = ld;
+            }
+        }
 		return std::make_pair(true,"");
 	}
 

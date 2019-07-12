@@ -70,31 +70,11 @@ public:
 
 	virtual int evaluateSubinterval() = 0;
 
-	virtual unsigned int firstMeasurementSubintervalIndex()
-		{throw std::runtime_error("MeasureController::firstMeasurementSubintervalIndex() - invalid for this type of DFC");}
-
-	virtual unsigned int lastMeasurementSubintervalIndex()
-		{throw std::runtime_error("MeasureController::lastMeasurementSubintervalIndex() - invalid for this type of DFC");}
+	virtual void step_over_cooldown_subinterval() = 0;
 
 	virtual void reset()=0;
 
 	virtual DFCcategory category()=0;
-
-	virtual bool has_multiple_measurement_intervals() {return false;}
-
-	virtual unsigned int measurement_count()
-		{throw std::runtime_error("MeasureController::measurement_count() - invalid for this type of DFC");}
-
-	virtual unsigned int get_measurement_first_index(unsigned int measurement_index)
-		{throw std::runtime_error("MeasureController::get_measurement_first_index() - invalid for this type of DFC");}
-
-	virtual unsigned int get_measurement_last_index(unsigned int measurement_index)
-		{throw std::runtime_error("MeasureController::get_measurement_last_index() - invalid for this type of DFC");}
-
-	virtual std::string get_measurement_ID_tag(unsigned int measurement_index)
-		{throw std::runtime_error("MeasureController::get_measurement_ID_tag() - invalid for this type of DFC");}
-
-    std::string test_phase(unsigned int subinterval_index);  // returns warmup/measurement/cooldown
 
     virtual ~MeasureController();
 };

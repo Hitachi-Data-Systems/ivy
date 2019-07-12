@@ -40,7 +40,7 @@ unsigned int TestLUN::sum_of_maxTags()
 {
 #if defined(IVYDRIVER_TRACE)
     { sum_of_maxTags_callcount++; if (sum_of_maxTags_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << sum_of_maxTags_callcount << ") ";
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << sum_of_maxTags_callcount << ") ";
     o << "      Entering TestLUN::sum_of_maxTags()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
@@ -65,7 +65,7 @@ void TestLUN::open_fd()
 {
 #if defined(IVYDRIVER_TRACE)
     { open_fd_callcount++; if (open_fd_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << open_fd_callcount << ") ";
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << ':' << open_fd_callcount << ") ";
     o << "      Entering TestLUN::open_fd()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
@@ -141,7 +141,7 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 {
 #if defined(IVYDRIVER_TRACE)
     { prepare_linux_AIO_driver_to_start_callcount++; if (prepare_linux_AIO_driver_to_start_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << prepare_linux_AIO_driver_to_start_callcount << ") ";
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << prepare_linux_AIO_driver_to_start_callcount << ") ";
     o << "      Entering TestLUN::prepare_linux_AIO_driver_to_start()."; } }
 #endif
 
@@ -229,7 +229,7 @@ unsigned int /* number of I/Os reaped */ TestLUN::reap_IOs()
 {
 #if defined(IVYDRIVER_TRACE)
     { reap_IOs_callcount++; if (reap_IOs_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << reap_IOs_callcount << ") ";
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << reap_IOs_callcount << ") ";
     o << "      Entering TestLUN::reap_IOs().";
     abort_if_queue_depths_corrupted("TestLUN::reap_IOs()", reap_IOs_callcount); } }
 #endif
@@ -315,7 +315,7 @@ unsigned int /* number of I/Os reaped */ TestLUN::reap_IOs()
         if (reap_IOs_callcount <= FIRST_FEW_CALLS)
         {
             std::ostringstream o;
-            o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ") =|= reaped " << p_Eyeo->thumbnail();
+            o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ") =|= reaped " << p_Eyeo->thumbnail();
             log(pWorkloadThread->slavethreadlogfile,o.str());
         }
 #endif
@@ -329,7 +329,7 @@ void TestLUN::pop_front_to_LaunchPad(Workload* pWorkload)
 {
 #if defined(IVYDRIVER_TRACE)
     { pop_front_to_LaunchPad_callcount++; if (pop_front_to_LaunchPad_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << pop_front_to_LaunchPad_callcount << ") ";
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << pop_front_to_LaunchPad_callcount << ") ";
     o << "      Entering TestLUN::pop_front_to_LaunchPad(" << pWorkload->workloadID << ")."; log(pWorkloadThread->slavethreadlogfile,o.str());} }
 #endif
 
@@ -391,7 +391,7 @@ void TestLUN::pop_front_to_LaunchPad(Workload* pWorkload)
     if (pop_front_to_LaunchPad_callcount <= FIRST_FEW_CALLS)
     {
         std::ostringstream o;
-        o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ") =|= popped to Launchpad" << pEyeo->thumbnail();
+        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ") =|= popped to Launchpad" << pEyeo->thumbnail();
         log(pWorkloadThread->slavethreadlogfile,o.str());
     }
 #endif
@@ -403,7 +403,7 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
 {
 #if defined(IVYDRIVER_TRACE)
     { start_IOs_callcount++; if (start_IOs_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << start_IOs_callcount << ") ";
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << start_IOs_callcount << ") ";
     o << "      Entering TestLUN::start_IOs()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
@@ -530,7 +530,7 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
         if (start_IOs_callcount <= FIRST_FEW_CALLS)
         {
             std::ostringstream o;
-            o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ") =|= started " << pEyeo->thumbnail();
+            o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ") =|= started " << pEyeo->thumbnail();
             log(pWorkloadThread->slavethreadlogfile, o.str());
         }
 #endif
@@ -595,7 +595,7 @@ unsigned int /* number of I/Os popped and processed */ TestLUN::pop_and_process_
 #if defined(IVYDRIVER_TRACE)
     { pop_and_process_an_Eyeo_callcount++;
         if (pop_and_process_an_Eyeo_callcount <= FIRST_FEW_CALLS)     { std::ostringstream o;
-        o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << pop_and_process_an_Eyeo_callcount << ") ";
+        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << pop_and_process_an_Eyeo_callcount << ") ";
         o << "      Entering TestLUN::pop_and_process_an_Eyeo()."; log(pWorkloadThread->slavethreadlogfile,o.str()); }
 
         abort_if_queue_depths_corrupted("TestLUN::pop_and_process_an_Eyeo",pop_and_process_an_Eyeo_callcount);
@@ -638,7 +638,7 @@ unsigned int /* number of I/Os generated - 0 or 1  */  TestLUN::generate_an_IO()
 {
 #if defined(IVYDRIVER_TRACE)
     { generate_an_IO_callcount++; if (generate_an_IO_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << generate_an_IO_callcount << ") ";
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << generate_an_IO_callcount << ") ";
     o << "      Entering TestLUN::generate_an_IO()."; log(pWorkloadThread->slavethreadlogfile,o.str()); }
     abort_if_queue_depths_corrupted("TestLUN::generate_an_IO", generate_an_IO_callcount); }
 #endif
@@ -680,7 +680,7 @@ ivytime TestLUN::next_scheduled_io()
 {
 #if defined(IVYDRIVER_TRACE)
     { next_scheduled_io_callcount++; if (next_scheduled_io_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << next_scheduled_io_callcount << ") ";
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << next_scheduled_io_callcount << ") ";
     o << "      Entering TestLUN::next_scheduled_io()."; log(pWorkloadThread->slavethreadlogfile,o.str()); }
     abort_if_queue_depths_corrupted("TestLUN::next_scheduled_io", next_scheduled_io_callcount); }
 #endif
@@ -720,7 +720,7 @@ void TestLUN::catch_in_flight_IOs()
 {
 #if defined(IVYDRIVER_TRACE)
     { catch_in_flight_IOs_callcount++; if (catch_in_flight_IOs_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << catch_in_flight_IOs_callcount << ") ";
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << catch_in_flight_IOs_callcount << ") ";
     o << "      Entering TestLUN::catch_in_flight_IOs()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
     // While there are events to harvest within 1 ms, do so.
@@ -915,7 +915,7 @@ void TestLUN::ivy_cancel_IO(struct iocb* p_iocb)
 {
 #if defined(IVYDRIVER_TRACE)
     { ivy_cancel_IO_callcount++; if (ivy_cancel_IO_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << pWorkloadThread->core << '-' << host_plus_lun << ':' << ivy_cancel_IO_callcount << ") ";
+    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << ivy_cancel_IO_callcount << ") ";
     o << "      Entering TestLUN::ivy_cancel_IO(struct iocb* p_iocb)."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
@@ -979,7 +979,7 @@ void TestLUN::ivy_cancel_IO(struct iocb* p_iocb)
 
     {
         std::ostringstream o;
-        o << "<Error> in " << __FILE__ << " line " << __LINE__ << " in ivy_cancel_IO(), system call to cancel the I/O failed saying - ";
+        o << "<Warning> in " << __FILE__ << " line " << __LINE__ << " in ivy_cancel_IO(), system call to cancel the I/O failed saying - ";
         switch (rc)
         {
             case EINVAL:
@@ -994,6 +994,9 @@ void TestLUN::ivy_cancel_IO(struct iocb* p_iocb)
             default:
                 o << "unknown error return code " << rc;
         }
+
+        pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
+
         log(pWorkloadThread->slavethreadlogfile,o.str());
     }
     return;

@@ -19,6 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #include "skew_weight.h"
+#include "ivy_engine.h"
 
 skew_LUN::skew_LUN()
 {
@@ -35,7 +36,17 @@ ivy_float skew_LUN::total_abs_skew()
 
     for (auto& w: workload_skew_weight)
     {
-        total += abs(w.second);
+        if (w.second == 0)
+        {
+            std::ostringstream o;
+            o << "<Error> internal programming error - in skew_LUN::total_abs_skew() for workloadID " << w.first << " skew weight is zero.  It must not be zero." << std::endl;
+            std::cout << o.str();
+            log(m_s.masterlogfile, o.str());
+            m_s.kill_subthreads_and_exit();
+        }
+
+        if (w.second > 0) total += w.second;
+        else              total -= w.second;
     }
 
     return total;

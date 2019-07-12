@@ -751,7 +751,7 @@ std::ostream& operator<<(std::ostream&o, const struct cpubusypercent& c)
 
     for (const auto& pear : c.eachcore)
     {
-        o << "core " << pear.first << ": " << pear.second << std::endl;
+        o << "hyperthread " << pear.first << ": " << pear.second << std::endl;
     }
 
     return o;

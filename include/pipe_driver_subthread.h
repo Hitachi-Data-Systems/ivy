@@ -65,7 +65,6 @@
 //
 // - "Go!<5,0>    - subinterval_seconds as seconds and nanoseconds.
 // - "continue"
-// - "cooldown"
 // - "stop"
 //      For each of these, we send to ivydriver and wait for it to say OK,
 //      which means that the command has been delivered to all workload threads.
@@ -225,7 +224,7 @@ public:
 	ivytime duration; // most recent "gather" duration.
 	ivytime time_in_hand_before_subinterval_end;
         // This is the amount of time from when we receive the OK from ivydriver that all workload threads have
-        // been posted with the "Go!" / "continue" / "cooldown" / "stop" command
+        // been posted with the "Go!" / "continue" / "stop" command
         // until the end of the subinterval.
     std::vector<long double> gather_times_seconds;
 

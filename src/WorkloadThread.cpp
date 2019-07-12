@@ -39,6 +39,11 @@
 #include <math.h>  /* for ceil() */
 #include <csignal>
 
+//#define IVYDRIVER_TRACE
+// IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
+//  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
+//  - you can turn on tracing separately for each class in its own source file.
+
 #include "ivytime.h"
 #include "ivydefines.h"
 #include "ivyhelpers.h"
@@ -62,10 +67,7 @@
 #include "TestLUN.h"
 #include "DedupeTargetSpreadRegulator.h"
 
-//#define IVYDRIVER_TRACE
-// IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
-//  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
-//  - you can turn on tracing separately for each class in its own source file.
+//#define CHECK_FOR_LONG_RUNNING_IOS
 
 extern bool routine_logging;
 
@@ -113,8 +115,8 @@ std::ostream& operator<< (std::ostream& o, const ThreadState& s)
 }
 
 
-WorkloadThread::WorkloadThread(std::mutex* p_imm, unsigned int c)
-    : p_ivydriver_main_mutex(p_imm), core(c) {}
+WorkloadThread::WorkloadThread(std::mutex* p_imm, unsigned int pc, unsigned int h)
+    : p_ivydriver_main_mutex(p_imm), physical_core(pc), hyperthread(h) {}
 
 std::string threadStateToString (const ThreadState ts)
 {
@@ -147,7 +149,7 @@ void WorkloadThread::WorkloadThreadRun()
 	{
 		std::ostringstream o;
 
-		o<< "WorkloadThreadRun() fireup for core-hyperthread = " << core << "." << std::endl;
+		o<< "WorkloadThreadRun() fireup for physical core " << physical_core << " hyperthread " << hyperthread << "." << std::endl;
 
 		log(slavethreadlogfile,o.str());
 	}
@@ -188,7 +190,7 @@ void WorkloadThread::WorkloadThreadRun()
 //           to see either the command "keep_running", "stop", or "die".
 //
 //           "stop" means :
-//                 You just finished the last cooldown subinterval.
+//                 You just finished the last subinterval.
 //                 Don't run another subinterval.
 //                 Do wrap up activities, possibly write log records,
 //                 and then loop back to the top of the outer "waiting for command" loop.
@@ -360,7 +362,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
         if (event_fd == -1)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error.  Failed trying to create eventfd for core " << core << "\'s thread."
+            o << "<Error> Internal programming error.  Failed trying to create eventfd for physical core " << physical_core << " hyperthread " << hyperthread << "\'s thread."
                 << " - errno = " << errno << " " << strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
             dying_words = o.str();
@@ -395,7 +397,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
         if (routine_logging)
         {
             std::ostringstream o;
-            o << "Thread for core " << core << " - eventfd = " << event_fd << " and epoll fd is " << epoll_fd << std::endl;
+            o << "Thread for physical core " << physical_core << " hyperthread " << hyperthread << " - eventfd = " << event_fd << " and epoll fd is " << epoll_fd << std::endl;
             log(slavethreadlogfile,o.str());
         }
 
@@ -434,7 +436,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
             if (routine_logging){
                 std::ostringstream o;
-                o << "core " << core << ": Top of subinterval " << thread_view_subinterval_number
+                o << "Physical core " << physical_core << " hyperthread " << hyperthread << ": Top of subinterval " << thread_view_subinterval_number
                 << " " << thread_view_subinterval_start.format_as_datetime_with_ns()
                 << " to " << thread_view_subinterval_end.format_as_datetime_with_ns()
                 << " with subinterval_duration = " << ivydriver.subinterval_duration.format_as_duration_HMMSSns()
@@ -459,7 +461,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                                 if (!p->set_hot_zone_parameters(wrkld.p_current_IosequencerInput))
                                 {
                                     std::ostringstream o;
-                                    o << "<Error> Internal programming error - Workload thread for core " << core
+                                    o << "<Error> Internal programming error - Workload thread for physical core " << physical_core << " hyperthread " << hyperthread
                                         << " working on WorkloadID " << wrkld.workloadID.workloadID
                                         << " - call to IosequencerRandom::set_hot_zone_parameters(() failed.\n"
                                         << "Occurred at line " << __LINE__ << " of " << __FILE__ << std::endl;
@@ -476,7 +478,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 if (!linux_AIO_driver_run_subinterval())
                 {
                     std::ostringstream o; o << "<Error> Internal programming error - "
-                        << "WorkloadThread for core " << core
+                        << "WorkloadThread for physical core " << physical_core << " hyperthrad " << hyperthread
                         << " - call to linux_AIO_driver_run_subinterval() failed.\n"
                         << "Occurred at line " << __LINE__ << " of " << __FILE__ << std::endl;
                     die_saying(o.str());
@@ -518,7 +520,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             if (routine_logging)
             {
                 std::ostringstream o;
-                o << "core " << core << ": Bottom of subinterval " << thread_view_subinterval_number
+                o << "Physical core " << physical_core << " hyperthread " << hyperthread << ": Bottom of subinterval " << thread_view_subinterval_number
                     << " " << thread_view_subinterval_start.format_as_datetime_with_ns()
                     << " to " << thread_view_subinterval_end.format_as_datetime_with_ns() << std::endl;
                 log(slavethreadlogfile,o.str());
@@ -539,6 +541,9 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                 ivydriver_main_posted_command=false; // for next time
 
+#ifdef CHECK_FOR_LONG_RUNNING_IOS
+                check_for_long_running_IOs();
+#endif
                 // we still have the lock
 
                 if (MainThreadCommand::die == ivydriver_main_says)
@@ -696,7 +701,7 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 {
 #if defined(IVYDRIVER_TRACE)
     { wt_callcount_linux_AIO_driver_run_subinterval++; if (wt_callcount_linux_AIO_driver_run_subinterval <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << core << ':' << wt_callcount_linux_AIO_driver_run_subinterval << ") ";
+    o << "(physical core" << physical_core << " hyperthread " << hyperthread << ':' << wt_callcount_linux_AIO_driver_run_subinterval << ") ";
     o << "Entering WorkloadThread::linux_AIO_driver_run_subinterval()."; log(slavethreadlogfile,o.str()); } }
 #endif
 
@@ -722,24 +727,13 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
         unsigned int n;
 
-        n = reap_IOs();
+        n = reap_IOs();                if ( n > 0 ) { goto top_of_loop; }
 
-        if ( n > 0 )
-        {
-            goto top_of_loop;
-        }
+        n = start_IOs();               if ( n > 0 ) { goto top_of_loop; }
 
-        n = start_IOs();
+        n = pop_and_process_an_Eyeo(); if ( n > 0 ) { goto top_of_loop; }
 
-        if ( n > 0 ) { goto top_of_loop; }
-
-        n = pop_and_process_an_Eyeo();
-
-        if ( n > 0 ) { goto top_of_loop; }
-
-        n = generate_an_IO();
-
-        if ( n > 0 ) { goto top_of_loop; }
+        n = generate_an_IO();          if ( n > 0 ) { goto top_of_loop; }
 
         // We wait for the soonest of
         //   - end of subinterval
@@ -747,26 +741,21 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
         if (ivydriver.spinloop) goto top_of_loop;
 
-
-
         ivytime next_overall_io = ivytime(0);
 
         for (auto& pTestLUN : pTestLUNs)
         {
             ivytime next_this_LUN = pTestLUN->next_scheduled_io();
 
-//{if (debug_epoll_count++ < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: next I/O for " << pTestLUN->host_plus_lun << " is " << next_this_LUN.format_as_datetime_with_ns(); if (ivytime(0) != next_this_LUN) { ivytime dur =  next_this_LUN - now; o << " which is " << dur.format_as_duration_HMMSSns() << " from now."; } log(slavethreadlogfile,o.str()); }}
-
             if (next_overall_io == ivytime(0))
             {
                 next_overall_io = next_this_LUN;
             }
-            else if (next_this_LUN   != ivytime(0) && next_this_LUN < next_overall_io)
+            else if (next_this_LUN   != ivytime(0) && next_overall_io != ivytime(0) && next_this_LUN < next_overall_io)
             {
                 next_overall_io = next_this_LUN;
             }
         }
-//{if (debug_epoll_count < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: next overall I/O is " << next_overall_io.format_as_datetime_with_ns() << ", subinterval end = " << thread_view_subinterval_end.format_as_datetime_with_ns(); log(slavethreadlogfile,o.str()); }}
 
         ivytime wait_until_this_time = thread_view_subinterval_end;
 
@@ -785,11 +774,8 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         {
             wait_duration = wait_until_this_time - now;
         }
-//{if (debug_epoll_count < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: wait duration is " << wait_duration.format_as_duration_HMMSSns(); log(slavethreadlogfile,o.str()); }}
 
         int wait_ms = static_cast<int>(wait_duration.Milliseconds());
-
-//{if (debug_epoll_count < FIRST_FEW_CALLS){ std::ostringstream o; o << "debug: wait milliseconds is " << wait_ms; log(slavethreadlogfile,o.str()); }}
 
         int epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, wait_ms);
 
@@ -817,7 +803,7 @@ void WorkloadThread::cancel_stalled_IOs()
 {
 #if defined(IVYDRIVER_TRACE)
     { wt_callcount_cancel_stalled_IOs++; if (wt_callcount_cancel_stalled_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << core << ':' << wt_callcount_cancel_stalled_IOs << ") ";
+    o << "(physical core" << physical_core << " hyperthread " << hyperthread << ':' << wt_callcount_cancel_stalled_IOs << ") ";
     o << "Entering WorkloadThread::cancel_stalled_IOs()."; log(slavethreadlogfile,o.str()); } }
 #endif
 
@@ -846,7 +832,7 @@ unsigned int WorkloadThread::start_IOs()
 {
 #if defined(IVYDRIVER_TRACE)
     { wt_callcount_start_IOs++; if (wt_callcount_start_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << core << ':' << wt_callcount_start_IOs << ") ";
+    o << "(physical core" << physical_core << " hyperthread " << hyperthread << ':' << wt_callcount_start_IOs << ") ";
     o << "Entering WorkloadThread::start_IOs().";log(slavethreadlogfile,o.str()); } }
 #endif
 
@@ -898,7 +884,7 @@ unsigned int WorkloadThread::reap_IOs()
 {
 #if defined(IVYDRIVER_TRACE)
     { wt_callcount_reap_IOs++; if (wt_callcount_reap_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << core << ':' << wt_callcount_reap_IOs << ") ";
+    o << "(physical core" << physical_core << " hyperthread " << hyperthread << ':' << wt_callcount_reap_IOs << ") ";
     o << "Entering WorkloadThread::reap_IOs()."; log(slavethreadlogfile,o.str()); } }
 #endif
 
@@ -1027,7 +1013,7 @@ unsigned int WorkloadThread::pop_and_process_an_Eyeo()
 {
 #if defined(IVYDRIVER_TRACE)
     { wt_callcount_pop_and_process_an_Eyeo++; if (wt_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << core << ':' << wt_callcount_pop_and_process_an_Eyeo << ") ";
+    o << "(physical core" << physical_core << " hyperthread " << hyperthread << ':' << wt_callcount_pop_and_process_an_Eyeo << ") ";
     o << "Entering WorkloadThread::pop_and_process_an_Eyeo()."; log(slavethreadlogfile,o.str()); } }
 #endif
 
@@ -1071,7 +1057,7 @@ unsigned int WorkloadThread::generate_an_IO()
 {
 #if defined(IVYDRIVER_TRACE)
     { wt_callcount_generate_an_IO++; if (wt_callcount_generate_an_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << core << ':' << wt_callcount_generate_an_IO << ") ";
+    o << "(physical core" << physical_core << " hyperthread " << hyperthread << ':' << wt_callcount_generate_an_IO << ") ";
     o << "Entering WorkloadThread::generate_an_IO()."; log(slavethreadlogfile,o.str()); } }
 #endif
 
@@ -1116,17 +1102,15 @@ void WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
 {
 #if defined(IVYDRIVER_TRACE)
     { wt_callcount_catch_in_flight_IOs_after_last_subinterval++; if (wt_callcount_catch_in_flight_IOs_after_last_subinterval <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(core" << core << ':' << wt_callcount_catch_in_flight_IOs_after_last_subinterval << ") ";
-    o << "Entering WorkloadThread::catch_in_flight_IOs_after_last_subinterval() for core " << core << "."; log(slavethreadlogfile,o.str()); } }
+    o << "(physical core" << physical_core << " hyperthread " << hyperthread << ':' << wt_callcount_catch_in_flight_IOs_after_last_subinterval << ") ";
+    o << "Entering WorkloadThread::catch_in_flight_IOs_after_last_subinterval()."; log(slavethreadlogfile,o.str()); } }
 #endif
-
-    ivytime half_a_subinterval = ivytime(ivydriver.subinterval_duration.getlongdoubleseconds() / 2.0);
 
     ivytime limit_time;
     limit_time.setToNow();
-    limit_time = limit_time + half_a_subinterval;
+    limit_time = limit_time + ivytime(1.5);
 
-    // First we try to harvest I/Os normally for half a subinterval
+    // First we try to harvest I/Os normally for 1.5 seconds
 
     while (workload_thread_queue_depth > 0)
     {
@@ -1376,7 +1360,59 @@ void WorkloadThread::log_bookmark_counters()
 
 
 
+void WorkloadThread::check_for_long_running_IOs()
+{
+    // runs with the lock held at subinterval switchover
+    // when I/O events are not being harvested.
 
+    ivytime now; now.setToNow();
+
+    for (TestLUN*& pTestLUN : pTestLUNs)
+    {
+        {
+            RunningStat<ivy_float,ivy_int> long_running_IOs;
+
+            for (auto& pear : pTestLUN->workloads)
+            {
+                for (struct iocb* p_iocb : pear.second.running_IOs)
+                {
+                    Eyeo* pEyeo = (Eyeo*) p_iocb;
+
+                    long double run_time_so_far = 0.0 - pEyeo->start_time.seconds_from(now);
+
+                    if (run_time_so_far > 1.0)
+                    {
+                        long_running_IOs.push(run_time_so_far);
+                    }
+                }
+            }
+
+            if (long_running_IOs.count() > 0)
+            {
+                std::ostringstream o;
+                o << "<Warning> LUN " << pTestLUN->host_plus_lun << " has " << long_running_IOs.count()
+                    << " I/Os that have been running for more than one second, the longest of which for "
+                    <<  long_running_IOs.max() << " seconds." << std::endl;
+                {
+                    std::lock_guard<std::mutex> lk_guard(*p_ivydriver_main_mutex);
+                    ivydriver.workload_thread_warning_messages.push_back(o.str());
+                }
+            }
+        }
+    }
+
+    ivytime ending; ending.setToNow();
+
+    ivytime run_time = ending-now;
+
+    {
+        std::ostringstream o;
+        o << "WorkloadThread::check_for_long_running_IOs() held the lock and ran for " << run_time.getAsNanoseconds() << " nanoseconds." << std::endl;
+        log(slavethreadlogfile,o.str());
+    }
+
+    return;
+}
 
 
 

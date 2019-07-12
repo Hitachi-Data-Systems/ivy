@@ -41,41 +41,48 @@ int MeasureCtlr::evaluateSubinterval()
 {
 	current++;
 
-    if (m_s.have_pid && m_s.last_gain_adjustment_subinterval > 0 && current < ( m_s.last_gain_adjustment_subinterval + m_s.min_measure_count - 1))
+    if
+    (
+        m_s.have_pid  // if m_s.have_pid, we are not doing DFC = IOPS_staircase, but just in case we might combine them later, we are referring to the first index of the current measurement.
+        && m_s.last_gain_adjustment_subinterval > m_s.current_measurement().first_subinterval
+        && current < ( m_s.last_gain_adjustment_subinterval + m_s.min_measure_count - 1)
+
+        // XXXXXXXXXXXXXXXXXXXXXX  come back and consider measure timeout if pid loop keeps making gain adjustments for too long. "shouldn't" happen.
+
+    )
     {
         std::ostringstream o;
-        o << "Last PID loop gain adjustment was at subinterval " << m_s.last_gain_adjustment_subinterval
-            << " and we need run for " <<  (( m_s.last_gain_adjustment_subinterval + m_s.min_measure_count - 1) - current)
+        o << "Last PID loop gain adjustment was at subinterval " << (m_s.last_gain_adjustment_subinterval - m_s.current_measurement().first_subinterval)
+            << " and we need to run for " <<  (( m_s.last_gain_adjustment_subinterval + m_s.min_measure_count - 1) - current)
             << " more subintervals from now to have at least " << m_s.measure_seconds
             << " seconds worth of measurement data. " << std::endl << std::endl;
         std::cout << o.str();
         if (routine_logging) log(m_s.masterlogfile, o.str());
-        m_s.have_timeout_rollup = false;
+        m_s.current_measurement().have_timeout_rollup = false;
         return  EVALUATE_SUBINTERVAL_CONTINUE;
     }
 
-    if (current < ( m_s.min_warmup_count + m_s.min_measure_count - 1)) /* if we say success at subinterval min_warmup_subintervals + min_sample_size, there's one more running that will be a cooldown subinterval */
+    if (current < ( m_s.current_measurement().first_subinterval + m_s.min_warmup_count + m_s.min_measure_count - 1))
+        // if we say success at subinterval min_warmup_subintervals + min_sample_size, there's one more running that will be a cooldown subinterval
     {
         std::ostringstream o;
-        o << "This is subinterval number " << current << " (numbered from zero) of at least " << ( m_s.min_warmup_count + m_s.min_measure_count )
-            << " subintervals to accommodate " << m_s.warmup_seconds << " warmup_seconds and " << m_s.measure_seconds << " measure_seconds with subintervals " << m_s.subinterval_seconds << " seconds long." << std::endl << std::endl;
+        o << "This is";
+        if (m_s.have_IOPS_staircase) { o << " measurement " << (m_s.measurements.size() -1 );}
+        o << " subinterval number " << ( current - m_s.current_measurement().first_subinterval )
+            << " (from zero) of at least " << ( m_s.min_warmup_count + m_s.min_measure_count )
+            << " subintervals to accommodate " << m_s.warmup_seconds << " warmup_seconds and " << m_s.measure_seconds
+            << " measure_seconds with subintervals " << m_s.subinterval_seconds << " seconds long." << std::endl << std::endl;
+
         std::cout << o.str();
         log(m_s.masterlogfile, o.str());
-        m_s.have_timeout_rollup = false;
+        m_s.current_measurement().have_timeout_rollup = false;
         return  EVALUATE_SUBINTERVAL_CONTINUE;
     }
 
     if (!m_s.have_measure)  // fixed number of subintervals
     {
-        if (m_s.have_pid && (m_s.last_gain_adjustment_subinterval > 0) )
-        {
-            measureFirstIndex = m_s.last_gain_adjustment_subinterval + 1;
-        }
-        else
-        {
-            measureFirstIndex = m_s.min_warmup_count;
-        }
-        measureLastIndex = current;
+        // Should we require the use of "measure" with dfc=pid????
+
         if (m_s.keep_filling)
         {
             std::ostringstream o;
@@ -85,22 +92,42 @@ int MeasureCtlr::evaluateSubinterval()
             log(m_s.masterlogfile, o.str());
             return  EVALUATE_SUBINTERVAL_CONTINUE;
         }
+
+        measurement& m = m_s.current_measurement();
+
+        if (m_s.have_pid && (m_s.last_gain_adjustment_subinterval > m_s.current_measurement().first_subinterval) )
+        {
+
+            m.firstMeasurementIndex = m_s.last_gain_adjustment_subinterval + 1;
+        }
         else
         {
-            return EVALUATE_SUBINTERVAL_SUCCESS;
+            m.firstMeasurementIndex = m_s.current_measurement().first_subinterval + m_s.min_warmup_count;
         }
+
+        m.lastMeasurementIndex = current;
+        m.measure_start = m.warmup_start + ivytime((    m.firstMeasurementIndex - m.first_subinterval) * m_s.subinterval_seconds);
+        m.measure_end   = m.warmup_start + ivytime((1 + m.lastMeasurementIndex  - m.first_subinterval) * m_s.subinterval_seconds);
+        m.success = true;
+
+        std::ostringstream o;
+        o   << "Successful measurement from subinterval " << m_s.current_measurement().firstMeasurementIndex << " to " << m_s.current_measurement().lastMeasurementIndex
+            << "." << std::endl << std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile, o.str());
+
+
+        return EVALUATE_SUBINTERVAL_SUCCESS;
     }
 
     // "measure" is on from here
 
     if (seq_fill_extending)
     {
-        measureLastIndex = current;
-
         if (m_s.keep_filling)
         {
             std::ostringstream o;
-            o   << "Successful measurement from subinterval " << measureFirstIndex << " to " << measurement_end
+            o   << "Successful measurement from subinterval " << m_s.current_measurement().firstMeasurementIndex << " to " << m_s.current_measurement().lastMeasurementIndex
                 << " is being extended from now at subinterval " << current << " until sequential fill is complete." << std::endl << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile, o.str());
@@ -110,27 +137,53 @@ int MeasureCtlr::evaluateSubinterval()
         else
         {
             std::ostringstream o;
-            o   << "Successful measurement from subinterval " << measureFirstIndex << " to " << measurement_end
-                << " has been extended until sequential fill was complete at " << current << "." << std::endl << std::endl;
+            o   << "Successful measurement from subinterval " << m_s.current_measurement().firstMeasurementIndex << " to " << m_s.current_measurement().lastMeasurementIndex
+                << " has been extended until sequential fill was complete at subinterval " << current << "." << std::endl << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile, o.str());
+
+            measurement& m = m_s.current_measurement();
+
+            m.lastMeasurementIndex = current;
+            m.measure_start = m.warmup_start + ivytime((    m.firstMeasurementIndex - m.first_subinterval) * m_s.subinterval_seconds);
+            m.measure_end   = m.warmup_start + ivytime((1 + m.lastMeasurementIndex  - m.first_subinterval) * m_s.subinterval_seconds);
+            m.success = true;
 
             return EVALUATE_SUBINTERVAL_SUCCESS;
         }
     }
 
-    if (current > (m_s.timeout_seconds / m_s.subinterval_seconds) && (!m_s.keep_filling))
+    if (current > ( m_s.current_measurement().first_subinterval + (m_s.timeout_seconds / m_s.subinterval_seconds)))
     {
         std::ostringstream o;
-        o << "<Error> Timed out - timeout_seconds = " << m_s.timeout_seconds << ".  Failed to get a valid measurement with accuracy_plus_minus = \"" << m_s.accuracy_plus_minus_parameter
-            << "\" and confidence = \"" << m_s.confidence_parameter << "\"." <<  std::endl;
-        o << std::endl << "====================================================" << std::endl << std::endl;
-        log (m_s.masterlogfile,o.str());
-        std::cout << o.str();
 
-        m_s.MeasureCtlr_failure_point = current;
+        if (m_s.keep_filling)
+        {
+            o << "<Warning> Timed out - timeout_seconds = " << m_s.timeout_seconds << ".  Failed to get a valid measurement with accuracy_plus_minus = \"" << m_s.accuracy_plus_minus_parameter
+                << "\" and confidence = \"" << m_s.confidence_parameter << "\", but continuing with sequential_fill = on." <<  std::endl;
+            log (m_s.masterlogfile,o.str());
+            std::cout << o.str();
+        }
+        else
+        {
+            o << "<Error> Timed out - timeout_seconds = " << m_s.timeout_seconds << ".  Failed to get a valid measurement with accuracy_plus_minus = \"" << m_s.accuracy_plus_minus_parameter
+                << "\" and confidence = \"" << m_s.confidence_parameter << "\"." <<  std::endl;
+            o << std::endl << "====================================================" << std::endl << std::endl;
+            log (m_s.masterlogfile,o.str());
+            std::cout << o.str();
 
-        return EVALUATE_SUBINTERVAL_FAILURE;
+            m_s.MeasureCtlr_failure_point = current;
+
+            measurement& m = m_s.current_measurement();
+
+            m.success = false;
+
+            m.firstMeasurementIndex = m.lastMeasurementIndex = -1;
+
+            m.measure_start = m.measure_end = m.warmup_start + ivytime((current - m.first_subinterval) * m_s.subinterval_seconds);
+
+            return EVALUATE_SUBINTERVAL_FAILURE;
+        }
     }
 
     bool first_pass {true};
@@ -164,15 +217,12 @@ int MeasureCtlr::evaluateSubinterval()
 
 
 
-//*debug*/ {std::ostringstream o; o << ""<< std::endl;std::cout<<o.str();log(m_s.masterlogfile,o.str());}
 	std::map<std::pair<std::string, Subsystem*>, RunningStat<ivy_float, ivy_int>> wp_by_CLPR;
 
-	for (int fromLast=0; fromLast <= (current - max(m_s.last_gain_adjustment_subinterval,m_s.min_warmup_count)) /* drop at least one subinterval */; fromLast++)
+	for (int fromLast=0; fromLast <= (current - max(m_s.last_gain_adjustment_subinterval,m_s.current_measurement().first_subinterval + m_s.min_warmup_count)) /* drop at least one subinterval */; fromLast++)
 	{
 		unsigned int now_processing;
 		now_processing = current - fromLast;
-
-//*debug*/ {std::ostringstream o; o << "current=" << current << ", fromLast=" << fromLast << ", now_processing " << now_processing << std::endl;std::cout<<o.str();log(m_s.masterlogfile,o.str());}
 
 		// we see if Write Pending was within the slew (plus or minus) limit.  We only consider subinterval subsequences if WP is "stable", or at least not slewing too much over the potential measurement period
 		if (!m_s.suppress_subsystem_perf) for (auto& pear : m_s.cooldown_WP_watch_set)
@@ -197,15 +247,15 @@ int MeasureCtlr::evaluateSubinterval()
 				std::ostringstream o;
 
 				ivytime ouch_point;
-				ivy_float temp = ((ivy_float) (now_processing+1) ) * m_s.subinterval_seconds;
+				ivy_float temp = ((ivy_float) (now_processing + 1 - m_s.current_measurement().first_subinterval)) * m_s.subinterval_seconds;
 				ouch_point = ivytime(temp);
 
 				ivytime now_point;
-				temp = ((ivy_float) (current+1) ) * m_s.subinterval_seconds;
+				temp = ((ivy_float) (current + 1 - m_s.current_measurement().first_subinterval)) * m_s.subinterval_seconds;
 				now_point = ivytime(temp);
 
-				o << "From now at " << now_point.format_as_duration_HMMSS() << " into the test looking backwards further and further for a valid measurement subsequence," << std::endl
-                    << "stopped at " << ouch_point.format_as_duration_HMMSS() << " into the test, where Write Pending at " << (100.*wp) << "% on " << pear.second->serial_number << " " << pear.first
+				o << "From now at " << now_point.format_as_duration_HMMSS() << " into the measurement looking backwards further and further for a valid measurement subsequence," << std::endl
+                    << "stopped at " << ouch_point.format_as_duration_HMMSS() << " into the measurement, where Write Pending at " << (100.*wp) << "% on " << pear.second->serial_number << " " << pear.first
                     << " was below the min_wp parameter setting of " << (100.*m_s.min_wp) << "%" << std::endl;
                 o << std::endl;
 
@@ -222,15 +272,15 @@ int MeasureCtlr::evaluateSubinterval()
 				std::ostringstream o;
 
 				ivytime ouch_point;
-				ivy_float temp =  ((ivy_float) (now_processing+1) ) * m_s.subinterval_seconds;
+				ivy_float temp = ((ivy_float) (now_processing + 1 - m_s.current_measurement().first_subinterval)) * m_s.subinterval_seconds;
 				ouch_point = ivytime(temp);
 
 				ivytime now_point;
-				temp = ((ivy_float) (current+1) ) * m_s.subinterval_seconds;
+				temp = ((ivy_float) (current + 1 - m_s.current_measurement().first_subinterval) ) * m_s.subinterval_seconds;
 				now_point = ivytime(temp);
 
-				o << "From now at " << now_point.format_as_duration_HMMSS() << " into the test looking backwards further and further for a valid measurement subsequence," << std::endl
-                    << "stopped at " << ouch_point.format_as_duration_HMMSS() << " into the test, where Write Pending at " << (100.*wp) << "% on " << pear.second->serial_number << " " << pear.first
+				o << "From now at " << now_point.format_as_duration_HMMSS() << " into the measurement looking backwards further and further for a valid measurement subsequence," << std::endl
+                    << "stopped at " << ouch_point.format_as_duration_HMMSS() << " into the measurement, where Write Pending at " << (100.*wp) << "% on " << pear.second->serial_number << " " << pear.first
                     << " was above the max_wp parameter setting of " << (100.*m_s.max_wp) << "%" << std::endl;
                 o << std::endl;
 
@@ -247,16 +297,16 @@ int MeasureCtlr::evaluateSubinterval()
 				std::ostringstream o;
 
 				ivytime ouch_point;
-				ivy_float temp = ((ivy_float) (now_processing+1) ) * m_s.subinterval_seconds;
+				ivy_float temp = ((ivy_float) (now_processing + 1 - m_s.current_measurement().first_subinterval)) * m_s.subinterval_seconds;
 				ouch_point = ivytime(temp);
 
 				ivytime now_point;
-				temp = ((ivy_float) (current+1) ) * m_s.subinterval_seconds;
+				temp = ((ivy_float) (current + 1 - m_s.current_measurement().first_subinterval) ) * m_s.subinterval_seconds;
 				now_point = ivytime(temp);
 
-				o << "From now at " << now_point.format_as_duration_HMMSS() << " into the test looking backwards further and further for a valid measurement subsequence," << std::endl
+				o << "From now at " << now_point.format_as_duration_HMMSS() << " into the measurement looking backwards further and further for a valid measurement subsequence," << std::endl
                     << "stopped at " << ouch_point.format_as_duration_HMMSS()
-                    << " into the test, as by then Write Pending had changed over a range of " << (100.*( wp_by_CLPR[pear].max() - wp_by_CLPR[pear].min() )) << "%"
+                    << " into the measurement, as by then Write Pending had changed over a range of " << (100.*( wp_by_CLPR[pear].max() - wp_by_CLPR[pear].min() )) << "%"
                     << " on " << pear.second->serial_number << " " << pear.first
                     << " and max_wp_change = " << (100.*m_s.max_wp_change) << "%" << std::endl;
                 o << std::endl;
@@ -349,16 +399,18 @@ int MeasureCtlr::evaluateSubinterval()
                            // and we have populated the "best" variable for each focus rollup instance
         if (clean)
         {
-            measureFirstIndex = now_processing;
-            measureLastIndex = current;
+            measurement& m = m_s.current_measurement();
+
+            m.firstMeasurementIndex = now_processing;
+            m.measure_start = m.warmup_start + ivytime((    m.firstMeasurementIndex - m.first_subinterval) * m_s.subinterval_seconds);
 
             if (m_s.keep_filling)
             {
                 seq_fill_extending = true;
 
-                measurement_end = measureLastIndex;  // saving this for use in a status message
-
-                std::ostringstream o; o << "Successful measurement from subinterval " << measureFirstIndex << " to " << measurement_end
+                std::ostringstream o; o << "Successful measurement from subinterval "
+                    << ( m_s.current_measurement().firstMeasurementIndex - m_s.current_measurement().first_subinterval )
+                    << " to " << (m_s.current_measurement().lastMeasurementIndex - m_s.current_measurement().first_subinterval )
                     << " will be extended until sequential fill is complete." << std::endl << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile, o.str());
@@ -366,10 +418,15 @@ int MeasureCtlr::evaluateSubinterval()
                 return EVALUATE_SUBINTERVAL_CONTINUE;
             }
 
-            std::ostringstream o; o << "Successful measurement from subinterval " << measureFirstIndex << " to " << measureLastIndex << "." << std::endl;
+            std::ostringstream o; o << "Successful measurement from subinterval " << (m_s.current_measurement().firstMeasurementIndex - m_s.current_measurement().first_subinterval)
+                << " to " << (m_s.current_measurement().lastMeasurementIndex - m_s.current_measurement().first_subinterval) << "." << std::endl;
 
             std::cout << o.str();
             log(m_s.masterlogfile, o.str());
+
+            m.lastMeasurementIndex = current;
+            m.measure_end   = m.warmup_start + ivytime((1 + m.lastMeasurementIndex  - m.first_subinterval) * m_s.subinterval_seconds);
+            m.success = true;
 
             return EVALUATE_SUBINTERVAL_SUCCESS;
         }
@@ -379,7 +436,6 @@ int MeasureCtlr::evaluateSubinterval()
     {
         std::ostringstream o;
 
-//      o << "DEBUG at the wurst." << std::endl;
         o << wurst_of_the_best() << std::endl;
 
         log(m_s.masterlogfile, o.str());

@@ -44,11 +44,11 @@ public:
 	typedef  std::pair<ivytime /*start_time*/, ivytime /*end_time*/> ivytime_pair;
 
 	std::vector<ivytime_pair> starting_ending_times;
-	std::pair<ivytime /*start_time*/, ivytime /*end_time*/> measurement_starting_ending_times;
-	int measurement_first_index, measurement_last_index;
+	//std::pair<ivytime /*start_time*/, ivytime /*end_time*/> measurement_starting_ending_times;
+	//int measurement_first_index, measurement_last_index;
 
     std::vector<subsystem_summary_data> not_participating;
-                subsystem_summary_data  not_participating_measurement;
+    std::vector<subsystem_summary_data>  not_participating_measurement;
 
                 //=================================//
                 //       see comments below        //
@@ -83,7 +83,7 @@ public:
 
 	void resetSubintervalSequence();
 	void startNewSubinterval(ivytime start, ivytime end);
-	std::pair<bool,std::string> makeMeasurementRollup(unsigned int firstMeasurementIndex, unsigned int lastMeasurementIndex);
+	std::pair<bool,std::string> makeMeasurementRollup();
 
 	void rebuild();
 
@@ -91,13 +91,10 @@ public:
 
 	inline int current_index() {return subintervalIndex;}
 
-	ivytime* p_current_start_time() { if (0 == starting_ending_times.size()) return NULL; return &(starting_ending_times[-1+starting_ending_times.size()].first); }
-	ivytime* p_current_end_time() { if (0 == starting_ending_times.size()) return NULL; return &(starting_ending_times[-1+starting_ending_times.size()].second); }
 	std::string debugListRollups();
-	void printMe(std::ostream&);
 	void make_step_rollup_subfolders() { for (auto pear : rollups) { auto& p_RollupType = pear.second; p_RollupType->make_step_subfolder(); } }
 
-    void print_measurement_summary_csv_line();
+    void print_measurement_summary_csv_line(unsigned int measurement_index);
 };
 
 // Comment section referred to above regarding how subsystem focus metric data are
