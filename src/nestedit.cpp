@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "nestedit.h"
+#include "ivy_engine.h"
 
 void nestedit::reset()
 {
@@ -22,7 +23,15 @@ void nestedit::clear()
 
 bool nestedit::run_iteration()
 {
-    if (loop_levels.size() == 0) { return false; }
+    if (loop_levels.size() == 0)
+    {
+        if (current_level == 0)
+        {
+            current_level++;
+            return true;
+        }
+        return false;
+    }
 
     while (current_level > 0 && (loop_levels[current_level].current_index >= loop_levels[current_level].values.size()))
     {
@@ -57,7 +66,15 @@ bool nestedit::run_iteration()
             }
         }
 
-        std::cout << "edit_rollup(\"all=all\", %% " << edit_rollup_text.str() << " %%)" << std::endl;
+        auto rc = m_s.edit_rollup("all=all", edit_rollup_text.str(), false);
+        if (!rc.first)
+        {
+            std::ostringstream o;
+            o << "<Error> go() - when iterating over workload parameters, edit_rollup(\"all=all\", \"" << edit_rollup_text.str() << "\") failed - " << rc.second << std::endl;
+            std::cout << o.str();
+            log (m_s.masterlogfile,o.str());
+            m_s.kill_subthreads_and_exit();
+        }
     }
 
     return true;

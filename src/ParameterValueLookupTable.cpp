@@ -22,6 +22,8 @@
 #include "ivyhelpers.h"
 #include "ivy_engine.h"
 
+extern std::set<std::string> valid_IosequencerInput_parameters;
+
 std::pair<bool,std::string> ParameterValueLookupTable::fromString(std::string s)
 {
 	contents.clear();
@@ -101,51 +103,154 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
 			return std::make_pair(false,o.str());
 		}
 
-		// start of value
-		if ('\'' == s[i] || '\"' == s[i])
-		{ // value is quoted string
-			starting_quote=s[i];
-			i++;
-			value_start=i;
-			value_length=0;
-			while (i<s.length() && starting_quote != s[i]) {i++; value_length++;}
-			if (i>=s.length())
-			{
-                std::ostringstream o;
-				o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
-				for (unsigned int j=0; j<i; j++) o << ' ';
-				o << '^' << std::endl << "No ending quote." << std::endl;
-				contents.clear();
-				std::cout << o.str();
-				log(m_s.masterlogfile,o.str());
-				return std::make_pair(false,o.str());
-			}
-			i++; // step over ending quote
-		}
-		else
-		{ // value is unquoted alphanumerics and underscores, periods, and percent signs
-			if (!( isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i] ))
-			{
-                std::ostringstream o;
-				o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
-				for (unsigned int j=0; j<i; j++) o << ' ';
-				o << '^' << std::endl << "Unquoted value must be all alphanumerics, underscores, periods, and percent signs." << std::endl;
-				contents.clear();
-				std::cout << o.str();
-				log(m_s.masterlogfile,o.str());
-				return std::make_pair(false,o.str());
-			}
-			value_start=i;
-			value_length=1;
-			i++;
-			while (i<s.length() && (isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i]))
-			{
-				i++;
-				value_length++;
-			}
-		}
+        if (s[i] == '(')
+        {
+            // we have the ( in something like:     blocksize_bytes = ( "2 KiB", 4096 )
 
-		contents[normalize_identifier(s.substr(identifier_start,identifier_length))]=s.substr(value_start,value_length);
+            // The attribute name is not a "go" parameter, rather it's an IosequencerInput parameter name,
+            // and we're going to loop over run_subinterval_sequence using edit rollup to set the values.
+
+            auto nit = valid_IosequencerInput_parameters.find(normalize_identifier(s.substr(identifier_start,identifier_length)));
+            if (nit == valid_IosequencerInput_parameters.end())
+            {
+                std::ostringstream o;
+                o << "<Error> in go parameters - \"" << s.substr(identifier_start,identifier_length) << "\" was not found as a valid workload parameter name."
+                    << "  Invalid input string:" << std::endl << s << std::endl;
+                contents.clear();
+                workload_loopy.clear();
+                std::cout << o.str();
+                log(m_s.masterlogfile,o.str());
+                return std::make_pair(false,o.str());
+            }
+
+            i++; // step over '('
+
+            workload_loopy.loop_levels.emplace_back();
+            {
+                loop_level& ll = workload_loopy.loop_levels.back();
+                ll.attribute = s.substr(identifier_start,identifier_length);
+//*debug*/std::cout << "loop attribute = \"" << ll.attribute << "\"" << std::endl;
+
+                while (true)
+                {
+
+                    while (i<s.length() && (isspace(s[i]) || s[i] == ',' ))
+                    { // step over whitespace and commas
+                        i++;
+                    }
+
+                    if (i >= s.length())
+                    {
+                        std::ostringstream o;
+                        o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
+                        o << "For list of values for \"" << ll.attribute << " - ran off the end of the string looking for closing \")\"" << std::endl;
+                        contents.clear();
+                        workload_loopy.clear();
+                        std::cout << o.str();
+                        log(m_s.masterlogfile,o.str());
+                        return std::make_pair(false,o.str());
+                    }
+
+                    if (s[i] == ')') { i++; break; }
+
+                    // start of value
+                    if ('\'' == s[i] || '\"' == s[i])
+                    { // value is quoted string
+                        starting_quote=s[i];
+                        i++;
+                        value_start=i;
+                        value_length=0;
+                        while (i<s.length() && starting_quote != s[i]) {i++; value_length++;}
+                        if (i>=s.length())
+                        {
+                            std::ostringstream o;
+                            o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
+                            for (unsigned int j=0; j<i; j++) o << ' ';
+                            o << '^' << std::endl << "No ending quote." << std::endl;
+                            contents.clear();
+                            std::cout << o.str();
+                            log(m_s.masterlogfile,o.str());
+                            return std::make_pair(false,o.str());
+                        }
+                        i++; // step over ending quote
+                    }
+                    else
+                    { // value is unquoted alphanumerics and underscores, periods, and percent signs
+                        if (!( isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i] ))
+                        {
+                            std::ostringstream o;
+                            o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
+                            for (unsigned int j=0; j<i; j++) o << ' ';
+                            o << '^' << std::endl << "Unquoted value must be all alphanumerics, underscores, periods, and percent signs." << std::endl;
+                            contents.clear();
+                            std::cout << o.str();
+                            log(m_s.masterlogfile,o.str());
+                            return std::make_pair(false,o.str());
+                        }
+                        value_start=i;
+                        value_length=1;
+                        i++;
+                        while (i<s.length() && (isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i]))
+                        {
+                            i++;
+                            value_length++;
+                        }
+                    }
+
+                    ll.values.push_back(s.substr(value_start,value_length));
+//*debug*/std::cout << "loop attribute = \"" << ll.attribute << "\" - values ";
+//*debug*/for (auto& v : ll.values) { std::cout << " \"" << v << "\" ";} std::cout<< std::endl;
+                }
+            }
+        }
+        else // not a list of values enclosed in parenthesis
+        {
+            // start of value
+            if ('\'' == s[i] || '\"' == s[i])
+            { // value is quoted string
+                starting_quote=s[i];
+                i++;
+                value_start=i;
+                value_length=0;
+                while (i<s.length() && starting_quote != s[i]) {i++; value_length++;}
+                if (i>=s.length())
+                {
+                    std::ostringstream o;
+                    o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
+                    for (unsigned int j=0; j<i; j++) o << ' ';
+                    o << '^' << std::endl << "No ending quote." << std::endl;
+                    contents.clear();
+                    std::cout << o.str();
+                    log(m_s.masterlogfile,o.str());
+                    return std::make_pair(false,o.str());
+                }
+                i++; // step over ending quote
+            }
+            else
+            { // value is unquoted alphanumerics and underscores, periods, and percent signs
+                if (!( isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i] ))
+                {
+                    std::ostringstream o;
+                    o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
+                    for (unsigned int j=0; j<i; j++) o << ' ';
+                    o << '^' << std::endl << "Unquoted value must be all alphanumerics, underscores, periods, and percent signs." << std::endl;
+                    contents.clear();
+                    std::cout << o.str();
+                    log(m_s.masterlogfile,o.str());
+                    return std::make_pair(false,o.str());
+                }
+                value_start=i;
+                value_length=1;
+                i++;
+                while (i<s.length() && (isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i]))
+                {
+                    i++;
+                    value_length++;
+                }
+            }
+
+            contents[normalize_identifier(s.substr(identifier_start,identifier_length))]=s.substr(value_start,value_length);
+        }
 	}
 
     return std::make_pair(true,std::string(""));
@@ -165,7 +270,7 @@ std::string ParameterValueLookupTable::toString()
 		quote_char='\"';
 		if (!first) o << ", ";
 		first=false;
-		o << rehydrate_parameter_name(pear.first) << '=';
+		o << rehydrate_parameter_name(pear.first) << " = ";
 		value=pear.second;
 		for (unsigned int i=0; i<value.length(); i++)
 		{
@@ -178,6 +283,23 @@ std::string ParameterValueLookupTable::toString()
 		if (needs_quoting) o << quote_char;
 		o << value;
 		if (needs_quoting) o << quote_char;
+	}
+
+	for (const loop_level& ll : workload_loopy.loop_levels)
+	{
+	    if (o.str().size() > 0) o << ", ";
+
+	    bool first=true;
+
+	    o << ll.attribute << " = (";
+
+	    for (const auto& v : ll.values)
+	    {
+	        if (! first) o << ", ";
+	        first=false;
+	        o << "\"" << v << "\"";
+	    }
+	    o << ")";
 	}
 
 	return o.str();

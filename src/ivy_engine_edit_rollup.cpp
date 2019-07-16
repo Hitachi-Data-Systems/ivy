@@ -175,6 +175,7 @@ std::pair<bool /*success*/, std::string /* message */>
 ivy_engine::edit_rollup(const std::string& rollupText, const std::string& original_parametersText, bool do_not_log_API_call)
 // returns true on success
 {
+    if (original_parametersText != "IOPS=restore")
     {
         std::ostringstream o;
         o << "ivy engine API edit_rollup("

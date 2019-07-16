@@ -24,11 +24,24 @@
 #include <stdlib.h> // atoi
 #include <list>
 #include <algorithm> // for ivyhelpers.h find_if()
+#include <set>
 
 #include "ivyhelpers.h"
 #include "ivydefines.h"
 #include "IosequencerInput.h"
 #include <string>
+
+std::set<std::string> valid_IosequencerInput_parameters
+{
+    // NOTE: these values must be lower case without any underscores,
+    //       as normalize identifier() will be used on any parameter name before checking membership in this set
+
+    "blocksize", "skew", "skewweight", "hotzonesizebytes", "hotzoneiopsfraction", "hotzonereadfraction"
+    , "hotzonewritefraction", "maxtags", "iops", "duplicatesetsize", "fractionread", "volumecoveragefractionstart", "rangestart"
+    , "volumecoveragefractionend", "rangeend", "seqstartfractionofcoverage", "seqstartpoint", "dedupe"
+    , "pattern", "compressibility", "dedupeunitbytes", "dedupemethod", "fractionzeropattern"
+    , "threadsinworkloadname", "thisthreadinworkload", "patternseed"
+};
 
 std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameterNameEqualsValue) {
     // This is ancient code from when regexes were still broken in libstdc++.

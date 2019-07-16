@@ -21,6 +21,8 @@
 #include "ivy_engine.h"
 #include "run_subinterval_sequence.h"
 
+extern std::set<std::string> valid_IosequencerInput_parameters;
+
 std::pair<bool /*success*/, std::string /* message */>
 ivy_engine::go(const std::string& parameters)
 {
@@ -65,15 +67,6 @@ ivy_engine::go(const std::string& parameters)
     staircase_step_parameter.clear();
     staircase_steps_parameter.clear();
 
-    goStatementsSeen++;
-
-    get_go.setToNow();
-
-    {
-        std:: ostringstream o;
-        o << "step" << std::setw(4) << std::setfill('0') << (goStatementsSeen-1);
-        stepNNNN=o.str();
-    }
     trim(goParameters);
 
     std::pair<bool,std::string> r = go_parameters.fromString(parameters);
@@ -1381,31 +1374,45 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         }
     }
 
-    the_dfc.reset();
-
-    void prepare_dedupe();
-
-    prepare_dedupe();
-
-    run_subinterval_sequence(&the_dfc);
-
-    rc.first=true;
+    while (go_parameters.workload_loopy.run_iteration())
     {
-        std::ostringstream o;
+        goStatementsSeen++;
 
-        for (unsigned int i = 0; i < measurements.size(); i++)
+        get_go.setToNow();
+
         {
-            o << measurements[i].step_times_line(i);
+            std:: ostringstream o;
+            o << "step" << std::setw(4) << std::setfill('0') << (goStatementsSeen-1);
+            stepNNNN=o.str();
         }
 
-        rc.second = o.str();
+        the_dfc.reset();
 
-        m_s.step_duration_lines += o.str();
+        void prepare_dedupe();
 
-        log(masterlogfile, rc.second);
+        prepare_dedupe();
 
-        std::cout << rc.second;
+        run_subinterval_sequence(&the_dfc);
+
+        rc.first=true;
+        {
+            std::ostringstream o;
+
+            for (unsigned int i = 0; i < measurements.size(); i++)
+            {
+                o << measurements[i].step_times_line(i);
+            }
+
+            rc.second = o.str();
+
+            m_s.step_duration_lines += o.str();
+
+            log(masterlogfile, rc.second);
+
+            std::cout << rc.second;
+        }
     }
+
     return rc;
 }
 

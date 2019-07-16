@@ -12,7 +12,7 @@ struct loop_level
 
 struct nestedit
 {
-    unsigned int            current_level;
+    unsigned int            current_level {0};
     std::vector<loop_level> loop_levels;
 
 //methods
