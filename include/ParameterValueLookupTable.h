@@ -24,12 +24,17 @@
 #include <iostream>
 #include <sstream>
 
+#include "nestedit.h"
+
 class ParameterValueLookupTable {
 
 public:
+// variables
 	std::map<std::string, std::string> contents;
     static std::map<std::string,std::string> parameter_name_rehydration_table;
+    nestedit workload_loopy {};
 
+//methods
 	std::pair<bool,std::string> fromString(std::string);  // true if well-formed
 	std::pair<bool,std::string> addString(std::string);  // true if well-formed
 		// Well formed means empty string, or
@@ -37,7 +42,7 @@ public:
 		// Commas between values are optional.
 		// Identifiers start with alphabetic characters and consist of alphanumeric characters and underscores ('_')
 		// Values either consist of alphanumeric characters and inderscores, or are single- or double-quoted strings.
-		// Single- or double-quoted strings may not contain the starting quote character.  (No escaped quoteds.)
+		// Single- or double-quoted strings may not contain the starting quote character.  (No escaped quotes.)
 		// For example, text1 = 'bork said "oh!"' is OK,
 		// but text1 = "bork said \"oh!\"" and text1 = "bork said ""oh!""" are invalid.
 		// To store an empty string as a value it has to be shown as identifier="" or identifier=''.
@@ -51,6 +56,7 @@ public:
 	bool contains(std::string key);
 	std::string retrieve(std::string key);  // returns empty string if the key is not present
 	std::pair<bool,std::string> containsOnlyValidParameterNames(std::string listOfValidParameterNames);
+
 
 };
 

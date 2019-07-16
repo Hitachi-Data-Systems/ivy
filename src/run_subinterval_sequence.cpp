@@ -1354,6 +1354,10 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         m_s.centralProcessingTimeSeconds     .push(CP_seconds);
         m_s.gatherBeforeSubintervalEndSeconds.push(m_s.earliest_gather_before_subinterval_end);
         m_s.cruiseSeconds                    .push(cruise_seconds);
+
+//*debug*/{std::ostringstream o; o << "debug: " << print_logfile_stats() << std::endl; std::cout << o.str(); log(m_s.masterlogfile,o.str()); }
+
+
 #ifdef TRACE_RSS
 {std::ostringstream trss; trss << "TRACE_RSS: Bottom of loop.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
 #endif

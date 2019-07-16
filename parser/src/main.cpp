@@ -406,6 +406,7 @@ int main(int argc, char* argv[])
         }
         std::cout << o.str();
         log(m_s.masterlogfile, o.str());
+
     }
 
     if (m_s.iosequencer_template_was_used) { m_s.print_iosequencer_template_deprecated_msg(); }
@@ -420,6 +421,8 @@ int main(int argc, char* argv[])
         std::cout << o.str();
         log (m_s.masterlogfile,o.str());
     }
+
+    if (routine_logging) { log(m_s.masterlogfile,print_logfile_stats()); }
 
 	return 0; // in case compiler complains, but unreachable.
 

@@ -155,11 +155,39 @@ void fileappend(std::string filename, std::string s) {
         o.close();
 }
 
+std::map<std::string /*csv filename*/,
+    std::pair<ivytime /*time of last log */,
+    RunningStat<long double, uint32_t> /*time to perform a log*/ >> log_stats_by_filename {};
+
+
+std::string print_logfile_stats()
+{
+    std::ostringstream o;
+
+    o << "log file time to write a log entry:";
+
+    for (auto& pear : log_stats_by_filename)
+    {
+        auto rs = pear.second.second;
+
+        o << std::endl
+            << "count " << rs.count()
+            << ", avg " << (1000.0 * rs.avg()) << " ms"
+            << ", min " << (1000.0 * rs.min()) << " ms"
+            << ", max " << (1000.0 * rs.max()) << " ms"
+            << " - " << pear.first;
+    }
+    o << std::endl;
+    return o.str();
+}
+
 
 void log(std::string filename, std::string s) {
 	ivytime now;
 
 	now.setToNow();
+
+	auto& pear = log_stats_by_filename[filename];
 
     std::ostream* p_ostream = &std::cout;
 
@@ -173,13 +201,27 @@ void log(std::string filename, std::string s) {
         p_ostream = &o;
     }
 
-    (*p_ostream) << now.format_as_datetime_with_ns() << " "<< s;
+    (*p_ostream) << now.format_as_datetime_with_ns();
+
+    if (pear.first != ivytime(0))
+    {
+        (*p_ostream) << " +" << ivytime(now-pear.first).format_as_duration_HMMSSns();
+    }
+
+    (*p_ostream) << " "<< s;
 
 	if (s.length() > 0 && '\n' != s[s.length()-1]) (*p_ostream) << std::endl;
 
 	(*p_ostream).flush();
 
     if (is_ofstream) o.close();
+
+    ivytime after; after.setToNow();
+
+    pear.first = now;
+    pear.second.push(ivytime(after-now).getlongdoubleseconds());
+
+    return;
 }
 
 void ivy_log(std::string filename, std::string s) {log(filename,s);} // crutch for Builtin.cpp

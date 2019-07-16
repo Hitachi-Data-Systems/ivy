@@ -1131,7 +1131,7 @@ void RollupInstance::print_by_subinterval_header()
     std::ostringstream o;
     o << "ivy version,build date,";
     if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
-    o << "Test Name,Step Number,Step Name,Start,Duration,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
+    o << "Test Name,Step Number,Step Name,Start,Measurement Duration,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance";
     if ( m_s.haveCmdDev ) { o << Test_config_thumbnail::csv_headers(); }
     o << IosequencerInputRollup::CSVcolumnTitles();
     o << ",Rollup Total IOPS Setting";
@@ -1467,7 +1467,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
                 if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
 
-                o << "Test Name,Step Number,Step Name,Start,Warmup,Duration,Cooldown,Write Pending,valid or invalid,invalid reason,Rollup Type,Rollup Instance";
+                o << "Test Name,Step Number,Step Name,Start,Warmup,Measurement Duration,Cooldown,Write Pending,valid or invalid,invalid reason,Rollup Type,Rollup Instance";
 
                 if (m_s.haveCmdDev) { o << test_config_thumbnail.csv_headers(); }
                 o << IosequencerInputRollup::CSVcolumnTitles();
@@ -1534,7 +1534,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
         csvline << ivy_version << ',' << IVYBUILDDATE;
 
-        csvline << ","; if (m_s.command_device_etc_version.size() > 0 ) csvline << m_s.command_device_etc_version;
+        if (m_s.command_device_etc_version.size() > 0 ) { csvline << ","; csvline << m_s.command_device_etc_version; }
 
         csvline << "," << m_s.testName;
         csvline << "," << m_s.stepNNNN; if (m_s.have_IOPS_staircase) {csvline << "#" << measurement_index;}

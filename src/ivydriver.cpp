@@ -470,6 +470,9 @@ int IvyDriver::main(int argc, char* argv[])
 		if (stringCaseInsensitiveEquality(input_line, std::string("[Die, Earthling!]")))
 		{
 			say(std::string("[what?]"));
+
+			if (routine_logging) log(slavelogfile,print_logfile_stats());
+
 			// When ivymaster subthread encounters an error and is terminating abnormally
 			killAllSubthreads();
 			return -1;
@@ -552,6 +555,8 @@ int IvyDriver::main(int argc, char* argv[])
 		}
 	}
 	// at eof on std::cin
+
+	if (routine_logging) log(slavelogfile,print_logfile_stats());
 
 	killAllSubthreads();
 
@@ -824,6 +829,8 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 	ivydriver_view_subinterval_start = ivydriver_view_subinterval_start + subinterval_duration;
 	ivydriver_view_subinterval_end   = ivydriver_view_subinterval_end   + subinterval_duration;
 	// These are just used to print a message without looking into a particular WorkloadThread.
+
+//*debug*/{std::ostringstream o; o << "debug: " << print_logfile_stats() << std::endl; log(slavelogfile,o.str()); }
 
 	return true;
 }
@@ -1689,8 +1696,7 @@ void IvyDriver::log_TestLUN_ownership()
                 testLUN_count++;
                 wt_LUNs++;
 
-                //o << std::endl << "   TestLUN " << pTestLUN->host_plus_lun << " which has workloads"
-                //    << std::endl;
+                o << pTestLUN->host_plus_lun << " ";
 
                 wt_workloads   += pTestLUN->workloads.size();
                 workload_count += pTestLUN->workloads.size();
@@ -1820,11 +1826,11 @@ void IvyDriver::check_CPU_temperature()
     {
         if (digital_readouts.min() == 0.0)
         {
-            std::cout << "<Error> CPU temperature has hit the maximum limit and CPU operation has been throttled.  Test aborting." << std::endl;
+            std::cout << "<Error> CPU temperature has hit the critical limit and CPU operation has been throttled.  Test aborting." << std::endl;
         }
-        else if (digital_readouts.min() <= 3.0)
+        else if (digital_readouts.min() <= 5.0)
         {
-            std::cout << "<Warning> CPU temperature is within 3 degrees C of the maximum limit.  Machine checks have been observed in this range.  Check dmesg & /var/log/messages." << std::endl;
+            std::cout << "<Warning> CPU temperature reached " << digital_readouts.min() << " degrees C of the critical limit.  Machine checks have been observed in this range.  Check dmesg & /var/log/messages." << std::endl;
         }
     }
 

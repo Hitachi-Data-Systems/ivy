@@ -27,6 +27,7 @@
 
 #include "ivytime.h"
 #include "ivydefines.h"
+#include "RunningStat.h"
 
 class Ivy_pgm;
 
@@ -61,6 +62,10 @@ void rewritePG(std::string& pg);
 void fileappend(std::string filename, std::string s);
 
 void log(std::string filename, std::string msg);
+
+extern std::map<std::string /*csv filename*/, std::pair<ivytime /*time of last log */,RunningStat<long double, uint32_t> /*time to perform a log*/ >> log_stats_by_filename;
+
+std::string print_logfile_stats();
 
 std::string format_utterance(std::string speaker, std::string utterance, ivytime delta = ivytime(0));
 
