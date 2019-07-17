@@ -125,9 +125,6 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 )"
     ;
 
-    if (go_parameters.contains("stepname")) stepName = go_parameters.retrieve("stepname");
-    else stepName = stepNNNN;
-
     if (!go_parameters.contains("suppress_perf"s))          go_parameters.contents[normalize_identifier(std::string("suppress_perf"))]            = suppress_subsystem_perf_default ? "on" : "off";
     if (!go_parameters.contains("skip_LDEV"s))              go_parameters.contents[normalize_identifier(std::string("skip_LDEV"))]                = skip_ldev_data_default          ? "on" : "off";
     if (!go_parameters.contains("stepcsv"s))                go_parameters.contents[normalize_identifier(std::string("stepcsv"))]                  = stepcsv_default                 ? "on" : "off";
@@ -1385,6 +1382,8 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
             o << "step" << std::setw(4) << std::setfill('0') << (goStatementsSeen-1);
             stepNNNN=o.str();
         }
+
+        if (go_parameters.contains("stepname")) stepName = go_parameters.retrieve("stepname");
 
         the_dfc.reset();
 

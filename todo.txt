@@ -1,3 +1,7 @@
+DONE add looping over lists of workload parameters in go()
+
+DONE add DFC=IOPS_staircase
+
 add cooldown_by_sidefile.
 
 DONE - add Rollup Total IOPS Setting column.

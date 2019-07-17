@@ -27,6 +27,8 @@ extern std::set<std::string> valid_IosequencerInput_parameters;
 std::pair<bool,std::string> ParameterValueLookupTable::fromString(std::string s)
 {
 	contents.clear();
+	workload_loopy.clear();
+
 	return addString(s);
 }
 
@@ -129,7 +131,6 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
             {
                 loop_level& ll = workload_loopy.loop_levels.back();
                 ll.attribute = s.substr(identifier_start,identifier_length);
-//*debug*/std::cout << "loop attribute = \"" << ll.attribute << "\"" << std::endl;
 
                 while (true)
                 {
@@ -198,8 +199,6 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
                     }
 
                     ll.values.push_back(s.substr(value_start,value_length));
-//*debug*/std::cout << "loop attribute = \"" << ll.attribute << "\" - values ";
-//*debug*/for (auto& v : ll.values) { std::cout << " \"" << v << "\" ";} std::cout<< std::endl;
                 }
             }
         }

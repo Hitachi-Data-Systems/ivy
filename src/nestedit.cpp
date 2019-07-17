@@ -19,6 +19,7 @@ void nestedit::reset()
 void nestedit::clear()
 {
     loop_levels.clear();
+    current_level = 0;
 }
 
 bool nestedit::run_iteration()
