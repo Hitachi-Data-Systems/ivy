@@ -74,6 +74,8 @@ std::pair<bool,std::string> RollupInstance::makeMeasurementRollup()
 
     things_by_measurement.emplace_back();
 
+    achieved_IOPS_as_percent_of_Total_IOPS_settting.clear();
+
     {
         measurement_things& mt = things_by_measurement.back();
         SubintervalRollup& mr = mt.measurementRollup;
@@ -121,10 +123,16 @@ std::pair<bool,std::string> RollupInstance::makeMeasurementRollup()
 
             if (mt.IOPS_setting > 0.0 && mt.application_IOPS > 0.0)
             {
+                {
+                    std::ostringstream o;
+                    o << std::fixed << std::setprecision(2) << (100.0 * (mt.application_IOPS / mt.IOPS_setting)) << "%";
+                    achieved_IOPS_as_percent_of_Total_IOPS_settting = o.str();
+                }
+
                 if
                 (
-                       mt.application_IOPS < (0.85 * mt.IOPS_setting)
-                    || mt.application_IOPS > (1.15 * mt.IOPS_setting)
+                       mt.application_IOPS < (0.99 * mt.IOPS_setting)
+                    || mt.application_IOPS > (1.01 * mt.IOPS_setting)
                 )
                 {
                     m.failed_to_achieve_total_IOPS_setting = mt.failed_to_achieve_total_IOPS_setting = true;
@@ -1244,7 +1252,9 @@ void RollupInstance::print_subinterval_csv_line(
 
     csvline << subintervals.sequence[i].inputRollup.CSVcolumnValues(true); // true shows how many occurences of each value, false shows "multiple"
 
-    csvline << "," << IosequencerInputRollup::Total_IOPS_Setting_toString(subintervals.sequence[i].inputRollup.get_Total_IOPS_Setting());
+    ivy_float total_IOPS_setting = subintervals.sequence[i].inputRollup.get_Total_IOPS_Setting();
+
+    csvline << "," << IosequencerInputRollup::Total_IOPS_Setting_toString(total_IOPS_setting);
 
     {
         csvline << ','; // host CPU % busy - cols
@@ -1490,6 +1500,8 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 o << ",non random sample correction factor";
                 o << ",plus minus series statistical confidence";
 
+                o << ",achieved IOPS as % of Total_IOPS setting";
+
                 o << SubintervalOutput::csvTitles(true);
                 if (m_s.haveCmdDev)
                 {
@@ -1597,7 +1609,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 validation_errors += std::string("[subsystem IOPS is more than 15% different from host IOPS.]");
 
             if (mt.failed_to_achieve_total_IOPS_setting)
-                validation_errors += std::string("[Achieved IOPS is more than 15% different from Rollup Total IOPS Setting.]");
+                validation_errors += std::string("[Achieved IOPS is more than 1% different from Rollup Total IOPS Setting.]");
 
             csvline << ',' << validation_errors;
 
@@ -1719,6 +1731,8 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
                 csvline << "," << m_s.non_random_sample_correction_factor;
                 csvline << "," << plus_minus_series_confidence_default;
+
+                csvline << "," << achieved_IOPS_as_percent_of_Total_IOPS_settting;
 
                 csvline << mro.csvValues(seconds,&(mr),m_s.non_random_sample_correction_factor);
 

@@ -47,6 +47,7 @@ using namespace std::string_literals;
 		",dedupe_method"
 		",duplicate_set_size"
 		",pattern"
+		",compressibility"
 		",RangeStart"
 		",RangeEnd"
 		",SeqStartPoint"
@@ -79,14 +80,16 @@ std::string IosequencerInputRollup::CSVcolumnValues(bool detail)
 	}
 
 	o << ',' << '\"' << getParameterTextValueByName("dedupesets",detail) << '\"';
-	
+
 	if (std::string("1") == getParameterTextValueByName("fractionRead",detail))
 	{
+	    o << ',' << "\"N/A\"";
 	    o << ',' << "\"N/A\"";
 	}
 	else
 	{
 	    o << ',' << '\"' << getParameterTextValueByName("pattern",detail) << '\"';
+	    o << ',' << '\"' << getParameterTextValueByName("compressibility",detail) << '\"';
 	}
 
 	o

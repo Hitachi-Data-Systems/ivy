@@ -389,7 +389,7 @@ public:
     {
         { "MP core", {
               { "Busy %",                     fetch_metric + print_count_part_1 + print_avg_part_1 }
-            , { "I/O buffers",                fetch_metric + print_count_part_2 + print_avg_part_2 + print_min_max_stddev_2 }
+            , { "I/O buffers",                fetch_metric + print_avg_part_1 + print_count_part_2 + print_avg_part_2 + print_min_max_stddev_2 }
             , { "Breakdown Total Busy %",     fetch_metric                      + print_avg_part_2 }
             , { "Breakdown Open Target Busy %",              fetch_metric +       print_avg_part_2 }
             , { "Breakdown Open External Initiator Busy %",  fetch_metric +       print_avg_part_2 }

@@ -192,6 +192,8 @@ public:
     std::string measurement_rollup_by_test_step_csv_filename;      // goes in measurementRollupFolder
     std::string measurement_rollup_by_test_step_csv_type_filename; // goes in measurementRollupFolder
 
+    std::string achieved_IOPS_as_percent_of_Total_IOPS_settting {};
+
 
 // methods
 	RollupInstance(RollupType* pRT, RollupSet* pRS, std::string nameCombo, std::string valueCombo)
