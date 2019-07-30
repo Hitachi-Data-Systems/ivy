@@ -79,7 +79,7 @@ std::string IosequencerInputRollup::CSVcolumnValues(bool detail)
 	    o << ',' << '\"' << getParameterTextValueByName("dedupe_method",detail) << '\"';
 	}
 
-	o << ',' << '\"' << getParameterTextValueByName("dedupesets",detail) << '\"';
+	o << ',' << '\"' << getParameterTextValueByName("duplicate_set_size",detail) << '\"';
 
 	if (std::string("1") == getParameterTextValueByName("fractionRead",detail))
 	{

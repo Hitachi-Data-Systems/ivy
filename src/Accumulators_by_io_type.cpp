@@ -51,9 +51,9 @@ void initialize_io_time_clip_levels()
 // If you change the number of entries, adjust "io_time_buckets" in ivydefines.h
 
 
-io_time_clip_levels.push_back(std::make_tuple( "0.000x", .001, 1e6));
+io_time_clip_levels.push_back(std::make_tuple( "0.000x", .001, 1e6)); // 1
 
-io_time_clip_levels.push_back(std::make_tuple( "0.001x", .002, 1e6 ));
+io_time_clip_levels.push_back(std::make_tuple( "0.001x", .002, 1e6 )); //2
 io_time_clip_levels.push_back(std::make_tuple( "0.002x", .003, 1e6 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.003x", .004, 1e6 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.004x", .005, 1e6 ));
@@ -61,9 +61,9 @@ io_time_clip_levels.push_back(std::make_tuple( "0.005x", .006, 1e6 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.006x", .007, 1e6 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.007x", .008, 1e6 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.008x", .009, 1e6 ));
-io_time_clip_levels.push_back(std::make_tuple( "0.009x", .010, 1e6 ));
+io_time_clip_levels.push_back(std::make_tuple( "0.009x", .010, 1e6 )); //10
 
-io_time_clip_levels.push_back(std::make_tuple( "0.01x", .02, 1e5 ));
+io_time_clip_levels.push_back(std::make_tuple( "0.01x", .02, 1e5 )); // 11
 io_time_clip_levels.push_back(std::make_tuple( "0.02x", .03, 1e5 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.03x", .04, 1e5 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.04x", .05, 1e5 ));
@@ -71,9 +71,9 @@ io_time_clip_levels.push_back(std::make_tuple( "0.05x", .06, 1e5 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.06x", .07, 1e5 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.07x", .08, 1e5 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.08x", .09, 1e5 ));
-io_time_clip_levels.push_back(std::make_tuple( "0.09x", .10, 1e5 ));
+io_time_clip_levels.push_back(std::make_tuple( "0.09x", .10, 1e5 )); // 19
 
-io_time_clip_levels.push_back(std::make_tuple( "0.1x", .2, 1e4 ));
+io_time_clip_levels.push_back(std::make_tuple( "0.1x", .2, 1e4 )); //20
 io_time_clip_levels.push_back(std::make_tuple( "0.2x", .3, 1e4 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.3x", .4, 1e4 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.4x", .5, 1e4 ));
@@ -81,9 +81,9 @@ io_time_clip_levels.push_back(std::make_tuple( "0.5x", .6, 1e4 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.6x", .7, 1e4 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.7x", .8, 1e4 ));
 io_time_clip_levels.push_back(std::make_tuple( "0.8x", .9, 1e4 ));
-io_time_clip_levels.push_back(std::make_tuple( "0.9x", 1., 1e4 ));
+io_time_clip_levels.push_back(std::make_tuple( "0.9x", 1., 1e4 )); // 28
 
-io_time_clip_levels.push_back(std::make_tuple( "1.x", 2., 1e3 ));
+io_time_clip_levels.push_back(std::make_tuple( "1.x", 2., 1e3 )); // 29
 io_time_clip_levels.push_back(std::make_tuple( "2.x", 3., 1e3 ));
 io_time_clip_levels.push_back(std::make_tuple( "3.x", 4., 1e3 ));
 io_time_clip_levels.push_back(std::make_tuple( "4.x", 5., 1e3 ));
@@ -91,9 +91,9 @@ io_time_clip_levels.push_back(std::make_tuple( "5.x", 6., 1e3 ));
 io_time_clip_levels.push_back(std::make_tuple( "6.x", 7., 1e3 ));
 io_time_clip_levels.push_back(std::make_tuple( "7.x", 8., 1e3 ));
 io_time_clip_levels.push_back(std::make_tuple( "8.x", 9., 1e3 ));
-io_time_clip_levels.push_back(std::make_tuple( "9.x", 10., 1e3 ));
+io_time_clip_levels.push_back(std::make_tuple( "9.x", 10., 1e3 )); // 37
 
-io_time_clip_levels.push_back(std::make_tuple( "1x.", 20., 1e2 ));
+io_time_clip_levels.push_back(std::make_tuple( "1x.", 20., 1e2 )); // 38
 io_time_clip_levels.push_back(std::make_tuple( "2x.", 30., 1e2 ));
 io_time_clip_levels.push_back(std::make_tuple( "3x.", 40., 1e2 ));
 io_time_clip_levels.push_back(std::make_tuple( "4x.", 50., 1e2 ));
@@ -101,9 +101,9 @@ io_time_clip_levels.push_back(std::make_tuple( "5x.", 60., 1e2 ));
 io_time_clip_levels.push_back(std::make_tuple( "6x.", 70., 1e2 ));
 io_time_clip_levels.push_back(std::make_tuple( "7x.", 80., 1e2 ));
 io_time_clip_levels.push_back(std::make_tuple( "8x.", 90., 1e2 ));
-io_time_clip_levels.push_back(std::make_tuple( "9x.", 100., 1e2 ));
+io_time_clip_levels.push_back(std::make_tuple( "9x.", 100., 1e2 )); // 46
 
-io_time_clip_levels.push_back(std::make_tuple( "1xx.", 200., 1e1 ));
+io_time_clip_levels.push_back(std::make_tuple( "1xx.", 200., 1e1 )); // 47
 io_time_clip_levels.push_back(std::make_tuple( "2xx.", 300., 1e1 ));
 io_time_clip_levels.push_back(std::make_tuple( "3xx.", 400., 1e1 ));
 io_time_clip_levels.push_back(std::make_tuple( "4xx.", 500., 1e1 ));
@@ -111,9 +111,9 @@ io_time_clip_levels.push_back(std::make_tuple( "5xx.", 600., 1e1 ));
 io_time_clip_levels.push_back(std::make_tuple( "6xx.", 700., 1e1 ));
 io_time_clip_levels.push_back(std::make_tuple( "7xx.", 800., 1e1 ));
 io_time_clip_levels.push_back(std::make_tuple( "8xx.", 900., 1e1 ));
-io_time_clip_levels.push_back(std::make_tuple( "9xx.", 1000., 1e1 ));
+io_time_clip_levels.push_back(std::make_tuple( "9xx.", 1000., 1e1 )); // 55
 
-io_time_clip_levels.push_back(std::make_tuple( "1xxx.", 2000., 1e0 ));
+io_time_clip_levels.push_back(std::make_tuple( "1xxx.", 2000., 1e0 )); // 56
 io_time_clip_levels.push_back(std::make_tuple( "2xxx.", 3000., 1e0 ));
 io_time_clip_levels.push_back(std::make_tuple( "3xxx.", 4000., 1e0 ));
 io_time_clip_levels.push_back(std::make_tuple( "4xxx.", 5000., 1e0 ));
@@ -121,10 +121,9 @@ io_time_clip_levels.push_back(std::make_tuple( "5xxx.", 6000., 1e0 ));
 io_time_clip_levels.push_back(std::make_tuple( "6xxx.", 7000., 1e0 ));
 io_time_clip_levels.push_back(std::make_tuple( "7xxx.", 8000., 1e0 ));
 io_time_clip_levels.push_back(std::make_tuple( "8xxx.", 9000., 1e0 ));
-io_time_clip_levels.push_back(std::make_tuple( "9xxx.", 10000., 1e0 ));
+io_time_clip_levels.push_back(std::make_tuple( "9xxx.", 10000., 1e0 )); // 64
 
-io_time_clip_levels.push_back(std::make_tuple( "10000+", -1., 1e0 ));
-
+io_time_clip_levels.push_back(std::make_tuple( "10000+", -1., 1e0 )); // 65
 }
 
 

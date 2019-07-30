@@ -139,7 +139,7 @@ const uint64_t pattern_seed_default {1};
 
 #define max_move_WP_error (.01)
 
-#define io_time_buckets 58
+#define io_time_buckets 65
 // This is the number of buckets defined in Accumulators_by_io_type.cpp
 
 extern std::string indent_increment;
