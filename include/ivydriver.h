@@ -177,6 +177,9 @@ struct IvyDriver
     std::vector<std::string> workload_thread_error_messages {};
     std::vector<std::string> workload_thread_warning_messages {};
 
+    RunningStat<double,long> digital_readouts;
+
+
 // methods
 
     int main(int argc, char* argv[]);

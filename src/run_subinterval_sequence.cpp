@@ -163,6 +163,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     m_s.last_gain_adjustment_subinterval = -1;
     m_s.rollups.resetSubintervalSequence();
     m_s.cpu_by_subinterval.clear();
+    m_s.cpu_degrees_C_from_critical_temp_by_subinterval.clear();
 
     m_s.MeasureCtlr_failure_point = -1;  // where cooldown extends to wait for WP to empty, this is the point where we declared failure and stopped driving I/O.
 
@@ -721,6 +722,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         m_s.rollups.startNewSubinterval(m_s.subintervalStart,m_s.subintervalEnd);
 
         m_s.cpu_by_subinterval.push_back(s);  // ivy_engine: std::vector<Subinterval_CPU> cpu_by_subinterval;
+        m_s.cpu_degrees_C_from_critical_temp_by_subinterval.emplace_back();
 
         m_s.rollups.not_participating.push_back(subsystem_summary_data());
         for (auto& rt_pair : m_s.rollups.rollups)

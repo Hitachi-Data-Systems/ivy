@@ -60,10 +60,12 @@ std::pair<bool,std::string> measurement::make_measurement_rollup_CPU()
 		}
 
 		measurement_rollup_CPU.clear();
+		measurement_rollup_CPU_temp.clear();
 
 		for (int i = firstMeasurementIndex; i <= lastMeasurementIndex; i ++)
 		{
 			measurement_rollup_CPU.rollup(m_s.cpu_by_subinterval[i]);
+			measurement_rollup_CPU_temp.rollup(m_s.cpu_degrees_C_from_critical_temp_by_subinterval[i]);
 		}
 
 		return std::make_pair(true,"");

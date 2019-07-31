@@ -1144,7 +1144,7 @@ void RollupInstance::print_by_subinterval_header()
     o << IosequencerInputRollup::CSVcolumnTitles();
     o << ",Rollup Total IOPS Setting";
     o << avgcpubusypercent::csvTitles();
-
+    o << Subinterval_CPU_temp::csvTitles();
     if (m_s.haveCmdDev)
     {
         o << subsystem_summary_data::csvHeadersPartOne();
@@ -1262,10 +1262,12 @@ void RollupInstance::print_subinterval_csv_line(
         if (stringCaseInsensitiveEquality(std::string("host"),pRollupType->attributeNameCombo.attributeNameComboID))
         {
             csvline << m_s.cpu_by_subinterval[i].csvValues(toLower(rollupInstanceID));
+            csvline << m_s.cpu_degrees_C_from_critical_temp_by_subinterval[i].csvValues(toLower(rollupInstanceID));
         }
         else
         {
             csvline << m_s.cpu_by_subinterval[i].csvValuesAvgOverHosts();
+            csvline << m_s.cpu_degrees_C_from_critical_temp_by_subinterval[i].csvValuesAvgOverHosts();
         }
     }
 
@@ -1483,6 +1485,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 o << IosequencerInputRollup::CSVcolumnTitles();
                 o << ",Rollup Total IOPS Setting";
                 o << m_s.measurements[measurement_index].measurement_rollup_CPU.csvTitles();
+                o << Subinterval_CPU_temp::csvTitles();
 
                 if (std::string("all") == toLower(attributeNameComboID) && std::string("all") == toLower(rollupInstanceID))
                 {
@@ -1629,10 +1632,12 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
             if (stringCaseInsensitiveEquality(std::string("host"),pRollupType->attributeNameCombo.attributeNameComboID))
             {
                 csvline << m.measurement_rollup_CPU.csvValues(toLower(rollupInstanceID));
+                csvline << m.measurement_rollup_CPU_temp.csvValues(toLower(rollupInstanceID));
             }
             else
             {
                 csvline << m.measurement_rollup_CPU.csvValuesAvgOverHosts();
+                csvline << m.measurement_rollup_CPU_temp.csvValuesAvgOverHosts();
             }
 
             if (std::string("all") == toLower(attributeNameComboID) && std::string("all") == toLower(rollupInstanceID))

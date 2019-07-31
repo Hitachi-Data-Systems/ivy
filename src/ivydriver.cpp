@@ -647,7 +647,7 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
  	    o << cpubusydetail << std::endl;log(slavelogfile, o.str());
     }
 
-	say(std::string("[CPU]")+cpubusysummary.toString());
+	say(std::string("[CPU]")+cpubusysummary.toString() + std::string("+") + digital_readouts.toString());
 
 	interval_start_CPU.copy(interval_end_CPU);
 
@@ -1772,7 +1772,7 @@ void IvyDriver::check_CPU_temperature()
 {
     unsigned int cpu = 0;
 
-    RunningStat<double,long> digital_readouts;
+    digital_readouts.clear();
 
     while(true)
     {

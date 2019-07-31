@@ -69,6 +69,7 @@ struct measurement
 	Subinterval_CPU measurement_rollup_CPU;
 		// Built by RollupSet::makeMeasurementRollup()
 		// Used for measurement_rollup csv file lines.
+	Subinterval_CPU_temp measurement_rollup_CPU_temp;
 
 	ivytime warmup_start {0};
 	ivytime measure_start {0};
@@ -176,6 +177,7 @@ public:
 
 	std::vector<ivytime_pair> subinterval_start_end_times;
 
+	std::vector<Subinterval_CPU_temp> cpu_degrees_C_from_critical_temp_by_subinterval;
 	std::vector<Subinterval_CPU> cpu_by_subinterval;
 		// At the beginning of a subinterval, the ivymaster main thread builds an empty Subinterval_CPU
 		// object and adds it to the end of "cpu_by_subinterval" which is stored here so that both

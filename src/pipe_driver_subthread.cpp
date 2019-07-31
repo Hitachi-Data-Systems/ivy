@@ -1328,11 +1328,41 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
+                        std::string cpu_busy_part, cpu_temp_part;
 
-                        if (!cpudata.fromString(hostCPUline))
+                        bool b4_plus = true;
+                        for (char c : hostCPUline)
+                        {
+                            if (c == '+') { b4_plus = false; }
+                            else
+                            {
+                                if (b4_plus) cpu_busy_part.push_back(c);
+                                else         cpu_temp_part.push_back(c);
+                            }
+                        }
+
+                        if (!cpudata.fromString(cpu_busy_part))
                         {
                             std::ostringstream o;
-                            o << "For host " << ivyscript_hostname << ", [CPU] line failed to parse correctly.  Call to avgcpubusypercent::fromString(\"" << hostCPUline << "\") failed." << std::endl;
+                            o << "<Error> For host " << ivyscript_hostname << ", [CPU] line failed to parse correctly.  Call to avgcpubusypercent::fromString(\"" << cpu_busy_part << "\") failed." << std::endl;
+                            log(logfilename,o.str());
+                            std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true;
+                            commandSuccess=false;
+                            commandErrorMessage = o.str();
+                            dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
+                            return;
+                        }
+
+                        cpu_degrees_C_from_critical_temp.clear();
+
+                        if (!cpu_degrees_C_from_critical_temp.fromString(cpu_temp_part))
+                        {
+                            std::ostringstream o;
+                            o << "<Error> For host " << ivyscript_hostname << ", [CPU] line failed to parse correctly.  Call to cpu_degrees_C_from_critical_temp.fromString(\"" << cpu_temp_part << "\") failed." << std::endl;
                             log(logfilename,o.str());
                             std::cout << o.str();
                             kill_ssh_and_harvest();
@@ -1635,6 +1665,8 @@ void pipe_driver_subthread::threadRun()
                             std::unique_lock<std::mutex> m_lk(m_s.master_mutex);
 
                             m_s.cpu_by_subinterval[m_s.rollups.current_index()].add(toLower(ivyscript_hostname),cpudata);
+
+                            m_s.cpu_degrees_C_from_critical_temp_by_subinterval[m_s.rollups.current_index()].add(toLower(ivyscript_hostname),cpu_degrees_C_from_critical_temp);
 
                             if (seq_fill_progress < m_s.min_sequential_fill_progress) { m_s.min_sequential_fill_progress = seq_fill_progress;}
 

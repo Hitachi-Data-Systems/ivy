@@ -21,6 +21,9 @@
 
 #include <map>
 
+#include "ivytime.h"
+#include "RunningStat.h"
+
 struct linuxcpucounters {
 public:
 // each value is a cumulative long int counter of time spent in clock tick units (jiffies)

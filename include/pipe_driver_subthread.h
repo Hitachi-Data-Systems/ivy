@@ -156,6 +156,7 @@ public:
 	std::ostringstream lun_csv_body;
 
 	struct avgcpubusypercent cpudata;
+	RunningStat<double,long> cpu_degrees_C_from_critical_temp;
 	int subinterval_seconds;
 	bool command{false}, dead{false};
 	bool commandComplete{false}, commandSuccess{false};

@@ -37,4 +37,23 @@ public:
 	void clear();
 };
 
+class Subinterval_CPU_temp
+{
+public:
+	int rollup_count=0;
+	RunningStat<double,long> overall_CPU_temp;
+	std::map<std::string, RunningStat<double,long>> each_host_CPU_temp;
+
+// methods
+	bool add(std::string hostname, const RunningStat<double,long>&);  // sets rollup_count from zero to 1 as the first host entry is added.
+	void rollup(const Subinterval_CPU_temp&);  // used to make an average over a series of subintervals.
+	static std::string csvTitles();
+	std::string csvValuesAvgOverHosts();
+	std::string csvValues(std::string hostname);
+	void clear();
+};
+
+
+
+
 
