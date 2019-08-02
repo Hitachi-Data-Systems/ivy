@@ -223,7 +223,8 @@ void Subsystem::print_subinterval_csv_line_set( std::string subfolder_leaf_name 
 			// b1_demo1_fixed.step0000.step_eh.all=all.step_detail_by_subinterval.csv
 
 			std::string instance_filename = element_folder + path_separator
-                + edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName)
+                //+ edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName)
+                + m_s.testName
                 + "."
                 + m_s.stepNNNN
                 + "."

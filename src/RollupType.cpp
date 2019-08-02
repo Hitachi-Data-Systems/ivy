@@ -466,8 +466,10 @@ void RollupType::print_measurement_summary_csv_line(unsigned int measurement_ind
         // but first figure out the data validation csv filename
         std::ostringstream data_validation_filename_stream;
 
-        data_validation_filename_stream << measurementRollupFolder << "/" << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName)
-                                        << '.' << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(rollupTypeName) << ".data_validation.csv";
+        data_validation_filename_stream << measurementRollupFolder << "/"
+            //<< edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName)
+            << m_s.testName
+            << '.' << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(rollupTypeName) << ".data_validation.csv";
 
         measurement_rollup_data_validation_csv_filename = data_validation_filename_stream.str();
     }

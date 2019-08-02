@@ -1054,7 +1054,7 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
 			o << dedupe_unit_bytes;
 		}
 	}
-	o << ",compressibility=" << compressibility;
+	o << ",compressibility=" << (100.0 * compressibility) << "%";
 	if (dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method) o << ",fraction_zero_pattern=" << fraction_zero_pattern;
     if (dedupe_type == dedupe_method::static_method) o << ",duplicate_set_size=" << duplicate_set_size;
     o << ",threads_in_workload_name=" << threads_in_workload_name;
@@ -1129,7 +1129,7 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 			o << dedupe_unit_bytes;
 		}
 	}
-	if (!defaultCompressibility())              { o << ",compressibility=" << compressibility;}
+	if (!defaultCompressibility())              { o << ",compressibility=" << (100.0 * compressibility) << "%";}
 	if ((dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method) && !default_fraction_zero_pattern())       { o << ",fraction_zero_pattern=" << fraction_zero_pattern;}
 
     if (!defaultThreads_in_workload_name()) { o << ",threads_in_workload_name=" << threads_in_workload_name;}

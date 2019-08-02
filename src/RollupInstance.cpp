@@ -1118,7 +1118,8 @@ void RollupInstance::set_by_subinterval_filename()
 
     std::ostringstream filename_prefix;
     filename_prefix << pRollupType->step_subfolder_name << "/"
-                    << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName)
+                    //<< edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName)
+                    << m_s.testName
                     << '.'
                     << m_s.stepNNNN
                     << '.'
@@ -1449,7 +1450,8 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
         std::ostringstream filename_prefix;
         filename_prefix << pRollupType->measurementRollupFolder << "/"
-                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName )
+                        //<< edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName )
+                        << m_s.testName
                         << '.'
                         << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(rollupTypeName)
                         << '='
@@ -1458,7 +1460,8 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
         std::ostringstream type_filename_prefix;
         type_filename_prefix << pRollupType->measurementRollupFolder << "/"
-                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName )
+                        //<< edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName )
+                        << m_s.testName
                         << '.'
                         << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(rollupTypeName)
                         << '.';

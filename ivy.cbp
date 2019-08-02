@@ -704,6 +704,9 @@
 		<Unit filename="src/SubintervalRollup.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="src/Subinterval_CPU.cpp">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="src/Subsystem.cpp">
 			<Option target="ivymaster" />
 		</Unit>
