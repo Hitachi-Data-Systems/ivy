@@ -99,6 +99,11 @@ std::pair<bool,std::string> RollupInstance::makeMeasurementRollup()
 
             mt.application_IOPS = st.count() / seconds;
 
+            if (is_all_equals_all_instance())
+            {
+                m.all_equals_all_Total_IOPS = mt.application_IOPS;
+            }
+
             if (m_s.haveCmdDev)
             {
                 ssd.repetition_factor = 0.0;

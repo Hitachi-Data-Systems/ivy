@@ -23,11 +23,17 @@
 #include <string>
 #include <vector>
 
+#include "ivydefines.h"
+
 struct loop_level
 {
     unsigned int             current_index {0}; // if >= values.size(), we are done this pass through values.
     std::string              attribute     {};
     std::vector<std::string> values        {};
+    ivy_float                max_IOPS      {-1.0}; // used with atribute = "IOPS_curve".
+    std::string              stepname_suffix {};
+
+    void set_stepname_suffix();
 };
 
 struct nestedit
@@ -38,4 +44,6 @@ struct nestedit
 //methods
     void clear();
     bool run_iteration();    // returns false when we have already run last iteration.
+
+    std::string build_stepname_suffix();
 };

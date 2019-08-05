@@ -73,9 +73,9 @@ void usage_message(char* argv_0)
         << "     If a command device is being used, set the [Go] parameter default for skip_LDEV" << std::endl
         << "     to \"skip_LDEV=on\" to skip collection of LDEV & PG data.  This makes gathers faster" << std::endl
         << "     if you don't need LDEV and PG data." << std::endl << std::endl
-        << "-suppress_perf"<< std::endl
-        << "     If a command device is being used, set the [Go] parameter default for suppress_perf" << std::endl
-        << "     to \"suppress_perf=on\" to suppress the collection of subsystem performance data" << std::endl
+        << "-no_perf"<< std::endl
+        << "     If a command device is being used, set the [Go] parameter default for no_perf" << std::endl
+        << "     to \"no_perf=on\" to suppress the collection of subsystem performance data" << std::endl
         << "     while ivy is running driving I/O.  Collection of performance data resumes" << std::endl
         << "     with the second and subsequent cooldown subintervals at IOPS=0 to support" << std::endl
         << "     the cooldwon_by_wp and cooldown_by_MP_busy featueres." << std::endl << std::endl
@@ -228,7 +228,8 @@ int main(int argc, char* argv[])
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-skip_LDEV")))      { m_s.skip_ldev_data_default = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-spinloop")))       { spinloop = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-one_thread_per_core"))) { one_thread_per_core = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-suppress_perf")))  { m_s.suppress_subsystem_perf_default = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_perf"))
+         || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-suppress_perf")))  { m_s.suppress_subsystem_perf_default = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_check_failed_component")))  { m_s.check_failed_component_default = false; continue; }
 
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }

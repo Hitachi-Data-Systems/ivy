@@ -25,14 +25,50 @@
 #include "nestedit.h"
 #include "ivy_engine.h"
 
+bool running_IOPS_curve_IOPS_equals_max {false};
+
+ivy_float* p_IOPS_curve_max_IOPS {nullptr};
+
+
+void loop_level::set_stepname_suffix()
+{
+    if (attribute == "IOPS_curve")
+    {
+        if (current_index == 0)
+        {
+            stepname_suffix = "IOPS=max";
+        }
+        else
+        {
+            ivy_float fraction = number_optional_trailing_percent(values[current_index],"<Error> internal programming error - parsing IOPS_curve valude in loop_level::set_stepname_suffix()");
+            std::ostringstream o;
+            o << std::fixed << std::setprecision(0) << (100.0 * fraction) << "% of max IOPS";
+            stepname_suffix = o.str();
+        }
+    }
+    else
+    {
+        std::ostringstream o;
+        o << attribute << "=" << values[current_index];
+        stepname_suffix = o.str();
+    }
+
+    return;
+}
+
 void nestedit::clear()
 {
     loop_levels.clear();
     current_level = 0;
+
+    running_IOPS_curve_IOPS_equals_max = false;
+    p_IOPS_curve_max_IOPS = nullptr;
 }
 
 bool nestedit::run_iteration()
 {
+    running_IOPS_curve_IOPS_equals_max = false;
+
     if (loop_levels.size() == 0)
     {
         if (current_level == 0)
@@ -48,16 +84,46 @@ bool nestedit::run_iteration()
         current_level--;
     }
 
-    if (current_level == 0 && loop_levels[0].current_index >= loop_levels[0].values.size()) { return false; }
+    if (current_level == 0 && loop_levels[0].current_index >= loop_levels[0].values.size())
+    {
+        return false;
+    }
 
     // we know that at the current level, the current index points to a value that we are going to use.
+
+
     {
         std::ostringstream edit_rollup_text;
 
         {
             loop_level& ll = loop_levels[current_level];
 
-            edit_rollup_text << ll.attribute << " = \"" << ll.values[ll.current_index] << "\"";
+            if (ll.attribute == "IOPS_curve")
+            {
+                if (ll.current_index == 0)
+                {
+                    running_IOPS_curve_IOPS_equals_max = true;
+                    p_IOPS_curve_max_IOPS = & ll.max_IOPS;
+                    edit_rollup_text << "IOPS=max";
+                }
+                else
+                {
+                    ivy_float fraction = number_optional_trailing_percent(ll.values[ll.current_index],"<Error> internal programming error - parsing IOPS_curve valude in nestedit::run_iteration");
+                    ivy_float iops_this_pass = ll.max_IOPS * fraction;
+                    edit_rollup_text << "Total_IOPS=" << iops_this_pass;
+                }
+            }
+            else
+            {
+                edit_rollup_text << ll.attribute << " = \"" << ll.values[ll.current_index] << "\"";
+                {
+                    std::ostringstream o;
+                    o << ll.attribute << "=" << ll.values[ll.current_index];
+                    ll.stepname_suffix = o.str();
+                }
+            }
+
+            ll.set_stepname_suffix();
 
             ll.current_index++;
         }
@@ -71,6 +137,8 @@ bool nestedit::run_iteration()
                 ll.current_index = 0;
 
                 edit_rollup_text << ", " <<  ll.attribute << " = \"" << ll.values[ll.current_index] << "\"";
+
+                ll.set_stepname_suffix();
 
                 ll.current_index = 1;
             }
@@ -88,4 +156,21 @@ bool nestedit::run_iteration()
     }
 
     return true;
+}
+
+
+std::string nestedit::build_stepname_suffix()
+{
+    std::ostringstream o;
+
+    bool need_plus {false};
+
+    for (auto& ll : loop_levels)
+    {
+        if (need_plus) o << " + ";
+        need_plus = true;
+        o << ll.stepname_suffix;
+    }
+
+    return o.str();
 }

@@ -112,17 +112,30 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
             // The attribute name is not a "go" parameter, rather it's an IosequencerInput parameter name,
             // and we're going to loop over run_subinterval_sequence using edit rollup to set the values.
 
-            auto nit = valid_IosequencerInput_parameters.find(normalize_identifier(s.substr(identifier_start,identifier_length)));
-            if (nit == valid_IosequencerInput_parameters.end())
+            std::string normalized_parameter_name = normalize_identifier(s.substr(identifier_start,identifier_length));
+
+            bool processing_IOPS_curve;
+
+            if (normalized_parameter_name == normalize_identifier("IOPS_curve"))
             {
-                std::ostringstream o;
-                o << "<Error> in go parameters - \"" << s.substr(identifier_start,identifier_length) << "\" was not found as a valid workload parameter name."
-                    << "  Invalid input string:" << std::endl << s << std::endl;
-                contents.clear();
-                workload_loopy.clear();
-                std::cout << o.str();
-                log(m_s.masterlogfile,o.str());
-                return std::make_pair(false,o.str());
+                processing_IOPS_curve = true;
+            }
+            else
+            {
+                processing_IOPS_curve = false;
+
+                auto nit = valid_IosequencerInput_parameters.find(normalized_parameter_name);
+                if (nit == valid_IosequencerInput_parameters.end())
+                {
+                    std::ostringstream o;
+                    o << "<Error> in go parameters - \"" << s.substr(identifier_start,identifier_length) << "\" was not found as a valid workload parameter name."
+                        << "  Invalid input string:" << std::endl << s << std::endl;
+                    contents.clear();
+                    workload_loopy.clear();
+                    std::cout << o.str();
+                    log(m_s.masterlogfile,o.str());
+                    return std::make_pair(false,o.str());
+                }
             }
 
             i++; // step over '('
@@ -130,7 +143,16 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
             workload_loopy.loop_levels.emplace_back();
             {
                 loop_level& ll = workload_loopy.loop_levels.back();
-                ll.attribute = s.substr(identifier_start,identifier_length);
+
+                if (processing_IOPS_curve)
+                {
+                    ll.attribute = "IOPS_curve";
+                    ll.values.push_back("IOPS=max");
+                }
+                else
+                {
+                    ll.attribute = s.substr(identifier_start,identifier_length);
+                }
 
                 while (true)
                 {
@@ -198,7 +220,34 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
                         }
                     }
 
-                    ll.values.push_back(s.substr(value_start,value_length));
+                    std::string value_text = s.substr(value_start,value_length);
+
+                    if (processing_IOPS_curve)
+                    {
+                        if (!std::regex_match(value_text,float_number_optional_trailing_percent_regex))
+                        {
+                                std::ostringstream o;
+                                o << "For IOPS_curve, invalid value \"" << value_text << "\".  IOPS_curve values must be numbers with optional trailing percent sign % and must be greater than zero and less than or equal to 200%." << std::endl;
+                                contents.clear();
+                                std::cout << o.str();
+                                log(m_s.masterlogfile,o.str());
+                                return std::make_pair(false,o.str());
+                        }
+
+                        ivy_float v = number_optional_trailing_percent(value_text,"parsing IOPS_curve value");
+
+                        if (v <= 0.0 || v > 2.0)
+                        {
+                                std::ostringstream o;
+                                o << "For IOPS_curve, invalid value \"" << value_text << "\".  IOPS_curve values must be numbers with optional trailing percent sign % and must be greater than zero and less than or equal to 200%." << std::endl;
+                                contents.clear();
+                                std::cout << o.str();
+                                log(m_s.masterlogfile,o.str());
+                                return std::make_pair(false,o.str());
+                        }
+                    }
+
+                    ll.values.push_back(value_text);
                 }
             }
         }

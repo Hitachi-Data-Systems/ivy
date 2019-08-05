@@ -33,7 +33,7 @@ Look in the doc subfolder and read the "01.Introduction_to_ivy" PowerPoint or .p
 See src subfolder.  ivy is built using the CodeBlocks IDE.
 
 ## Binary Linux executables
-Download version 3.30.01 from https://hcpanywhere.hitachivantara.com/u/vCOqCDUjqoiuI6oJ/ivy.3.30.01.bin.zip?l
+Download version 3.31.00 from https://hcpanywhere.hitachivantara.com/u/3nn_mVd5_xrMef-Y/ivy.3.31.00.bin.zip?l
 
 The binaries for LUN_discovery are included.
 

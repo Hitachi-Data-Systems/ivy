@@ -87,14 +87,14 @@ ivy_engine::go(const std::string& parameters)
 
     std::string parameter_value;
 
-    std::string valid_parameter_names = "suppress_perf, skip_LDEV, stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp"s
+    std::string valid_parameter_names = "no_perf, suppress_perf, skip_LDEV, stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp"s
         + ",cooldown_by_MP_busy, cooldown_by_MP_busy_stay_down_time_seconds, subsystem_WP_threshold, subsystem_busy_threshold, sequential_fill"s
         + ",stepcsv, storcsv, check_failed_component"s;
 
     std::string valid_parameters_message =
         "The following parameter names are always valid:\n"
         "    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
-        "    suppress_perf, skip_LDEV, subsystem_WP_threshold, cooldown_by_MP_busy, cooldown_by_MP_busy_stay_down_time_seconds,\n"
+        "    no_perf, skip_LDEV, subsystem_WP_threshold, cooldown_by_MP_busy, cooldown_by_MP_busy_stay_down_time_seconds,\n"
         "    subsystem_busy_threshold, sequential_fill, stepcsv, storcsv, check_failed_component.\n\n"
         "For dfc = PID, additional valid parameters are:\n"
         "    target_value, low_IOPS, low_target, high_IOPS, high_target, max_IOPS, max_ripple, gain_step,\n"
@@ -125,7 +125,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 )"
     ;
 
-    if (!go_parameters.contains("suppress_perf"s))          go_parameters.contents[normalize_identifier(std::string("suppress_perf"))]            = suppress_subsystem_perf_default ? "on" : "off";
+    if ( (!go_parameters.contains("no_perf"s))  && (!go_parameters.contains("suppress_perf"s)) )        go_parameters.contents[normalize_identifier(std::string("no_perf"))]            = suppress_subsystem_perf_default ? "on" : "off";
     if (!go_parameters.contains("skip_LDEV"s))              go_parameters.contents[normalize_identifier(std::string("skip_LDEV"))]                = skip_ldev_data_default          ? "on" : "off";
     if (!go_parameters.contains("stepcsv"s))                go_parameters.contents[normalize_identifier(std::string("stepcsv"))]                  = stepcsv_default                 ? "on" : "off";
     if (!go_parameters.contains("storcsv"s))                go_parameters.contents[normalize_identifier(std::string("storcsv"))]                  = storcsv_default                 ? "on" : "off";
@@ -461,7 +461,8 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     min_measure_count = (int) ceil( measure_seconds / subinterval_seconds);
 
 //----------------------------------- suppress_perf
-    parameter_value = go_parameters.retrieve("suppress_perf");
+    if (go_parameters.contains("suppress_perf"s)) { parameter_value = go_parameters.retrieve("suppress_perf");}
+    else                                          { parameter_value = go_parameters.retrieve("no_perf");}
     if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
            || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
            || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) suppress_subsystem_perf = true;
@@ -471,7 +472,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     else
     {
         ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid suppress_perf parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
+        o << "<Error> ivy engine API - go() - [Go] statement - invalid no_perf (same as suppress_perf)  parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
@@ -1371,6 +1372,10 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         }
     }
 
+    extern bool running_IOPS_curve_IOPS_equals_max;
+
+    extern ivy_float* p_IOPS_curve_max_IOPS;
+
     while (go_parameters.workload_loopy.run_iteration())
     {
         goStatementsSeen++;
@@ -1383,7 +1388,20 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
             stepNNNN=o.str();
         }
 
-        if (go_parameters.contains("stepname")) stepName = go_parameters.retrieve("stepname");
+        if (go_parameters.contains("stepname"))
+        {
+            stepName = go_parameters.retrieve("stepname");
+        }
+        else
+        {
+            stepName.clear();
+        }
+
+        std::string suffix = go_parameters.workload_loopy.build_stepname_suffix();
+
+        if ( stepName.size() > 0 && suffix.size() > 0 ) { stepName += std::string(" : ");}
+
+        stepName += suffix;
 
         the_dfc.reset();
 
@@ -1392,6 +1410,19 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         prepare_dedupe();
 
         run_subinterval_sequence(&the_dfc);
+
+        if (running_IOPS_curve_IOPS_equals_max)
+        {
+            if (p_IOPS_curve_max_IOPS == nullptr)
+            {
+                std::ostringstream o; o << "<Error> internal programming error - running_IOPS_curve_IOPS_equals_max=true but p_IOPS_curve_max_IOPS = nullptr at line "
+                    << __LINE__ << " of " << __FILE__ << std::endl;
+                log (masterlogfile,o.str());
+                std::cout << o.str();
+                kill_subthreads_and_exit();
+            }
+            (*p_IOPS_curve_max_IOPS) = measurements.back().all_equals_all_Total_IOPS;
+        }
 
         rc.first=true;
         {

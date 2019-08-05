@@ -243,5 +243,10 @@ public:
         // to know which subinterval lines were rolled up in the measurement.
 
     void print_measurement_summary_csv_line(unsigned int measurement_index);
+
+    bool is_all_equals_all_instance()
+    {
+        return stringCaseInsensitiveEquality(attributeNameComboID,"all") && stringCaseInsensitiveEquality(rollupInstanceID,"all");
+    }
 };
 

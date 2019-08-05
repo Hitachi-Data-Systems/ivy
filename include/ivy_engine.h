@@ -62,6 +62,8 @@ struct measurement
     int lastMeasurementIndex {-1};
     int last_subinterval {-1};
 
+    ivy_float all_equals_all_Total_IOPS {0.0};
+
 //    bool have_best_of_wurst {false};  That would be leverworst, natuurlijk.
 
     unsigned int best_of_wurst_first, best_of_wurst_last;
