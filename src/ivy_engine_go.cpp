@@ -1399,7 +1399,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
         std::string suffix = go_parameters.workload_loopy.build_stepname_suffix();
 
-        if ( stepName.size() > 0 && suffix.size() > 0 ) { stepName += std::string(" : ");}
+        if ( stepName.size() > 0 && suffix.size() > 0 ) { stepName += std::string(" - ");}
 
         stepName += suffix;
 

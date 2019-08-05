@@ -42,7 +42,7 @@ void loop_level::set_stepname_suffix()
         {
             ivy_float fraction = number_optional_trailing_percent(values[current_index],"<Error> internal programming error - parsing IOPS_curve valude in loop_level::set_stepname_suffix()");
             std::ostringstream o;
-            o << std::fixed << std::setprecision(0) << (100.0 * fraction) << "% of max IOPS";
+            o << std::fixed << std::setprecision(0) << (100.0 * fraction) << "% of max";
             stepname_suffix = o.str();
         }
     }
@@ -136,7 +136,17 @@ bool nestedit::run_iteration()
 
                 ll.current_index = 0;
 
-                edit_rollup_text << ", " <<  ll.attribute << " = \"" << ll.values[ll.current_index] << "\"";
+                if (ll.attribute=="IOPS_curve")
+                {
+                    edit_rollup_text << ", IOPS=max";
+                    running_IOPS_curve_IOPS_equals_max = true;
+                    p_IOPS_curve_max_IOPS = & ll.max_IOPS;
+                }
+                else
+                {
+                    edit_rollup_text << ", " <<  ll.attribute << " = \"" << ll.values[ll.current_index] << "\"";
+                }
+
 
                 ll.set_stepname_suffix();
 
