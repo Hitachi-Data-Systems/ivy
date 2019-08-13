@@ -619,7 +619,7 @@ unsigned int /* number of I/Os popped and processed */ TestLUN::pop_and_process_
 #ifdef IVYDRIVER_TRACE
         pWorkload->pop_one_body_count++;
 #endif
-        n = pWorkload->pop_and_process_an_Eyeo();
+        n += pWorkload->pop_and_process_an_Eyeo();
 
         if ( n > 0) { break; }
 
@@ -661,7 +661,7 @@ unsigned int /* number of I/Os generated - 0 or 1  */  TestLUN::generate_an_IO()
         pWorkload->generate_one_body_count++;
 #endif
 
-        generated_one = pWorkload->generate_an_IO();
+        generated_one += pWorkload->generate_an_IO();
         if (generated_one) break;
 
         wit++; if (wit == workloads.end()) wit = workloads.begin();

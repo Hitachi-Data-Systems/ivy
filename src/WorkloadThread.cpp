@@ -381,6 +381,17 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             die_saying(o.str());
         }
 
+        timerfd_fd = timerfd_create(CLOCK_MONOTONIC,TFD_NONBLOCK);
+		if (timerfd_fd == -1)
+        {
+            std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - failed trying to create timerfd - "
+                << std::strerror(errno) << std::endl
+                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+            die_saying(o.str());
+        }
+
+        memset(&timerfd_setting,0,sizeof(timerfd_setting));
+
         memset(&(epoll_ev),0,sizeof(epoll_ev));
         epoll_ev.data.ptr = (void*) this;
         epoll_ev.events = EPOLLIN | EPOLLET | EPOLLOUT;
@@ -389,6 +400,19 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
         if (rc == -1)
         {
             std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - epoll_ctl failed trying to add an event - "
+                << std::strerror(errno) << std::endl
+                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+            die_saying(o.str());
+        }
+
+        memset(&(timerfd_epoll_event),0,sizeof(timerfd_epoll_event));
+        timerfd_epoll_event.data.ptr = (void*) this;
+        timerfd_epoll_event.events = EPOLLIN; // | EPOLLET | EPOLLOUT;
+
+        rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, timerfd_fd, &timerfd_epoll_event);
+        if (rc == -1)
+        {
+            std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - epoll_ctl failed trying to add timerfd event - "
                 << std::strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
             die_saying(o.str());
@@ -727,19 +751,19 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 
         unsigned int n;
 
-        n = reap_IOs();                if ( n > 0 ) { goto top_of_loop; }
+        n =  reap_IOs();                if ( n > 0 ) { goto top_of_loop; }
 
-        n = start_IOs();               if ( n > 0 ) { goto top_of_loop; }
+        n += start_IOs();               if ( n > 0 ) { goto top_of_loop; }
 
-        n = pop_and_process_an_Eyeo(); if ( n > 0 ) { goto top_of_loop; }
+        n += pop_and_process_an_Eyeo(); if ( n > 0 ) { goto top_of_loop; }
 
-        n = generate_an_IO();          if ( n > 0 ) { goto top_of_loop; }
+        n += generate_an_IO();          if ( n > 0 ) { goto top_of_loop; }
+
+        if (ivydriver.spinloop) goto top_of_loop;
 
         // We wait for the soonest of
         //   - end of subinterval
         //   - time to start next scheduled I/O over my TestLUNs, if there is a scheduled (not IOPS=max) I/O.
-
-        if (ivydriver.spinloop) goto top_of_loop;
 
         ivytime next_overall_io = ivytime(0);
 
@@ -775,9 +799,31 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
             wait_duration = wait_until_this_time - now;
         }
 
-        int wait_ms = static_cast<int>(wait_duration.Milliseconds());
+        timerfd_setting.it_value.tv_sec = wait_duration.t.tv_sec;
+        timerfd_setting.it_value.tv_nsec = wait_duration.t.tv_nsec;
 
-        int epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, wait_ms);
+        int rc_ts = timerfd_settime(timerfd_fd, 0, &timerfd_setting,0);
+        if (rc_ts < 0)
+        {
+            std::ostringstream o;
+            o << "<Error> Internal programming error - in WorkloadThread, failed setting timerfd - "
+                << " return code = " << rc_ts << " - " << strerror(errno)
+                << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
+            die_saying(o.str());
+        }
+
+        int epoll_rc;
+
+        // timerfd is used because epoll_wait() is an integer number of milliseconds and we need finer resolution.
+
+        if (wait_duration == ivytime(0))
+        {
+            epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, 0);
+        }
+        else
+        {
+            epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, -1);
+        }
 
         if (epoll_rc < 0)
         {

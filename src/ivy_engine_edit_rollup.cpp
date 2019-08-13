@@ -513,7 +513,7 @@ ivy_engine::edit_rollup(const std::string& rollupText, const std::string& origin
     if (routine_logging)
     {
         std::ostringstream o;
-        o << "edit rollup - overall execution time = " << std::fixed << std::setprecision(1) << (100.*editRollupExecutionTime.getlongdoubleseconds()) << " ms "
+        o << "edit rollup \"" << rollupText << "\", \"" << original_parametersText << "\" - overall execution time = " << std::fixed << std::setprecision(1) << (100.*editRollupExecutionTime.getlongdoubleseconds()) << " ms "
             << ", edit workload interlock time "
             << " - average " << std::fixed << std::setprecision(1) << (100.*editWorkloadInterlockTimeSeconds.avg()) << " ms"
             << " - min " << std::fixed << std::setprecision(1) << (100.*editWorkloadInterlockTimeSeconds.min()) << " ms"

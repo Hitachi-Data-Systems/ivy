@@ -556,11 +556,14 @@ void Ivy_pgm::show_syntax_error_location()
         }
         else if (line_number > syntax_error_first_line && line_number < syntax_error_last_line)
         {
-            for(unsigned int i = 0; i < (line.size() - 1); i++)
+            if (line.size() > 0)
             {
-                std::cout << "=";
+                for(unsigned int i = 0; i <= (line.size() - 1); i++)
+                {
+                    std::cout << "=";
+                }
+                std::cout << std::endl<< std::endl;
             }
-            std::cout << std::endl<< std::endl;
         }
         else if (line_number != syntax_error_first_line && line_number == syntax_error_last_line)
         {

@@ -31,6 +31,7 @@
 #include <sys/eventfd.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
+#include <sys/timerfd.h>
 
 #include "pattern.h"
 #include "Subinterval.h"
@@ -119,8 +120,11 @@ public:
     int event_fd {-1};
     int epoll_fd {-1};
     epoll_event* p_epoll_events {nullptr};
-    epoll_event ep_event;
+    epoll_event timerfd_epoll_event;
     struct epoll_event epoll_ev;
+
+    int timerfd_fd {-1};
+    struct itimerspec timerfd_setting;
 
 /*debug*/ unsigned int debug_epoll_count {0};
 
