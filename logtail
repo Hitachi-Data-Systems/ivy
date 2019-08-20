@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]
+then
+	echo $0 takes one argument, the ivy log folder name without a trailing /.
+	exit 0
+fi
+
+mkdir ${1}/logtail
+
+for filename in ${1}/*.txt; do
+	tail -n 250 $filename >${1}/logtail/${filename##*/}
+done
+
