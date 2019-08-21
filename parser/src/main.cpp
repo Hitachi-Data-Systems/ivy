@@ -290,6 +290,9 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+
+    m_s.testName = test_name;
+
     struct stat struct_stat;
     if(stat(ivyscriptFilename.c_str(),&struct_stat))
     {
@@ -324,6 +327,51 @@ int main(int argc, char* argv[])
         return 0;
     }
 
+    if( stat("/var",&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
+    {
+        std::cout << "<Error> \"\var\" doesn\'t exist or is not a folder." << std::endl;
+        return -1;
+    }
+
+    if( stat("/var/ivymaster_logs", &struct_stat) )
+    {
+        //  folder doesn't already exist
+        int rc;
+        if ((rc = mkdir("/var/ivymaster_logs", S_IRWXU | S_IRWXG | S_IRWXO)))
+        {
+            std::ostringstream o;
+            o << "<Error> Failed trying to create ivymaster root log folder \"/var/ivymaster_logs\" - "
+                << "mkdir() return code " << rc << ", errno = " << errno << " " << std::strerror(errno) << std::endl;
+            std::cout << o.str();
+            return -1;
+        }
+    }
+
+    // Note:  In order to have ivy's log files temporarily stored somewhere else
+    //        other than in /var, make a symlink in /var as /var/ivymaster_logs,
+    //        and have the symlink point to the root folder such as /xxxxx/ivymaster_logs.
+
+    m_s.var_ivymaster_logs_testName = "/var/ivymaster_logs/"s + m_s.testName;
+
+	{
+	    std::string cmd = "rm -rf "s + m_s.var_ivymaster_logs_testName;
+	    system(cmd.c_str());
+    }
+
+    {
+        int rc;
+	    if ((rc = mkdir(m_s.var_ivymaster_logs_testName.c_str(), S_IRWXU | S_IRWXG | S_IRWXO)))
+        {
+            std::ostringstream o;
+            o << "<Error> Failed trying to create ivymaster log folder \"" << m_s.var_ivymaster_logs_testName << "\" - "
+                << "mkdir() return code " << rc << ", errno = " << errno << " " << std::strerror(errno) << std::endl;
+            std::cout << o.str();
+            return -1;
+        }
+    }
+
+    m_s.masterlogfile = m_s.var_ivymaster_logs_testName + "/log.ivymaster.txt"s;
+
     extern FILE* yyin;
 
     if( !(yyin = fopen(ivyscriptFilename.c_str(), "r")) )
@@ -332,11 +380,9 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-
     Ivy_pgm  context(ivyscriptFilename,test_name);
 
     p_Ivy_pgm = &context;
-
 
 	yy::ivy parser(context);
 
@@ -349,7 +395,6 @@ int main(int argc, char* argv[])
 	if (context.successful_compile && !context.unsuccessful_compile )
 	{
         std::cout << "Successful compile, test name is \"" << test_name << "\"." << std::endl;
-
 
         try {
             context.stacktop = context.stack + context.next_avail_static;
@@ -413,17 +458,6 @@ int main(int argc, char* argv[])
     if (m_s.iosequencer_template_was_used) { m_s.print_iosequencer_template_deprecated_msg(); }
 
     std::pair<bool,std::string> strc = m_s.shutdown_subthreads();
-
-    {
-        std::ostringstream o;
-        o << "ivy engine shutdown subthreads complete.";
-//        if (strc.first) o << "successful"; else o << "unsuccessful";
-        o << std::endl;
-        std::cout << o.str();
-        log (m_s.masterlogfile,o.str());
-    }
-
-    if (routine_logging) { log(m_s.masterlogfile,print_logfile_stats()); }
 
 	return 0; // in case compiler complains, but unreachable.
 

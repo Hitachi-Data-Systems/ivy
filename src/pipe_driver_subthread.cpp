@@ -101,9 +101,14 @@ std::regex number_regex( R"((([0-9]+(\.[0-9]*)?)|(\.[0-9]+))%?)" );  // 5 or .5 
 
 void pipe_driver_subthread::send_and_get_OK(std::string s, const ivytime timeout)
 {
+//*debug*/if (s == "continue"){std::ostringstream o; o << ivyscript_hostname << " Entry to pipe_driver_subthread::send_and_get_OK(std::string s = \"" << render_string_harmless(s)
+//*debug*/<< "\", const ivytime timeout = " << timeout.format_as_duration_HMMSSns() << ")\n"; log(logfilename, o.str()); std::cout << o.str();}
     send_string(s);
+//*debug*/if (s == "continue"){std::ostringstream o; o << ivyscript_hostname << " Have returned from send_string(\"" << render_string_harmless(s) << "\") in pipe_driver_subthread::send_and_get_OK()\n"; log(logfilename, o.str()); std::cout << o.str();}
 
+//*debug*/if (s == "continue"){std::ostringstream o; o << ivyscript_hostname << " About to get_line_from_pipe(timeout = " <<  timeout.format_as_duration_HMMSSns() << ", std::string(\"send_and_get_OK()\")) in pipe_driver_subthread::send_and_get_OK()\n"; log(logfilename, o.str()); std::cout << o.str();}
     std::string r = get_line_from_pipe(timeout, std::string("send_and_get_OK()"));
+//*debug*/if (s == "continue"){std::ostringstream o; o << ivyscript_hostname << " get_line_from_pipe(timeout = " <<  timeout.format_as_duration_HMMSSns() << ", std::string(\"send_and_get_OK()\")) returned \"" << render_string_harmless(r) << "\" in pipe_driver_subthread::send_and_get_OK()\n"; log(logfilename, o.str()); std::cout << o.str();}
     trim(r);
     if (0 != std::string("<OK>").compare(r))
     {
@@ -166,9 +171,11 @@ std::string pipe_driver_subthread::send_and_clip_response_upto(std::string s, st
 
 void pipe_driver_subthread::send_string(std::string s)
 {
+//*debug*/if (s == "continue"){std::ostringstream o; o << ivyscript_hostname  << " Entry to pipe_driver_subthread::send_string(std::string s = \"" << render_string_harmless(s) << "\")\n"; log(logfilename, o.str()); std::cout << o.str();}
     if (s.size() <= MAXSAYATONCE)
     {
         real_send_string(s);
+//*debug*/if (s == "continue"){std::ostringstream o; o << ivyscript_hostname << " Have returned from read_send_string(\"" << render_string_harmless(s) << "\") in pipe_driver_subthread::send_string()\n"; log(logfilename, o.str()); std::cout << o.str();}
         return;
     }
 
@@ -202,6 +209,7 @@ void pipe_driver_subthread::real_send_string(std::string s)
     }
     memcpy(to_slave_buf,s.c_str(),s.length());
 
+//*debug*/ {std::ostringstream o; o <<  ivyscript_hostname << "pipe_driver_subthread::real_send_string(std::string s = \"" << render_string_harmless(s) << "\") - about to write to pipe.\n"; log(logfilename,o.str());}
     int rc = write(pipe_driver_subthread_to_slave_pipe[PIPE_WRITE],to_slave_buf,s.length());
 
     if (-1 == rc)
@@ -217,6 +225,7 @@ void pipe_driver_subthread::real_send_string(std::string s)
         o << "For host " << ivyscript_hostname << ", write() for string into pipe to ivydriver only wrote " << rc << " bytes out of " << s.length() << "." << std::endl;
         throw std::runtime_error(o.str());
     }
+//*debug*/ {std::ostringstream o; o <<  ivyscript_hostname << "pipe_driver_subthread::real_send_string(std::string s = \"" << render_string_harmless(s) << "\") - after writing to pipe.\n"; log(logfilename,o.str());}
 
     if (last_message_time == ivytime(0))
     {
@@ -333,6 +342,8 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
         else
             waitthistime=remaining;
 
+//*debug*/ {std::ostringstream o; o <<  ivyscript_hostname << "pipe_driver_subthread::read_from_pipe() - about to pselect() wait to be able to read from pipe.\n"; log(logfilename,o.str());}
+
         FD_ZERO(&read_fd_set);
         FD_SET(slave_to_pipe_driver_subthread_pipe[PIPE_READ],&read_fd_set);
         rc=pselect(1+slave_to_pipe_driver_subthread_pipe[PIPE_READ],&read_fd_set,NULL,NULL,&(waitthistime.t),NULL);
@@ -358,11 +369,16 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
                 return false;
             }
         }
-        else if (0<rc) break;
+        else if (0<rc)
+        {
+//*debug*/ {std::ostringstream o; o <<  ivyscript_hostname << "pipe_driver_subthread::read_from_pipe() - pselect() wait to be able to read from pipe complete.\n"; log(logfilename,o.str());}
+            break;
+        }
     }
 
     // we have data ready to receive from the child
 
+//*debug*/ {std::ostringstream o; o <<  ivyscript_hostname << "pipe_driver_subthread::read_from_pipe() - about to read from pipe.\n"; log(logfilename,o.str());}
     rc = read( slave_to_pipe_driver_subthread_pipe[PIPE_READ], (void*) &from_slave_buf, IVYMAXMSGSIZE );
     if (-1==rc)
     {
@@ -381,6 +397,8 @@ bool pipe_driver_subthread::read_from_pipe(ivytime timeout)
 
     next_char_from_slave_buf=0;
     bytes_last_read_from_slave=rc;
+
+//*debug*/ {std::ostringstream o; o <<  ivyscript_hostname << "pipe_driver_subthread::read_from_pipe() - returning after reading " << rc << " bytes from pipe.\n"; log(logfilename,o.str());}
 
     return true;
 
@@ -432,27 +450,32 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
     std::string description // passed by reference to called routines to receive an error message when called function returns "false"
 )
 {
+//*debug*/log(logfilename,"debug: pipe_driver_subthread::real_get_line_from_pipe() entry.\n");
+
+    ivytime entry_time; entry_time.setToNow();
     std::string s;
 
     if ( next_char_from_slave_buf >= bytes_last_read_from_slave && !last_read_from_pipe )
     {
         std::ostringstream o;
-        o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe(timeout=" << timeout.format_as_duration_HMMSSns() << ") - no characters available in buffer and read_from_pipe() failed - " << description;
+        o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe(timeout=" << timeout.format_as_duration_HMMSSns() << ") - " << description;
         throw std::runtime_error(o.str());
     }
 
     if ( next_char_from_slave_buf >= bytes_last_read_from_slave )
     {
+//*debug*/log(logfilename,"debug: pipe_driver_subthread::real_get_line_from_pipe() about to read_from_pipe().\n");
         last_read_from_pipe = read_from_pipe(timeout);
+//*debug*/log(logfilename,"debug: pipe_driver_subthread::real_get_line_from_pipe() after read_from_pipe().\n");
         if (!last_read_from_pipe)
         {
             std::ostringstream o;
-            o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe(timeout=" << timeout.format_as_duration_HMMSSns() << ") - no characters available in buffer and read_from_pipe() failed - " << description;
+            o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe(timeout=" << timeout.format_as_duration_HMMSSns() << ") - read from pipe timed out / failed - " << description;
             throw std::runtime_error(o.str());
         }
     }
 
-    // We have bytes in the buffer to serve up and from here on we can only return true.
+    // We have bytes in the buffer to serve up
 
     while(true)
     {
@@ -461,7 +484,22 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
         if (next_char_from_slave_buf>=bytes_last_read_from_slave)
         {
             // if no more characters in buffer
-            last_read_from_pipe=read_from_pipe(timeout);
+
+            ivytime now, remaining;
+            now.setToNow();
+
+            remaining = timeout - (now-entry_time);
+            if (remaining < ivytime(0))
+            {
+                std::ostringstream o;
+                o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe(timeout=" << timeout.format_as_duration_HMMSSns()
+                    << ") - timed out.";
+                throw std::runtime_error(o.str());
+            }
+
+//*debug*/log(logfilename,"debug: pipe_driver_subthread::real_get_line_from_pipe() in while(true) about to read_from_pipe().\n");
+            last_read_from_pipe=read_from_pipe(remaining);
+//*debug*/log(logfilename,"debug: pipe_driver_subthread::real_get_line_from_pipe() in while(true) after read_from_pipe().\n");
             if (!last_read_from_pipe) break;
         }
         char c;
@@ -470,20 +508,27 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
         s.push_back(c);
     }
 
-    if (last_message_time == ivytime(0))
+    if ( trace_evaluate || routine_logging)
     {
-        last_message_time.setToNow();
-    }
-    else
-    {
-        ivytime now, delta;
+        ivytime delta;
 
-        now.setToNow();
-        delta = now - last_message_time;
-        last_message_time = now;
+        if (last_message_time == ivytime(0))
+        {
+            last_message_time.setToNow();
+            delta = ivytime(0);
+        }
+        else
+        {
+            ivytime now; now.setToNow();
 
-        if ( trace_evaluate || routine_logging) { log(logfilename, format_utterance(" Slave",s,delta)); }
+            delta = now - last_message_time;
+            last_message_time = now;
+        }
+
+        log(logfilename, format_utterance(" Slave",s,delta));
     }
+
+//*debug*/log(logfilename,"debug: pipe_driver_subthread::real_get_line_from_pipe() returning.\n");
     return s;
 }
 
@@ -493,6 +538,7 @@ std::string pipe_driver_subthread::get_line_from_pipe
     std::string description // Used when there is some sort of failure to construct an error message written to the log file.
 )
 {
+
     // This is a wrapper around the "real" get_line_from_pipe() that checks for when what ivydriver says starts with "<Error>".
 
     // If what ivydriver says starts with <Error>, in order to be able to catch multi-line error messages,
@@ -508,6 +554,7 @@ std::string pipe_driver_subthread::get_line_from_pipe
     while (true)  // we only ever loop back to the beginning after processing a <Warning> line
     {
         s = real_get_line_from_pipe(timeout,description);
+//*debug*/ {std::ostringstream o; o << "debug: pipe_driver_subthread::get_line_from_pipe() got from real_get_line_from_pipe() \"" << render_string_harmless(s) << "\".\n"; log(logfilename,o.str());}
         if (startsWith(s, std::string("<Warning>")))
         {
             std::ostringstream o;
@@ -523,7 +570,7 @@ std::string pipe_driver_subthread::get_line_from_pipe
         }
 
         if ( startsWith(s, std::string("<Error>")) || startsWith(s, std::string("Error:")) ) throw std::runtime_error(s);
-
+//*debug*/ {std::ostringstream o; o << "debug: pipe_driver_subthread::get_line_from_pipe() about to return \"" << render_string_harmless(s) << "\".\n"; log(logfilename,o.str());}
         return s;
     }
 }
@@ -642,20 +689,18 @@ void pipe_driver_subthread::threadRun()
             LDEV.erase(2,1); // remove colon
         }
         std::ostringstream lfn;
-        lfn << logfolder << "/log.ivymaster.cmd_dev."
+        lfn << m_s.var_ivymaster_logs_testName << "/log.ivymaster.cmd_dev."
             << "serial_number_" << LUN::normalize_attribute_name(p_Hitachi_RAID_subsystem->serial_number)
-            << "+LDEV_" << LUN::normalize_attribute_name(LDEV)
+//            << "+LDEV_" << LUN::normalize_attribute_name(LDEV)
             << "+host_" << LUN::normalize_attribute_name(pCmdDevLUN->attribute_value("ivyscript hostname"))
-            << "+LUN" << LUN::normalize_attribute_name(pCmdDevLUN->attribute_value("LUN Name"))
+//            << "+LUN_" << LUN::normalize_attribute_name(pCmdDevLUN->attribute_value("LUN Name"))
             << ".txt";
         logfilename=lfn.str();
     }
     else
     {
-        logfilename=logfolder+std::string("/log.ivymaster.")+ivyscript_hostname+std::string(".txt");
+        logfilename = m_s.var_ivymaster_logs_testName + "/log.ivymaster."s +ivyscript_hostname+std::string(".txt");
     }
-
-    remove(logfilename.c_str()); // erase log file from last time in this output subfolder
 
     //if (routine_logging) std::cout<< "pipe_driver_subthread inherited routine_logging = " << (routine_logging ? "true" : "false" ) << std:: endl;
 
@@ -745,7 +790,7 @@ void pipe_driver_subthread::threadRun()
             hitachi_product = pCmdDevLUN->attribute_value("Hitachi Product");
             {
                 ostringstream fn;
-                fn << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "/log.ivydriver." << ivyscript_hostname << ".ivy_cmddev." << p_Hitachi_RAID_subsystem->serial_number << ".txt";
+                fn << "/var/ivydriver_logs/log.ivydriver." << ivyscript_hostname << ".ivy_cmddev." << p_Hitachi_RAID_subsystem->serial_number << ".txt";
                 remote_logfilename = fn.str();
             }
             if (routine_logging)
@@ -1318,6 +1363,7 @@ void pipe_driver_subthread::threadRun()
 
                             log(logfilename,o.str());
                             std::cout << o.str();
+
                             kill_ssh_and_harvest();
                             commandComplete=true;
                             commandSuccess=false;
@@ -1781,7 +1827,9 @@ void pipe_driver_subthread::threadRun()
         // Once our work is complete, we issue an scp command to copy the logs back from the remote host.
 
         std::ostringstream copycmd;
-        copycmd << "/usr/bin/scp " << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "/ivydriver." << ivyscript_hostname << ".log* " << m_s.testFolder;
+
+        copycmd << "/usr/bin/scp " << "/var/ivydriver_logs/log.ivydriver." << ivyscript_hostname << ".log* " << m_s.testFolder;
+
         log(logfilename, std::string("copying logs from remote host \"")+copycmd.str()+std::string("\"\n"));
         if ( 0 == system(copycmd.str().c_str()) )
         {
@@ -1790,8 +1838,9 @@ void pipe_driver_subthread::threadRun()
         }
         else
         {
-            ostringstream o;
-            o << "copy command failed - rc = " << errno << " " << strerror(errno) << std::endl;
+            std::ostringstream o;
+            o << "copy command \"" << copycmd.str() << "\" failed - rc = " << errno << " " << strerror(errno) << std::endl;
+            std::cout << o.str();
             log(logfilename, o.str());
         }
 

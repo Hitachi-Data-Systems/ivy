@@ -33,6 +33,7 @@ class IosequencerInput {
 public:
 	std::string iosequencer_type; // random_steady, random_independent, sequential, ...
 	bool iosequencerIsSet{false};
+	bool pattern_is_explicitly_set {false}; // if dedupe is set to default dedupe=1 and pattern hasn't been set, the default pattern will be "whatever"
 
 // Look in ivydefines.h for the default values, gathered together in one spot
 

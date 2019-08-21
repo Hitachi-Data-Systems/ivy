@@ -651,6 +651,10 @@ past_trailing_gobbldegook_pattern_write:;
 
             break;
 
+        case pattern::whatever: // whatever is already in the memory buffer - don't generate a pattern
+
+            break;
+
         case pattern::invalid:
         default:
             {

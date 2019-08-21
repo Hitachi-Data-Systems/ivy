@@ -121,6 +121,8 @@ public:
 	// Each host thread also has its own individual mutex for interlocking when it's just between the
 	// ivymaster main thread and that particular host driver thread.
 
+	std::string var_ivymaster_logs_testName;
+
     bool overall_success {false};
 
     bool stepcsv_default {true}, stepcsv {true};

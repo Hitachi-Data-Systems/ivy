@@ -107,7 +107,7 @@ struct IvyDriver
 
 // variables
 
-    std::string hostname;
+    std::string ivyscript_hostname;
 
     std::mutex ivydriver_main_mutex;
 

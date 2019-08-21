@@ -42,6 +42,9 @@ These binaries were built on RHEL 7.2.  The binaries are statically linked with 
 ## The LUN_discovery tool set is required to run ivy
 [LUN_discovery on github](https://github.com/Hitachi-Data-Systems/LUN_discovery)
 
+## Sample ivy output
+Download from https://hcpanywhere.hitachivantara.com/u/9K41Z32uNePmrjVm/ivy_sample_output.zip?l
+
 ## Documentation
 See the doc subfolder.
 

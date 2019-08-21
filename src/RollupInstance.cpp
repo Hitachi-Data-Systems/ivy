@@ -1155,7 +1155,7 @@ void RollupInstance::print_by_subinterval_header()
     {
         o << subsystem_summary_data::csvHeadersPartOne();
         o << ",host IOPS per drive,host decimal MB/s per drive,application service time Littles law q depth per drive";
-        if ( ! m_s.suppress_subsystem_perf ) o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,Path latency = application minus subsystem service time (ms)";
+        if ( ! m_s.suppress_subsystem_perf ) o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time,OS Path Latency = application minus subsystem service time (ms)";
     }
 
     o << SubintervalOutput::csvTitles();
@@ -1507,7 +1507,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                     o << subsystem_summary_data::csvHeadersPartOne();
                     o << ",host IOPS per drive,host decimal MB/s per drive, application service time Littles law q depth per drive";
                     o << ",Subsystem IOPS as % of application IOPS,Subsystem MB/s as % of application MB/s,Subsystem service time as % of application service time"
-                        << ",Path latency = application minus subsystem service time (ms)";
+                        << ",OS Path Latency = application minus subsystem service time (ms)";
                 }
 
                 o << ",non random sample correction factor";

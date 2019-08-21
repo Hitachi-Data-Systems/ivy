@@ -637,6 +637,8 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 
 	if ( stringCaseInsensitiveEquality(parameterName, std::string("pattern")) ) {
 
+        pattern_is_explicitly_set = true;
+
 		pat = parse_pattern(parameterValue);
 
 		if (pat==pattern::invalid)
@@ -941,6 +943,7 @@ void IosequencerInput::reset()
 {
     iosequencer_type=std::string("INVALID");
     iosequencerIsSet=false;
+    pattern_is_explicitly_set=false;
 	duplicate_set_size=duplicate_set_size_default;
 	blocksize_bytes=blocksize_bytes_default;
 	maxTags=maxTags_default;
@@ -993,6 +996,7 @@ bool IosequencerInput::fromString(std::string s, std::string logfilename)
 
 	if (rc.first)
 	{
+	    if (defaultDedupe() && !pattern_is_explicitly_set) pat = pattern::whatever;
 		return true;
 	}
 	else
@@ -1041,7 +1045,16 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
     {
 		o << ",SeqStartPoint=" << seqStartPoint;
 	}
-	o << ",pattern=" << pattern_to_string(pat);
+
+	if (defaultDedupe() && !pattern_is_explicitly_set)
+	{
+	    o << ",pattern=whatever";
+	}
+	else
+	{
+    	o << ",pattern=" << pattern_to_string(pat);
+	}
+
 	o << ",dedupe=" << dedupe;
 	o << ",dedupe_method=" << dedupe_method_to_string(dedupe_type);
 	{
@@ -1114,7 +1127,7 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 
     if( ! defaultSeqStartPoint() )	{ o << ",SeqStartPoint=" << seqStartPoint; }
 
-	if (!defaultPattern())                      { o << ",pattern=" << pattern_to_string(pat);}
+	if (pattern_is_explicitly_set)              { o << ",pattern=" << pattern_to_string(pat);}
 	if (!defaultDedupe())                       { o << ",dedupe=" << dedupe;}
 	if (!defaultDedupeMethod())                 { o << ",dedupe_method=" << dedupe_method_to_string(dedupe_type); }
 	if (!defaultDuplicateSetSize())             { o << ",duplicate_set_size=" << duplicate_set_size;}
@@ -1162,6 +1175,7 @@ void IosequencerInput::copy(const IosequencerInput& source)
 {
 	iosequencer_type = source.iosequencer_type;
 	iosequencerIsSet = source.iosequencerIsSet;
+	pattern_is_explicitly_set = source.pattern_is_explicitly_set;
 	blocksize_bytes  = source.blocksize_bytes;
 	maxTags          = source.maxTags;
 	IOPS             = source.IOPS;

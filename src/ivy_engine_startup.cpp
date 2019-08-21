@@ -58,7 +58,7 @@ std::pair<bool /*success*/, std::string /* message */>
     }
 
     outputFolderRoot = output_folder_root;
-    testName = test_name;
+//    testName = test_name;  // already set in main.cpp
 
     struct stat struct_stat;
 
@@ -125,9 +125,7 @@ std::pair<bool /*success*/, std::string /* message */>
         return std::make_pair(false,o.str());
     }
 
-    masterlogfile = testFolder + std::string("/logs/log.ivymaster.txt");
-    ivy_engine_logfile = testFolder + std::string("/logs/ivy_engine_API_calls.txt");
-
+    ivy_engine_logfile = m_s.var_ivymaster_logs_testName + "/ivy_engine_API_calls.txt"s;
 
     if (routine_logging) { log(masterlogfile, api_log_entry); }
     log(ivy_engine_logfile, api_log_entry);

@@ -70,6 +70,8 @@ public:
     >
     LDEVs_by_subsystem_port;
 
+    LDEVset LDEVs;
+
     std::string error_messages;
 
     Test_config_thumbnail(){}

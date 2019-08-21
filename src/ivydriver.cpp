@@ -195,15 +195,15 @@ int IvyDriver::main(int argc, char* argv[])
                 << "Core 0 and its hyperthreads are never used for driving I/O." << std::endl << std::endl;
                 return -1;
         }
-        hostname = item;
+        ivyscript_hostname = item;
     }
 
 	struct stat struct_stat;
 
-    if( stat(IVYDRIVERLOGFOLDERROOT,&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
+    if( stat("/var",&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
     {
         //  folder doesn't already exist or it's not a directory
-        std::cout << "<Error> " << "ivydriver log folder root \"" << IVYDRIVERLOGFOLDERROOT << "\" doesn\'t exist or is not a folder." << std::endl;
+        std::cout << "<Error> " << "ivydriver log folder root \"/var\" doesn\'t exist or is not a folder." << std::endl;
         return -1;
     }
 
@@ -223,14 +223,14 @@ int IvyDriver::main(int argc, char* argv[])
     }
     else
     {
-        if( stat(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER ,&struct_stat) )
+        if( stat("/var/ivydriver_logs" ,&struct_stat) )
         {
             //  folder doesn't already exist
             int rc;
-            if ((rc = mkdir(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER, S_IRWXU | S_IRWXG | S_IRWXO)))
+            if ((rc = mkdir("/var/ivydriver_logs", S_IRWXU | S_IRWXG | S_IRWXO)))
             {
                 std::ostringstream o;
-                o << "<Error> Failed trying to create ivydriver log folder \"" << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "\" - "
+                o << "<Error> Failed trying to create ivydriver log folder \"/var/ivydriver_logs\" - "
                     << "mkdir() return code " << rc << ", errno = " << errno << " " << std::strerror(errno) << std::endl;
                 std::cout << o.str();
                 return -1;
@@ -240,17 +240,10 @@ int IvyDriver::main(int argc, char* argv[])
         sem_close(p_semaphore);
     }
 
-    if( stat(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER,&struct_stat) || (!S_ISDIR(struct_stat.st_mode)) )
-    {
-            //  folder doesn't already exist or it's not a directory
-        std::cout << "<Error> " << "ivydriver log folder \"" << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "\" doesn\'t exist or is not a folder." << std::endl;
-        return -1;
-    }
-
-	std::string erase_earlier_log_files( std::string("rm -f ") + std::string(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER) + std::string("/log.ivydriver.") + hostname + std::string("*") );
+	std::string erase_earlier_log_files = "rm -f /var/ivydriver_logs/log.ivydriver."s + ivyscript_hostname + "*"s;
 	system(erase_earlier_log_files.c_str());
 
-    slavelogfile = std::string(IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER) + std::string("/log.ivydriver.") + hostname + std::string(".txt");
+    slavelogfile = "/var/ivydriver_logs/log.ivydriver."s + ivyscript_hostname + ".txt"s;
 
     if (routine_logging)
     {
@@ -378,7 +371,7 @@ int IvyDriver::main(int argc, char* argv[])
         {
             std::ostringstream o;
 
-            o << IVYDRIVERLOGFOLDERROOT << IVYDRIVERLOGFOLDER << "/log.ivydriver." << hostname << ".core_" << physical_core << "_hyperthread_" << hyperthread;
+            o << "/var/ivydriver_logs/log.ivydriver." << ivyscript_hostname << ".core_" << physical_core << "_hyperthread_" << hyperthread;
 
             o << ".txt";
 
@@ -471,7 +464,7 @@ int IvyDriver::main(int argc, char* argv[])
 		{
 			say(std::string("[what?]"));
 
-			if (routine_logging) log(slavelogfile,print_logfile_stats());
+			log(slavelogfile,print_logfile_stats());
 
 			// When ivymaster subthread encounters an error and is terminating abnormally
 			killAllSubthreads();
@@ -501,7 +494,7 @@ int IvyDriver::main(int argc, char* argv[])
 					return -1;
 				}
 				LUNpointers[pLUN->attribute_value(std::string("LUN name"))]=pLUN;
-				say(std::string("[LUN]")+hostname+std::string(",")+disco_line);
+				say(std::string("[LUN]")+ivyscript_hostname+std::string(",")+disco_line);
 			}
 			else
 			{
@@ -556,7 +549,7 @@ int IvyDriver::main(int argc, char* argv[])
 	}
 	// at eof on std::cin
 
-	if (routine_logging) log(slavelogfile,print_logfile_stats());
+	log(slavelogfile,print_logfile_stats());
 
 	killAllSubthreads();
 
@@ -1147,7 +1140,7 @@ void IvyDriver::edit_workload()
         if (testLUNs.end() == it)
         {
             std::ostringstream o;
-            o << "<Error> ivydriver for host \"" << hostname << "\""
+            o << "<Error> ivydriver for host \"" << ivyscript_hostname << "\""
                 << " - [EditWorkload] no such WorkloadID \"" << wID.workloadID << "\""
                 << " - did not find TestLUN \"" << host_plus_lun << "\"." << std::endl
                 << "Source code reference line " << __LINE__ << " of " << __FILE__ << ".\n";
@@ -1163,7 +1156,7 @@ void IvyDriver::edit_workload()
         if (w_itr == pTestLUN->workloads.end())
         {
             std::ostringstream o;
-            o << "<Error> ivydriver for host \"" << hostname << "\""
+            o << "<Error> ivydriver for host \"" << ivyscript_hostname << "\""
                 << " - [EditWorkload] no such WorkloadID \"" << wID.workloadID << "\""
                 << " within TestLUN \"" << host_plus_lun << "\"." << std::endl
                 << "Source code reference line " << __LINE__ << " of " << __FILE__ << ".\n";

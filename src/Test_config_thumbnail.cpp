@@ -30,10 +30,16 @@ void Test_config_thumbnail::clear()
     LDEVs_by_host.clear();
     LDEVs_by_subsystem_port.clear();
     error_messages.clear();
+    LDEVs.clear();
 }
 
 std::ostream& operator<<(std::ostream& o, const Test_config_thumbnail& tct)
 {
+    if (tct.LDEVs.size() != 0)
+    {
+        o << std::endl << "LDEVs: " << tct.LDEVs.toString() << " (" << tct.LDEVs.size() << ")" << std::endl;
+    }
+
     if (tct.LDEVs_by_host.size() > 0)
     {
         o << std::endl << "LDEVs by test host:" << std::endl;
@@ -161,6 +167,8 @@ void Test_config_thumbnail::add(LUN* pLUN)
 
     if (LDEV.size() > 0)
     {
+        LDEVs.add(LDEV,m_s.masterlogfile);
+
         std::string s = hitachi_product + std::string(" = ") + serial;
 
         LDEVs_by_subsystem_port

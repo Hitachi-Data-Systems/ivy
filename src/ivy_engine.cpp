@@ -257,6 +257,7 @@ void ivy_engine::error(std::string m)
 void ivy_engine::kill_subthreads_and_exit()
 {
     std::pair<bool,std::string> rc = shutdown_subthreads();
+
 	exit(0);
 }
 
@@ -1167,12 +1168,12 @@ ivy_engine::shutdown_subthreads()
 	{
 		{
 			std::ostringstream o;
-			o << "scp " << SLAVEUSERID << '@' << host << ":" << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "/log.ivydriver." << host << "* " << testFolder << "/logs";
+			o << "scp " << SLAVEUSERID << '@' << host << ":" << "/var/ivydriver_logs/log.ivydriver." << host << ".* " << testFolder << "/logs";
 			if (0 == system(o.str().c_str()))
 			{
 				log(masterlogfile,std::string("success: ")+o.str()+std::string("\n"));
 				std::ostringstream rm;
-				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << IVYDRIVERLOGFOLDERROOT IVYDRIVERLOGFOLDER << "/log.ivydriver." << host << "*";
+				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << "/var/ivydriver_logs/log.ivydriver." << host << ".*";
 				if (0 == system(rm.str().c_str()))
 					log(masterlogfile,std::string("success: ")+rm.str()+std::string("\n"));
 				else
@@ -1181,9 +1182,36 @@ ivy_engine::shutdown_subthreads()
 					something_bad_happened = true;
 				}
 			}
-			else {something_bad_happened = true; log(masterlogfile,std::string("failure: ")+o.str()+std::string("\n"));}
+			else
+			{
+			    something_bad_happened = true;
+			    log(masterlogfile,std::string("failure: ")+o.str()+std::string("\n"));
+            }
 		}
 	}
+
+	log(masterlogfile,print_logfile_stats());
+
+	{
+	    std::ostringstream o;
+	    o << "cp " << m_s.var_ivymaster_logs_testName << "/* " << m_s.testFolder << "/logs";
+	    int rc = system(o.str().c_str());
+        if (0 != rc)
+        {
+            std::cout << "error copying ivy master host logs to the output folder using the command \"" << o.str() << "\"." << std::endl;
+        }
+        else
+        {
+            std::string cmd = "rm -rf " + var_ivymaster_logs_testName;
+
+            system(cmd.c_str());
+        }
+    }
+
+    std::string logtailcmd = "logtail "s + testFolder + "/logs"s;
+
+    system(logtailcmd.c_str());
+
 
     if (need_harakiri)
     {

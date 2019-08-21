@@ -22,7 +22,7 @@
 #include <array>
 #include <string>
 
-const std::string ivy_version {"3.31.00"};
+const std::string ivy_version {"3.31.01"};
 
 //using ivy_int = long long int; using ivy_float = long double;
   using ivy_int =      long int; using ivy_float =      double;
@@ -47,18 +47,6 @@ const std::string ivy_version {"3.31.00"};
 // to the master host logs subfolder for the run, and deletes the temporary log files on the ivydriver host.
 // But if something blows up and the ivydriver log files don't get moved to the master host,
 // this is where you will find them on the ivydriver host:
-
-#define IVYDRIVERLOGFOLDERROOT "/var"
-// This root folder must already exist when ivydriver fires up.
-
-#define IVYDRIVERLOGFOLDER "/ivydriver_logs"
-// This subfolder of the ivydriver log root folder will be created if it doesn't already exist
-
-// Then any log files called "ivydriver.hostname.log.*" are deleted if they already exists in this folder.
-// The hostname here is what ivymaster told us our hostname was.
-// This lets us create two ivydriver instances like "192.168.1.1" and "barney" whose log files won't step on each other.
-// After the ivydriver main thread logs to ivydriver.hostname.log.txt, and the subthreads log to ivydriver.hostname.log.threadID_with_underscores.txt.
-// When the test is complete, ivymaster uses an scp command to copy the log files back to the ivymaster host along with everything else.
 
 //      IVYMAXMSGSIZE size of send/receive buffers between master and slave
 #define IVYMAXMSGSIZE ((1024*1024)-sizeof(uint32_t))

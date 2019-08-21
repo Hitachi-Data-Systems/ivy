@@ -44,6 +44,8 @@ pattern parse_pattern(std::string s)
 
     if (normalized_identifier_equality(s,std::string("all_0xFF"))) { return pattern::all_0xFF; }
 
+    if (normalized_identifier_equality(s,std::string("whatever"))) { return pattern::whatever; }
+
     return pattern::invalid;
 }
 
@@ -58,6 +60,7 @@ std::string pattern_to_string(pattern p)
         case pattern::zeros: return "zeros";
         case pattern::all_0x0F: return "all_0x0F";
         case pattern::all_0xFF: return "all_0xFF";
+        case pattern::whatever: return "whatever";
         case pattern::invalid:
         default:
         {

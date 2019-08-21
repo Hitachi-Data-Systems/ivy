@@ -20,7 +20,7 @@
 
 #pragma once
 
-enum class pattern {invalid = 0, random, gobbledegook, ascii, trailing_blanks, zeros, all_0x0F, all_0xFF};
+enum class pattern {invalid = 0, random, gobbledegook, ascii, trailing_blanks, zeros, all_0x0F, all_0xFF, whatever};
 
 std::string valid_patterns();
 
