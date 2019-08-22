@@ -1287,7 +1287,7 @@ void pipe_driver_subthread::threadRun()
 
                         ivytime latency = ivydriver_said_OK - before_sending_command;
 
-                        if (latency.getlongdoubleseconds() > (0.25 *m_s.subinterval_seconds))
+                        if (latency.getlongdoubleseconds() > (0.5 * m_s.subinterval_seconds))
                         {
 
                             std::ostringstream o;
@@ -1296,7 +1296,7 @@ void pipe_driver_subthread::threadRun()
                                 << " the response \"OK\" was received with a latency of " << latency.format_as_duration_HMMSSns()
                                 << " after sending \"" << commandString << "\" to ivydriver"
                                 << " at " << before_sending_command.format_as_datetime_with_ns() << "."
-                                << "  The OK response was received after more than 1/4 of subinterval_seconds."
+                                << "  The OK response was received after more than 1/2 of subinterval_seconds."
                                 << std::endl;
                             log(logfilename,o.str());
                             std::cout << o.str();

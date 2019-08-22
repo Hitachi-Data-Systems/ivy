@@ -192,7 +192,6 @@
 		<Linker>
 			<Add option="-static-libstdc++" />
 			<Add option="-lrt -static-libstdc++" />
-			<Add option="-Wl,--wrap=memcpy" />
 			<Add library="/opt/rh/devtoolset-7/root/lib/gcc/x86_64-redhat-linux/7/libstdc++.a" />
 			<Add directory="/opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7" />
 		</Linker>
@@ -886,6 +885,7 @@
 		</Unit>
 		<Unit filename="src/memcpy.c">
 			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="src/multi_measure.cpp">
 			<Option target="ivymaster" />

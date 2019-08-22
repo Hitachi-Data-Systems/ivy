@@ -1023,7 +1023,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 && m_s.suppress_perf_cooldown_subinterval_count <= 2 )
             {
                 std::ostringstream o;
-                o << "With -suppress_perf this is IOPS=0 cooldown subinterval " << (m_s.suppress_perf_cooldown_subinterval_count)
+                o << "With -no_perf this is IOPS=0 cooldown subinterval " << (m_s.suppress_perf_cooldown_subinterval_count)
                     << " with subsystem gathers turned back on." << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
@@ -1186,7 +1186,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 ( ! pear.second->master_slave_cv.wait_for
                     (
                         s_lk,
-                        std::chrono::milliseconds( (unsigned int)(250 * m_s.subinterval_seconds)),
+                        std::chrono::milliseconds( (unsigned int)(500 * m_s.subinterval_seconds)),
                         [&]() { return pear.second->commandComplete; }
                     )
                 )
@@ -1194,7 +1194,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     // timed out.
 
                     std::ostringstream o;
-                    o << "<Error> Timed out waiting more than 1/4 of a subinterval to get acknowledgement of "
+                    o << "<Error> Timed out waiting more than 1/2 of a subinterval to get acknowledgement of "
                         << "\"" << pear.second->commandString << "\""
                         << " from host " << pear.first << std::endl
                         << "Source code reference line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
@@ -1591,6 +1591,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         std::cout << std::endl;
 
         log(m_s.masterlogfile,o.str());
+
+        log(m_s.masterlogfile,print_logfile_stats());
 
         // log gather time breakdown
         if (routine_logging) for (auto& pear : m_s.command_device_subthread_pointers)

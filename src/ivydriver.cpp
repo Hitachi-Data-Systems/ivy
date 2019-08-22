@@ -24,6 +24,8 @@
 #include <string.h>
 #include <execinfo.h>
 #include <functional>  // for std::hash
+#include <unistd.h>
+#include <sys/utsname.h>
 
 // get REG_EIP from ucontext.h
 #ifndef __USE_GNU
@@ -32,6 +34,10 @@
 #include <sys/ucontext.h>
 
 #include <sys/types.h>
+
+#ifdef __GLIBC__
+#include <gnu/libc-version.h>
+#endif
 
 #include "ivydriver.h"
 #include "pipe_line_reader.h"
@@ -245,10 +251,50 @@ int IvyDriver::main(int argc, char* argv[])
 
     slavelogfile = "/var/ivydriver_logs/log.ivydriver."s + ivyscript_hostname + ".txt"s;
 
-    if (routine_logging)
     {
         std::ostringstream o;
-        o << "ivydriver version " << ivy_version << " build date " << IVYBUILDDATE << " starting." << std::endl;
+        o << "ivydriver version " << ivy_version << " build date " << IVYBUILDDATE;
+
+#ifdef __GNUC__
+        o << std::endl << "gcc version " << __GNUC__;
+#endif
+
+#ifdef __GNUC_MINOR__
+        o << "." << __GNUC_MINOR__;
+#endif
+
+#ifdef __GNUC_PATCHLEVEL__
+        o << "." << __GNUC_PATCHLEVEL__;
+#endif
+
+#ifdef __GLIBCPP__
+        o << " - libstdc++ date " << __GLIBCPP__;
+#endif
+
+#ifdef __GLIBCXX__
+        o << " - libstdc++ date " << __GLIBCXX__;
+#endif
+        o << std::endl;
+#ifdef __GLIBC__
+        o << "GNU libc compile-time version: " << __GLIBC__ << "." << __GLIBC_MINOR__;
+        o << " - GNU libc runtime version: " << gnu_get_libc_version() << std::endl;
+#endif
+        o << GetStdoutFromCommand("openssl version") << std::endl;
+
+        struct utsname utsname_buf;
+        if (0 == uname(&utsname_buf))
+        {
+            o << utsname_buf.nodename
+                << " - " << utsname_buf.sysname
+                << " - " << utsname_buf.release
+                << " - " << utsname_buf.version
+                << " - " << utsname_buf.machine
+#ifdef _GNU_SOURCE
+                << " - " << utsname_buf.domainname
+#endif
+                << std::endl;
+        }
+        o << std::endl << "Attributes from lscpu command:" << std::endl << GetStdoutFromCommand("lscpu") << std::endl;
         log(slavelogfile,o.str());
     }
 
@@ -593,9 +639,9 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
     ivytime subinterval_ending_time;
             subinterval_ending_time.setToNow();
 
-    ivytime quarter_subinterval = ivytime(0.25 * subinterval_duration.getlongdoubleseconds());
+    ivytime half_subinterval = ivytime(0.5 * subinterval_duration.getlongdoubleseconds());
 
-    ivytime limit_time = subinterval_ending_time + quarter_subinterval;
+    ivytime limit_time = subinterval_ending_time + half_subinterval;
 
 	// harvest CPU counters and send CPU line.
 
@@ -672,7 +718,7 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
         if ( n > thread_limit_time)
         {
             std::ostringstream o;
-            o << "<Error> Excessive latency over 1/4 of the way through the next subinterval for workload thread for physical core "
+            o << "<Error> Excessive latency over 1/2 of the way through the next subinterval for workload thread for physical core "
                 << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << " to post results from the previous subinterval at "
                 << __FILE__ << " line " << __LINE__ << " in ivydriver main thread routine waitForSubintervalEndThenHarvest()." << std::endl;
             say(o.str());
@@ -693,7 +739,7 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
                            [&wlt] { return wlt.ivydriver_main_posted_command == false; }))  // WorkloadThread turns this off when switching to a new subingerval
                 {
                     std::ostringstream o;
-                    o << "<Error> Excessive latency over 1/4 of the way through the next subinterval for workload thread for physical core "
+                    o << "<Error> Excessive latency over 1/2 of the way through the next subinterval for workload thread for physical core "
                         << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << " to post results from the previous subinterval at "
                         << __FILE__ << " line " << __LINE__ << " in ivydriver main thread routine waitForSubintervalEndThenHarvest()." << std::endl;
                     say(o.str());

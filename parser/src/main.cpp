@@ -25,6 +25,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <sys/utsname.h>
+
+#ifdef __GLIBC__
+#include <gnu/libc-version.h>
+#endif
 
 #include "Ivy_pgm.h"
 #include "ivy.parser.hh"
@@ -162,31 +167,54 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    std::string versions_message;
     {
         std::ostringstream o;
-        o << "ivy version " << ivy_version << " build date " << IVYBUILDDATE ;
+        o << "ivy version " << ivy_version << " build date " << IVYBUILDDATE << std::endl;
+
+        std::cout << o.str();
 
 #ifdef __GNUC__
-    o << "  - gcc version " << __GNUC__;
+        o << std::endl << "gcc version " << __GNUC__;
 #endif
 
 #ifdef __GNUC_MINOR__
-    o << "." << __GNUC_MINOR__;
+        o << "." << __GNUC_MINOR__;
 #endif
 
 #ifdef __GNUC_PATCHLEVEL__
-    o << "." << __GNUC_PATCHLEVEL__;
+        o << "." << __GNUC_PATCHLEVEL__;
 #endif
 
 #ifdef __GLIBCPP__
-    o << " - libstdc++ date " << __GLIBCPP__;
+        o << " - libstdc++ date " << __GLIBCPP__;
 #endif
 
 #ifdef __GLIBCXX__
-    o << " - libstdc++ date " << __GLIBCXX__;
+        o << " - libstdc++ date " << __GLIBCXX__;
 #endif
-        o << " - starting on " << hostname << "." << std::endl << std::endl;
-        std::cout << o.str();
+        o << std::endl;
+#ifdef __GLIBC__
+        o << "GNU libc compile-time version: " << __GLIBC__ << "." << __GLIBC_MINOR__;
+        o << " - GNU libc runtime version: " << gnu_get_libc_version() << std::endl;
+#endif
+        o << GetStdoutFromCommand("openssl version") << std::endl;
+
+        struct utsname utsname_buf;
+        if (0 == uname(&utsname_buf))
+        {
+            o << utsname_buf.nodename
+                << " - " << utsname_buf.sysname
+                << " - " << utsname_buf.release
+                << " - " << utsname_buf.version
+                << " - " << utsname_buf.machine
+#ifdef _GNU_SOURCE
+                << " - " << utsname_buf.domainname
+#endif
+                << std::endl;
+        }
+        o << std::endl << "Attributes from lscpu command:" << std::endl << GetStdoutFromCommand("lscpu") << std::endl;
+        versions_message = o.str();
     }
 
 //    std::cout << "argc = " << argc << " ";
@@ -371,6 +399,8 @@ int main(int argc, char* argv[])
     }
 
     m_s.masterlogfile = m_s.var_ivymaster_logs_testName + "/log.ivymaster.txt"s;
+
+    log(m_s.masterlogfile,versions_message);
 
     extern FILE* yyin;
 
