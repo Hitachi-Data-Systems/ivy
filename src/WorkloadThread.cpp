@@ -76,15 +76,6 @@ pid_t get_subthread_pid()
     return syscall(SYS_gettid);
 }
 
-void WorkloadThread::die_saying(std::string m)
-{
-    dying_words = m;
-    log (slavethreadlogfile,dying_words);
-    state=ThreadState::died;
-    slaveThreadConditionVariable.notify_all();
-    exit(-1);
-}
-
 std::ostream& operator<< (std::ostream& o, const ThreadState& s)
 {
     switch (s)
@@ -238,8 +229,11 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 				{
                     std::ostringstream o; o << "<Error> WorkloadThread - in main loop waiting for commands didn\'t get \"start\" or \"die\" when expected.\n"
                         << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+                        dying_words = o.str();
+
                     wkld_lk.unlock();
-                    die_saying(o.str());
+                    post_Error_for_main_thread_to_say(o.str());
+
                 }
 			}
 		}  // lock released
@@ -375,19 +369,25 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 		epoll_fd = epoll_create(1 /* "size" ignored since Linux kernel 2.6.8 */ );
 		if (epoll_fd == -1)
         {
-            std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - failed trying to create epoll fd - "
+            std::ostringstream o;
+            o << "<Error> Internal programming error - WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
+                << " - failed trying to create epoll fd - "
                 << std::strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-            die_saying(o.str());
+            post_Error_for_main_thread_to_say(o.str());
+            goto wait_for_command;
         }
 
         timerfd_fd = timerfd_create(CLOCK_MONOTONIC,TFD_NONBLOCK);
 		if (timerfd_fd == -1)
         {
-            std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - failed trying to create timerfd - "
+            std::ostringstream o;
+            o << "<Error> Internal programming error - WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
+                << " - failed trying to create timerfd - "
                 << std::strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-            die_saying(o.str());
+            post_Error_for_main_thread_to_say(o.str());
+            goto wait_for_command;
         }
 
         memset(&timerfd_setting,0,sizeof(timerfd_setting));
@@ -399,10 +399,13 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
         int rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, event_fd, &epoll_ev);
         if (rc == -1)
         {
-            std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - epoll_ctl failed trying to add an event - "
+            std::ostringstream o;
+            o << "<Error> Internal programming error - WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
+                << " - epoll_ctl failed trying to add an event - "
                 << std::strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-            die_saying(o.str());
+            post_Error_for_main_thread_to_say(o.str());
+            goto wait_for_command;
         }
 
         memset(&(timerfd_epoll_event),0,sizeof(timerfd_epoll_event));
@@ -412,10 +415,13 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
         rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, timerfd_fd, &timerfd_epoll_event);
         if (rc == -1)
         {
-            std::ostringstream o; o << "<Error> Internal programming error - WorkloadThread - epoll_ctl failed trying to add timerfd event - "
+            std::ostringstream o;
+            o << "<Error> Internal programming error - WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
+                << " - epoll_ctl failed trying to add timerfd event - "
                 << std::strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-            die_saying(o.str());
+            post_Error_for_main_thread_to_say(o.str());
+            goto wait_for_command;
         }
 
         if (routine_logging)
@@ -489,7 +495,8 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                                         << " working on WorkloadID " << wrkld.workloadID.workloadID
                                         << " - call to IosequencerRandom::set_hot_zone_parameters(() failed.\n"
                                         << "Occurred at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                                    die_saying(o.str());
+                                    post_Error_for_main_thread_to_say(o.str());
+                                    goto wait_for_command;
                                 }
                             }
                         }
@@ -505,15 +512,20 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                         << "WorkloadThread for physical core " << physical_core << " hyperthrad " << hyperthread
                         << " - call to linux_AIO_driver_run_subinterval() failed.\n"
                         << "Occurred at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                    die_saying(o.str());
+                    post_Error_for_main_thread_to_say(o.str());
+                    goto wait_for_command;
                 }
             }
             catch (std::exception& e)
             {
                 std::ostringstream o;
-                o << "<Error> Internal programming error - failed running linux_AIO_driver_run_subinterval() - "
-                    << e.what() << " - at line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
-                die_saying(o.str());
+                o << "<Error> Internal programming error - "
+                    << "WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
+                    << " - failed running linux_AIO_driver_run_subinterval()  - "
+                    << e.what() << " - at line " << __LINE__ << " of " << __FILE__ << "." << std::endl
+                    << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+                post_Error_for_main_thread_to_say(o.str());
+                goto wait_for_command;
             }
 
             // end of subinterval, flip over to other subinterval or stop
@@ -678,10 +690,13 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
 				if (MainThreadCommand::keep_going != ivydriver_main_says)
 				{
-				    std::ostringstream o; o <<" <Error> WorkloadThread only looks for \"stop\" or \"keep_going\" commands at end of subinterval.  Received "
+				    std::ostringstream o; o <<" <Error> WorkloadThread for physical core "
+				        << physical_core << " hyperthread " << hyperthread
+				        << " only looks for \"stop\" or \"keep_going\" commands at end of subinterval.  Received "
 				        << mainThreadCommandToString(ivydriver_main_says) << ".  Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
 					wkld_lk.unlock();
-				    die_saying(o.str());
+                    post_Error_for_main_thread_to_say(o.str());
+                    goto wait_for_command;
 				}
 
                 // MainThreadCommand::keep_going
@@ -693,12 +708,14 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 				        Workload* pWorkload = & pear.second;
                         if ( pWorkload->subinterval_array[pWorkload->currentSubintervalIndex].subinterval_status != subinterval_state::ready_to_run )
                         {
-                            std::ostringstream o; o << "<Error> Internal programming error - "
-                                << "WorkloadThread told to keep going, but next subinterval not marked READY_TO_RUN" << std::endl
+                            std::ostringstream o; o << "<Error> Internal programming error WorkloadThread for physical core "
+                                << physical_core << " hyperthread " << hyperthread
+                                << " - WorkloadThread told to keep going, but next subinterval not marked READY_TO_RUN" << std::endl
                                 << " for workload " << pWorkload->workloadID.workloadID << std::endl
                                 << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
                             wkld_lk.unlock();
-                            die_saying(o.str());
+                            post_Error_for_main_thread_to_say(o.str());
+                            goto wait_for_command;
                         }
 
                         pWorkload->p_current_subinterval->subinterval_status = subinterval_state::running;
@@ -806,10 +823,13 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         if (rc_ts < 0)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - in WorkloadThread, failed setting timerfd - "
+            o << "<Error> Internal programming error - in WorkloadThread for physical core "
+                << physical_core << " hyperthread " << hyperthread
+                << " - failed setting timerfd - "
                 << " return code = " << rc_ts << " - " << strerror(errno)
                 << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
-            die_saying(o.str());
+            post_Error_for_main_thread_to_say(o.str());
+            return false;
         }
 
         int epoll_rc;
@@ -828,10 +848,13 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         if (epoll_rc < 0)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - in WorkloadThread, epoll_wait() failed - "
+            o << "<Error> Internal programming error - in WorkloadThread for physical core "
+                << physical_core << " hyperthread " << hyperthread
+                << ", epoll_wait() failed - "
                 << " return code = " << epoll_rc << " - " << strerror(errno)
                 << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
-            die_saying(o.str());
+            post_Error_for_main_thread_to_say(o.str());
+            return false;
         }
 
         goto top_of_loop;
@@ -1022,7 +1045,8 @@ unsigned int WorkloadThread::reap_IOs()
         if (flags != 0) o << " with errno " << errno << " - " << strerror(errno);
 
         o << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
-        die_saying(o.str());
+        post_Error_for_main_thread_to_say(o.str());
+        return 0;
     }
 
     while (true)
@@ -1233,6 +1257,7 @@ void WorkloadThread::post_Error_for_main_thread_to_say(const std::string& msg)
         std::lock_guard<std::mutex> lk_guard(*p_ivydriver_main_mutex);
         ivydriver.workload_thread_error_messages.push_back(s);
     }
+    log(slavethreadlogfile,s);
 }
 
 

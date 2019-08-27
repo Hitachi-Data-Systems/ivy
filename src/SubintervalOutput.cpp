@@ -59,17 +59,55 @@ bool SubintervalOutput::fromIstream(std::istream& is) {
 	return true;
 }
 
+struct running_stat_double_long_int
+{
+    long int n;
+    double m1, m2, min_value, max_value;
+};
 
-bool SubintervalOutput::fromString(std::string& s) {
-	std::istringstream is(s);
-	if (!fromIstream(is)) return false;
-	char c;
-	is >> c;
-	if (!is.fail()) return false;
+bool SubintervalOutput::fromString(const std::string& s)
+{
+    if (s.size() < 4 || s[0] != '<' || s[s.size()-1] != '>') { clear(); return false; }
+
+    size_t cursor {1}, penultimate { s.size()-2 };
+
+    size_t start, length;
+
+    if (sizeof(running_stat_double_long_int) != sizeof(RunningStat<double, long int>))
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error - SubintervalOutput::fromString() - sizeof(running_stat_double_long_int) = " << sizeof(running_stat_double_long_int)
+            << " is different from sizeof(RunningStat<double, long int>) = " << sizeof(RunningStat<double, long int>) << "." << std::endl;
+        std::cout << o.str();
+        throw runtime_error(o.str());
+    }
+
+    for (unsigned int i = 0; i < RunningStatCount(); i++)
+    {
+        start = cursor;
+        if (s[cursor] != '<') { clear(); return false; }
+
+        while (true)
+        {
+            cursor++;
+            if (cursor > penultimate) { clear(); return false; }
+            if (s[cursor] == '>') break;
+        }
+        cursor++;
+
+        length = cursor - start;
+
+        running_stat_double_long_int* p = (running_stat_double_long_int*) &((u.accumulator_array)[i]);
+
+        if (5 != sscanf(s.substr(start,length).c_str(),"<%li;%lf;%lf;%lf;%lf>",&(p->n),&(p->m1),&(p->m2),&(p->min_value),&(p->max_value))) { clear(); return false; }
+    }
+/*debug*/{log("/home/ian/Desktop/bork.txt","parsed OK");}
+
 	return true;
 }
 
-std::string SubintervalOutput::toString() {
+std::string SubintervalOutput::toString() const
+{
 	std::ostringstream o;
 	o << '<';
 	for (unsigned int i=0; i<SubintervalOutput::RunningStatCount(); i++ ) {
@@ -373,7 +411,7 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 
 	std::ostringstream o;
 
-	if (abs(bytes_transferred.count() - service_time.count()) > 1)   // but why are they sometimes 1 different?
+	if (abs(((int)bytes_transferred.count()) - ((int)service_time.count())) > 1)   // but why are they sometimes 1 different?
 	{
 		o << "SubintervalOutput::thumbnail( ivy_float seconds = " << seconds << " ) -	dreaded internal programming error.  "
 			<< "bytes_transferred.count() = " << bytes_transferred.count() << " differs from service_time.count() = " << service_time.count() << "  ";

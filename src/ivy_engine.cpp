@@ -168,7 +168,7 @@ bool ivy_engine::some_cooldown_WP_not_empty()
     for (auto& pear : cooldown_WP_watch_set)
     {
         Hitachi_RAID_subsystem* pR = (Hitachi_RAID_subsystem*) pear.second;
-        ivy_float wp;
+        ivy_float wp {0.0};
         std::string CLPR = pear.first;
         try
         {
@@ -1168,14 +1168,18 @@ ivy_engine::shutdown_subthreads()
 	{
 		{
 			std::ostringstream o;
-			o << "scp " << SLAVEUSERID << '@' << host << ":" << "/var/ivydriver_logs/log.ivydriver." << host << ".* " << testFolder << "/logs";
+			o << "scp -p " << SLAVEUSERID << '@' << host << ":" << "/var/ivydriver_logs/log.ivydriver." << host << ".* " << testFolder << "/logs";
+			log(masterlogfile,o.str());
 			if (0 == system(o.str().c_str()))
 			{
 				log(masterlogfile,std::string("success: ")+o.str()+std::string("\n"));
 				std::ostringstream rm;
 				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << "/var/ivydriver_logs/log.ivydriver." << host << ".*";
+				log(masterlogfile,rm.str());
 				if (0 == system(rm.str().c_str()))
+				{
 					log(masterlogfile,std::string("success: ")+rm.str()+std::string("\n"));
+                }
 				else
 				{
 					log(masterlogfile,std::string("failure: ")+rm.str()+std::string("\n"));
@@ -1194,7 +1198,7 @@ ivy_engine::shutdown_subthreads()
 
 	{
 	    std::ostringstream o;
-	    o << "cp " << m_s.var_ivymaster_logs_testName << "/* " << m_s.testFolder << "/logs";
+	    o << "cp -p " << m_s.var_ivymaster_logs_testName << "/* " << m_s.testFolder << "/logs";
 	    int rc = system(o.str().c_str());
         if (0 != rc)
         {

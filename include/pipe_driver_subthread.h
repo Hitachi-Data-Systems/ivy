@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <mutex>
 #include <condition_variable>
+#include <signal.h>
 
 
 #include "ListOfWorkloadIDs.h"
@@ -81,6 +82,8 @@
 //      of each rollup type in the RollupSet m_s.rollups.
 //
 
+void ivymaster_signal_handler(int sig, siginfo_t *p_siginfo, void *context);
+extern struct sigaction ivymaster_sigaction;
 
 class pipe_driver_subthread {
 public:
@@ -124,6 +127,7 @@ public:
 
         pid_t pipe_driver_pid=-1;	// same as ivymaster pid
         pid_t linux_gettid_thread_id;
+        pid_t ssh_sub_subthread_tid;
 
 	char
 		to_slave_buf[sizeof(uint32_t) + IVYMAXMSGSIZE],
@@ -140,6 +144,12 @@ public:
         ivytime timeout,
         std::string description // Used when there is some sort of failure to construct an error message written to the log file.
     );
+
+    RunningStat<long double,int> detail_line_sendup_seconds;
+    RunningStat<long double,int> detail_line_group_sendup_seconds;
+    RunningStat<long double,int> CPU_line_parse_time_seconds;
+
+    RunningStat<long double,int> detail_line_parse_time_seconds;
 
 private:
     std::string real_get_line_from_pipe

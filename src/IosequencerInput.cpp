@@ -925,14 +925,14 @@ std::pair<bool,std::string> IosequencerInput::setMultipleParameters(std::string 
 	return std::make_pair(sawGoodOne && (!sawBadOne),composite_error_message);
 }
 
-std::string IosequencerInput::toStringFull() {  // we might need to use this form to make iosequencer input rollups correctly track all instances even of default values
+std::string IosequencerInput::toStringFull() const {  // we might need to use this form to make iosequencer input rollups correctly track all instances even of default values
 	if (iosequencerIsSet)
 		return std::string("IosequencerInput<") + getParameterNameEqualsTextValueCommaSeparatedList() + std::string(">");
 	else
 		return std::string("IosequencerInput<>");
 }
 
-std::string IosequencerInput::toString() {
+std::string IosequencerInput::toString() const {
 	if (iosequencerIsSet)
 		return std::string("IosequencerInput<") + getNonDefaultParameterNameEqualsTextValueCommaSeparatedList() + std::string(">");
 	else
@@ -1023,7 +1023,8 @@ bool IosequencerInput::fromIstream(std::istream& i, std::string logfile)
 	}
 }
 
-std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList() {
+std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList() const
+{
 	std::ostringstream o;
 	o << "iosequencer=" << iosequencer_type;
 	o<< ",blocksize=";
@@ -1093,7 +1094,8 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
 	return o.str();
 }
 
-std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSeparatedList() {
+std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSeparatedList() const
+{
 	std::ostringstream o;
 	o << "iosequencer=" << iosequencer_type;
 

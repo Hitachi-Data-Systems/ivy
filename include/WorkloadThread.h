@@ -164,7 +164,6 @@ public:
     unsigned int /* # of I/Os */ generate_an_IO();
     unsigned int /* # of I/Os */ pop_and_process_an_Eyeo();
 
-    void die_saying(std::string);
     void set_all_queue_depths_to_zero();
     void post_Error_for_main_thread_to_say(const std::string&);
     void post_Warning_for_main_thread_to_say(const std::string&);

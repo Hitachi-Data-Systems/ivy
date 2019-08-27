@@ -31,9 +31,9 @@ ivy_float histogram_bucket_scale_factor(unsigned int);
 class Accumulators_by_io_type {
 public:
 // variables
-	RunningStat<ivy_float,ivy_int> rs_array[2] /* 0 = random, 1 = sequential */
-	                                       [2] /* 0 = read, 1 = write */
-	                                       [io_time_buckets];  // defined in ivydefines.h, to match io_time_clip_levels in Accumulators_by_io_type.cpp
+	RunningStat<double,long int> rs_array[2] /* 0 = random, 1 = sequential */
+	                                     [2] /* 0 = read, 1 = write */
+	                                     [io_time_buckets];  // defined in ivydefines.h, to match io_time_clip_levels in Accumulators_by_io_type.cpp
 // methods
 /*0*/	RunningStat<ivy_float,ivy_int> overall() const;
 /*1*/	RunningStat<ivy_float,ivy_int> random() const ;
@@ -46,8 +46,6 @@ public:
 /*8*/	RunningStat<ivy_float,ivy_int> sequentialWrite() const;
 
 	RunningStat<ivy_float,ivy_int> getRunningStatByCategory(int) const;
-
-//	const RunningStat<ivy_float,ivy_int>& get_const_RunningStat_ref_by_category(int) const;
 
 	constexpr static int max_category_index() { return 8; }
 

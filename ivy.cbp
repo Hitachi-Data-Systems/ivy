@@ -185,6 +185,7 @@
 			<Add option="-Wall" />
 			<Add option="-std=c++14" />
 			<Add option="-fPIC" />
+			<Add option="-Og" />
 			<Add option="-g" />
 			<Add directory="src" />
 			<Add directory="include" />
@@ -706,6 +707,9 @@
 		<Unit filename="src/Subinterval_CPU.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="src/Subinterval_detail_line.cpp">
+			<Option target="ivymaster" />
+		</Unit>
 		<Unit filename="src/Subsystem.cpp">
 			<Option target="ivymaster" />
 		</Unit>
@@ -856,6 +860,9 @@
 		</Unit>
 		<Unit filename="src/ivylinuxcpubusy.cpp">
 			<Option target="ivydriver" />
+			<Option target="ivymaster" />
+		</Unit>
+		<Unit filename="src/ivymaster_signal_handler.cpp">
 			<Option target="ivymaster" />
 		</Unit>
 		<Unit filename="src/ivytime.cpp">

@@ -115,24 +115,24 @@ private:
 
 public:
 	std::pair<bool,std::string> setMultipleParameters(std::string commaSeparatedList);
-	std::string toStringFull();
-	std::string toString();
+	std::string toStringFull() const;
+	std::string toString() const;
 	bool fromString(std::string, std::string logfilename);
 	bool fromIstream(std::istream&, std::string logfile);
-	std::string getParameterNameEqualsTextValueCommaSeparatedList();
-	std::string getNonDefaultParameterNameEqualsTextValueCommaSeparatedList();
+	std::string getParameterNameEqualsTextValueCommaSeparatedList() const;
+	std::string getNonDefaultParameterNameEqualsTextValueCommaSeparatedList() const;
 	void reset();
 	void copy(const IosequencerInput& source);
 	IosequencerInput(const IosequencerInput& source) { copy(source);}
 
-	bool defaultBlocksize() { return blocksize_bytes_default == blocksize_bytes; }
-	bool defaultMaxTags() { return maxTags_default == maxTags; }
-	bool defaultIOPS() { return IOPS_default == IOPS; }
-	bool defaultskew_weight() { return skew_weight_default == skew_weight; }
-	bool defaultFractionRead() { return  fractionRead_default==fractionRead; }
-	bool defaultRangeStart() { return rangeStart_default == rangeStart; }
-	bool defaultRangeEnd() { return rangeEnd_default == rangeEnd; }
-	bool defaultSeqStartPoint()
+	bool defaultBlocksize()    const { return blocksize_bytes_default == blocksize_bytes; }
+	bool defaultMaxTags()      const { return maxTags_default == maxTags; }
+	bool defaultIOPS()         const { return IOPS_default == IOPS; }
+	bool defaultskew_weight()  const { return skew_weight_default == skew_weight; }
+	bool defaultFractionRead() const { return fractionRead_default == fractionRead; }
+	bool defaultRangeStart()   const { return rangeStart_default == rangeStart; }
+	bool defaultRangeEnd()     const { return rangeEnd_default == rangeEnd; }
+	bool defaultSeqStartPoint() const
 	{
 		if (stringCaseInsensitiveEquality(std::string("sequential"),iosequencer_type))
 		{
@@ -143,15 +143,15 @@ public:
 			return true;
 		}
 	}
-	bool defaultPattern() { return pat == pattern_default; }
-	bool defaultDedupeMethod() { return dedupe_type == dedupe_method_default; }
-	bool defaultDedupe() { return dedupe == dedupe_default; }
-	bool defaultDuplicateSetSize() { return duplicate_set_size_default == duplicate_set_size; }
-	bool defaultCompressibility() { return compressibility == compressibility_default; }
-	bool default_dedupe_unit() { return dedupe_unit_bytes == dedupe_unit_bytes_default; }
-	bool default_fraction_zero_pattern() { return fraction_zero_pattern == 0.0; }
-	bool defaultThreads_in_workload_name() { return threads_in_workload_name == threads_in_workload_name_default;}
-	bool defaultThis_thread_in_workload() { return this_thread_in_workload == this_thread_in_workload_default;}
-	bool defaultPattern_seed() { return pattern_seed == pattern_seed_default;}
+	bool defaultPattern()                  const { return pat == pattern_default; }
+	bool defaultDedupeMethod()             const { return dedupe_type == dedupe_method_default; }
+	bool defaultDedupe()                   const { return dedupe == dedupe_default; }
+	bool defaultDuplicateSetSize()         const { return duplicate_set_size_default == duplicate_set_size; }
+	bool defaultCompressibility()          const { return compressibility == compressibility_default; }
+	bool default_dedupe_unit()             const { return dedupe_unit_bytes == dedupe_unit_bytes_default; }
+	bool default_fraction_zero_pattern()   const { return fraction_zero_pattern == 0.0; }
+	bool defaultThreads_in_workload_name() const { return threads_in_workload_name == threads_in_workload_name_default;}
+	bool defaultThis_thread_in_workload()  const { return this_thread_in_workload == this_thread_in_workload_default;}
+	bool defaultPattern_seed()             const { return pattern_seed == pattern_seed_default;}
 };
 

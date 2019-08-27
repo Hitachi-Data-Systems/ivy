@@ -96,7 +96,7 @@ public:
 		sum_activecores_system {0}, avg_activecore_system {0}, min_activecore_system {0}, max_activecore_system {0},
 		sum_activecores_user {0},   avg_activecore_user {0},   min_activecore_user {0},   max_activecore_user {0};
 	std::string toString();
-	bool fromString(std::string);
+	bool fromString(const std::string&);
 	void clear();
 	avgcpubusypercent(){};
     void add(const avgcpubusypercent&);

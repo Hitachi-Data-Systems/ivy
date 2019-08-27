@@ -148,7 +148,7 @@ struct IvyDriver
         harvest_end;
 
     std::string
-        slavelogfile,
+        slavelogfile {"/var/ivydriver_initial_log.txt"},
         input_line;
 
     std::ostringstream WorkloadThread_dying_words;

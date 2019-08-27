@@ -90,7 +90,12 @@ bool RollupType::add_workload_detail_line(std::string& callers_error_message, Wo
     if (rollupInstanceByWorkloadID.end() == it)
     {
         std::ostringstream o;
-        o << "RollupType::add_workload_detail_line() for rollup type " << attributeNameCombo.attributeNameComboID << " - failed - workload ID " << wID.workloadID << "\" was not found in rollupInstanceByWorkloadID.";
+        o << "RollupType::add_workload_detail_line() for rollup type " << attributeNameCombo.attributeNameComboID << " - failed - workload ID \"" << wID.workloadID << "\" was not found in rollupInstanceByWorkloadID.";
+        o << "rollupInstanceByWorkloadID contains:" << std::endl;
+        for (const auto& pear : rollupInstanceByWorkloadID)
+        {
+            o << "\"" << pear.first << "\"" << std::endl;
+        }
         callers_error_message = o.str();
         return false;
     }

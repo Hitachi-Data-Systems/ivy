@@ -246,6 +246,16 @@ std::pair<bool /*success*/, std::string /* message */>
         return std::make_pair(false,o.str());
     }
 
+    memset(&ivymaster_sigaction, 0, sizeof(ivymaster_sigaction));
+    ivymaster_sigaction.sa_flags = SA_SIGINFO;  // three argument form of signal handler
+    ivymaster_sigaction.sa_sigaction = ivymaster_signal_handler;
+    sigaction(SIGINT, &ivymaster_sigaction, NULL);
+    sigaction(SIGHUP, &ivymaster_sigaction, NULL);
+//    sigaction(SIGCHLD, &ivymaster_sigaction, NULL);
+    sigaction(SIGSEGV, &ivymaster_sigaction, NULL);
+    sigaction(SIGUSR1, &ivymaster_sigaction, NULL);
+    sigaction(SIGTERM, &ivymaster_sigaction, NULL);
+
     for ( auto& host : hosts )
     {
         std::cout << "Starting thread for " << host << std::endl;

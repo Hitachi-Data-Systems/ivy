@@ -273,6 +273,7 @@ ivy_float RollupInstance::get_focus_metric(unsigned int subinterval_number)
                     log(m_s.masterlogfile,o.str());
                     std::cout << o.str();
                     m_s.kill_subthreads_and_exit();
+                    p_acc = & so.u.a.response_time; // this is just to make the warning message go away, warning that p_acc may be used uninitialized
                 }
             }
 

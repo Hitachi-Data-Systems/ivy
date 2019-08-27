@@ -41,11 +41,11 @@ public:
 
 		} a;
 
-		RunningStat<ivy_float, ivy_int> accumulator_array[sizeof(a)/sizeof(RunningStat<ivy_float, ivy_int>)];
+		RunningStat<double, long int> accumulator_array[sizeof(a)/sizeof(RunningStat<double, long int>)];
 
 		u_type()
 		{
-			int n = sizeof(a)/sizeof(RunningStat<ivy_float,ivy_int>);
+			int n = sizeof(a)/sizeof(RunningStat<double,long int>);
 			for (int i=0; i<n; i++) accumulator_array[i].clear();
 		}
 		~u_type(){}
@@ -53,10 +53,10 @@ public:
 
 
 // methods
-	constexpr static unsigned int RunningStatCount() { return(sizeof(u)/sizeof(RunningStat<ivy_float,ivy_int>)); }
-	std::string toString();
+	constexpr static unsigned int RunningStatCount() { return(sizeof(u)/sizeof(RunningStat<double,long int>)); }
+	std::string toString() const;
 	bool fromIstream(std::istream&);
-	bool fromString(std::string&);
+	bool fromString(const std::string&);
 	void add(const SubintervalOutput&);
 	void clear();
 
@@ -77,9 +77,9 @@ public:
 	std::string csvValues(ivy_float seconds, SubintervalRollup* = nullptr, ivy_float non_random_sample_correction_factor = non_random_sample_correction_factor_default);
 
 	std::string thumbnail(ivy_float seconds);
-	RunningStat<ivy_float,ivy_int> overall_service_time_RS();
-	RunningStat<ivy_float,ivy_int> overall_submit_time_RS();
-	RunningStat<ivy_float,ivy_int> overall_running_time_RS();
-	RunningStat<ivy_float,ivy_int> overall_bytes_transferred_RS();
+	RunningStat<double,long int> overall_service_time_RS();
+	RunningStat<double,long int> overall_submit_time_RS();
+	RunningStat<double,long int> overall_running_time_RS();
+	RunningStat<double,long int> overall_bytes_transferred_RS();
 };
 

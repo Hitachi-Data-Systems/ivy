@@ -26,6 +26,7 @@
 #include <functional>  // for std::hash
 #include <unistd.h>
 #include <sys/utsname.h>
+#include <linux/limits.h>
 
 // get REG_EIP from ucontext.h
 #ifndef __USE_GNU
@@ -181,7 +182,7 @@ int IvyDriver::main(int argc, char* argv[])
         return -1;
     }
 
-    system ("modprobe msr"); // this may be needed for check_CPU_temperature() to work.
+//    system ("modprobe msr"); // this may be needed for check_CPU_temperature() to work.
 
 	initialize_io_time_clip_levels();
 
@@ -295,6 +296,15 @@ int IvyDriver::main(int argc, char* argv[])
                 << std::endl;
         }
         o << std::endl << "Attributes from lscpu command:" << std::endl << GetStdoutFromCommand("lscpu") << std::endl;
+
+        char my_current_directory[PATH_MAX];
+        char* p_my_current_driectory = getcwd(my_current_directory,PATH_MAX);
+
+        if (p_my_current_driectory != nullptr)
+        {
+            o << "My current directory is " << my_current_directory << std::endl;
+        }
+
         log(slavelogfile,o.str());
     }
 
@@ -483,6 +493,21 @@ int IvyDriver::main(int argc, char* argv[])
 
 	while(!std::cin.eof())
 	{
+        {
+            std::lock_guard<std::mutex> lk_guard(ivydriver_main_mutex);
+
+            for (auto& e : workload_thread_error_messages)
+            {
+                std::cout << e << std::flush;
+            }
+            workload_thread_error_messages.clear();
+
+            for (auto& w : workload_thread_warning_messages)
+            {
+                std::cout << w << std::flush;
+            }
+            workload_thread_warning_messages.clear();
+        }
 		// get commands from ivymaster
 
 		input_line = getline.get_reassembled_line(one_hour,"ivydriver reading a line from ivy");
@@ -700,6 +725,8 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
     RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_lock_acquisition;
     RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_switchover;
 
+    std::vector<std::string> detail_lines;
+
     for (auto& pear : workload_threads)
     {
         ivytime n; n.setToNow();
@@ -796,15 +823,13 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 
                             // indent level with lock held
                             {
-                                // send the workload detail data to pipe_driver_subthread
-
                                 ostringstream o;
                                 o << '<' << workloadID << '>'
                                     << (workload.subinterval_array)[next_to_harvest_subinterval].input.toString()
                                     << (workload.subinterval_array)[next_to_harvest_subinterval].output.toString()
                                     << std::endl;
 
-                                say(o.str());
+                                detail_lines.push_back(o.str());
                             }
 
                             // Copy subinterval object from running subinterval to inactive subinterval.
@@ -831,6 +856,24 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
         // end nested block for fresh WorkloadThread reference
     }
     // end of loop over workload threads
+
+    for (const std::string& s : detail_lines)
+    {
+        ivytime n;
+
+        n.setToNow();
+
+        if ( n > limit_time)
+        {
+            say("<Error> Excessive latency over 1/2 of the way through the next subinterval sending up the workload detail lines.  Check network congestion.  May need longer \"subinterval_seconds\".");
+            killAllSubthreads();
+            return false;
+        }
+
+        say(s);
+    }
+
+    detail_lines.clear();
 
 	say(std::string("<end>"));  // end of workload detail lines
 

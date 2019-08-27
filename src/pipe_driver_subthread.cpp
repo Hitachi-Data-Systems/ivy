@@ -664,7 +664,6 @@ void pipe_driver_subthread::threadRun()
 
     linux_gettid_thread_id = syscall(SYS_gettid);
 
-
     // fork
 
     // if child - adjust piping for child
@@ -742,6 +741,9 @@ void pipe_driver_subthread::threadRun()
     if (0 == ssh_pid)
     {
         // child
+
+        ssh_sub_subthread_tid = syscall(SYS_gettid);
+
 
         // redirect stdin
         if (dup2(pipe_driver_subthread_to_slave_pipe[PIPE_READ], STDIN_FILENO) == -1)
@@ -1262,6 +1264,8 @@ void pipe_driver_subthread::threadRun()
                         ivytime before_sending_command;
                         before_sending_command.setToNow();
 
+                        if (startsWith(commandString,std::string("Go!"))) { detail_line_group_sendup_seconds.clear(); CPU_line_parse_time_seconds.clear();}
+
                         try
                         {
                             send_and_get_OK(commandString);
@@ -1333,19 +1337,19 @@ void pipe_driver_subthread::threadRun()
                             return;
                         }
 
-                        ivytime now;
+                        ivytime received_CPU_line;
 
-                        now.setToNow();
+                        received_CPU_line.setToNow();
 
                         // we have received "get subinterval result", which means we have just moved subintervalStart/End forward
-                        if (now > m_s.nextSubintervalEnd)
+                        if (received_CPU_line > m_s.nextSubintervalEnd)
                         {
                             std::ostringstream o;
                             o << "<Error> Subinterval length parameter \"subinterval_seconds\" may be too short.  For host " << ivyscript_hostname
                                 << ", pipe_driver_subthread received the [CPU] line for the previous subinterval after the current subinterval was already over." << std::endl;
                             o << "  This can also be caused if an ivy command device is on a subsystem port that is saturated with other (ivy) activity, making communication with the command device run very slowly." << std::endl;
 
-                            o << "now: "  << now.format_as_datetime_with_ns() << std::endl;
+                            o << "now: "  << received_CPU_line.format_as_datetime_with_ns() << std::endl;
                             o << m_s.subintervalStart.format_as_datetime_with_ns()
                                     << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from_now() << " seconds from now) "
                                     << " = m_s.subintervalStart   (" << m_s.subintervalStart.duration_from(m_s.get_go) << " seconds from Go! time) "
@@ -1428,6 +1432,15 @@ void pipe_driver_subthread::threadRun()
                         std::vector<Subinterval_detail_line> parsed_detail_lines {};
 
                         parsed_detail_lines.clear();
+                        detail_line_sendup_seconds.clear();
+                        detail_line_parse_time_seconds.clear();
+
+                        ivytime now; now.setToNow();
+
+                        ivytime CPU_line_parse_time = now - received_CPU_line;
+                        CPU_line_parse_time_seconds.push(CPU_line_parse_time.getlongdoubleseconds());
+
+                        ivytime time_last_detail_line_received; time_last_detail_line_received.setToNow();
 
                         while (true)
                         {
@@ -1443,8 +1456,7 @@ void pipe_driver_subthread::threadRun()
                                 }
                                 else
                                 {
-                                    detail_line_timeout_seconds = m_s.subinterval_seconds * 0.4;
-                                    // two seconds for 5 second subintervals
+                                    detail_line_timeout_seconds = m_s.subinterval_seconds * 0.5;
                                 }
 
                                 detail_line = get_line_from_pipe(ivytime(detail_line_timeout_seconds), std::string("get iosequencer detail line"));
@@ -1498,7 +1510,7 @@ void pipe_driver_subthread::threadRun()
                                 return;
                             }
 
-                            if ('<' != detail_line[0])
+                            if (detail_line.size() == 0 || '<' != detail_line[0])
                             {
                                 std::ostringstream o;
                                 o << "For host " << ivyscript_hostname << ", bogus iosequencer detail line didn\'t even start with \'<\'. bogus detail line was \"" << detail_line << "\"." << std::endl;
@@ -1516,8 +1528,19 @@ void pipe_driver_subthread::threadRun()
 
                             if (startsWith(detail_line,std::string("<end>"))) break;
 
+                            size_t penultimate = detail_line.size() - 1;
+
+                            ivytime individual_detail_line_sendup_seconds = now - time_last_detail_line_received;
+
+                            time_last_detail_line_received = now;
+
+                            detail_line_sendup_seconds.push(individual_detail_line_sendup_seconds.getlongdoubleseconds());
+
+                            // "<sun159+/dev/sdaa+random_8K>IosequencerInput<iosequencer=random_independent,maxTags=16,IOPS=max,fractionRead=0.5><<0;0;0;0;0><0;0;0;0;0>...<0;0;0;0;0>>\r"
+
                             parsed_detail_lines.emplace_back(Subinterval_detail_line());
                             {
+                                ivytime parse_start; parse_start.setToNow();
                                 // nested block is to get a new reference each time
 
                                 Subinterval_detail_line& sdl = parsed_detail_lines.back();
@@ -1526,15 +1549,102 @@ void pipe_driver_subthread::threadRun()
                                 IosequencerInput&  detailInput  = sdl.iosequencerInput;
                                 SubintervalOutput& detailOutput = sdl.subintervalOutput;
 
-                                sdl.line = detail_line;
+                                size_t detail_WID_start {0}, detail_WID_length {0};
+                                size_t detail_II_start  {0}, detail_II_length  {0};
+                                size_t detail_SO_start  {0}, detail_SO_length  {0};
 
-                                std::istringstream detailstream(detail_line);
+                                size_t cursor {0};
+
+                                bool detail_parse_error = false;
+
+                                detail_WID_start = cursor;
+
+                                while (true)
+                                {
+                                    if (cursor >= detail_line.size()) { detail_parse_error = true; goto check_detail_line; }
+
+                                    if (detail_line[cursor] == '>')
+                                    {
+                                        cursor++;
+                                        detail_WID_length = cursor;
+                                        break;
+                                    }
+
+                                    cursor++;
+                                }
+
+                                detail_II_start = cursor;
+
+                                while (true)
+                                {
+                                    if (cursor >= detail_line.size()) { detail_parse_error = true; goto check_detail_line; }
+
+                                    if (detail_line[cursor] == '>')
+                                    {
+                                        cursor++;
+                                        detail_II_length = cursor - detail_II_start;
+                                        break;
+                                    }
+
+                                    cursor++;
+                                }
+
+                                detail_SO_start = cursor;
+
+                                while (true)
+                                {
+                                    if (cursor >= penultimate) { detail_parse_error = true; goto check_detail_line; }
+
+                                    if (detail_line[cursor] == '>' && detail_line[cursor+1] == '>')
+                                    {
+                                        cursor += 2;
+                                        detail_SO_length = cursor - detail_SO_start;
+                                        break;
+                                    }
+
+                                    cursor++;
+                                }
+
+                                check_detail_line: if (detail_parse_error)
+                                {
+                                    std::ostringstream o;
+                                    o << "For host " << ivyscript_hostname << ", internal programming error - detail line failed to breaak into WorkloadID, IosequencerInput, and SubintervalOutput portions - \"" <<  detail_line << "\"." << std::endl << std::endl;
+                                    log(logfilename,o.str());
+                                    std::cout << o.str();
+                                    commandComplete=true;
+                                    commandSuccess=false;
+                                    commandErrorMessage = o.str();
+                                    dead=true;
+                                    s_lk.unlock();
+                                    master_slave_cv.notify_all();
+                                    kill_ssh_and_harvest();
+                                    return;
+                                }
 
                                 std::string err_msg;
-                                if (!parseWorkloadIDfromIstream(err_msg, detailstream, detailWID))
+                                if (!detailWID.set(detail_line.substr(detail_WID_start+1,detail_WID_length-2)))  // stripping off the leading/trailing <>
                                 {
                                     std::ostringstream o;
-                                    o << "For host " << ivyscript_hostname << ", internal programming error - detail line WorkloadID failed to parse correctly or doesn't exist - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
+                                    o << "For host " << ivyscript_hostname << ", internal programming error - failed parsing WorkloadID portion \""
+                                        << detail_line.substr(detail_WID_start,detail_WID_length) << "\" of detail line - \""
+                                        <<  detail_line << "\"." << std::endl << std::endl;
+                                    log(logfilename,o.str());
+                                    std::cout << o.str();
+                                    commandComplete=true;
+                                    commandSuccess=false;
+                                    commandErrorMessage = o.str();
+                                    dead=true;
+                                    s_lk.unlock();
+                                    master_slave_cv.notify_all();
+                                    kill_ssh_and_harvest();
+                                    return;
+                                }
+
+                                if (!detailInput.fromString(detail_line.substr(detail_II_start,detail_II_length),logfilename))
+                                {
+                                    std::ostringstream o;
+                                    o << "For host " << ivyscript_hostname << ", internal programming error - failed parsing IosequencerInput portion \""
+                                        << detail_line.substr(detail_II_start,detail_II_length) << "\" portion of detail line \"" <<  detail_line << "\"." << std::endl << std::endl;
                                     log(logfilename,o.str());
                                     std::cout << o.str();
                                     kill_ssh_and_harvest();
@@ -1547,41 +1657,64 @@ void pipe_driver_subthread::threadRun()
                                     return;
                                 }
 
-                                if (!detailInput.fromIstream(detailstream,logfilename))
+                                if (!detailOutput.fromString(detail_line.substr(detail_SO_start,detail_SO_length)))
                                 {
                                     std::ostringstream o;
-                                    o << "For host " << ivyscript_hostname << ", internal programming error - detail line IosequencerInput failed to parse correctly - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
+                                    o << "For host " << ivyscript_hostname << ", internal programming error - failed to process SubintervalOutput portion \""
+                                        << detail_line.substr(detail_SO_start,detail_SO_length) << "\" of detail line \""
+                                        <<  detail_line << "\"." << std::endl << std::endl;
                                     log(logfilename,o.str());
                                     std::cout << o.str();
-                                    kill_ssh_and_harvest();
                                     commandComplete=true;
                                     commandSuccess=false;
                                     commandErrorMessage = o.str();
                                     dead=true;
                                     s_lk.unlock();
                                     master_slave_cv.notify_all();
-                                    return;
-                                }
-
-                                if (!detailOutput.fromIstream(detailstream))
-                                {
-                                    std::ostringstream o;
-                                    o << "For host " << ivyscript_hostname << ", internal programming error - detail line SubintervalOutput failed to parse correctly - \"" <<  detail_line << "\"." << std::endl << err_msg << std::endl;
-                                    log(logfilename,o.str());
-                                    std::cout << o.str();
                                     kill_ssh_and_harvest();
-                                    commandComplete=true;
-                                    commandSuccess=false;
-                                    commandErrorMessage = o.str();
-                                    dead=true;
-                                    s_lk.unlock();
-                                    master_slave_cv.notify_all();
                                     return;
                                 }
+                                ivytime parse_end; parse_end.setToNow();
+                                ivytime parse_time = parse_end-parse_start;
+                                detail_line_parse_time_seconds.push(parse_time.getlongdoubleseconds());
+//*debug*/{std::ostringstream o; o << "just parsed: " << sdl; log(logfilename,o.str());}
                             }
                         }
 
                         // end of reading & parsing detail lines.
+
+                        detail_line_group_sendup_seconds.push(detail_line_sendup_seconds.sum());
+
+                        if (routine_logging)
+                        {
+                            std::ostringstream o;
+                            o << "For this subinterval " << detail_line_sendup_seconds.count() << " detail lines were received from " << ivyscript_hostname << " at an average of "
+                                << std::fixed << std::setprecision(3) << (1000.0 * detail_line_sendup_seconds.avg() )
+                                << " ms, min of " << (1000.0 * detail_line_sendup_seconds.min() )
+                                << " ms, and max of " << (1000.0 * detail_line_sendup_seconds.max() )
+                                << " ms per workload detail line for a total of " << detail_line_sendup_seconds.sum() << " seconds." << std::endl
+                                << "Per detail line parse time milliseconds this subinterval " << (1000.0 * detail_line_parse_time_seconds.avg() ) << " avg, "
+                                << (1000.0 * detail_line_parse_time_seconds.min() ) << " min, "
+                                << (1000.0 * detail_line_parse_time_seconds.max() ) << " max." << std::endl << std::endl
+                                << "So far this test step " << detail_line_group_sendup_seconds.count() << " subintervals "
+                                << "with average CPU line parse time " << (1000.0 * CPU_line_parse_time_seconds.avg()) << " ms & max " << (1000.0 * CPU_line_parse_time_seconds.max()) << " ms "
+                                << "and with average workload detail line group sendup time "
+                                << detail_line_group_sendup_seconds.avg() << " seconds, and max " << detail_line_group_sendup_seconds.max() << " seconds on " << ivyscript_hostname << "." << std::endl << std::endl;
+                            log(logfilename,o.str());
+//*debug*/std::cout << o.str();
+                        }
+
+                        if ( detail_line_sendup_seconds.sum() > (0.3333 * m_s.subinterval_seconds) )
+                        {
+                            std::ostringstream o;
+                            o << "<Warning> To receive " << detail_line_sendup_seconds.count() << " workload detail lines from " << ivyscript_hostname
+                                << " took a total of " << std::fixed << std::setprecision(2) << detail_line_sendup_seconds.sum()
+                                << " seconds, which is over 1/3 of a " << m_s.subinterval_seconds << " second subinterval.  Possible network congestion.  Consider longer subinterval." << std::endl;
+                            m_s.warning_messages.insert(o.str());
+                            log (logfilename, o.str());
+                            log (m_s.masterlogfile, o.str());
+                            std::cout << o.str();
+                        }
 
                         // read & parse sequential fill line
 
@@ -1723,7 +1856,7 @@ void pipe_driver_subthread::threadRun()
                                 if (!rc.first)
                                 {
                                     std::ostringstream o;
-                                    o << "Rollup of detail line failed. \"" << x.line << "\" - " << rc.second << std::endl;
+                                    o << "Rollup of detail line failed for " << x.workloadID << " - " << rc.second << std::endl;
                                     log(logfilename, o.str());
                                     kill_ssh_and_harvest();
                                     commandComplete = true;
@@ -1824,25 +1957,25 @@ void pipe_driver_subthread::threadRun()
         // harvest the child's pid so it won't be ... a zombie!
         harvest_pid();
 
-        // Once our work is complete, we issue an scp command to copy the logs back from the remote host.
-
-        std::ostringstream copycmd;
-
-        copycmd << "/usr/bin/scp " << "/var/ivydriver_logs/log.ivydriver." << ivyscript_hostname << ".log* " << m_s.testFolder;
-
-        log(logfilename, std::string("copying logs from remote host \"")+copycmd.str()+std::string("\"\n"));
-        if ( 0 == system(copycmd.str().c_str()) )
-        {
-            if (routine_logging) { log (logfilename, std::string("copy command successful.")); }
-
-        }
-        else
-        {
-            std::ostringstream o;
-            o << "copy command \"" << copycmd.str() << "\" failed - rc = " << errno << " " << strerror(errno) << std::endl;
-            std::cout << o.str();
-            log(logfilename, o.str());
-        }
+//        // Once our work is complete, we issue an scp command to copy the logs back from the remote host.
+//
+//        std::ostringstream copycmd;
+//
+//        copycmd << "/usr/bin/scp " << "/var/ivydriver_logs/log.ivydriver." << ivyscript_hostname << ".log* " << m_s.testFolder;
+//
+//        log(logfilename, std::string("copying logs from remote host \"")+copycmd.str()+std::string("\"\n"));
+//        if ( 0 == system(copycmd.str().c_str()) )
+//        {
+//            if (routine_logging) { log (logfilename, std::string("copy command successful.")); }
+//            std::string cmd = "ssh
+//        }
+//        else
+//        {
+//            std::ostringstream o;
+//            o << "copy command \"" << copycmd.str() << "\" failed - rc = " << errno << " " << strerror(errno) << std::endl;
+//            std::cout << o.str();
+//            log(logfilename, o.str());
+//        }
 
     }
     else
@@ -2190,8 +2323,6 @@ void pipe_driver_subthread::process_ivy_cmddev_response(GatherData& gd) // throw
         }
     }
 }
-
-
 
 
 

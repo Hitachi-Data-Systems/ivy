@@ -61,7 +61,7 @@ public:
         void clear();
         void no_op();
         void push(FloatType x);
-        IntType count() const;
+        unsigned int count() const;
 	FloatType min() const;
 	FloatType max() const;
 	FloatType sum() const;
@@ -72,14 +72,11 @@ public:
 	FloatType skewness() const;
 	FloatType kurtosis() const;
 #endif // KURTOSISKEW
-	std::string toString();
+	std::string toString() const;
 	bool fromIstream(std::istream &);
-	bool fromString(std::string);
-
+	bool fromString(const std::string&);
 
 	void printme(std::ostream& o) const;
-
-
 };
 
 
@@ -136,7 +133,7 @@ void RunningStat<FloatType, IntType>::push(FloatType x)
 }
 
 template <typename FloatType, typename IntType>
-IntType RunningStat<FloatType, IntType>::count() const
+unsigned int RunningStat<FloatType, IntType>::count() const
 {
 	 return n;
 }
@@ -256,7 +253,7 @@ void RunningStat<FloatType, IntType>::printme(std::ostream& o) const {
 }
 
 template <typename FloatType, typename IntType>
-std::string RunningStat<FloatType, IntType>::toString()
+std::string RunningStat<FloatType, IntType>::toString() const
 {
 	ostringstream o;
 	o << '<' << n << ';' << M1 << ';' << M2;
@@ -292,7 +289,7 @@ bool RunningStat<FloatType, IntType>::fromIstream(std::istream& i)
 }
 
 template <typename FloatType, typename IntType>
-bool RunningStat<FloatType, IntType>::fromString(std::string s) {
+bool RunningStat<FloatType, IntType>::fromString(const std::string& s) {
 	std::istringstream is(s);
 	if (!fromIstream(is)) return false;
 	char c;

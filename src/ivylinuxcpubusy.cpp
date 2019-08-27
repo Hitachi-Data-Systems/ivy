@@ -29,7 +29,7 @@
 #include <list>
 #include <algorithm> // for find_if
 #include <map>
-
+#include <stdio.h>
 
 #include "ivytime.h"
 #include "ivydefines.h"
@@ -254,67 +254,88 @@ std::string avgcpubusypercent::toString()
 	return o.str();
 }
 
-bool avgcpubusypercent::fromString(std::string s)
+bool avgcpubusypercent::fromString(const std::string& s)
 {
-	std::istringstream is(s);
-	char c;
-	is >> c; if (is.fail() || ('<' != c)) {clear(); return false;}
+    // <16,165.391,10.3369,2.59985,16.3991,63.9964,3.99978,0.199989,8.19954,101.394,6.33715,2.39987,9.19949,8,120.993,15.1242,12.7993,16.3991,60.1966,7.52458,6.19965,8.19954,60.7966,7.59957,6.39964,8.59952>
 
-	is >> cores; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> sumcores_total; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> avgcore_total; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> mincore_total ; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> maxcore_total; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> sumcores_system; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> avgcore_system; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> mincore_system ; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> maxcore_system; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> sumcores_user; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> avgcore_user; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> mincore_user ; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> maxcore_user; if (is.fail()) {clear(); return false;}
+    int rc = sscanf(s.c_str(),"<%i,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%i,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf>"
+        ,&cores
+        ,&sumcores_total, &avgcore_total, &mincore_total, &maxcore_total
+        ,&sumcores_system,&avgcore_system,&mincore_system,&maxcore_system
+        ,&sumcores_user,  &avgcore_user,  &mincore_user,  &maxcore_user
+        ,&activecores
+        ,&sum_activecores_total, &avg_activecore_total, &min_activecore_total, &max_activecore_total
+        ,&sum_activecores_system,&avg_activecore_system,&min_activecore_system,&max_activecore_system
+        ,&sum_activecores_user,  &avg_activecore_user,  &min_activecore_user,  &max_activecore_user
+    );
+    if (rc == 26 ) { return true; }
+    else
+    {
+        std::cout << "<Error> avgcpubusypercent::fromString(const std::string& s = \"" << s << "\")  sscanf failed return code " << rc
+            << " - errno " << errno << " - " << std::strerror(errno) << std::endl;
+        clear();
+        return false;
+    }
 
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> activecores; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> sum_activecores_total; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> avg_activecore_total; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> min_activecore_total ; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> max_activecore_total; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> sum_activecores_system; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> avg_activecore_system; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> min_activecore_system ; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> max_activecore_system; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> sum_activecores_user; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> avg_activecore_user; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> min_activecore_user ; if (is.fail()) {clear(); return false;}
-	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
-	is >> max_activecore_user; if (is.fail()) {clear(); return false;}
-
-	is >> c; if (is.fail() || ('>' != c)) {clear(); return false;}
-	is >> c; if (!is.fail()) {clear(); return false;}
+//	std::istringstream is(s);
+//	char c;
+//	is >> c; if (is.fail() || ('<' != c)) {clear(); return false;}
+//
+//	is >> cores; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> sumcores_total; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> avgcore_total; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> mincore_total ; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> maxcore_total; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> sumcores_system; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> avgcore_system; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> mincore_system ; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> maxcore_system; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> sumcores_user; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> avgcore_user; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> mincore_user ; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> maxcore_user; if (is.fail()) {clear(); return false;}
+//
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> activecores; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> sum_activecores_total; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> avg_activecore_total; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> min_activecore_total ; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> max_activecore_total; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> sum_activecores_system; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> avg_activecore_system; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> min_activecore_system ; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> max_activecore_system; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> sum_activecores_user; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> avg_activecore_user; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> min_activecore_user ; if (is.fail()) {clear(); return false;}
+//	is >> c; if (is.fail() || (',' != c)) {clear(); return false;}
+//	is >> max_activecore_user; if (is.fail()) {clear(); return false;}
+//
+//	is >> c; if (is.fail() || ('>' != c)) {clear(); return false;}
+//	is >> c; if (!is.fail()) {clear(); return false;}
 	return true;
 }
 

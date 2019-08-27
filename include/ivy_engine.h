@@ -28,6 +28,7 @@
 #include <vector>
 #include <thread>
 #include <climits>  // for UINT_MAX
+#include <signal.h>
 
 #include "WorkloadTrackers.h"
 #include "Subinterval_CPU.h"
@@ -54,6 +55,9 @@ std::string accessor_enum_to_string   (accessor_enum);
 
 accumulator_type_enum string_to_accumulator_type_enum (const std::string&);
 std::string accumulator_types();
+
+void ivymaster_signal_handler(int sig, siginfo_t *p_siginfo, void *context);
+extern struct sigaction ivymaster_sigaction;
 
 struct measurement
 {

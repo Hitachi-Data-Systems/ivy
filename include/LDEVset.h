@@ -27,10 +27,13 @@ using namespace std;
 class LDEVset
 {
 public:
+//variables
+
 	// if this is too inefficient, come back later and change implementation
 	std::set<unsigned int> seen;
-	std::set<unsigned int>::iterator it;
 	bool allLDEVs{false};
+
+//methods
 
 	bool add(std::string ldev_set, std::string logfilename);
 

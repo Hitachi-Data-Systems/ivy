@@ -29,5 +29,6 @@ struct Subinterval_detail_line
     WorkloadID workloadID;
     IosequencerInput iosequencerInput;
     SubintervalOutput subintervalOutput;
-    std::string line;
 };
+
+std::ostream& operator<<(std::ostream&, const struct Subinterval_detail_line&);
