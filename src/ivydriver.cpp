@@ -824,10 +824,18 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
                             // indent level with lock held
                             {
                                 ostringstream o;
-                                o << '<' << workloadID << '>'
-                                    << (workload.subinterval_array)[next_to_harvest_subinterval].input.toString()
-                                    << (workload.subinterval_array)[next_to_harvest_subinterval].output.toString()
-                                    << std::endl;
+
+                                if (!(workload.subinterval_array)[next_to_harvest_subinterval].output.toBuffer(subintervalOutput_buffer, sizeof(subintervalOutput_buffer)))
+                                {
+                                    o << "<Error> Internal programming error - output buffer too small to contain serialized SubintervalOutput object." << std::endl;
+                                }
+                                else
+                                {
+                                    o << '<' << workloadID << '>'
+                                        << (workload.subinterval_array)[next_to_harvest_subinterval].input.toString()
+                                        << subintervalOutput_buffer
+                                        << std::endl;
+                                }
 
                                 detail_lines.push_back(o.str());
                             }

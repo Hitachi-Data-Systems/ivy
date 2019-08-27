@@ -179,6 +179,8 @@ struct IvyDriver
 
     RunningStat<double,long> digital_readouts;
 
+    char subintervalOutput_buffer[200000]; // for printing a workload detail line
+
 
 // methods
 

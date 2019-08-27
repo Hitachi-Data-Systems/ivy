@@ -59,11 +59,50 @@ bool SubintervalOutput::fromIstream(std::istream& is) {
 	return true;
 }
 
+
 struct running_stat_double_long_int
 {
     long int n;
     double m1, m2, min_value, max_value;
 };
+
+
+bool SubintervalOutput::toBuffer(char* buffer, size_t buffer_size) // same as toString(), but faster. returns false if buffer wasn't big enough.
+{
+    if (sizeof(running_stat_double_long_int) != sizeof(RunningStat<double, long int>))
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error - SubintervalOutput::toBuffer() - sizeof(running_stat_double_long_int) = " << sizeof(running_stat_double_long_int)
+            << " is different from sizeof(RunningStat<double, long int>) = " << sizeof(RunningStat<double, long int>) << "." << std::endl;
+        std::cout << o.str();
+        throw runtime_error(o.str());
+    }
+
+    char* p = buffer;
+
+    size_t bytes_left = buffer_size -1;
+
+    *p++ = '<'; bytes_left--; if (bytes_left == 0) return false;
+
+    for (unsigned int i = 0; i < RunningStatCount(); i++)
+    {
+        running_stat_double_long_int* p_rs = (running_stat_double_long_int*) &((u.accumulator_array)[i]);
+
+        int rc = snprintf(p, bytes_left, "<%li;%lf;%lf;%lf;%lf>", p_rs->n, p_rs->m1, p_rs->m2, p_rs->min_value, p_rs->max_value);
+
+        if (rc < 0 || ((size_t)rc) >= bytes_left) return false;
+
+        bytes_left -= (size_t) rc;
+        p          +=          rc;
+    }
+
+    *p++ = '>'; bytes_left--; if (bytes_left == 0) return false;
+
+    *p = 0x00;
+
+    return true;
+}
+
 
 bool SubintervalOutput::fromString(const std::string& s)
 {

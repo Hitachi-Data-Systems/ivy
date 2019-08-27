@@ -55,6 +55,9 @@ public:
 // methods
 	constexpr static unsigned int RunningStatCount() { return(sizeof(u)/sizeof(RunningStat<double,long int>)); }
 	std::string toString() const;
+
+	bool toBuffer(char* buffer, size_t buffer_size); // same as toString(), but faster.
+
 	bool fromIstream(std::istream&);
 	bool fromString(const std::string&);
 	void add(const SubintervalOutput&);
