@@ -896,7 +896,7 @@ void TestLUN::abort_if_queue_depths_corrupted(const std::string& where_from, uns
     {
         std::ostringstream oo;
         oo << "<Error> Internal programming error in TestLUN::abort_if_queue_depths_corrupted() - from " << where_from
-            << " - " << o.str() << "- Occurred at line " << __LINE__ << " of " << __FILE__ << ".";
+            << " - " << o.str() << "- Occurred at line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
 
         pWorkloadThread->dying_words= oo.str();
         log(pWorkloadThread->slavethreadlogfile,oo.str());

@@ -1253,11 +1253,13 @@ void WorkloadThread::post_Error_for_main_thread_to_say(const std::string& msg)
     if (startsWith(msg,e)) { s = msg; }
     else                   { s = e + msg; }
 
+    if (s[s.size()-1] != '\n') { s += "\n"; }
     {
         std::lock_guard<std::mutex> lk_guard(*p_ivydriver_main_mutex);
         ivydriver.workload_thread_error_messages.push_back(s);
     }
     log(slavethreadlogfile,s);
+    std::cout << s << std::flush;  // The reason we both queue it and say it is that it's possible that when I say() it here, this may come out in the middle of a line being spoken by ivydriver.
 }
 
 

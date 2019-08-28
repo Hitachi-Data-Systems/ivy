@@ -207,10 +207,13 @@ std::pair<bool /*success*/, std::string /* message */>
         return std::make_pair(false,o.str());
     }
 
-    for (auto& s: test_hosts.hosts) { hosts.push_back(s);}
+    for (auto& s: test_hosts.hosts)
+    {
+        hosts.push_back(s);
 
-    // ivy rarely blows up leaving hung threads, so this is commented out:
-    write_clear_script();  // This writes a shell script to run the clear_hung_ivy_threads executable on all involved hosts - handy if you are a developer and you mess things up
+        std::string hostname = GetStdoutFromCommand("ssh "s + s + " hostname"s);
+        unique_hostnames[hostname].insert(s);
+    }
 
     if (hosts.size() == 0)
     {
@@ -219,6 +222,27 @@ std::pair<bool /*success*/, std::string /* message */>
         o << "<Error> ivy engine startup failed - No hosts specified." << std::endl;
         return std::make_pair(false,o.str());
     }
+
+    for (const auto& pear : unique_hostnames)
+    {
+        std::string h;
+        auto it = pear.second.find(pear.first);
+
+        if (it == pear.second.end())
+        {
+            // if none of the ivyscript hostnames were the same as the output from the "hostname" command.
+            auto ti = pear.second.begin();
+            h = *ti;
+        }
+        else
+        {
+            h = pear.first;
+        }
+
+        std::cout << GetStdoutFromCommand("ssh "s + h + " clear_hung_ivy_threads -exclude_ivymaster"s);
+    }
+
+    write_clear_script();  // This writes a shell script to run the clear_hung_ivy_threads executable on all involved hosts - handy if you are a developer and you mess things up
 
     JSON_select select;
 
@@ -246,15 +270,15 @@ std::pair<bool /*success*/, std::string /* message */>
         return std::make_pair(false,o.str());
     }
 
-    memset(&ivymaster_sigaction, 0, sizeof(ivymaster_sigaction));
-    ivymaster_sigaction.sa_flags = SA_SIGINFO;  // three argument form of signal handler
-    ivymaster_sigaction.sa_sigaction = ivymaster_signal_handler;
-    sigaction(SIGINT, &ivymaster_sigaction, NULL);
-    sigaction(SIGHUP, &ivymaster_sigaction, NULL);
-//    sigaction(SIGCHLD, &ivymaster_sigaction, NULL);
-    sigaction(SIGSEGV, &ivymaster_sigaction, NULL);
-    sigaction(SIGUSR1, &ivymaster_sigaction, NULL);
-    sigaction(SIGTERM, &ivymaster_sigaction, NULL);
+//    memset(&ivymaster_sigaction, 0, sizeof(ivymaster_sigaction));
+//    ivymaster_sigaction.sa_flags = SA_SIGINFO;  // three argument form of signal handler
+//    ivymaster_sigaction.sa_sigaction = ivymaster_signal_handler;
+//    sigaction(SIGINT, &ivymaster_sigaction, NULL);
+//    sigaction(SIGHUP, &ivymaster_sigaction, NULL);
+////    sigaction(SIGCHLD, &ivymaster_sigaction, NULL);
+//    sigaction(SIGSEGV, &ivymaster_sigaction, NULL);
+//    sigaction(SIGUSR1, &ivymaster_sigaction, NULL);
+//    sigaction(SIGTERM, &ivymaster_sigaction, NULL);
 
     for ( auto& host : hosts )
     {

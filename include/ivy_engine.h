@@ -208,6 +208,9 @@ public:
 		// CPU data for that one host instead of showing CPU data over all cores on all hosts.
 
 	std::list<std::string> hosts;
+
+	std::map<std::string /* hostname from "hostname" command */,std::set<std::string /* ivyscript_hostname */>> unique_hostnames;
+
 	void write_clear_script();  // this writes out "clear_hung_threads.sh"
 
 

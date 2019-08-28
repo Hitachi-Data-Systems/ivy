@@ -140,7 +140,6 @@ bool SubintervalOutput::fromString(const std::string& s)
 
         if (5 != sscanf(s.substr(start,length).c_str(),"<%li;%lf;%lf;%lf;%lf>",&(p->n),&(p->m1),&(p->m2),&(p->min_value),&(p->max_value))) { clear(); return false; }
     }
-/*debug*/{log("/home/ian/Desktop/bork.txt","parsed OK");}
 
 	return true;
 }
@@ -214,6 +213,7 @@ std::string SubintervalOutput::csvValues
     ivy_float seconds
     , SubintervalRollup* p_SubintervalRollup
     , ivy_float non_random_sample_correction_factor
+    , bool response_time_is_valid
 )
 {
 
@@ -382,16 +382,16 @@ std::string SubintervalOutput::csvValues
 				else
 				{
 					/* 20 Average Response Time (ms) */
-					o << ',' << (response_time.avg() * 1000.0);
+					o << ','; if(response_time_is_valid) { o << (response_time.avg() * 1000.0); } else { o << "[Achieved IOPS off by more than .1% from Rollup Total IOPS Setting.]"; }
 
 					/* 21 Min Response Time (ms) */
-					o << ',' << (response_time.min() * 1000.0);
+					o << ','; if(response_time_is_valid) { o << (response_time.min() * 1000.0); } else { o << "[Achieved IOPS off by more than .1% from Rollup Total IOPS Setting.]"; }
 
 					/* 22 Max Response Time (ms) */
-					o << ',' << (response_time.max() * 1000.0);
+					o << ','; if(response_time_is_valid) { o << (response_time.max() * 1000.0); } else { o << "[Achieved IOPS off by more than .1% from Rollup Total IOPS Setting.]"; }
 
 					/* 23 Response Time Standard Deviation (ms) */
-					o << ',' << (response_time.standardDeviation() * 1000.0);
+					o << ','; if(response_time_is_valid) { o << (response_time.standardDeviation() * 1000.0); } else { o << "[Achieved IOPS off by more than .1% from Rollup Total IOPS Setting.]"; }
 				}
 			}
 		}

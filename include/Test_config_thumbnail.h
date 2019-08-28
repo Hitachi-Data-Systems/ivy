@@ -25,7 +25,8 @@
 
 class Test_config_thumbnail
 {
-public:
+//variables:
+private:
 
     std::map
     <
@@ -74,6 +75,8 @@ public:
 
     std::string error_messages;
 
+// methods
+public:
     Test_config_thumbnail(){}
     void clear();
 

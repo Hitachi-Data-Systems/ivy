@@ -20,6 +20,7 @@
 
 #include <sys/stat.h>
 #include <chrono>
+#include <ctime>
 
 #include "ivy_engine.h"
 #include "MeasureController.h"
@@ -733,15 +734,15 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             }
         }
 
-        if (routine_logging) {
+        {
             std::ostringstream o;
             o<< "Waiting for step name " << m_s.stepName
              << ", subinterval " << m_s.rollups.current_index() << " to complete. "
              << "  Start " << m_s.subintervalStart.format_as_datetime()
              << ", end " << m_s.subintervalEnd.format_as_datetime()
              << "  Duration " << m_s.subintervalLength.format_as_duration_HMMSS() << std::endl;
-            log(m_s.masterlogfile,o.str());
             std::cout << o.str();
+            if (routine_logging) { log(m_s.masterlogfile,o.str()); }
         }
 
         for (auto& pear : m_s.host_subthread_pointers)
@@ -917,8 +918,10 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 ivytime test_duration = n - m_s.test_start_time;
                 ivytime step_duration = n - m_s.get_go;
 
+                std::time_t t = std::time(nullptr);
+
                 std::ostringstream o;
-                o << test_duration.format_as_duration_HMMSS() << " into test \"" << m_s.testName << "\"" << std::endl;
+                o << test_duration.format_as_duration_HMMSS() << " into test \"" << m_s.testName << "\" at local time " << std::put_time(std::localtime(&t), "%c %Z") << std::endl;
                 o << step_duration.format_as_duration_HMMSS() << " into " << m_s.stepNNNN << " \"" << m_s.stepName << "\" at subinterval " << m_s.harvesting_subinterval << std::endl << std::endl;
 
                 o << allAllSubintervalOutput.thumbnail(allAllSubintervalRollup.durationSeconds()) << std::endl;

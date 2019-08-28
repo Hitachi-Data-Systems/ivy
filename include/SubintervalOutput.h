@@ -77,7 +77,11 @@ public:
     //        * at present, hard coded to a fixed value originally "95%"
     // Extra columns for measurement rollup csv columns are indicated by a pointer to a SubintervalRollup object.
 	static std::string csvTitles(bool measurement_columns = false);
-	std::string csvValues(ivy_float seconds, SubintervalRollup* = nullptr, ivy_float non_random_sample_correction_factor = non_random_sample_correction_factor_default);
+	std::string csvValues(
+	    ivy_float seconds
+	    ,SubintervalRollup* = nullptr
+	    , ivy_float non_random_sample_correction_factor = non_random_sample_correction_factor_default
+	    , bool response_time_is_valid = true);
 
 	std::string thumbnail(ivy_float seconds);
 	RunningStat<double,long int> overall_service_time_RS();

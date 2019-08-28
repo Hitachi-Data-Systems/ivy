@@ -136,8 +136,8 @@ std::pair<bool,std::string> RollupInstance::makeMeasurementRollup()
 
                 if
                 (
-                       mt.application_IOPS < (0.99 * mt.IOPS_setting)
-                    || mt.application_IOPS > (1.01 * mt.IOPS_setting)
+                       mt.application_IOPS < (0.999 * mt.IOPS_setting)
+                    || mt.application_IOPS > (1.001 * mt.IOPS_setting)
                 )
                 {
                     m.failed_to_achieve_total_IOPS_setting = mt.failed_to_achieve_total_IOPS_setting = true;
@@ -1623,7 +1623,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 validation_errors += std::string("[subsystem IOPS is more than 15% different from host IOPS.]");
 
             if (mt.failed_to_achieve_total_IOPS_setting)
-                validation_errors += std::string("[Achieved IOPS is more than 1% different from Rollup Total IOPS Setting.]");
+                validation_errors += std::string("[Achieved IOPS off by more than .1% from Rollup Total IOPS Setting.]");
 
             csvline << ',' << validation_errors;
 
@@ -1751,7 +1751,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
                 csvline << "," << achieved_IOPS_as_percent_of_Total_IOPS_settting;
 
-                csvline << mro.csvValues(seconds,&(mr),m_s.non_random_sample_correction_factor);
+                csvline << mro.csvValues(seconds,&(mr),m_s.non_random_sample_correction_factor, (!mt.failed_to_achieve_total_IOPS_setting));
 
                 if (m_s.haveCmdDev)
                 {

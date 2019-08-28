@@ -21,12 +21,42 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <unistd.h>
+#include <limits.h>
 
 #include "ivytime.h"
 #include "ivyhelpers.h"
 
 int main(int argc, char* argv[])
 {
+
+    char hostname[HOST_NAME_MAX + 1];
+    hostname[HOST_NAME_MAX] = 0x00;
+    if (0 != gethostname(hostname,HOST_NAME_MAX))
+    {
+        std::cout << "<Error> internal programming error - gethostname(hostname,HOST_NAME_MAX)) failed errno " << errno << " - " << strerror(errno) << "." << std::endl;
+        return -1;
+    }
+
+    bool exclude_ivymaster {false};
+
+    if (argc == 1)
+    {
+        exclude_ivymaster = false;
+    }
+    else
+    {
+        std::string argv1 {argv[1]};
+
+        if (argv1 != "-exclude_ivymaster"s || argc > 2)
+        {
+            std::cout << argv[0] << " accepts only one optional command line option \"-exclude_master\"." << std::endl;
+            return -1;
+        }
+
+        if (argv1 == "-exclude_ivymaster"s) { exclude_ivymaster = true; }
+    }
+
 	std::regex ps_ef_ssh_ivydriver_regex  ( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d ssh .+ (/[^ \t]+/)?ivydriver .+)" );
 	std::regex ps_ef_ssh_ivy_cmddev_regex( R"(\w+\s+(\d+)\s+\d+\s.+\d\d:\d\d:\d\d ssh .+ (/[^ \t]+/)?ivy_cmddev .+)" );
 
@@ -69,11 +99,12 @@ root     32469 32465  0 Jun01 pts/2    00:01:40 /usr/local/bin/ivydriver sun159
 #else
 	std::string ps_ef_output = GetStdoutFromCommand(std::string("ps -ef | grep ivy"));
 #endif
-	std::cout << ps_ef_output << std::endl;
+//	std::cout << ps_ef_output << std::endl;
 
 	std::list<std::string> kill_pids;
 	std::smatch pid_match;
 
+	if (!exclude_ivymaster) // we might be running multiple ivy master instances on the same master host that is not a test host.
 	{
 		std::istringstream is(ps_ef_output);
 		std::string psline;
@@ -85,7 +116,7 @@ root     32469 32465  0 Jun01 pts/2    00:01:40 /usr/local/bin/ivydriver sun159
 			)
 			{
 				std::string pid = pid_match[1].str();
-/*debug*/	 	 	std::cout << psline << std::endl << "matched as an ssh into ivydriver or ivy_cmddev with pid \"" << pid << "\"." << std::endl << std::endl;
+    	 	 	std::cout << "On " << hostname << ": " << psline << std::endl << "matched as an ssh into ivydriver or ivy_cmddev with pid \"" << pid << "\"." << std::endl << std::endl;
 				kill_pids.push_back(pid);
 			}
 		}
@@ -99,12 +130,13 @@ root     32469 32465  0 Jun01 pts/2    00:01:40 /usr/local/bin/ivydriver sun159
 			kill_pids_command << "kill -9";
 #endif
 			for (auto& pid: kill_pids) kill_pids_command << " " << pid;
-			std::cout << "kill command for ssh pids \"" << kill_pids_command.str() << "\" output was: " << GetStdoutFromCommand(kill_pids_command.str()) << std::endl;
+			std::cout << "On " << hostname << ": " << "kill command for ssh pids \"" << kill_pids_command.str() << "\" output was: " << GetStdoutFromCommand(kill_pids_command.str()) << std::endl;
 		}
-		else std::cout << "No ssh to ivydriver or to ivy_cmddev pids were found." << std::endl;
+		//else std::cout << "No ssh to ivydriver or to ivy_cmddev pids were found." << std::endl;
+
+    	std::this_thread::sleep_for(std::chrono::milliseconds(250)); // to give enough time for the killed pids to disappear
 	}
 
-	std::this_thread::sleep_for(std::chrono::seconds(1));
 
 #ifdef development
 #else
@@ -119,13 +151,13 @@ root     32469 32465  0 Jun01 pts/2    00:01:40 /usr/local/bin/ivydriver sun159
 
 		while (std::getline(is,psline))
 		{
-			if (	std::regex_match(psline, pid_match, ps_ef_ivymaster_regex)
+			if (	((!exclude_ivymaster) && std::regex_match(psline, pid_match, ps_ef_ivymaster_regex))
 			||	    std::regex_match(psline, pid_match, ps_ef_ivydriver_regex)
 			||	    std::regex_match(psline, pid_match, ps_ef_ivy_cmddev_regex)
 			)
 			{
 				std::string pid = pid_match[1].str();
-/*debug*/			std::cout << psline << std::endl << "matched as an ivymaster or ivydriver with pid \"" << pid << "\"." << std::endl << std::endl;
+    			std::cout << "On " << hostname << ": " << psline << std::endl << "matched as an ivymaster or ivydriver with pid \"" << pid << "\"." << std::endl << std::endl;
 				kill_pids.push_back(pid);
 			}
 		}
@@ -139,15 +171,15 @@ root     32469 32465  0 Jun01 pts/2    00:01:40 /usr/local/bin/ivydriver sun159
 			kill_pids_command << "kill -9";
 #endif
 			for (auto& pid: kill_pids) kill_pids_command << " " << pid;
-			std::cout << "kill command for ivymaster or ivydriver pids \"" << kill_pids_command.str() << "\" output was: " << GetStdoutFromCommand(kill_pids_command.str()) << std::endl;
+			std::cout << "On " << hostname << ": " << "kill command for ivymaster or ivydriver pids \"" << kill_pids_command.str() << "\" output was: " << GetStdoutFromCommand(kill_pids_command.str()) << std::endl;
 		}
-		else
-		{
-			std::cout << "No ivymaster or ivydriver instances were found." << std::endl;
-		}
+//		else
+//		{
+//			std::cout << "No ivymaster or ivydriver instances were found." << std::endl;
+//		}
 	}
 
-	std::this_thread::sleep_for(std::chrono::seconds(2));
+	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
 	return 0;
 }
