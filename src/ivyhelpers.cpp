@@ -30,6 +30,7 @@
 #include <algorithm>    // std::find_if
 #include <regex>
 #include <string>
+#include <fcntl.h>
 using namespace std::string_literals;
 
 #include "ivytime.h"
@@ -85,6 +86,7 @@ void format_for_log_trailing_slashr_slashn(std::string s)
 
 std::string GetStdoutFromCommand(std::string cmd) {  // DOES NOT CHECK IF COMMAND TO BE EXECUTED IS SAFE
 	// this function was scraped and pasted from an internet forum
+	// Modified to make fgets() non-blocking (SPM).
 
     std::string data;
     FILE * stream;
@@ -94,10 +96,24 @@ std::string GetStdoutFromCommand(std::string cmd) {  // DOES NOT CHECK IF COMMAN
 
     stream = popen(cmd.c_str(), "r");
     if (stream) {
-    	while (!feof(stream))
-    	if (fgets(buffer, max_buffer, stream) != NULL)
-		data.append(buffer);
-    	pclose(stream);
+        ivytime ten_ms((double) 0.010);
+        // Make fgets() non-blocking.
+        int fd = fileno(stream);
+        int flags = fcntl(fd, F_GETFL, 0);
+        flags |= O_NONBLOCK;
+        fcntl(fd, F_SETFL, flags);
+        // Read from pipe until end-of-file.
+    	while (!feof(stream)) {
+            if (fgets(buffer, max_buffer, stream) != NULL) {
+                data.append(buffer);
+            } else {
+                if ((errno != EWOULDBLOCK) && (errno != EAGAIN))
+                    break;
+                // Wait for 10mS, so we don't spin-wait.
+                nanosleep(&(ten_ms.t), NULL);
+            }
+        }
+        pclose(stream);
     }
     return data;
 }
