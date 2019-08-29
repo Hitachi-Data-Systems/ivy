@@ -194,7 +194,7 @@ void RollupType::rebuild()
 
                     if (!rc.first) break;
 
-                    if (routine_logging)
+                    if (false && routine_logging)
                     {
                         std::ostringstream o;
                         o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
@@ -225,7 +225,7 @@ void RollupType::rebuild()
 
                     if (!rc.first) break;
 
-                    if (routine_logging)
+                    if (false && routine_logging)
                     {
                         std::ostringstream o;
                         o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
@@ -249,7 +249,7 @@ void RollupType::rebuild()
 
                     if (!rc.first) break;
 
-                    if (routine_logging)
+                    if (false && routine_logging)
                     {
                         std::ostringstream o;
                         o << "RollupType " << attributeNameCombo.attributeNameComboID << " RollupInstance " << pRollupInstance->rollupInstanceID
@@ -262,7 +262,7 @@ void RollupType::rebuild()
             }
         }
 
-        if (routine_logging)
+        if (false && routine_logging)
         {
             std::ostringstream o;
             o << "RollupInstance " << pRollupInstance->attributeNameComboID << "=" << pRollupInstance->rollupInstanceID << " config_filter_contents() = " << pRollupInstance->config_filter_contents() << std::endl;

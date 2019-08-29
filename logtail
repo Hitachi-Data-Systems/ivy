@@ -9,6 +9,13 @@ fi
 mkdir ${1}/logtail
 
 for filename in ${1}/*.txt; do
-	tail -n 250 $filename >${1}/logtail/${filename##*/}
+	tail -n 500 $filename >${1}/logtail/${filename##*/}
 done
+
+mkdir ${1}/loghead
+
+for filename in ${1}/*.txt; do
+	head -n 1000 $filename >${1}/loghead/${filename##*/}
+done
+
 

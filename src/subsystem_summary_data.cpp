@@ -388,7 +388,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
     std::ostringstream o;
     bool need_comma = false;
 
-    o << "rollup subsystem data: ";
+    o << "subsystem data: ";
 
     //This bit commented out as there's a separate thumbnail for CLPR data
 //    auto clpr_it = data.find("CLPR");
@@ -428,7 +428,7 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
         {
             const RunningStat<ivy_float,ivy_int>& rs = busy_it->second;
             if (need_comma) o << ", ";
-            o << rs.count() << " MP cores " << std::fixed << std::setprecision(2) << (100.*rs.avg()) << " % busy";
+            o << rs.count() << " MPs " << std::fixed << std::setprecision(2) << (100.*rs.avg()) << " % busy";
             need_comma = true;
         }
     }
@@ -814,17 +814,22 @@ std::string subsystem_summary_data::thumbnail() const // shows on the command li
             else
             {
                 o << "IOPS = " << std::fixed << std::setprecision(2) << IOPS;
-                o << "; serv time = " << std::fixed << std::setprecision(3) << service_time_ms << " ms";
+                o << "; serv = " << std::fixed << std::setprecision(3) << service_time_ms << " ms";
                 o << "; " << std::fixed << std::setprecision(2) << (decimal_MB_per_second/(1.024*1.024)) << " MiB/s";
 
-                if (random_IOPS > 0.0 )
+                if (IOPS > 0.0 && decimal_MB_per_second > 0.0)
                 {
-                    o << "; rand blk = " << std::fixed << std::setprecision(random_blocksize_KiB == ceil(random_blocksize_KiB) ? 0 : 2) << random_blocksize_KiB << " KiB";
+                    o << "; blk = " << std::fixed << std::setprecision(1) << ((1e6 * decimal_MB_per_second/IOPS)/1024.0) << " KiB";
                 }
-                if (sequential_IOPS > 0.0 )
-                {
-                    o << "; seq blk = " << std::fixed << std::setprecision(sequential_blocksize_KiB == ceil(sequential_blocksize_KiB) ? 0 : 2) << sequential_blocksize_KiB << " KiB";
-                }
+
+//                if (random_IOPS > 0.0 )
+//                {
+//                    o << "; rand blk = " << std::fixed << std::setprecision(random_blocksize_KiB == ceil(random_blocksize_KiB) ? 0 : 2) << random_blocksize_KiB << " KiB";
+//                }
+//                if (sequential_IOPS > 0.0 )
+//                {
+//                    o << "; seq blk = " << std::fixed << std::setprecision(sequential_blocksize_KiB == ceil(sequential_blocksize_KiB) ? 0 : 2) << sequential_blocksize_KiB << " KiB";
+//                }
             }
         }
     }

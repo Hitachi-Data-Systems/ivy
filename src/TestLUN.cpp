@@ -77,6 +77,8 @@ void TestLUN::open_fd()
             << "Source code reference line " <<__LINE__ << " of " <<__FILE__ << "." << std::endl;
 		pWorkloadThread->dying_words = o.str();
 		log(pWorkloadThread->slavethreadlogfile, pWorkloadThread->dying_words);
+		std::cout << o.str() << std::flush;
+		sleep(1);
 		pWorkloadThread->state = ThreadState::died;
         pWorkloadThread->slaveThreadConditionVariable.notify_all();
 		exit(-1);
@@ -94,6 +96,8 @@ void TestLUN::open_fd()
 			    << "\" - must be all decimal digits 0-9." << std::endl;
             pWorkloadThread->dying_words = o.str();
 			log(pWorkloadThread->slavethreadlogfile, o.str());
+    		std::cout << o.str() << std::flush;
+    		sleep(1);
 			pWorkloadThread->state = ThreadState::died;
 			pWorkloadThread->slaveThreadConditionVariable.notify_all();
 			exit(-1);
@@ -114,12 +118,29 @@ void TestLUN::open_fd()
             << "Source code reference line " <<__LINE__ << " of " <<__FILE__ << "." << std::endl;
 		pWorkloadThread->dying_words = o.str();
 		log(pWorkloadThread->slavethreadlogfile, pWorkloadThread->dying_words);
+		std::cout << o.str() << std::flush;
+		sleep(1);
 		pWorkloadThread->state = ThreadState::died;
         pWorkloadThread->slaveThreadConditionVariable.notify_all();
 		exit(-1);
 	}
 
 	std::string LUNname = pLUN->attribute_value(std::string("LUN name"));
+
+	if (fd != -1)
+	{
+	    std::ostringstream o;
+	    o << "<Warning> internal programming note - WorkloadThread physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread
+	        << " TestLUN " << host_plus_lun
+	        << " TestLUN::open_fd() - upon entry, fd was supposed to be closed but had value " << fd << ". Closing it before re-opening." << std::endl;
+	    int rc;
+	    if (0 != (rc = close(fd)))
+	    {
+	        o << "Close for previous fd value failed return code " << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+	    }
+
+	    fd=-1;
+    }
 
 	fd = open64(LUNname.c_str(),O_RDWR+O_DIRECT);
 
@@ -131,6 +152,8 @@ void TestLUN::open_fd()
 		pWorkloadThread->dying_words = o.str();
 		pWorkloadThread->state = ThreadState::died;
 		log(pWorkloadThread->slavethreadlogfile, pWorkloadThread->dying_words);
+		std::cout << o.str() << std::flush;
+		sleep(1);
         pWorkloadThread->slaveThreadConditionVariable.notify_all();
 		exit(-1);
 	}

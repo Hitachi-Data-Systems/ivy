@@ -356,24 +356,26 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
         if (event_fd == -1)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error.  Failed trying to create eventfd for physical core " << physical_core << " hyperthread " << hyperthread << "\'s thread."
+            o << "<Error> Internal programming error - " << ivydriver.ivyscript_hostname << " - Failed trying to create eventfd for physical core " << physical_core << " hyperthread " << hyperthread << "\'s thread."
                 << " - errno = " << errno << " " << strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
             dying_words = o.str();
             log(slavethreadlogfile,dying_words);
-            state=ThreadState::died;
-            slaveThreadConditionVariable.notify_all();
-            exit(-1);
+            std::cout << o.str() << std::flush; sleep(1);
+            post_Error_for_main_thread_to_say(o.str());
+            goto wait_for_command;
         }
 
 		epoll_fd = epoll_create(1 /* "size" ignored since Linux kernel 2.6.8 */ );
 		if (epoll_fd == -1)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
+            o << "<Error> Internal programming error - " << ivydriver.ivyscript_hostname << " WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
                 << " - failed trying to create epoll fd - "
                 << std::strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+            std::cout << o.str() << std::flush; sleep(1);
+            log(slavethreadlogfile,dying_words);
             post_Error_for_main_thread_to_say(o.str());
             goto wait_for_command;
         }
@@ -382,10 +384,12 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 		if (timerfd_fd == -1)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
+            o << "<Error> Internal programming error - " << ivydriver.ivyscript_hostname << " WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
                 << " - failed trying to create timerfd - "
                 << std::strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+            std::cout << o.str() << std::flush; sleep(1);
+            log(slavethreadlogfile,dying_words);
             post_Error_for_main_thread_to_say(o.str());
             goto wait_for_command;
         }
@@ -400,10 +404,12 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
         if (rc == -1)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
+            o << "<Error> Internal programming error - " << ivydriver.ivyscript_hostname << " WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
                 << " - epoll_ctl failed trying to add an event - "
                 << std::strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+            std::cout << o.str() << std::flush; sleep(1);
+            log(slavethreadlogfile,dying_words);
             post_Error_for_main_thread_to_say(o.str());
             goto wait_for_command;
         }
@@ -420,6 +426,8 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 << " - epoll_ctl failed trying to add timerfd event - "
                 << std::strerror(errno) << std::endl
                 << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+            std::cout << o.str() << std::flush; sleep(1);
+            log(slavethreadlogfile,dying_words);
             post_Error_for_main_thread_to_say(o.str());
             goto wait_for_command;
         }
@@ -712,6 +720,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                                 << physical_core << " hyperthread " << hyperthread
                                 << " - WorkloadThread told to keep going, but next subinterval not marked READY_TO_RUN" << std::endl
                                 << " for workload " << pWorkload->workloadID.workloadID << std::endl
+                                << "Master host late to post command, or has stopped." << std::endl
                                 << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
                             wkld_lk.unlock();
                             post_Error_for_main_thread_to_say(o.str());
@@ -1278,15 +1287,108 @@ void WorkloadThread::post_Warning_for_main_thread_to_say(const std::string& msg)
     }
 }
 
-void WorkloadThread::close_all_fds()
+bool WorkloadThread::close_all_fds()
 {
+    int rc;
+
+    bool success {true};
+
     for (auto& pTestLUN : pTestLUNs)
     {
-        io_destroy(pTestLUN->act);
-        close(pTestLUN->fd);
+        if (0 != (rc = io_destroy(pTestLUN->act)))
+        {
+            std::ostringstream o;
+            o << "<Error> internal programming error WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+                << " TestLUN " << pTestLUN->host_plus_lun
+                << " in WorkloadThread::close_all_fds() - io_destroy for AIO context failed return code "
+                << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+            log(slavethreadlogfile,o.str());
+            std::cout << o.str();
+            post_Error_for_main_thread_to_say(o.str());
+            success = false;
+        }
+/*debug*/else
+        {
+            std::ostringstream o;
+            o << "debug: WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+                << " TestLUN " << pTestLUN->host_plus_lun
+                << " in WorkloadThread::close_all_fds() - io_destroy for AIO context successful." << std::endl;
+            log(slavethreadlogfile,o.str());
+        }
+
+        if (0 != (rc = close(pTestLUN->fd)))
+        {
+            std::ostringstream o;
+            o << "<Error> internal programming error WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+                << " TestLUN " << pTestLUN->host_plus_lun
+                << " in WorkloadThread::close_all_fds() - close for pTestLUN->fd = " << pTestLUN->fd << " failed return code "
+                << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+            log(slavethreadlogfile,o.str());
+            std::cout << o.str();
+            post_Error_for_main_thread_to_say(o.str());
+            success = false;
+        }
+        else
+        {
+/*debug*/   {
+                std::ostringstream o;
+                o << "debug: WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+                    << " TestLUN " << pTestLUN->host_plus_lun
+                    << " in WorkloadThread::close_all_fds() - close for pTestLUN->fd = " << pTestLUN->fd << " successful." << std::endl;
+                log(slavethreadlogfile,o.str());
+            } // end of debug
+
+            pTestLUN->fd = -1;
+        }
     }
-    close(epoll_fd);
-    close(event_fd);
+
+    if (0 != (rc = close(epoll_fd)))
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+            << " in WorkloadThread::close_all_fds() - close for epoll_fd = " << epoll_fd << " failed return code "
+            << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+        log(slavethreadlogfile,o.str());
+        std::cout << o.str();
+        post_Error_for_main_thread_to_say(o.str());
+        success = false;
+    }
+    else
+    {
+/*debug*/{
+            std::ostringstream o;
+            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+                << " in WorkloadThread::close_all_fds() - close for epoll_fd = " << epoll_fd << " successful." << std::endl;
+            log(slavethreadlogfile,o.str());
+        } // end of debug
+
+        epoll_fd = -1;
+    }
+
+    if (0 != (rc = close(event_fd)))
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+            << " in WorkloadThread::close_all_fds() - close for event_fd = " << event_fd << " failed return code "
+            << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+        log(slavethreadlogfile,o.str());
+        std::cout << o.str();
+        post_Error_for_main_thread_to_say(o.str());
+        success = false;
+    }
+    else
+    {
+/*debug*/{
+            std::ostringstream o;
+            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+                << " in WorkloadThread::close_all_fds() - close for event_fd = " << event_fd << " successful." << std::endl;
+            log(slavethreadlogfile,o.str());
+        } // end of debug
+
+        event_fd = -1;
+    }
+
+    return success;
 }
 
 #ifdef IVYDRIVER_TRACE

@@ -60,7 +60,6 @@ using namespace std;
 #include "LUN.h"
 #include "ivydefines.h"
 #include "discover_luns.h"
-#include "LDEVset.h"
 #include "ivyhelpers.h"
 #include "ivybuilddate.h"
 #include "ivylinuxcpubusy.h"

@@ -157,7 +157,7 @@ root     32469 32465  0 Jun01 pts/2    00:01:40 /usr/local/bin/ivydriver sun159
 			)
 			{
 				std::string pid = pid_match[1].str();
-    			std::cout << "On " << hostname << ": " << psline << std::endl << "matched as an ivymaster or ivydriver with pid \"" << pid << "\"." << std::endl << std::endl;
+    			std::cout << "On " << hostname << ": " << psline << std::endl << "matched as an ivy or ivydriver with pid \"" << pid << "\"." << std::endl << std::endl;
 				kill_pids.push_back(pid);
 			}
 		}
@@ -171,7 +171,7 @@ root     32469 32465  0 Jun01 pts/2    00:01:40 /usr/local/bin/ivydriver sun159
 			kill_pids_command << "kill -9";
 #endif
 			for (auto& pid: kill_pids) kill_pids_command << " " << pid;
-			std::cout << "On " << hostname << ": " << "kill command for ivymaster or ivydriver pids \"" << kill_pids_command.str() << "\" output was: " << GetStdoutFromCommand(kill_pids_command.str()) << std::endl;
+			std::cout << "On " << hostname << ": " << "kill command for ivy or ivydriver pids \"" << kill_pids_command.str() << "\" output was: " << GetStdoutFromCommand(kill_pids_command.str()) << std::endl;
 		}
 //		else
 //		{

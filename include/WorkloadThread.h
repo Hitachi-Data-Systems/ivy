@@ -168,7 +168,7 @@ public:
     void post_Error_for_main_thread_to_say(const std::string&);
     void post_Warning_for_main_thread_to_say(const std::string&);
 
-    void close_all_fds();
+    bool close_all_fds(); // returns true if successful
     void check_for_long_running_IOs();
 #ifdef IVYDRIVER_TRACE
     void log_bookmark_counters();

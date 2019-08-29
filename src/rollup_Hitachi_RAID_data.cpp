@@ -37,7 +37,7 @@ void rollup_Hitachi_RAID_data(const std::string& logfilename, Hitachi_RAID_subsy
 
         for (auto& rollupinstancepear : rolluptypepear.second->instances)
         {
-            if (routine_logging)
+            if (false && routine_logging)
             {
                 log(logfilename,rollupinstancepear.second->config_filter_contents());
             }

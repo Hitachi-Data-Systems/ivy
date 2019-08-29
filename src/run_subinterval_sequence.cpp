@@ -513,6 +513,10 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     // retrieve confirmation of the Go! command.
 
+#ifdef TRACE_RSS
+{std::ostringstream trss; trss << "TRACE_RSS: About to get confirmation from pipe_driver_subthread of ivydriver\'s OK for the Go!\n"; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
+#endif
+
     for (auto& pear : m_s.host_subthread_pointers)
     {
         {
@@ -845,7 +849,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             {
                 std::ostringstream o;
 
-                o  << "all=all " << m_s.rollups.get_all_equals_all_instance()->subsystem_data_by_subinterval.back().thumbnail() << std::endl;
+                o << m_s.rollups.get_all_equals_all_instance()->subsystem_data_by_subinterval.back().thumbnail() << std::endl;
 
                 m_s.subsystem_thumbnail = o.str();
 
@@ -921,7 +925,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 std::time_t t = std::time(nullptr);
 
                 std::ostringstream o;
-                o << test_duration.format_as_duration_HMMSS() << " into test \"" << m_s.testName << "\" at local time " << std::put_time(std::localtime(&t), "%c %Z") << std::endl;
+                o << test_duration.format_as_duration_HMMSS() << " into test \"" << m_s.testName << "\" at " << std::put_time(std::localtime(&t), "%c %Z") << " local time." << std::endl;
                 o << step_duration.format_as_duration_HMMSS() << " into " << m_s.stepNNNN << " \"" << m_s.stepName << "\" at subinterval " << m_s.harvesting_subinterval << std::endl << std::endl;
 
                 o << allAllSubintervalOutput.thumbnail(allAllSubintervalRollup.durationSeconds()) << std::endl;
