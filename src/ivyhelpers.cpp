@@ -105,7 +105,11 @@ std::string GetStdoutFromCommand(std::string cmd) {  // DOES NOT CHECK IF COMMAN
         // Read from pipe until end-of-file.
     	while (!feof(stream)) {
             if (fgets(buffer, max_buffer, stream) != NULL) {
-                data.append(buffer);
+                try {
+                    data.append(buffer);
+                }
+                catch (...) {
+                }
             } else {
                 if ((errno != EWOULDBLOCK) && (errno != EAGAIN))
                     break;
