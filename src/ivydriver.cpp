@@ -164,24 +164,24 @@ void sig_handler(int sig, siginfo_t *p_siginfo, void *context);
 
 int IvyDriver::main(int argc, char* argv[])
 {
-//    struct sigaction sigactshun;
-//    memset(&sigactshun, 0, sizeof(sigactshun));
-//    sigactshun.sa_flags = SA_SIGINFO;  // three argument form of signal handler
-//    sigactshun.sa_sigaction = sig_handler;
-//    sigaction(SIGINT, &sigactshun, NULL);
-//    sigaction(SIGHUP, &sigactshun, NULL);
-//    sigaction(SIGCHLD, &sigactshun, NULL);
-//    //sigaction(SIGSEGV, &sigactshun, NULL);
-//    sigaction(SIGUSR1, &sigactshun, NULL);
-//    //sigaction(SIGTERM, &sigactshun, NULL);
-//
+    struct sigaction sigactshun;
+    memset(&sigactshun, 0, sizeof(sigactshun));
+    sigactshun.sa_flags = SA_SIGINFO;  // three argument form of signal handler
+    sigactshun.sa_sigaction = sig_handler;
+    //sigaction(SIGINT, &sigactshun, NULL);
+    //sigaction(SIGHUP, &sigactshun, NULL);
+    //sigaction(SIGCHLD, &sigactshun, NULL);
+    //sigaction(SIGSEGV, &sigactshun, NULL);
+    //sigaction(SIGUSR1, &sigactshun, NULL);
+    //sigaction(SIGTERM, &sigactshun, NULL);
+
     if (0 != system("stty -echo"))
     {
         std::cout << "<Error> Failed turn ing off stdin echo using \"stty -echo\" command.\n";
         return -1;
     }
 
-//    system ("modprobe msr"); // this may be needed for check_CPU_temperature() to work.
+    system ("modprobe msr"); // this may be needed for check_CPU_temperature() to work.
 
 	initialize_io_time_clip_levels();
 
