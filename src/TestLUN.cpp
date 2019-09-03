@@ -29,6 +29,7 @@
 #include "ivytime.h"
 #include "Eyeo.h"
 #include "ivydefines.h"
+#include "ivydriver.h"
 
 //#define IVYDRIVER_TRACE
 // IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
@@ -61,6 +62,10 @@ unsigned int TestLUN::sum_of_maxTags()
     return total;
 }
 
+
+void TestLUN::post_warning(const std::string& msg) { pWorkloadThread->post_warning (host_plus_lun + " - "s + msg); }
+
+
 void TestLUN::open_fd()
 {
 #if defined(IVYDRIVER_TRACE)
@@ -72,16 +77,8 @@ void TestLUN::open_fd()
     if (workloads.size() == 0)
     {
         std::ostringstream o;
-        o << "<Error> When trying open file descriptor for test LUN "
-            << host_plus_lun << ", no workloads found on this LUN." << std::endl
-            << "Source code reference line " <<__LINE__ << " of " <<__FILE__ << "." << std::endl;
-		pWorkloadThread->dying_words = o.str();
-		log(pWorkloadThread->slavethreadlogfile, pWorkloadThread->dying_words);
-		std::cout << o.str() << std::flush;
-		sleep(1);
-		pWorkloadThread->state = ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-		exit(-1);
+        o << "when trying open file descriptor for test LUN " << host_plus_lun << ", no workloads found on this LUN." << std::endl;
+        throw std::runtime_error(o.str());
     }
 
 	if (pLUN->contains_attribute_name(std::string("Sector Size")))
@@ -91,16 +88,8 @@ void TestLUN::open_fd()
 		if (!isalldigits(secsize))
 		{
 			std::ostringstream o;
-			o << "<Error> LUN " << host_plus_lun
-			    << " - bad \"Sector Size\" attribute value \"" << secsize
-			    << "\" - must be all decimal digits 0-9." << std::endl;
-            pWorkloadThread->dying_words = o.str();
-			log(pWorkloadThread->slavethreadlogfile, o.str());
-    		std::cout << o.str() << std::flush;
-    		sleep(1);
-			pWorkloadThread->state = ThreadState::died;
-			pWorkloadThread->slaveThreadConditionVariable.notify_all();
-			exit(-1);
+			o << "bad \"Sector Size\" attribute value \"" << secsize << "\" - must be all decimal digits 0-9." << std::endl;
+            throw std::runtime_error(o.str());
 		}
 		std::istringstream is(secsize);
 		is >> sector_size;
@@ -113,16 +102,8 @@ void TestLUN::open_fd()
 	if (!pLUN->contains_attribute_name(std::string("LUN name")))
 	{
 		std::ostringstream o;
-		o << "<Error> LUN " << host_plus_lun
-		    << " does not have \"LUN name\" attribute.  In Linux, LUN names look like /dev/sdxx." << std::endl
-            << "Source code reference line " <<__LINE__ << " of " <<__FILE__ << "." << std::endl;
-		pWorkloadThread->dying_words = o.str();
-		log(pWorkloadThread->slavethreadlogfile, pWorkloadThread->dying_words);
-		std::cout << o.str() << std::flush;
-		sleep(1);
-		pWorkloadThread->state = ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-		exit(-1);
+		o << "LUN " << host_plus_lun << " does not have \"LUN name\" attribute.  In Linux, LUN names look like /dev/sdxx." << std::endl;
+        throw std::runtime_error(o.str());
 	}
 
 	std::string LUNname = pLUN->attribute_value(std::string("LUN name"));
@@ -130,14 +111,13 @@ void TestLUN::open_fd()
 	if (fd != -1)
 	{
 	    std::ostringstream o;
-	    o << "<Warning> internal programming note - WorkloadThread physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread
-	        << " TestLUN " << host_plus_lun
-	        << " TestLUN::open_fd() - upon entry, fd was supposed to be closed but had value " << fd << ". Closing it before re-opening." << std::endl;
-	    int rc;
-	    if (0 != (rc = close(fd)))
+	    o << "TestLUN::open_fd() - upon entry, fd was supposed to be closed but had value " << fd << ". Closing it before re-opening." << std::endl;
+	    if (0 != close(fd))
 	    {
-	        o << "Close for previous fd value failed return code " << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+	        o << "Close for previous fd value failed errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+	        throw std::runtime_error(o.str());
 	    }
+	    post_warning(o.str());
 
 	    fd=-1;
     }
@@ -146,16 +126,8 @@ void TestLUN::open_fd()
 
 	if (-1 == fd) {
 		std::ostringstream o;
-		o << "<Error> Failed trying to open file descriptor for LUN " << host_plus_lun
-            << " - open64(\"" << LUNname << "\",O_RDWR+O_DIRECT) failed errno = "
-            << errno << " (" << strerror(errno) << ')' << std::endl;
-		pWorkloadThread->dying_words = o.str();
-		pWorkloadThread->state = ThreadState::died;
-		log(pWorkloadThread->slavethreadlogfile, pWorkloadThread->dying_words);
-		std::cout << o.str() << std::flush;
-		sleep(1);
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-		exit(-1);
+		o << "Failed - open64(\"" << LUNname << "\",O_RDWR+O_DIRECT) - errno " << errno << " (" << strerror(errno) << ')' << std::endl;
+		throw std::runtime_error(o.str());
 	}
 	return;
 }
@@ -181,14 +153,9 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 
 	if (ThreadState::waiting_for_command != pWorkloadThread->state)
 	{
-        std::ostringstream o; o << "<Error> prepare_linux_AIO_driver_to_start() was called, but the workload thread state was "
-            << pWorkloadThread->state << ", not ThreadState::waiting_for_command as expected.\n" << std::endl
-             << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-        pWorkloadThread->state=ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        std::ostringstream o; o << "prepare_linux_AIO_driver_to_start() was called, but the workload thread state was "
+            << pWorkloadThread->state << ", not ThreadState::waiting_for_command as expected.\n" << std::endl;
+        throw std::runtime_error(o.str());
 	}
 	// If Eyeos haven't been made, or it looks like we don't have enough for the next step, make some.
 		// Figure out how many we need according to the precompute count, the post-process allowance, and maxTags parameter.
@@ -219,20 +186,13 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
     //         a nonzero value, then a read(2) returns 8 bytes containing
     //         the value 1, and the counter's value is decremented by 1.
 
-    int rc;
 	act=0;  // must be set to zero otherwise io_setup() will fail with return code 22 - invalid parameter.
 
-	if (0 != ( rc = io_setup(sum_of_maxTags(),&act)))
+	if (0 != io_setup(sum_of_maxTags(),&act))
 	{
         std::ostringstream o;
-        o << "<Error> io_setup(" << sum_of_maxTags() << "," << (&act) << ") failed return code " << rc
-			<< ", errno=" << errno << " - " << strerror(errno) << std::endl
-            << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-        pWorkloadThread->state=ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        o << "io_setup(" << sum_of_maxTags() << "," << (&act) << ") failed errno " << errno << " (" << strerror(errno) << ")."<< std::endl;
+        throw std::runtime_error(o.str());
 	}
 
 	if (routine_logging)
@@ -240,7 +200,8 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
         std::ostringstream o;
         o << "TestLUN::prepare_linux_AIO_driver_to_start() done - LUN opened with fd = " << fd
             << ", aio context successfully constructed, sharing eventfd = " << pWorkloadThread->event_fd
-            << " and epoll fd " << pWorkloadThread->epoll_fd << "." << std::endl;
+            << ", epoll fd " << pWorkloadThread->epoll_fd
+            << " and timerfd " << pWorkloadThread->timer_fd << "." << std::endl;
         log(pWorkloadThread->slavethreadlogfile,o.str());
 	}
 
@@ -274,15 +235,8 @@ unsigned int /* number of I/Os reaped */ TestLUN::reap_IOs()
     if (reaped < 0)
     {
         std::ostringstream o;
-        o << "<Error> internal processing error - call to Linux AIO context io_getevents() "
-            << "return code " << reaped << " errno " << errno << " - " << strerror(errno) << "."
-            <<  " at " << __FILE__ << " line " << __LINE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-        io_destroy(act);
-        pWorkloadThread->state=ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        o << "call to Linux AIO context io_getevents() failed errno " << errno << " (" << strerror(errno) << ")." << std::endl;
+        throw std::runtime_error(o.str());
     }
 
     if (reaped == 0) return 0;
@@ -312,17 +266,11 @@ unsigned int /* number of I/Os reaped */ TestLUN::reap_IOs()
         if (running_IOs_iter == pWorkload->running_IOs.end())
         {
             std::ostringstream o;
-            o << "<Error> internal processing error - an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
+            o << "an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
                 << "that was not found in the ivy workload\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
                 << "  The ivy Eyeo object associated with the completion event describes itself as "
-                << p_Eyeo->toString()
-                <<  " at " << __FILE__ << " line " << __LINE__ << std::endl;
-            pWorkloadThread->dying_words = o.str();
-            log(pWorkloadThread->slavethreadlogfile,o.str());
-            io_destroy(act);
-            pWorkloadThread->state=ThreadState::died;
-            pWorkloadThread->slaveThreadConditionVariable.notify_all();
-            exit(-1);
+                << p_Eyeo->toString() << std::endl;
+            throw std::runtime_error(o.str());
         }
         pWorkload->running_IOs.erase(running_IOs_iter);
 
@@ -359,40 +307,22 @@ void TestLUN::pop_front_to_LaunchPad(Workload* pWorkload)
     if (pWorkload == nullptr)
     {
         std::ostringstream o;
-        o << "<Error> internal processing error - pop_front_to_LaunchPad() called with null pointer to Workload"
-            <<  " at " << __FILE__ << " line " << __LINE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-        io_destroy(act);
-        pWorkloadThread->state=ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        o << "pop_front_to_LaunchPad() called with null pointer to Workload" << std::endl;
+        throw std::runtime_error(o.str());
     }
 
     if (launch_count >= MAX_IOS_LAUNCH_AT_ONCE)
     {
         std::ostringstream o;
-        o << "<Error> internal processing error - pop_front_to_LaunchPad() called with no space in LaunchPad"
-            <<  " at " << __FILE__ << " line " << __LINE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-        io_destroy(act);
-        pWorkloadThread->state=ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        o << "pop_front_to_LaunchPad() called with no space in LaunchPad." << std::endl;
+        throw std::runtime_error(o.str());
     }
 
     if (pWorkload->precomputeQ.size() == 0)
     {
         std::ostringstream o;
-        o << "<Error> internal processing error - pop_front_to_LaunchPad() called for a Workload with an empty precomputeQ"
-            <<  " at " << __FILE__ << " line " << __LINE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-        io_destroy(act);
-        pWorkloadThread->state=ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        o << "pop_front_to_LaunchPad() called for a Workload with an empty precomputeQ " << std::endl;
+        throw std::runtime_error(o.str());
     }
 
     ivytime now; now.setToNow();
@@ -494,18 +424,13 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
 
     if (max_IOs_tried_to_launch_at_once < launch_count) max_IOs_tried_to_launch_at_once = launch_count;
 
-    int rc = io_submit(act, launch_count, (struct iocb **) LaunchPad /* iocb comes first in an Eyeo */);
-    if (-1==rc)
+    int rc;
+
+    if ( 0 > (rc = io_submit(act, launch_count, (struct iocb **) LaunchPad /* iocb comes first in an Eyeo */)))
     {
         std::ostringstream o;
-        o << "<Error> Internal programming error - asynchronous I/O \"io_submit()\" failed, errno=" << errno << " - " << strerror(errno)
-            <<  " at " << __FILE__ << " line " << __LINE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-        io_destroy(act); close(fd); close(pWorkloadThread->event_fd); close(pWorkloadThread->epoll_fd);
-        pWorkloadThread->state=ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        o << "asynchronous I/O \"io_submit()\" failed, errno=" << errno << " (" << strerror(errno) << ")." << std::endl;
+        throw std::runtime_error(o.str());
     }
     // return code is number of I/Os succesfully launched.
 
@@ -524,16 +449,11 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
         if (running_IOs_iterator.first == pWorkload->running_IOs.end())
         {
             std::ostringstream o;
-            o << "<Error> internal processing error - failed trying to insert a Linux aio I/O tracker "
+            o << "failed trying to insert a Linux aio I/O tracker "
                 << "into the ivy workload\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
                 << "  The ivy Eyeo object associated with the completion event describes itself as "
-                << pEyeo->toString() <<  " - at " << __FILE__ << " line " << __LINE__ << std::endl;
-            pWorkloadThread->dying_words = o.str();
-            log(pWorkloadThread->slavethreadlogfile,o.str());
-            io_destroy(act);
-            pWorkloadThread->state=ThreadState::died;
-            pWorkloadThread->slaveThreadConditionVariable.notify_all();
-            exit(-1);
+                << pEyeo->toString() << std::endl;
+            throw std::runtime_error(o.str());
         }
 
         pWorkload->workload_queue_depth++;
@@ -586,19 +506,12 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
         if (running_IOs_iter == pWorkload->running_IOs.end())
         {
             std::ostringstream o;
-            o << "<Error> internal processing error - after a submit was not successful for all I/Os, when trying to "
+            o << "after a submit was not successful for all I/Os, when trying to "
                 << "remove from \"running_IOs\" one of the I/Os that wasn\'t successfully launched, that "
                 << "unsuccessful I/O was not found in \"running_IOs\" for the owning Workload."
                 << "  The ivy Eyeo object associated with the completion event describes itself as "
-                << pEyeo->toString()
-                <<  " at " << __FILE__ << " line " << __LINE__
-                ;
-            pWorkloadThread->dying_words = o.str();
-            log(pWorkloadThread->slavethreadlogfile,o.str());
-            io_destroy(act); close(fd); close(pWorkloadThread->event_fd); close(pWorkloadThread->epoll_fd);
-            pWorkloadThread->state = ThreadState::died;
-            pWorkloadThread->slaveThreadConditionVariable.notify_all();
-            exit(-1);
+                << pEyeo->toString() << std::endl;
+            throw std::runtime_error(o.str());
         }
         pWorkload->running_IOs.erase(running_IOs_iter);
 
@@ -764,17 +677,8 @@ void TestLUN::catch_in_flight_IOs()
 	    if (reaped < 0)
 		{
             std::ostringstream o;
-            o << "<Error> TestLUN::catch_in_flight_IOs() - io_getevents() failed return code " << reaped
-                << ", errno = " << errno << " - " << strerror(errno)
-                << " at " << __FILE__ << " line " << __LINE__ ;
-            pWorkloadThread->dying_words= o.str();
-            log(pWorkloadThread->slavethreadlogfile,o.str());
-            for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
-            close(pWorkloadThread->event_fd);
-            close(pWorkloadThread->epoll_fd);
-            pWorkloadThread->state = ThreadState::died;
-            pWorkloadThread->slaveThreadConditionVariable.notify_all();
-            exit(-1);
+            o << "io_getevents() failed errno " << errno << " (" << strerror(errno) << ")." << std::endl;
+            throw std::runtime_error(o.str());
 		}
 
         for (int i=0; i< reaped; i++)
@@ -795,38 +699,20 @@ void TestLUN::catch_in_flight_IOs()
             if  (running_IOs_iter == p_Eyeo->pWorkload->running_IOs.end())
             {
                 std::ostringstream o;
-                o << "<Error> internal processing error - in catch_in_flight_IOs(), an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
+                o << "in catch_in_flight_IOs(), an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
                     << "that was not found in the ivy workload thread\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
                     << "  The ivy Eyeo object associated with the completion event describes itself as "
-                    << p_Eyeo->toString()
-                    <<  "  " << __FILE__ << " line " << __LINE__
-                    ;
-                pWorkloadThread->dying_words = o.str();
-                log(pWorkloadThread->slavethreadlogfile,o.str());
-                for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
-                close(pWorkloadThread->event_fd);
-                close(pWorkloadThread->epoll_fd);
-                pWorkloadThread->state = ThreadState::died;
-                pWorkloadThread->slaveThreadConditionVariable.notify_all();
-                exit(-1);
+                    << p_Eyeo->toString() << std::endl;
+                throw std::runtime_error(o.str());
             }
             p_Eyeo->pWorkload->running_IOs.erase(running_IOs_iter);
 
             if (p_Eyeo->pWorkload->workload_queue_depth != p_Eyeo->pWorkload->running_IOs.size())
             {
                 std::ostringstream o;
-                o << "<Error> internal programming error - before cancelling any remaining I/Os found to our consternation that queue_depth was "
-                    << p_Eyeo->pWorkload->workload_queue_depth
-                    << " but running_IOs.size() was " << p_Eyeo->pWorkload->running_IOs.size()
-                    <<  ".  Occurred  at " << __FILE__ << " line " << __LINE__ ;
-                pWorkloadThread->dying_words= o.str();
-                log(pWorkloadThread->slavethreadlogfile,o.str());
-                for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
-                close(pWorkloadThread->event_fd);
-                close(pWorkloadThread->epoll_fd);
-                pWorkloadThread->state = ThreadState::died;
-                pWorkloadThread->slaveThreadConditionVariable.notify_all();
-                exit(-1);
+                o << "before cancelling any remaining I/Os found to our consternation that queue_depth was "
+                    << p_Eyeo->pWorkload->workload_queue_depth << "." << std::endl;
+                throw std::runtime_error(o.str());
             }
         }
 	}
@@ -914,21 +800,11 @@ void TestLUN::abort_if_queue_depths_corrupted(const std::string& where_from, uns
         o << ", testLUN_max_queue_depth = " << testLUN_max_queue_depth;
     }
 
-
     if (bad)
     {
         std::ostringstream oo;
-        oo << "<Error> Internal programming error in TestLUN::abort_if_queue_depths_corrupted() - from " << where_from
-            << " - " << o.str() << "- Occurred at line " << __LINE__ << " of " << __FILE__ << "." << std::endl;
-
-        pWorkloadThread->dying_words= oo.str();
-        log(pWorkloadThread->slavethreadlogfile,oo.str());
-        io_destroy(act);
-        pWorkloadThread->state = ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        pWorkloadThread->post_Error_for_main_thread_to_say(oo.str());
-
-        exit(-1);
+        oo << "in TestLUN::abort_if_queue_depths_corrupted() - from " << where_from << " - " << o.str() << "." << std::endl;
+        throw std::runtime_error(oo.str());
     }
 
     return;
@@ -949,24 +825,16 @@ void TestLUN::ivy_cancel_IO(struct iocb* p_iocb)
     if (it == p_Eyeo->pWorkload->running_IOs.end())
     {
         std::ostringstream o;
-        o << "<Error> ivy_cancel_IO was called to cancel an I/O that ivy wasn\'t tracking as running.  The I/O describes itself as " << p_Eyeo->toString()
-            << ".  Occurred at line " << __LINE__ << " of " << __FILE__ << ".";
-        pWorkloadThread->dying_words= o.str();
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-        io_destroy(act);
-        pWorkloadThread->state = ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        o << "ivy_cancel_IO was called to cancel an I/O that ivy wasn\'t tracking as running.  The I/O describes itself as " << p_Eyeo->toString() << "." << std::endl;
+        throw std::runtime_error(o.str());
     }
 
     {
         std::ostringstream o;
-        o << "<Warning> about to cancel an I/O operation that has been running for " << (p_Eyeo->since_start_time()).format_as_duration_HMMSSns()
+        o << "about to cancel an I/O operation that has been running for " << (p_Eyeo->since_start_time()).format_as_duration_HMMSSns()
             << " described as " << p_Eyeo->toString();
 
-        pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
-
-        log(pWorkloadThread->slavethreadlogfile,o.str());
+        post_warning(o.str());
     }
 
     struct io_event ioev;
@@ -981,14 +849,8 @@ void TestLUN::ivy_cancel_IO(struct iocb* p_iocb)
         if (retry_count > 100)
         {
             std::ostringstream o;
-            o << "<Error> after over 100 retries of the system call to cancel an I/O, ivy_cancel_IO() is abandoning the attempt."
-                << "  Occurred at line " << __LINE__ << " of " << __FILE__ << ".";;
-            pWorkloadThread->dying_words= o.str();
-            log(pWorkloadThread->slavethreadlogfile,o.str());
-            io_destroy(act);
-            pWorkloadThread->state = ThreadState::died;
-            pWorkloadThread->slaveThreadConditionVariable.notify_all();
-            exit(-1);
+            o << "after over 100 retries of the system call to cancel an I/O, ivy_cancel_IO() is abandoning the attempt." << "." << std::endl;
+            throw std::runtime_error(o.str());
         }
         rc = io_cancel(act,p_iocb, &ioev);
     }
@@ -1002,7 +864,7 @@ void TestLUN::ivy_cancel_IO(struct iocb* p_iocb)
 
     {
         std::ostringstream o;
-        o << "<Warning> in " << __FILE__ << " line " << __LINE__ << " in ivy_cancel_IO(), system call to cancel the I/O failed saying - ";
+        o << "in " << __FILE__ << " line " << __LINE__ << " in ivy_cancel_IO(), system call to cancel the I/O failed saying - ";
         switch (rc)
         {
             case EINVAL:
@@ -1018,13 +880,11 @@ void TestLUN::ivy_cancel_IO(struct iocb* p_iocb)
                 o << "unknown error return code " << rc;
         }
 
-        pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
-
-        log(pWorkloadThread->slavethreadlogfile,o.str());
+        post_warning(o.str());
     }
+
     return;
 }
-
 
 // Comments from start_IOs() moved to bottom of source file:
 

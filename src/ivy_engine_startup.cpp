@@ -276,9 +276,9 @@ std::pair<bool /*success*/, std::string /* message */>
     sigaction(SIGINT, &ivymaster_sigaction, NULL);
     sigaction(SIGHUP, &ivymaster_sigaction, NULL);
 //    sigaction(SIGCHLD, &ivymaster_sigaction, NULL);
-    sigaction(SIGSEGV, &ivymaster_sigaction, NULL);
+//    sigaction(SIGSEGV, &ivymaster_sigaction, NULL);
     sigaction(SIGUSR1, &ivymaster_sigaction, NULL);
-    sigaction(SIGTERM, &ivymaster_sigaction, NULL);
+//    sigaction(SIGTERM, &ivymaster_sigaction, NULL);
 
     for ( auto& host : hosts )
     {

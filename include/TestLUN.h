@@ -199,6 +199,8 @@ public:
 
     void abort_if_queue_depths_corrupted(const std::string& where_from, unsigned int call_count);
 
+    void post_warning(const std::string& msg);
+
 };
 
 

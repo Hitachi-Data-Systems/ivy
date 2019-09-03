@@ -211,29 +211,41 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
 			ivydriver_main_posted_command=false;
 
+			if (reported_error && ivydriver_main_says != MainThreadCommand::die)
+			{
+			    std::ostringstream o;
+			    o << "ignoring command \"" << mainThreadCommandToString(ivydriver_main_says) << "\" from ivydriver main thread "
+			        << "because I prevously reported an error.  Exiting instead.";
+                post_error(o.str());
+                state=ThreadState::died;
+                wkld_lk.unlock();
+                slaveThreadConditionVariable.notify_all();
+                return;
+			}
+
 			switch (ivydriver_main_says)
 			{
-				case MainThreadCommand::start :
-				{
-					break;
-				}
 				case MainThreadCommand::die :
 				{
 					if (routine_logging) log (slavethreadlogfile,std::string("WorkloadThread dutifully dying upon command.\n"));
-					state=ThreadState::exited_normally;
+					if (reported_error) { state=ThreadState::died; }
+					else                { state=ThreadState::exited_normally; }
 					wkld_lk.unlock();
 					slaveThreadConditionVariable.notify_all();
 					return;
 				}
+				case MainThreadCommand::start :
+				{
+					break;
+				}
 				default:
 				{
-                    std::ostringstream o; o << "<Error> WorkloadThread - in main loop waiting for commands didn\'t get \"start\" or \"die\" when expected.\n"
-                        << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                        dying_words = o.str();
-
+                    post_error("in main loop waiting for commands but didn\'t get \"start\" or \"die\" when expected."s
+                        + "  Instead got "s + mainThreadCommandToString(ivydriver_main_says) + "  WorkloadThread exiting."s);
+                    state=ThreadState::died;
                     wkld_lk.unlock();
-                    post_Error_for_main_thread_to_say(o.str());
-
+                    slaveThreadConditionVariable.notify_all();
+                    return;
                 }
 			}
 		}  // lock released
@@ -256,91 +268,102 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
 		for (auto& pTestLUN : pTestLUNs)
 		{
-		    pTestLUN->testLUN_furthest_behind_weighted_IOPS_max_skew_progress = 0.0;
-		    pTestLUN->launch_count = 0;
+		    try
+		    {
+                pTestLUN->testLUN_furthest_behind_weighted_IOPS_max_skew_progress = 0.0;
+                pTestLUN->launch_count = 0;
 
-#ifdef IVYDRIVER_TRACE
-            pTestLUN->sum_of_maxTags_callcount = 0;
-            pTestLUN->open_fd_callcount = 0;
-            pTestLUN->prepare_linux_AIO_driver_to_start_callcount = 0;
-            pTestLUN->reap_IOs_callcount = 0;
-            pTestLUN->pop_front_to_LaunchPad_callcount = 0;
-            pTestLUN->start_IOs_callcount = 0;
-            pTestLUN->catch_in_flight_IOs_callcount = 0;
-            pTestLUN->ivy_cancel_IO_callcount = 0;
-            pTestLUN->pop_and_process_an_Eyeo_callcount = 0;
-            pTestLUN->generate_an_IO_callcount = 0;
-            pTestLUN->next_scheduled_io_callcount = 0;
+    #ifdef IVYDRIVER_TRACE
+                pTestLUN->sum_of_maxTags_callcount = 0;
+                pTestLUN->open_fd_callcount = 0;
+                pTestLUN->prepare_linux_AIO_driver_to_start_callcount = 0;
+                pTestLUN->reap_IOs_callcount = 0;
+                pTestLUN->pop_front_to_LaunchPad_callcount = 0;
+                pTestLUN->start_IOs_callcount = 0;
+                pTestLUN->catch_in_flight_IOs_callcount = 0;
+                pTestLUN->ivy_cancel_IO_callcount = 0;
+                pTestLUN->pop_and_process_an_Eyeo_callcount = 0;
+                pTestLUN->generate_an_IO_callcount = 0;
+                pTestLUN->next_scheduled_io_callcount = 0;
 
-            pTestLUN->start_IOs_bookmark_count = 0;
-            pTestLUN->start_IOs_body_count = 0;
-            pTestLUN->reap_IOs_bookmark_count = 0;
-            pTestLUN->reap_IOs_body_count = 0;
-            pTestLUN->pop_n_p_bookmark_count = 0;
-            pTestLUN->pop_n_p_body_count = 0;
-            pTestLUN->generate_bookmark_count = 0;
-            pTestLUN->generate_body_count = 0;
-#endif
-            for (auto& pear: pTestLUN->workloads)
-            {
-                pear.second.iops_max_io_count = 0;
-                pear.second.currentSubintervalIndex=0;
-                pear.second.otherSubintervalIndex=1;
-                pear.second.subinterval_number=0;
-                pear.second.prepare_to_run();
-                pear.second.build_Eyeos();
-                pear.second.workload_cumulative_launch_count = 0;
-                pear.second.workload_weighted_IOPS_max_skew_progress = 0.0;
-
-                if (pear.second.dedupe_target_spread_regulator != nullptr) { delete pear.second.dedupe_target_spread_regulator; }
-
-                if (pear.second.p_current_IosequencerInput->dedupe > 1.0 && pear.second.p_current_IosequencerInput->fractionRead != 1.0  && pear.second.p_current_IosequencerInput->dedupe_type == dedupe_method::target_spread)
+                pTestLUN->start_IOs_bookmark_count = 0;
+                pTestLUN->start_IOs_body_count = 0;
+                pTestLUN->reap_IOs_bookmark_count = 0;
+                pTestLUN->reap_IOs_body_count = 0;
+                pTestLUN->pop_n_p_bookmark_count = 0;
+                pTestLUN->pop_n_p_body_count = 0;
+                pTestLUN->generate_bookmark_count = 0;
+                pTestLUN->generate_body_count = 0;
+    #endif
+                for (auto& pear: pTestLUN->workloads)
                 {
-                    pear.second.dedupe_target_spread_regulator = new DedupeTargetSpreadRegulator(pear.second.subinterval_array[0].input.dedupe, pear.second.pattern_seed);
-                    if (pear.second.p_my_iosequencer->isRandom())
+                    pear.second.iops_max_io_count = 0;
+                    pear.second.currentSubintervalIndex=0;
+                    pear.second.otherSubintervalIndex=1;
+                    pear.second.subinterval_number=0;
+                    pear.second.prepare_to_run();
+                    pear.second.build_Eyeos();
+                    pear.second.workload_cumulative_launch_count = 0;
+                    pear.second.workload_weighted_IOPS_max_skew_progress = 0.0;
+
+                    if (pear.second.dedupe_target_spread_regulator != nullptr) { delete pear.second.dedupe_target_spread_regulator; }
+
+                    if (pear.second.p_current_IosequencerInput->dedupe > 1.0 && pear.second.p_current_IosequencerInput->fractionRead != 1.0  && pear.second.p_current_IosequencerInput->dedupe_type == dedupe_method::target_spread)
                     {
-                        if (pear.second.dedupe_target_spread_regulator->decide_reuse())
+                        pear.second.dedupe_target_spread_regulator = new DedupeTargetSpreadRegulator(pear.second.subinterval_array[0].input.dedupe, pear.second.pattern_seed);
+                        if (pear.second.p_my_iosequencer->isRandom())
                         {
-                            std::pair<uint64_t, uint64_t> align_pattern;
-                            align_pattern = pear.second.dedupe_target_spread_regulator->reuse_seed();
-                            pear.second.pattern_seed = align_pattern.first;
-                            pear.second.pattern_alignment = align_pattern.second;
-                            pear.second.pattern_number = pear.second.pattern_alignment;
-                        } else
-                        {
-                            pear.second.pattern_seed = pear.second.dedupe_target_spread_regulator->random_seed();
+                            if (pear.second.dedupe_target_spread_regulator->decide_reuse())
+                            {
+                                std::pair<uint64_t, uint64_t> align_pattern;
+                                align_pattern = pear.second.dedupe_target_spread_regulator->reuse_seed();
+                                pear.second.pattern_seed = align_pattern.first;
+                                pear.second.pattern_alignment = align_pattern.second;
+                                pear.second.pattern_number = pear.second.pattern_alignment;
+                            } else
+                            {
+                                pear.second.pattern_seed = pear.second.dedupe_target_spread_regulator->random_seed();
+                            }
                         }
                     }
+                    //log(slavethreadlogfile, pear.second.dedupe_regulator->logmsg());
+
+
+                    if (pear.second.dedupe_constant_ratio_regulator != nullptr) { delete pear.second.dedupe_constant_ratio_regulator; pear.second.dedupe_constant_ratio_regulator = nullptr;}
+                    if (pear.second.p_current_IosequencerInput->dedupe > 1.0 && pear.second.p_current_IosequencerInput->fractionRead != 1.0 &&
+                        pear.second.p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
+                    {
+                        pear.second.dedupe_constant_ratio_regulator = new DedupeConstantRatioRegulator(pear.second.p_current_IosequencerInput->dedupe,
+                                                                                                       pear.second.p_current_IosequencerInput->blocksize_bytes,
+                                                                                                       pear.second.p_current_IosequencerInput->fraction_zero_pattern,
+                                                                                                       pear.second.uint64_t_hash_of_host_plus_LUN);
+                    }
+
+    #ifdef IVYDRIVER_TRACE
+                    pear.second.workload_callcount_prepare_to_run = 0;
+                    pear.second.workload_callcount_build_Eyeos = 0;
+                    pear.second.workload_callcount_switchover = 0;
+                    pear.second.workload_callcount_pop_and_process_an_Eyeo = 0;
+                    pear.second.workload_callcount_front_launchable_IO = 0;
+                    pear.second.workload_callcount_load_IOs_to_LaunchPad = 0;
+                    pear.second.workload_callcount_generate_an_IO = 0;
+
+                    pear.second.start_IOs_Workload_bookmark_count = 0;
+                    pear.second.start_IOs_Workload_body_count = 0;
+                    pear.second.pop_one_bookmark_count = 0;
+                    pear.second.pop_one_body_count = 0;
+                    pear.second.generate_one_bookmark_count = 0;
+                    pear.second.generate_one_body_count = 0;
+    #endif
                 }
-                //log(slavethreadlogfile, pear.second.dedupe_regulator->logmsg());
-
-
-                if (pear.second.dedupe_constant_ratio_regulator != nullptr) { delete pear.second.dedupe_constant_ratio_regulator; pear.second.dedupe_constant_ratio_regulator = nullptr;}
-                if (pear.second.p_current_IosequencerInput->dedupe > 1.0 && pear.second.p_current_IosequencerInput->fractionRead != 1.0 &&
-                    pear.second.p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
-                {
-                    pear.second.dedupe_constant_ratio_regulator = new DedupeConstantRatioRegulator(pear.second.p_current_IosequencerInput->dedupe,
-                                                                                                   pear.second.p_current_IosequencerInput->blocksize_bytes,
-                                                                                                   pear.second.p_current_IosequencerInput->fraction_zero_pattern,
-                                                                                                   pear.second.uint64_t_hash_of_host_plus_LUN);
-                }
-
-#ifdef IVYDRIVER_TRACE
-                pear.second.workload_callcount_prepare_to_run = 0;
-                pear.second.workload_callcount_build_Eyeos = 0;
-                pear.second.workload_callcount_switchover = 0;
-                pear.second.workload_callcount_pop_and_process_an_Eyeo = 0;
-                pear.second.workload_callcount_front_launchable_IO = 0;
-                pear.second.workload_callcount_load_IOs_to_LaunchPad = 0;
-                pear.second.workload_callcount_generate_an_IO = 0;
-
-                pear.second.start_IOs_Workload_bookmark_count = 0;
-                pear.second.start_IOs_Workload_body_count = 0;
-                pear.second.pop_one_bookmark_count = 0;
-                pear.second.pop_one_body_count = 0;
-                pear.second.generate_one_bookmark_count = 0;
-                pear.second.generate_one_body_count = 0;
-#endif
+            }
+            catch (std::exception& e)
+            {
+                std::ostringstream o;
+                o << "failed preparing TestLUNs and Workloads to start running - "
+                    << e.what() << "." << std::endl;
+                post_error(o.str());
+                goto wait_for_command;
             }
 		}
 
@@ -351,46 +374,86 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
         set_all_queue_depths_to_zero();
 
-        event_fd = eventfd(0, EFD_NONBLOCK );
-
-        if (event_fd == -1)
+        if (event_fd != -1)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - " << ivydriver.ivyscript_hostname << " - Failed trying to create eventfd for physical core " << physical_core << " hyperthread " << hyperthread << "\'s thread."
-                << " - errno = " << errno << " " << strerror(errno) << std::endl
-                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-            dying_words = o.str();
-            log(slavethreadlogfile,dying_words);
-            std::cout << o.str() << std::flush; sleep(1);
-            post_Error_for_main_thread_to_say(o.str());
+            o << "when going to set \"event_fd\", it already had the value " << event_fd << ". It was supposed to be -1."
+                << "  Going to try closing the previous value ... ";
+            if (0 != close(event_fd))
+            {
+                o << "failed - errno = " << errno << " (" << std::strerror(errno) << ").";
+                post_error(o.str());
+                goto wait_for_command;
+            }
+            else
+            {
+                o << "successful.";
+                post_warning(o.str());
+            }
+        }
+
+        event_fd = eventfd(0, EFD_NONBLOCK );
+
+        if (event_fd < 0)
+        {
+            std::ostringstream o;
+            o << "failed trying to create eventfd" << " - errno = " << errno << " " << strerror(errno) << std::endl;
+            post_error(o.str());
             goto wait_for_command;
+        }
+
+        if (epoll_fd != -1)
+        {
+            std::ostringstream o;
+            o << "when going to set \"epoll_fd\", it already had the value " << epoll_fd << ". It was supposed to be -1.";
+            o << "  Going to try closing the previous value ... ";
+            if (0 != close(epoll_fd))
+            {
+                o << "failed - errno = " << errno << " (" << std::strerror(errno) << ").";
+                post_error(o.str());
+                goto wait_for_command;
+            }
+            else
+            {
+                o << "successful.";
+                post_warning(o.str());
+            }
         }
 
 		epoll_fd = epoll_create(1 /* "size" ignored since Linux kernel 2.6.8 */ );
-		if (epoll_fd == -1)
+
+		if (epoll_fd < 0)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - " << ivydriver.ivyscript_hostname << " WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
-                << " - failed trying to create epoll fd - "
-                << std::strerror(errno) << std::endl
-                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-            std::cout << o.str() << std::flush; sleep(1);
-            log(slavethreadlogfile,dying_words);
-            post_Error_for_main_thread_to_say(o.str());
+            o << "failed trying to create epoll fd - " << std::strerror(errno);
+            post_error(o.str());
             goto wait_for_command;
         }
 
-        timerfd_fd = timerfd_create(CLOCK_MONOTONIC,TFD_NONBLOCK);
-		if (timerfd_fd == -1)
+        if (timer_fd != -1)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - " << ivydriver.ivyscript_hostname << " WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
-                << " - failed trying to create timerfd - "
-                << std::strerror(errno) << std::endl
-                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-            std::cout << o.str() << std::flush; sleep(1);
-            log(slavethreadlogfile,dying_words);
-            post_Error_for_main_thread_to_say(o.str());
+            o << "when going to set \"timer_fd\", it already had the value " << timer_fd << ". It was supposed to be -1.";
+            o << "  Going to try closing the previous value ... ";
+            if (0 != close(timer_fd))
+            {
+                o << "failed - errno = " << errno << " (" << std::strerror(errno) << ").";
+                post_error(o.str());
+                goto wait_for_command;
+            }
+            else
+            {
+                o << "successful.";
+                post_warning(o.str());
+            }
+        }
+
+        timer_fd = timerfd_create(CLOCK_MONOTONIC,TFD_NONBLOCK);
+		if (timer_fd == -1)
+        {
+            std::ostringstream o;
+            o << "failed trying to create timerfd errno " << errno << " (" << std::strerror(errno) << std::endl;
+            post_error(o.str());
             goto wait_for_command;
         }
 
@@ -404,13 +467,8 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
         if (rc == -1)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - " << ivydriver.ivyscript_hostname << " WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
-                << " - epoll_ctl failed trying to add an event - "
-                << std::strerror(errno) << std::endl
-                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-            std::cout << o.str() << std::flush; sleep(1);
-            log(slavethreadlogfile,dying_words);
-            post_Error_for_main_thread_to_say(o.str());
+            o << "epoll_ctl failed trying to add an event - errno " << errno << std::strerror(errno) << std::endl;
+            post_error(o.str());
             goto wait_for_command;
         }
 
@@ -418,30 +476,33 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
         timerfd_epoll_event.data.ptr = (void*) this;
         timerfd_epoll_event.events = EPOLLIN; // | EPOLLET | EPOLLOUT;
 
-        rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, timerfd_fd, &timerfd_epoll_event);
-        if (rc == -1)
+        rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, timer_fd, &timerfd_epoll_event);
+        if (rc < 0)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
-                << " - epoll_ctl failed trying to add timerfd event - "
-                << std::strerror(errno) << std::endl
-                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-            std::cout << o.str() << std::flush; sleep(1);
-            log(slavethreadlogfile,dying_words);
-            post_Error_for_main_thread_to_say(o.str());
+            o << "epoll_ctl failed trying to add timerfd event - errno " << errno << std::strerror(errno) << std::endl;
+            post_error(o.str());
             goto wait_for_command;
         }
 
         if (routine_logging)
         {
             std::ostringstream o;
-            o << "Thread for physical core " << physical_core << " hyperthread " << hyperthread << " - eventfd = " << event_fd << " and epoll fd is " << epoll_fd << std::endl;
+            o << "Thread for physical core " << physical_core << " hyperthread " << hyperthread << " - event_fd = " << event_fd << ", epoll_fd is " << epoll_fd << ", and timer_fd is " << timer_fd << std::endl;
             log(slavethreadlogfile,o.str());
         }
 
         for (auto& pTestLUN : pTestLUNs)
         {
-            pTestLUN->prepare_linux_AIO_driver_to_start();
+            try { pTestLUN->prepare_linux_AIO_driver_to_start(); }
+            catch (std::exception& e)
+            {
+                std::ostringstream o;
+                o << "failed running prepare_linux_AIO_driver_to_start() for " << pTestLUN->host_plus_lun << " - "
+                    << e.what() << "." << std::endl;
+                post_error(o.str());
+                goto wait_for_command;
+            }
         }
 
         if (p_epoll_events != nullptr) delete[] p_epoll_events;
@@ -452,7 +513,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
         if (routine_logging) log(slavethreadlogfile,"Finished initialization and now about to start running subintervals.");
 
-/*debug*/debug_epoll_count = 0;
+//*debug*/debug_epoll_count = 0;
 
         // indent level in loop waiting for run commands
 
@@ -499,11 +560,9 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                                 if (!p->set_hot_zone_parameters(wrkld.p_current_IosequencerInput))
                                 {
                                     std::ostringstream o;
-                                    o << "<Error> Internal programming error - Workload thread for physical core " << physical_core << " hyperthread " << hyperthread
-                                        << " working on WorkloadID " << wrkld.workloadID.workloadID
-                                        << " - call to IosequencerRandom::set_hot_zone_parameters(() failed.\n"
-                                        << "Occurred at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                                    post_Error_for_main_thread_to_say(o.str());
+                                    o << " - working on WorkloadID " << wrkld.workloadID.workloadID
+                                        << " - call to IosequencerRandom::set_hot_zone_parameters(() failed.\n";
+                                    post_error(o.str());
                                     goto wait_for_command;
                                 }
                             }
@@ -512,27 +571,16 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 }
             }
 
-            try {
-                // now we are running a subinterval
-                if (!linux_AIO_driver_run_subinterval())
-                {
-                    std::ostringstream o; o << "<Error> Internal programming error - "
-                        << "WorkloadThread for physical core " << physical_core << " hyperthrad " << hyperthread
-                        << " - call to linux_AIO_driver_run_subinterval() failed.\n"
-                        << "Occurred at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                    post_Error_for_main_thread_to_say(o.str());
-                    goto wait_for_command;
-                }
+            try
+            {
+                linux_AIO_driver_run_subinterval();
             }
             catch (std::exception& e)
             {
                 std::ostringstream o;
-                o << "<Error> Internal programming error - "
-                    << "WorkloadThread for physical core " << physical_core << " hyperthread " << hyperthread
-                    << " - failed running linux_AIO_driver_run_subinterval()  - "
-                    << e.what() << " - at line " << __LINE__ << " of " << __FILE__ << "." << std::endl
-                    << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-                post_Error_for_main_thread_to_say(o.str());
+                o << "failed running linux_AIO_driver_run_subinterval() - "
+                    << e.what() << "." << std::endl;
+                post_error(o.str());
                 goto wait_for_command;
             }
 
@@ -544,11 +592,9 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
             ivytime before_getting_lock, dispatch_time;
 
-
             if ( pTestLUNs.size() == 0)
             {
                 dispatching_latency_seconds.push(0.0);
-
             }
             else
             {
@@ -592,8 +638,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                 if (MainThreadCommand::die == ivydriver_main_says)
                 {
-                    dying_words = "WorkloadThread dutifully dying upon command.\n";
-                    if (routine_logging) log(slavethreadlogfile,dying_words);
+                    if (routine_logging) log(slavethreadlogfile,"WorkloadThread dutifully dying upon command.\n");
                     state=ThreadState::exited_normally;
                     wkld_lk.unlock();
                     slaveThreadConditionVariable.notify_all();
@@ -606,6 +651,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 {
                     for (auto& peach : pTestLUN->workloads)
                     {
+                        try
                         {
 #ifdef TRACE_SUBINTERVAL_THUMBNAILS
                             {
@@ -618,6 +664,14 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                             }
 #endif // TRACE_SUBINTERVAL_THUMBNAILS
                             peach.second.switchover();
+                        }
+                        catch (std::exception& e)
+                        {
+                            std::ostringstream o;
+                            o << "failed switchover to next subinterval for " << pTestLUN->host_plus_lun <<" - "
+                                << e.what() << "." << std::endl;
+                            post_error(o.str());
+                            goto wait_for_command;
                         }
                     }
                 }
@@ -689,7 +743,8 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                     slaveThreadConditionVariable.notify_all();
 
                     goto wait_for_command;
-                     // end of processing "stop" command
+
+                    // end of processing "stop" command
                 }
 
         // indent level in loop waiting for run commands
@@ -698,12 +753,10 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
 				if (MainThreadCommand::keep_going != ivydriver_main_says)
 				{
-				    std::ostringstream o; o <<" <Error> WorkloadThread for physical core "
-				        << physical_core << " hyperthread " << hyperthread
-				        << " only looks for \"stop\" or \"keep_going\" commands at end of subinterval.  Received "
-				        << mainThreadCommandToString(ivydriver_main_says) << ".  Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
+				    std::ostringstream o; o << " WorkloadThread only expects \"stop\" or \"keep_going\" commands at end of subinterval.  Received "
+				        << mainThreadCommandToString(ivydriver_main_says) << ".\n";
 					wkld_lk.unlock();
-                    post_Error_for_main_thread_to_say(o.str());
+                    post_error(o.str());
                     goto wait_for_command;
 				}
 
@@ -716,14 +769,11 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 				        Workload* pWorkload = & pear.second;
                         if ( pWorkload->subinterval_array[pWorkload->currentSubintervalIndex].subinterval_status != subinterval_state::ready_to_run )
                         {
-                            std::ostringstream o; o << "<Error> Internal programming error WorkloadThread for physical core "
-                                << physical_core << " hyperthread " << hyperthread
-                                << " - WorkloadThread told to keep going, but next subinterval not marked READY_TO_RUN" << std::endl
+                            std::ostringstream o; o << "WorkloadThread told to keep going, but next subinterval not marked READY_TO_RUN" << std::endl
                                 << " for workload " << pWorkload->workloadID.workloadID << std::endl
-                                << "Master host late to post command, or has stopped." << std::endl
-                                << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
+                                << "Master host late to post command, or has stopped.  Internal error or else subinterval_seconds too short." << std::endl;
                             wkld_lk.unlock();
-                            post_Error_for_main_thread_to_say(o.str());
+                            post_error(o.str());
                             goto wait_for_command;
                         }
 
@@ -746,7 +796,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 	}
 }
 
-bool WorkloadThread::linux_AIO_driver_run_subinterval()
+void WorkloadThread::linux_AIO_driver_run_subinterval()
 // see also https://code.google.com/p/kernel/wiki/AIOUserGuide
 {
 #if defined(IVYDRIVER_TRACE)
@@ -773,7 +823,6 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
 		now.setToNow();
 
 		if (now >= thread_view_subinterval_end) break;
-		    // we will post-process any I/Os that ended within the subinterval before returning.
 
         unsigned int n;
 
@@ -828,17 +877,12 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         timerfd_setting.it_value.tv_sec = wait_duration.t.tv_sec;
         timerfd_setting.it_value.tv_nsec = wait_duration.t.tv_nsec;
 
-        int rc_ts = timerfd_settime(timerfd_fd, 0, &timerfd_setting,0);
+        int rc_ts = timerfd_settime(timer_fd, 0, &timerfd_setting,0);
         if (rc_ts < 0)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - in WorkloadThread for physical core "
-                << physical_core << " hyperthread " << hyperthread
-                << " - failed setting timerfd - "
-                << " return code = " << rc_ts << " - " << strerror(errno)
-                << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
-            post_Error_for_main_thread_to_say(o.str());
-            return false;
+            o << "failed setting timerfd - errno " << errno << " (" << strerror(errno) << ")." << std::endl;
+            throw std::runtime_error(o.str());
         }
 
         int epoll_rc;
@@ -857,13 +901,8 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
         if (epoll_rc < 0)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error - in WorkloadThread for physical core "
-                << physical_core << " hyperthread " << hyperthread
-                << ", epoll_wait() failed - "
-                << " return code = " << epoll_rc << " - " << strerror(errno)
-                << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
-            post_Error_for_main_thread_to_say(o.str());
-            return false;
+            o << "epoll_wait() failed - errno " << errno << " (" << strerror(errno) << ")." << std::endl;
+            throw std::runtime_error(o.str());
         }
 
         goto top_of_loop;
@@ -873,7 +912,17 @@ bool WorkloadThread::linux_AIO_driver_run_subinterval()
     log_bookmark_counters();
 #endif
 
-	return true;
+    number_of_IOs_running_at_end_of_subinterval = 0;
+
+    for (TestLUN* pTestLUN : pTestLUNs)
+    {
+        for (const auto& pear : pTestLUN->workloads)
+        {
+            number_of_IOs_running_at_end_of_subinterval += pear.second.running_IOs.size();
+        }
+    }
+
+	return;
 }
 
 
@@ -1044,7 +1093,7 @@ unsigned int WorkloadThread::reap_IOs()
     if ((eventfd_read_rc != 8) && (!(eventfd_read_rc == -1 && errno == 11))) // eventfd is non-blocking, and if the counter is zero, it's not readable, and you get return code -1 with errno 11
     {
         std::ostringstream o;
-        o << "<Error> Internal programming error - in WorkloadThread, failed trying to read the 64 bit unsigned counter value underlying my eventfd which is " << event_fd << "." << std::endl
+        o << "in WorkloadThread, failed trying to read the 64 bit unsigned counter value underlying my eventfd which is " << event_fd << "." << std::endl
             << "Return value from reading 8 byte counter should have been 8.  Instead, it was " << eventfd_read_rc << ", with errno = " << errno << " (" << strerror(errno) << ")." << std::endl;
 
         int flags = fcntl(event_fd, F_GETFD, 0);
@@ -1053,9 +1102,7 @@ unsigned int WorkloadThread::reap_IOs()
 
         if (flags != 0) o << " with errno " << errno << " - " << strerror(errno);
 
-        o << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
-        post_Error_for_main_thread_to_say(o.str());
-        return 0;
+        throw std::runtime_error(o.str());
     }
 
     while (true)
@@ -1219,10 +1266,12 @@ void WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
         {
             auto pWorkload = &pear.second;
 
-            for (auto& p_iocb : pWorkload->running_IOs)
-            {
-                pTestLUN->ivy_cancel_IO(p_iocb);
-            }
+//            for (auto& p_iocb : pWorkload->running_IOs)
+//            {
+//                pTestLUN->ivy_cancel_IO(p_iocb);
+//// =================================================================  This commented out because cancelling I/Os always fails.
+//// =================================================================  Hoping that when I destroy the AIO context and close the fds, this will deal with any still-running I/Os.
+//            }
 
             pWorkload->running_IOs.clear();
             pWorkload->workload_queue_depth=0;
@@ -1253,38 +1302,62 @@ void WorkloadThread::set_all_queue_depths_to_zero()
 }
 
 
-void WorkloadThread::post_Error_for_main_thread_to_say(const std::string& msg)
+void WorkloadThread::post_error(const std::string& msg)
 {
-    std::string e {"<Error> "};
+    std::string s;
 
-    std::string s {};
-
-    if (startsWith(msg,e)) { s = msg; }
-    else                   { s = e + msg; }
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error - "s << ivydriver.ivyscript_hostname
+            << " WorkloadThread physical core "s << physical_core << " hyperthread " << hyperthread
+            << " - " << msg;
+        s = o.str();
+    }
 
     if (s[s.size()-1] != '\n') { s += "\n"; }
+
+    log(slavethreadlogfile,s);
+    log(ivydriver.slavelogfile,"posted by WorkloadThread: "s + s);
+
+    reported_error = true;
+    if (!ivydriver.reported_error) {ivydriver.time_error_reported.setToNow();}
+    ivydriver.reported_error = true;
+
+    std::cout << s << std::flush;  // The reason we both queue it and say it is that it's possible that when I say() it here, this may come out in the middle of a line being spoken by ivydriver.
+
     {
         std::lock_guard<std::mutex> lk_guard(*p_ivydriver_main_mutex);
         ivydriver.workload_thread_error_messages.push_back(s);
     }
-    log(slavethreadlogfile,s);
-    std::cout << s << std::flush;  // The reason we both queue it and say it is that it's possible that when I say() it here, this may come out in the middle of a line being spoken by ivydriver.
+
+    // ?????? should we sleep here a bit?  - gnaw.
+
+    return;
 }
 
 
-void WorkloadThread::post_Warning_for_main_thread_to_say(const std::string& msg)
+void WorkloadThread::post_warning(const std::string& msg)
 {
-    std::string w {"<Warning> "};
+    std::string s;
 
-    std::string s {};
+    {
+        std::ostringstream o;
+        o << "<Warning> "s << ivydriver.ivyscript_hostname
+            << " WorkloadThread physical core "s << physical_core << " hyperthread " << hyperthread
+            << " - " << msg;
+        s = render_string_harmless(o.str());
+    }
+    s.push_back('\n');
 
-    if (startsWith(msg,w)) { s = msg; }
-    else                   { s = w + msg; }
+    log(slavethreadlogfile,s);
+    log(ivydriver.slavelogfile,"posted by WorkloadThread: "s + s);
 
     {
         std::lock_guard<std::mutex> lk_guard(*p_ivydriver_main_mutex);
         ivydriver.workload_thread_warning_messages.push_back(s);
     }
+
+    return;
 }
 
 bool WorkloadThread::close_all_fds()
@@ -1298,94 +1371,108 @@ bool WorkloadThread::close_all_fds()
         if (0 != (rc = io_destroy(pTestLUN->act)))
         {
             std::ostringstream o;
-            o << "<Error> internal programming error WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-                << " TestLUN " << pTestLUN->host_plus_lun
-                << " in WorkloadThread::close_all_fds() - io_destroy for AIO context failed return code "
+            o << "in WorkloadThread::close_all_fds() - io_destroy for AIO context failed return code "
                 << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
-            log(slavethreadlogfile,o.str());
-            std::cout << o.str();
-            post_Error_for_main_thread_to_say(o.str());
+            post_error(o.str());
             success = false;
         }
-/*debug*/else
-        {
-            std::ostringstream o;
-            o << "debug: WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-                << " TestLUN " << pTestLUN->host_plus_lun
-                << " in WorkloadThread::close_all_fds() - io_destroy for AIO context successful." << std::endl;
-            log(slavethreadlogfile,o.str());
-        }
+///*debug*/else
+//        {
+//            std::ostringstream o;
+//            o << "debug: WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+//                << " TestLUN " << pTestLUN->host_plus_lun
+//                << " in WorkloadThread::close_all_fds() - io_destroy for AIO context successful." << std::endl;
+//            log(slavethreadlogfile,o.str());
+//        }
 
-        if (0 != (rc = close(pTestLUN->fd)))
+        if(pTestLUN->fd != -1)
+        {
+            if (0 != (rc = close(pTestLUN->fd)))
+            {
+                std::ostringstream o;
+                o << "in WorkloadThread::close_all_fds() for " << pTestLUN->host_plus_lun << " - close for pTestLUN->fd = " << pTestLUN->fd << " failed return code "
+                    << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+                post_error(o.str());
+                success = false;
+            }
+            else
+            {
+///*debug*/   {
+//                std::ostringstream o;
+//                o << "debug: WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+//                    << " TestLUN " << pTestLUN->host_plus_lun
+//                    << " in WorkloadThread::close_all_fds() - close for pTestLUN->fd = " << pTestLUN->fd << " successful." << std::endl;
+//                log(slavethreadlogfile,o.str());
+//            } // end of debug
+                pTestLUN->fd = -1;
+            }
+        }
+    }
+
+    if (epoll_fd != -1)
+    {
+        if (0 != (rc = close(epoll_fd)))
         {
             std::ostringstream o;
-            o << "<Error> internal programming error WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-                << " TestLUN " << pTestLUN->host_plus_lun
-                << " in WorkloadThread::close_all_fds() - close for pTestLUN->fd = " << pTestLUN->fd << " failed return code "
+            o << "in WorkloadThread::close_all_fds() - close for epoll_fd = " << epoll_fd << " failed return code "
                 << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
-            log(slavethreadlogfile,o.str());
-            std::cout << o.str();
-            post_Error_for_main_thread_to_say(o.str());
+            post_error(o.str());
             success = false;
         }
         else
         {
-/*debug*/   {
-                std::ostringstream o;
-                o << "debug: WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-                    << " TestLUN " << pTestLUN->host_plus_lun
-                    << " in WorkloadThread::close_all_fds() - close for pTestLUN->fd = " << pTestLUN->fd << " successful." << std::endl;
-                log(slavethreadlogfile,o.str());
-            } // end of debug
-
-            pTestLUN->fd = -1;
+///*debug*/{
+//            std::ostringstream o;
+//            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+//                << " in WorkloadThread::close_all_fds() - close for epoll_fd = " << epoll_fd << " successful." << std::endl;
+//            log(slavethreadlogfile,o.str());
+//        } // end of debug
+            epoll_fd = -1;
         }
     }
 
-    if (0 != (rc = close(epoll_fd)))
+    if (event_fd != -1)
     {
-        std::ostringstream o;
-        o << "<Error> internal programming error WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-            << " in WorkloadThread::close_all_fds() - close for epoll_fd = " << epoll_fd << " failed return code "
-            << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
-        log(slavethreadlogfile,o.str());
-        std::cout << o.str();
-        post_Error_for_main_thread_to_say(o.str());
-        success = false;
-    }
-    else
-    {
-/*debug*/{
+        if (0 != (rc = close(event_fd)))
+        {
             std::ostringstream o;
-            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-                << " in WorkloadThread::close_all_fds() - close for epoll_fd = " << epoll_fd << " successful." << std::endl;
-            log(slavethreadlogfile,o.str());
-        } // end of debug
-
-        epoll_fd = -1;
+            o << "in WorkloadThread::close_all_fds() - close for event_fd = " << event_fd << " failed return code "
+                << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+            post_error(o.str());
+            success = false;
+        }
+        else
+        {
+///*debug*/{
+//            std::ostringstream o;
+//            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+//                << " in WorkloadThread::close_all_fds() - close for event_fd = " << event_fd << " successful." << std::endl;
+//            log(slavethreadlogfile,o.str());
+//        } // end of debug
+            event_fd = -1;
+        }
     }
 
-    if (0 != (rc = close(event_fd)))
+    if (timer_fd != -1)
     {
-        std::ostringstream o;
-        o << "<Error> internal programming error WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-            << " in WorkloadThread::close_all_fds() - close for event_fd = " << event_fd << " failed return code "
-            << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
-        log(slavethreadlogfile,o.str());
-        std::cout << o.str();
-        post_Error_for_main_thread_to_say(o.str());
-        success = false;
-    }
-    else
-    {
-/*debug*/{
+        if (0 != (rc = close(timer_fd)))
+        {
             std::ostringstream o;
-            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-                << " in WorkloadThread::close_all_fds() - close for event_fd = " << event_fd << " successful." << std::endl;
-            log(slavethreadlogfile,o.str());
-        } // end of debug
-
-        event_fd = -1;
+            o << "in WorkloadThread::close_all_fds() - close for timer_fd = " << timer_fd << " failed return code "
+                << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+            post_error(o.str());
+            success = false;
+        }
+        else
+        {
+///*debug*/{
+//            std::ostringstream o;
+//            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+//                << " in WorkloadThread::close_all_fds() - close for timer_fd = " << timer_fd << " successful." << std::endl;
+//            log(slavethreadlogfile,o.str());
+//        } // end of debug
+            timer_fd = -1;
+        }
     }
 
     return success;
@@ -1565,13 +1652,10 @@ void WorkloadThread::check_for_long_running_IOs()
             if (long_running_IOs.count() > 0)
             {
                 std::ostringstream o;
-                o << "<Warning> LUN " << pTestLUN->host_plus_lun << " has " << long_running_IOs.count()
+                o << "LUN " << pTestLUN->host_plus_lun << " has " << long_running_IOs.count()
                     << " I/Os that have been running for more than one second, the longest of which for "
                     <<  long_running_IOs.max() << " seconds." << std::endl;
-                {
-                    std::lock_guard<std::mutex> lk_guard(*p_ivydriver_main_mutex);
-                    ivydriver.workload_thread_warning_messages.push_back(o.str());
-                }
+                post_warning(o.str());
             }
         }
     }

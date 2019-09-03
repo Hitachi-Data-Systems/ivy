@@ -116,11 +116,10 @@ void IvyDriver::killAllSubthreads()
         if (ThreadState::died == pear.second->state || ThreadState::exited_normally == pear.second->state)
         {
             std::ostringstream o;
-            o << "<Error> Thread for " << pear.first << " in state " << threadStateToString(pear.second->state) << " whose dying_words were \"" << pear.second->dying_words << "\"." << std::endl;
-            WorkloadThread_dying_words << o.str();
+            o << "IvyDriver::killAllSubthreads() - thread for " << pear.first
+                << " was in state " << threadStateToString(pear.second->state) << std::endl;
 
-            if (!routine_logging) { log(slavelogfile,o.str());}
-            say(o.str());
+            log(slavelogfile,o.str());
 
             // See if it's OK to say this during killAllSubthreads.  We're on the way out anyway.
             // I say them one at a time, because at least if I get part way through there will be a log message on the master host pipe_driver_subthread log.
@@ -165,17 +164,17 @@ void sig_handler(int sig, siginfo_t *p_siginfo, void *context);
 
 int IvyDriver::main(int argc, char* argv[])
 {
-    struct sigaction sigactshun;
-    memset(&sigactshun, 0, sizeof(sigactshun));
-    sigactshun.sa_flags = SA_SIGINFO;  // three argument form of signal handler
-    sigactshun.sa_sigaction = sig_handler;
-    sigaction(SIGINT, &sigactshun, NULL);
-    sigaction(SIGHUP, &sigactshun, NULL);
-    sigaction(SIGCHLD, &sigactshun, NULL);
-    sigaction(SIGSEGV, &sigactshun, NULL);
-    sigaction(SIGUSR1, &sigactshun, NULL);
-    sigaction(SIGTERM, &sigactshun, NULL);
-
+//    struct sigaction sigactshun;
+//    memset(&sigactshun, 0, sizeof(sigactshun));
+//    sigactshun.sa_flags = SA_SIGINFO;  // three argument form of signal handler
+//    sigactshun.sa_sigaction = sig_handler;
+//    sigaction(SIGINT, &sigactshun, NULL);
+//    sigaction(SIGHUP, &sigactshun, NULL);
+//    sigaction(SIGCHLD, &sigactshun, NULL);
+//    //sigaction(SIGSEGV, &sigactshun, NULL);
+//    sigaction(SIGUSR1, &sigactshun, NULL);
+//    //sigaction(SIGTERM, &sigactshun, NULL);
+//
     if (0 != system("stty -echo"))
     {
         std::cout << "<Error> Failed turn ing off stdin echo using \"stty -echo\" command.\n";
@@ -473,7 +472,7 @@ int IvyDriver::main(int argc, char* argv[])
             o << "<Warning> was unsuccessful to set CPU processor affinity for core "
                 << physical_core << " hyperthread " << hyperthread << "." << std::endl
                 << "Source code reference " << __FILE__ << " line " << __LINE__ << std::endl;
-            say(o.str());
+            say(render_string_harmless(o.str()));
             log(slavelogfile, o.str());
         }
     }
@@ -543,6 +542,15 @@ int IvyDriver::main(int argc, char* argv[])
 		}
 		// end of [Die, Earthling!]
 
+		if (reported_error)
+		{
+		    std::string s = "<Error> " + ivyscript_hostname + " - ignoring \""s + input_line + "\" because I previously reported an error.\n"s;
+		    say(s);
+		    log(slavelogfile,print_logfile_stats());
+            continue;
+		}
+
+
 		else if (stringCaseInsensitiveEquality(input_line, std::string("send LUN header")))
 		{
 			disco.get_header_line(header_line);
@@ -584,26 +592,27 @@ int IvyDriver::main(int argc, char* argv[])
 		}
 		// end of send LUN
 
-		else if (startsWith("[CreateWorkload]",input_line,remainder)) { create_workload(); }
+		else if (startsWith("[CreateWorkload]",input_line,remainder))
+		    { try {create_workload();} catch (std::exception& e) { post_error(e.what()); continue;} }
 
-		else if (startsWith("[DeleteWorkload]",input_line,remainder)) { delete_workload(); }
+		else if (startsWith("[DeleteWorkload]",input_line,remainder))
+		    { try {delete_workload();} catch (std::exception& e) { post_error(e.what()); continue;} }
 
-		else if (startsWith("[EditWorkload]",  input_line,remainder)) { edit_workload(); }
+		else if (startsWith("[EditWorkload]",  input_line,remainder))
+		    { try {edit_workload();  } catch (std::exception& e) { post_error(e.what()); continue;} }
 
         else if (0 == input_line.compare(std::string("get subinterval result")))
-        {
-			if (!waitForSubintervalEndThenHarvest()) return -1;
+            { try {waitForSubintervalEndThenHarvest(); } catch (std::exception& e) { post_error(e.what()); continue;} }
 			// waitForSubintervalEndThenHarvest() increments the subinterval starting/ending times.
-        }
 
-		else  if (startsWith(std::string("Go!"),input_line,subinterval_duration_as_string)) { go(); }
+		else if (startsWith(std::string("Go!"),input_line,subinterval_duration_as_string))
+		    { try {go();} catch (std::exception& e) { post_error(e.what()); continue;} }
 
-		else if ( 0 == input_line.compare(std::string("continue")) )
-        {
-            continue_or_cooldown();
-        }
+		else if (0 == input_line.compare(std::string("continue")))
+		    { try {continue_or_cooldown();} catch (std::exception& e) { post_error(e.what()); continue;} }
 
-		else if (0==input_line.compare(std::string("stop")))          { stop(); }
+		else if (0==input_line.compare(std::string("stop")))
+		    { try{stop();}  catch (std::exception& e) { post_error(e.what()); continue;} }
 
 		else if ((input_line.length()>=bracketedExit.length())
 			&& stringCaseInsensitiveEquality(input_line.substr(0,bracketedExit.length()),bracketedExit))
@@ -613,9 +622,10 @@ int IvyDriver::main(int argc, char* argv[])
 		}
 		else
 		{
-			log(slavelogfile,std::string("ivydriver received command from ivymaster \"") + input_line + std::string("\" that was not recognized.  Aborting.\n"));
-			killAllSubthreads();
-			return 0;
+		    std::string s = "ivydriver received command from ivymaster \""s + input_line + "\" that was not recognized."s;
+			log(slavelogfile,s);
+			post_error(s);
+			continue;
 		}
 	}
 	// at eof on std::cin
@@ -628,7 +638,7 @@ int IvyDriver::main(int argc, char* argv[])
 };
 
 
-bool IvyDriver::waitForSubintervalEndThenHarvest()
+void IvyDriver::waitForSubintervalEndThenHarvest()
 {
 #if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "Entering IvyDriver::waitForSubintervalEndThenHarvest()."; log(slavelogfile, o.str()); } }
@@ -640,12 +650,10 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
     if (now > ivydriver_view_subinterval_end)
 	{
         std::ostringstream o;
-        o << "<Error> " << __FILE__ << " line " << __LINE__   << " - subinterval_seconds too short - ivymaster told ivydriver main thread to wait for the end of the subinterval and then harvest results, but subinterval was already over.";
+        o << "subinterval_seconds too short - ivymaster told ivydriver main thread to wait for the end of the subinterval and then harvest results, but subinterval was already over.";
         o << "  This can also be caused if an ivy command device is on a subsystem port that is saturated with other (ivy) activity, making communication with the command device run very slowly.";
         o << "ivydriver_view_subinterval_end = " << ivydriver_view_subinterval_end.format_as_datetime_with_ns() << ", now = " << now.format_as_datetime_with_ns();
-        say(o.str());
-		killAllSubthreads();
-		return false;
+        throw std::runtime_error(o.str());
  	}
 
 	try {
@@ -654,11 +662,8 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 	catch (std::exception& e)
 	{
 		std::ostringstream o;
-		o << "<Error> " << __FILE__ << " line " << __LINE__ << " - waitForSubintervalEndThenHarvest() - exception during waitUntilThisTime() - " << e.what() << std::endl;
-		say(o.str());
-		log(slavelogfile, o.str());
-
-		throw;
+		o << "waitForSubintervalEndThenHarvest() - exception during waitUntilThisTime() - " << e.what() << std::endl;
+        throw std::runtime_error(o.str());
 	}
 
     ivytime subinterval_ending_time;
@@ -679,10 +684,8 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 	if ( 0 != rc )
 	{
 		std::ostringstream o;
-		o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivydriver main thread routine waitForSubintervalEndThenHarvest(): getprocstat(&interval_end_CPU, slavelogfile) call to get subinterval ending CPU counters failed.\n";
-		say(o.str());
-		killAllSubthreads();
-		return false;
+		o << "ivydriver main thread routine waitForSubintervalEndThenHarvest(): getprocstat(&interval_end_CPU, slavelogfile) call to get subinterval ending CPU counters failed.\n";
+        throw std::runtime_error(o.str());
 	}
 
 	struct    cpubusypercent cpubusydetail;
@@ -698,10 +701,8 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 	))
 	{
         std::ostringstream o;
-        o << "<Error> " << __FILE__ << " line " << __LINE__ << " - ivydriver main thread routine waitForSubintervalEndThenHarvest(): computecpubusy() call to get subinterval ending CPU % busies failed.";
-        say(o.str());
-		killAllSubthreads();
-		return false;
+        o << "ivydriver main thread routine waitForSubintervalEndThenHarvest(): computecpubusy() call to get subinterval ending CPU % busies failed.";
+        throw std::runtime_error(o.str());
  	}
 
     if (routine_logging)
@@ -727,6 +728,8 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 
     std::vector<std::string> detail_lines;
 
+    size_t number_of_IOs_running_at_end_of_subinterval {0};
+
     for (auto& pear : workload_threads)
     {
         ivytime n; n.setToNow();
@@ -745,12 +748,9 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
         if ( n > thread_limit_time)
         {
             std::ostringstream o;
-            o << "<Error> Excessive latency over 1/2 of the way through the next subinterval for workload thread for physical core "
-                << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << " to post results from the previous subinterval at "
-                << __FILE__ << " line " << __LINE__ << " in ivydriver main thread routine waitForSubintervalEndThenHarvest()." << std::endl;
-            say(o.str());
-            killAllSubthreads();
-            return false;
+            o << "Excessive latency over 1/2 of the way through the next subinterval for workload thread for physical core "
+                << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << " to post results from the previous subinterval.";
+            throw std::runtime_error(o.str());
         }
 
         ivytime togo = thread_limit_time - n;
@@ -766,16 +766,14 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
                            [&wlt] { return wlt.ivydriver_main_posted_command == false; }))  // WorkloadThread turns this off when switching to a new subingerval
                 {
                     std::ostringstream o;
-                    o << "<Error> Excessive latency over 1/2 of the way through the next subinterval for workload thread for physical core "
-                        << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << " to post results from the previous subinterval at "
-                        << __FILE__ << " line " << __LINE__ << " in ivydriver main thread routine waitForSubintervalEndThenHarvest()." << std::endl;
-                    say(o.str());
-                    log(slavelogfile, o.str());
-                    slavethread_lk.unlock();
-                    killAllSubthreads();
+                    o << "Excessive latency over 1/2 of the way through the next subinterval for workload thread for physical core "
+                        << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << " to post results from the previous subinterval";
+                    throw std::runtime_error(o.str());
                 }
 
                 // now we keep the lock while we are processing this subthread
+
+                number_of_IOs_running_at_end_of_subinterval += wlt.number_of_IOs_running_at_end_of_subinterval;
 
                 dispatching_latency_seconds_accumulator           += pear.second->dispatching_latency_seconds;
                 lock_aquisition_latency_seconds_accumulator       += pear.second->lock_aquisition_latency_seconds;
@@ -809,16 +807,11 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
                             else
                             {
                                 std::ostringstream o;
-                                o << "<Error> Internal programming error at " << __FILE__ << " line " << __LINE__
-                                    << " - ivydriver main thread routine waitForSubintervalEndThenHarvest(): "
+                                o << "ivydriver main thread routine waitForSubintervalEndThenHarvest(): "
                                     << " WorkloadThread for physical core " << wlt.physical_core << " hyperthread " << wlt.hyperthread
                                     << " workload ID " << workloadID
                                     << " interlocked at subinterval end, but WorkloadThread hadn\'t marked subinterval ready-to-send.";
-                                say(o.str());
-                                log(slavelogfile, o.str());
-                                slavethread_lk.unlock();
-                                pear.second->slaveThreadConditionVariable.notify_all();
-                                killAllSubthreads();
+                                throw std::runtime_error(o.str());
                             }
 
                             // indent level with lock held
@@ -873,9 +866,7 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 
         if ( n > limit_time)
         {
-            say("<Error> Excessive latency over 1/2 of the way through the next subinterval sending up the workload detail lines.  Check network congestion.  May need longer \"subinterval_seconds\".");
-            killAllSubthreads();
-            return false;
+            throw std::runtime_error("Excessive latency over 1/2 of the way through the next subinterval sending up the workload detail lines.  Check network congestion.  May need longer \"subinterval_seconds\".");
         }
 
         say(s);
@@ -905,6 +896,12 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
         say(o.str());
     }
 
+    {
+        std::ostringstream o;
+        o << "running IOs: " << number_of_IOs_running_at_end_of_subinterval << std::endl;
+        say(o.str());
+    }
+
 	if (0 == next_to_harvest_subinterval)
 	{
 		next_to_harvest_subinterval = 1;
@@ -922,7 +919,7 @@ bool IvyDriver::waitForSubintervalEndThenHarvest()
 
 //*debug*/{std::ostringstream o; o << "debug: " << print_logfile_stats() << std::endl; log(slavelogfile,o.str()); }
 
-	return true;
+	return;
 }
 // end of waitForSubintervalEndThenHarvest()
 
@@ -946,11 +943,8 @@ void IvyDriver::distribute_TestLUNs_over_cores()
     if (testLUNs.size() == 0)
     {
         std::ostringstream o;
-        o << "<Error> Internal programming error.  \"Go\" command received, but there are no TestLUNs, meaning there are no Workloads to run." << std::endl
-            <<"Occurred at line " << __LINE__ << " of " << __FILE__<< std::endl;
-        if (!routine_logging) { log(slavelogfile, o.str()); }
-        say(o.str());
-        exit(-1);
+        o << "\"Go\" command received, but there are no TestLUNs, meaning there are no Workloads to run." << std::endl;
+        throw std::runtime_error(o.str());
     }
 
     auto wt_iter = all_workload_threads.begin();
@@ -1068,9 +1062,7 @@ void IvyDriver::create_workload()
         i++;
     if (0==i || (!startsWith("[Parameters]",remainder.substr(i,remainder.length()-i),newWorkloadParameters)))
     {
-        say("<Error> [CreateWorkload] did not have \"[Parameters]\"");
-        killAllSubthreads();
-        exit(-1);
+        throw std::runtime_error("CreateWorkload] did not have \"[Parameters]\"");
     }
     workloadID=remainder.substr(0,i);
     trim(workloadID);
@@ -1084,10 +1076,8 @@ void IvyDriver::create_workload()
     if (!wID.isWellFormed)
     {
         std::ostringstream o;
-        o << "<Error> [CreateWorkload] - workload ID \"" << workloadID << "\" did not look like hostname+/dev/sdxxx+workload_name." << std::endl;
-        say(o.str());
-        killAllSubthreads();
-        exit(-1);
+        o << "[CreateWorkload] - workload ID \"" << workloadID << "\" did not look like hostname+/dev/sdxxx+workload_name." << std::endl;
+        throw std::runtime_error(o.str());
     }
 
     std::string lun_part = wID.getHostLunPart();
@@ -1104,10 +1094,8 @@ void IvyDriver::create_workload()
         if (LUNpointers.end() == nabIt)
         {
             std::ostringstream o;
-            o << "<Error> [CreateWorkload] - workload ID \"" << workloadID << "\"  - no such LUN \"" << wID.getLunPart() << "\"." << std::endl;
-            say(o.str());
-            killAllSubthreads();
-            exit (-1);
+            o << "[CreateWorkload] - workload ID \"" << workloadID << "\"  - no such LUN \"" << wID.getLunPart() << "\"." << std::endl;
+            throw std::runtime_error(o.str());
         }
 
         LUN* pL = (*nabIt).second;
@@ -1117,10 +1105,8 @@ void IvyDriver::create_workload()
         if (!pL->contains_attribute_name(std::string("Max LBA")))
         {
             std::ostringstream o;
-            o << "<Error> [CreateWorkload] - workload ID \"" << workloadID <<  "\" - LUN \"" << wID.getLunPart() << "\" - does not have a \"Max LBA\" attribute." << std::endl;
-            say(o.str());
-            killAllSubthreads();
-            exit (-1);
+            o << "[CreateWorkload] - workload ID \"" << workloadID <<  "\" - LUN \"" << wID.getLunPart() << "\" - does not have a \"Max LBA\" attribute." << std::endl;
+            throw std::runtime_error(o.str());
         }
 
         std::string maxLBAtext = pL->attribute_value(std::string("Max LBA"));
@@ -1128,11 +1114,9 @@ void IvyDriver::create_workload()
         if (!isalldigits(maxLBAtext))
         {
             std::ostringstream o;
-            o << "<Error> [CreateWorkload] - workload ID \"" << workloadID <<  "\" - LUN \"" << wID.getLunPart()
+            o << "[CreateWorkload] - workload ID \"" << workloadID <<  "\" - LUN \"" << wID.getLunPart()
                 << "\" - \"Max LBA\" attribute value \"" << maxLBAtext << "\" is not all digits." << std::endl;
-            say(o.str());
-            killAllSubthreads();
-            exit (-1);
+            throw std::runtime_error(o.str());
 
         }
         long long int maxLBA;
@@ -1151,11 +1135,8 @@ void IvyDriver::create_workload()
         if (map.find(workloadID) != map.end())
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error at " << __FILE__ << " line " << __LINE__ << ": "
-            << "[CreateWorkload] failed - workloadID \"" << workloadID << "\" already exists! Not supposed to happen.  ivymaster is supposed to know." << std::endl;
-            say(o.str());
-            killAllSubthreads();
-            exit(-1);
+            o << "[CreateWorkload] failed - workloadID \"" << workloadID << "\" already exists! Not supposed to happen.  ivymaster is supposed to know." << std::endl;
+            throw std::runtime_error(o.str());
         }
     }
 
@@ -1206,9 +1187,7 @@ void IvyDriver::edit_workload()
         i++;
     if (0==i || (!startsWith("[Parameters]",remainder.substr(i,remainder.length()-i),parametersText)))
     {
-        say("<Error> [EditWorkload] did not have \"[Parameters]\"");
-        killAllSubthreads();
-        exit(-1);
+        throw std::runtime_error("[EditWorkload] did not have \"[Parameters]\"");
     }
     listOfWorkloadIDsText=remainder.substr(0,i);
     trim(listOfWorkloadIDsText);
@@ -1220,10 +1199,8 @@ void IvyDriver::edit_workload()
 
     if (!lowi.fromString(&listOfWorkloadIDsText))
     {
-        say(std::string("<Error> [EditWorkload] invalid list of WorkloadIDs, should look like <myhostname+/dev/sdxy+workload_name,myhostname+/dev/sdxz+workload_name> - \"")
+        throw std::runtime_error(std::string("<Error> [EditWorkload] invalid list of WorkloadIDs, should look like <myhostname+/dev/sdxy+workload_name,myhostname+/dev/sdxz+workload_name> - \"")
             + listOfWorkloadIDsText + std::string("\"."));
-        killAllSubthreads();
-        exit(-1);
     }
 
     for (auto& wID : lowi.workloadIDs)
@@ -1237,13 +1214,11 @@ void IvyDriver::edit_workload()
         if (testLUNs.end() == it)
         {
             std::ostringstream o;
-            o << "<Error> ivydriver for host \"" << ivyscript_hostname << "\""
+            o << "ivydriver for host \"" << ivyscript_hostname << "\""
                 << " - [EditWorkload] no such WorkloadID \"" << wID.workloadID << "\""
                 << " - did not find TestLUN \"" << host_plus_lun << "\"." << std::endl
                 << "Source code reference line " << __LINE__ << " of " << __FILE__ << ".\n";
-            say(o.str());
-            killAllSubthreads();
-            exit (-1);
+            throw std::runtime_error(o.str());
         }
 
         TestLUN* pTestLUN = &(it->second);
@@ -1253,13 +1228,11 @@ void IvyDriver::edit_workload()
         if (w_itr == pTestLUN->workloads.end())
         {
             std::ostringstream o;
-            o << "<Error> ivydriver for host \"" << ivyscript_hostname << "\""
+            o << "ivydriver for host \"" << ivyscript_hostname << "\""
                 << " - [EditWorkload] no such WorkloadID \"" << wID.workloadID << "\""
                 << " within TestLUN \"" << host_plus_lun << "\"." << std::endl
                 << "Source code reference line " << __LINE__ << " of " << __FILE__ << ".\n";
-            say(o.str());
-            killAllSubthreads();
-            exit (-1);
+            throw std::runtime_error(o.str());
         }
 
         Workload* pWorkload = &(w_itr->second);
@@ -1284,13 +1257,11 @@ void IvyDriver::edit_workload()
         if (!rv.first)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error since we already successfully set these parameters into the corresponding WorkloadTracker objects in ivymaster - failed setting parameters \""
+            o << "Internal programming error since we already successfully set these parameters into the corresponding WorkloadTracker objects in ivymaster - failed setting parameters \""
               << parametersText << "\" into subinterval_array[0].input iosequencer_input object for WorkloadID \""
               << wID.workloadID << "\" - "
               << rv.second;
-            say(o.str());
-            killAllSubthreads();
-            exit(-1);
+            throw std::runtime_error(o.str());
         }
 
         rv = pWorkload->subinterval_array[1].input.setMultipleParameters(parametersText);
@@ -1298,13 +1269,11 @@ void IvyDriver::edit_workload()
         if (!rv.first)
         {
             std::ostringstream o;
-            o << "<Error> Internal programming error since we already successfully set these parameters into the corresponding WorkloadTracker objects in ivymaster - failed setting parameters \""
+            o << "Internal programming error since we already successfully set these parameters into the corresponding WorkloadTracker objects in ivymaster - failed setting parameters \""
               << parametersText << "\" into subinterval_array[1].input iosequencer_input object for WorkloadID \""
               << wID.workloadID << "\" - "
               << rv.second;
-            say(o.str());
-            killAllSubthreads();
-            exit(-1);
+            throw std::runtime_error(o.str());
         }
     }
 
@@ -1328,10 +1297,8 @@ void IvyDriver::delete_workload()
     if (!wid.set(remainder))
     {
         std::ostringstream o;
-        o << "<Error> at ivydriver [DeleteWorkload] failed - WorkloadID \"" << remainder << "\" is not well-formed like \"myhostname+/dev/sdxy+workload_name\"." << std::endl;
-        say(o.str());
-        killAllSubthreads();
-        exit(-1);
+        o << "[DeleteWorkload] failed - WorkloadID \"" << remainder << "\" is not well-formed like \"myhostname+/dev/sdxy+workload_name\"." << std::endl;
+        throw std::runtime_error(o.str());
     }
 
     std::string host_plus_lun = wid.getHostLunPart();
@@ -1340,24 +1307,17 @@ void IvyDriver::delete_workload()
     if ( itr == testLUNs.end() )
     {
         std::ostringstream o;
-        o << "<Error> Internal programming error at " << __FILE__ << " line " << __LINE__ << ": "
-            << "[DeleteWorkload] for \"" << wid.workloadID
+        o << "[DeleteWorkload] for \"" << wid.workloadID
             << "\" failed - LUN \"" << host_plus_lun << "\" does not exist." << std::endl;
-        say(o.str());
-        killAllSubthreads();
-        exit(-1);
+        throw std::runtime_error(o.str());
     }
 
     auto rit = itr->second.workloads.find(wid.workloadID);
     if ( rit == itr->second.workloads.end() )
     {
         std::ostringstream o;
-        o << "<Error> Internal programming error at " << __FILE__ << " line " << __LINE__ << ": "
-            << "[DeleteWorkload] for \"" << wid.workloadID
-            << "\" failed - workload not found within test LUN." << std::endl;
-        say(o.str());
-        killAllSubthreads();
-        exit(-1);
+        o << "[DeleteWorkload] for \"" << wid.workloadID << "\" failed - workload not found within test LUN." << std::endl;
+        throw std::runtime_error(o.str());
     }
 
     itr->second.workloads.erase(rit);
@@ -1413,12 +1373,10 @@ void IvyDriver::go()
     if (!subinterval_duration.durationFromString(subinterval_duration_as_string))
     {
         ostringstream o;
-        o << "<Error> received command \"" << rtrim(input_line) << "\", saw \"Go!\" with a subinterval duration ivytime string representation of \""
+        o << "received command \"" << rtrim(input_line) << "\", saw \"Go!\" with a subinterval duration ivytime string representation of \""
             << subinterval_duration_as_string << "\", but this failed to convert to an ivytime when calling \"fromString()\".  "
             << "Valid ivytime string representations look like \"<seconds,nanoseconds>\"." << std::endl;
-        say(o.str());
-        killAllSubthreads();
-        exit(-1);
+        throw std::runtime_error(o.str());
     }
 
     ivydriver_view_subinterval_start = test_start_time;
@@ -1444,11 +1402,8 @@ void IvyDriver::go()
             if (ThreadState::waiting_for_command != wrkldThread.state)
             {
                 ostringstream o;
-                o << "<Error> received \"Go!\" command, but thread for core " << pear.first << " was in " << threadStateToString(wrkldThread.state) << " state, not in \"waiting_for_command\" state."
-                    << "The workload thread\'s dying words were \"" << wrkldThread.dying_words << "\"." << std::endl;
-                say(o.str());
-                killAllSubthreads();
-                exit(-1);
+                o << "received \"Go!\" command, but thread for core " << pear.first << " was in " << threadStateToString(wrkldThread.state) << " state, not in \"waiting_for_command\" state." << std::endl;
+                throw std::runtime_error(o.str());
             }
 
             wrkldThread.ivydriver_main_posted_command = true;
@@ -1495,13 +1450,10 @@ void IvyDriver::continue_or_cooldown()
             if (ThreadState::running != pear.second->state)
             {
                 ostringstream o;
-                o << "<Error> received \"continue\" command, but thread for core " << pear.first
+                o << "received \"continue\" command, but thread for core " << pear.first
                     << " was in " << threadStateToString(pear.second->state)
-                    << " state, not in \"running\" state."
-                    << "  dying_words = \"" << pear.second->dying_words << "\"." << std::endl;
-                say(o.str());
-                killAllSubthreads();
-                exit(-1);
+                    << " state, not in \"running\" state." << std::endl;
+                throw std::runtime_error(o.str());
             }
 
             // At this point, ivy master has made any modifications to the input parameters for the next subinterval
@@ -1535,12 +1487,9 @@ void IvyDriver::stop()
             if (ThreadState::running != pear.second->state)
             {
                 ostringstream o;
-                o << "<Error> received \"stop\" command, but thread for core " << pear.first
-                    << " was in " << threadStateToString(pear.second->state) << " state, not in \"running\" state."
-                    << "  dying_words = \"" << pear.second->dying_words << "\"." << std::endl;
-                say(o.str());
-                killAllSubthreads();
-                exit(-1);
+                o << "received \"stop\" command, but thread for core " << pear.first
+                    << " was in " << threadStateToString(pear.second->state) << " state, not in \"running\" state." << std::endl;
+                throw std::runtime_error(o.str());
             }
 
             // at this point, what we do is copy the input parameters from the running subinterval
@@ -1916,7 +1865,8 @@ void IvyDriver::check_CPU_temperature()
     {
         if (digital_readouts.min() == 0.0)
         {
-            std::cout << "<Error> CPU temperature has hit the critical limit and CPU operation has been throttled.  Test aborting." << std::endl;
+            std::ostringstream o; o << "<Error> CPU temperature has hit the critical limit and CPU operation has been throttled.  Test aborting." << std::endl;
+            throw std::runtime_error(o.str());
         }
         else if (digital_readouts.min() <= 5.0)
         {
@@ -1928,6 +1878,29 @@ void IvyDriver::check_CPU_temperature()
 }
 
 
+
+void IvyDriver::post_error(const std::string& msg)
+{
+    std::string s;
+
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error - "s << ivydriver.ivyscript_hostname
+            << " - " << msg;
+        s = o.str();
+    }
+
+    if (s[s.size()-1] != '\n') { s += "\n"; }
+
+    log(slavelogfile,s);
+
+    if (!reported_error) {time_error_reported.setToNow();}
+    reported_error = true;
+
+    say(s);
+
+    return;
+}
 
 
 

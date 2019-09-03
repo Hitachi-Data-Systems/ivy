@@ -749,6 +749,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             if (routine_logging) { log(m_s.masterlogfile,o.str()); }
         }
 
+        m_s.number_of_IOs_running_at_end_of_subinterval = 0;
+
         for (auto& pear : m_s.host_subthread_pointers)
         {
             {
@@ -773,6 +775,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     log (m_s.masterlogfile,o.str());
                     m_s.kill_subthreads_and_exit();
                 }
+
+                m_s.number_of_IOs_running_at_end_of_subinterval += pear.second->number_of_IOs_running_at_end_of_subinterval;
 
                 pear.second->commandComplete=false; // reset for next pass
                 pear.second->commandSuccess=false;
@@ -1019,6 +1023,9 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             m_s.current_measurement().cooldown_end     = m_s.subintervalEnd;
             m_s.current_measurement().last_subinterval = m_s.harvesting_subinterval;
 
+            ivytime now; now.setToNow();
+            ivytime cooldown_duration = now - m_s.start_of_cooldown;
+
             if (m_s.suppress_subsystem_perf)
             {
                 m_s.suppress_perf_cooldown_subinterval_count++;
@@ -1039,6 +1046,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             (
                 ( (m_s.cooldown_by_MP_busy != cooldown_mode::off) && m_s.some_subsystem_still_busy()  )  // this clause has to go first to make sure we are counting the number of subintervals MP busy stays below the limit.
              || ( (m_s.cooldown_by_wp      != cooldown_mode::off) && m_s.some_cooldown_WP_not_empty() )
+             || ( (m_s.number_of_IOs_running_at_end_of_subinterval > 0) && (cooldown_duration < ivytime(60)) )
             )
             {
                 m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
@@ -1047,6 +1055,14 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 o << "Cooldown duration " << m_s.current_measurement().cooldown_duration().format_as_duration_HMMSS() << "  not complete, will do another cooldown subinterval." << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
+
+                if ( (m_s.number_of_IOs_running_at_end_of_subinterval > 0) && (cooldown_duration > ivytime(10)) )
+                {
+                    std::ostringstream oo;
+                    oo << "<Warning> over 10 seconds into cooldown at IOPS = 0 and some I/Os are still running." << std::endl;
+                    std::cout << o.str();
+                    log(m_s.masterlogfile,o.str());
+                }
             }
             else
             {
@@ -1055,6 +1071,14 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
                 m_s.lastEvaluateSubintervalReturnCode = m_s.eventualEvaluateSubintervalReturnCode;
+
+                if ( (m_s.number_of_IOs_running_at_end_of_subinterval > 0) && (cooldown_duration >= ivytime(60)) )
+                {
+                    std::ostringstream oo;
+                    oo << "<Warning> over 60 seconds into cooldown at IOPS = 0 and some I/Os are still running.  Terminating without waiting any longer." << std::endl;
+                    std::cout << o.str();
+                    log(m_s.masterlogfile,o.str());
+                }
             }
         }
         else // not m_s.in_cooldown_mode
@@ -1125,6 +1149,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     (
                          ( (m_s.cooldown_by_wp      != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_cooldown_WP_not_empty() ) )
                       || ( (m_s.cooldown_by_MP_busy != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_subsystem_still_busy()  ) )
+                      || ( m_s.number_of_IOs_running_at_end_of_subinterval > 0 )
                     )
                 )
                 {
@@ -1132,6 +1157,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
 
                     m_s.in_cooldown_mode = true;
+                    m_s.start_of_cooldown.setToNow();
 
                     auto errc = m_s.edit_rollup("all=all","IOPS=pause",true);
 
@@ -1145,7 +1171,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     }
 
                     std::ostringstream o;
-                    o << "DFC posted SUCCESS or FAILURE, but cooldown being extended by cooldown_by_wp or cooldown_by_MP_busy." << std::endl;
+                    o << "DFC posted SUCCESS or FAILURE.  Entering coolcown at IOPS = 0." << std::endl;
 
                     std::cout << o.str();
                     log(m_s.masterlogfile,o.str());

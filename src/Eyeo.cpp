@@ -707,9 +707,8 @@ uint64_t Eyeo::zero_pattern_filtered_sub_block_number(uint64_t offset_within_thi
     if (unfiltered_sub_block_number == 0)
     {
         std::ostringstream o;
-        o << "<Error> internal programming error.  Eyeo::zero_pattern_filtered_sub_block_number() was called for block zero.  We never write to block zero, so we don\'t over-write partition table / boot sector."
+        o << "Eyeo::zero_pattern_filtered_sub_block_number() was called for block zero.  We never write to block zero, so we don\'t over-write partition table / boot sector."
                 << "  This Eyeo toString() = " << toString();
-        std::cout << o.str();
         throw std::runtime_error(o.str());
     }
 

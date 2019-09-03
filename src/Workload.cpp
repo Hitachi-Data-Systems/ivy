@@ -136,28 +136,17 @@ void Workload::prepare_to_run()
         }
         else
         {
-            std::ostringstream o; o << "<Error> Workload " << workloadID
+            std::ostringstream o; o << "Workload " << workloadID
                 << " start() - Got a \"Go!\" but the first subinterval\'s IosequencerInput\'s iosequencer_type \""
-                << p_current_IosequencerInput->iosequencer_type << "\" is not one of the available iosequencer types." << std::endl
-                << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-            pWorkloadThread->dying_words = o.str();
-            log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-            pWorkloadThread->state=ThreadState::died;
-            pWorkloadThread->slaveThreadConditionVariable.notify_all();
-            exit(-1);
+                << p_current_IosequencerInput->iosequencer_type << "\" is not one of the available iosequencer types." << std::endl;
+            throw std::runtime_error(o.str());
         }
     }
 
     if (!p_my_iosequencer->setFrom_IosequencerInput(p_current_IosequencerInput))
     {
-        std::ostringstream o; o << "<Error> Workload " << workloadID
-            << " start() - call to iosequencer::setFrom_IosequencerInput() failed." << std::endl
-            << "Occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-        pWorkloadThread->state=ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        std::ostringstream o; o << "start() - call to iosequencer::setFrom_IosequencerInput() failed." << std::endl;
+        throw std::runtime_error(o.str());
     }
 }
 
@@ -215,19 +204,12 @@ void Workload::build_Eyeos()
     }
     catch(const std::bad_alloc& e)
     {
-        pWorkloadThread->state=ThreadState::died;
-        pWorkloadThread->dying_words = std::string("<Error> WorkloadThread.cpp - out of memory making I/O buffer pool - ") + e.what() + std::string("\n");
-        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-        return;
+        throw std::runtime_error("WorkloadThread.cpp - out of memory making I/O buffer pool - "s + e.what() + "\n"s);
     }
 
     if (!ewe_neek)
     {
-        pWorkloadThread->dying_words = "<Error> WorkloadThread.cpp out of memory making I/O buffer pool\n";
-        pWorkloadThread->state=ThreadState::died;
-        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        return;
+        throw std::runtime_error("<Error> WorkloadThread.cpp out of memory making I/O buffer pool\n");
     }
 
     void* vp = (void*) ewe_neek.get();
@@ -332,8 +314,7 @@ unsigned int /* number of I/Os popped and processed.  */
 	  )
     {
         std::ostringstream o;
-        o << "<Error> Internal programming error. Source code reference " << __FILE__ << " line " << __LINE__ << std::endl
-            << "When harvesting an I/O completion event and posting its measurements" << std::endl
+        o << "When harvesting an I/O completion event and posting its measurements" << std::endl
             << "One of the following timestamps was missing or they were out of order." << std::endl
             << "I/O scheduled time = " << p_dun->scheduled_time.format_as_datetime_with_ns()
             << "start time         = " << p_dun->start_time.format_as_duration_HMMSSns() << std::endl
@@ -350,12 +331,7 @@ unsigned int /* number of I/Os popped and processed.  */
             o << "false";
         }
         o << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        pWorkloadThread->state = ThreadState::died;
-		log(pWorkloadThread->slavethreadlogfile,o.str());
-		pWorkloadThread->ivydriver_main_posted_command = false;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        throw std::runtime_error(o.str());
     }
 
 	service_time_seconds = (ivytime(p_dun->end_time     - p_dun->start_time).getlongdoubleseconds());
@@ -413,32 +389,28 @@ unsigned int /* number of I/Os popped and processed.  */
 		    if (p_dun->return_value == -1)
 		    {
                 std::ostringstream o;
-                o << "<Warning> Thread for physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread<< "  " << workloadID << " - I/O failed return code = " << p_dun->return_value << ", errno = " << errno << " - " << strerror(errno) << p_dun->toString() << std::endl;
+                o << "Thread for physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread<< "  " << workloadID << " - I/O failed return code = " << p_dun->return_value << ", errno = " << errno << " - " << strerror(errno) << p_dun->toString() << std::endl;
 
-                pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
+                post_warning(o.str());
 
-                log(pWorkloadThread->slavethreadlogfile,o.str());
                     // %%%%%%%%%%%%%%% come back here later and decide if we want to re-drive failing I/Os, keeping track of the original I/O start time so we record the total respone time for all attempts.
             }
             else
             {
                 int err = -p_dun->return_value;
                 std::ostringstream o;
-                o << "<Warning> Thread for physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << "  " << workloadID << " - I/O failed return code = " << p_dun->return_value
-                    << " (" << strerror(err) << ") " << p_dun->toString() << std::endl;
+                o << "I/O failed return code = " << p_dun->return_value << " (" << strerror(err) << ") " << p_dun->toString() << std::endl;
 
-                pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
-
-                log(pWorkloadThread->slavethreadlogfile,o.str());
+                post_warning(o.str());
                     // %%%%%%%%%%%%%%% come back here later and decide if we want to re-drive failing I/Os, keeping track of the original I/O start time so we record the total respone time for all attempts.
             }
-		} else {
+		}
+		else
+		{
 			std::ostringstream o;
-			o << "<Warning> Thread for physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << "  " << workloadID << "- I/O only transferred " << p_dun->return_value << " out of requested " << p_current_IosequencerInput->blocksize_bytes << std::endl;
+			o << "I/O only transferred " << p_dun->return_value << " out of requested " << p_current_IosequencerInput->blocksize_bytes << std::endl;
 
-            pWorkloadThread->post_Warning_for_main_thread_to_say(o.str());
-
-			log(pWorkloadThread->slavethreadlogfile,o.str());
+            post_warning(o.str());
 		}
 	}
 
@@ -478,17 +450,11 @@ Eyeo* Workload::front_launchable_IO(const ivytime& now)
     if (workload_queue_depth > p_current_IosequencerInput->maxTags)
     {
         std::ostringstream o;
-        o << "<Error> Internal programming error. Source code reference " << __FILE__ << " line " << __LINE__ << std::endl
-            << "At entry to Workload::front_launchable_IO(const ivytime& now = " << now.format_as_datetime_with_ns()
+        o << "At entry to Workload::front_launchable_IO(const ivytime& now = " << now.format_as_datetime_with_ns()
             << ") for Workload = " << workloadID << " workload_queue_depth = " << workload_queue_depth
             << " is greater than p_current_IosequencerInput->maxTags = " << p_current_IosequencerInput->maxTags
             << "." << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        pWorkloadThread->state = ThreadState::died;
-		log(pWorkloadThread->slavethreadlogfile,o.str());
-		pWorkloadThread->ivydriver_main_posted_command = false;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        throw std::runtime_error(o.str());
     }
 
     if (workload_queue_depth == p_current_IosequencerInput->maxTags) return nullptr;
@@ -573,16 +539,8 @@ unsigned int Workload::generate_an_IO()
     // precompute an I/O
     if (freeStack.empty())
     {
-        std::ostringstream o; o << "<Error> Internal programming error - freeStack is empty - can\'t precompute - at "
-            << __FILE__ << " line " << __LINE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-        for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
-        close(pWorkloadThread->event_fd);
-        close(pWorkloadThread->epoll_fd);
-        pWorkloadThread->state = ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+        std::ostringstream o; o << "freeStack is empty - can\'t precompute." << std::endl;
+        throw std::runtime_error(o.str());
         // should not occur unless there's a design fault or maybe if CPU-bound
     }
 
@@ -680,17 +638,8 @@ unsigned int Workload::generate_an_IO()
                 case dedupe_method::invalid:
                 default:
                 {
-                    std::ostringstream o; o << "<Error> Internal programming error - dedupe_method is freeStack is empty - can\'t precompute - at "
-                        << __FILE__ << " line " << __LINE__ << std::endl;
-                    pWorkloadThread->dying_words = o.str();
-                    log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-                    for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
-                    close(pWorkloadThread->event_fd);
-                    close(pWorkloadThread->epoll_fd);
-                    pWorkloadThread->state = ThreadState::died;
-                    pWorkloadThread->slaveThreadConditionVariable.notify_all();
-                    exit(-1);
-                    // should not occur unless there's a design fault or maybe if CPU-bound
+                    std::ostringstream o; o << "dedupe_method is invalid - can\'t precompute.";
+                    throw std::runtime_error(o.str());
 
                 }
             }
@@ -707,16 +656,9 @@ unsigned int Workload::generate_an_IO()
 #endif
 
     // now need to call the iosequencer function to populate this Eyeo.
-    if (!p_my_iosequencer->generate(*p_Eyeo)) {
-        std::ostringstream o; o << "<Error> Internal programming error - iosequencer::generate() failed - at " << __FILE__ << " line " << __LINE__ << std::endl;
-        pWorkloadThread->dying_words = o.str();
-        log(pWorkloadThread->slavethreadlogfile,pWorkloadThread->dying_words);
-        for (auto& pTestLUN : pWorkloadThread->pTestLUNs) { io_destroy(pTestLUN->act); close(pTestLUN->fd); }
-        close(pWorkloadThread->event_fd);
-        close(pWorkloadThread->epoll_fd);
-        pWorkloadThread->state = ThreadState::died;
-        pWorkloadThread->slaveThreadConditionVariable.notify_all();
-        exit(-1);
+    if (!p_my_iosequencer->generate(*p_Eyeo))
+    {
+        throw std::runtime_error("iosequencer::generate() failed.");
     }
     precomputeQ.push_back(p_Eyeo);
 

@@ -95,8 +95,6 @@ public:
 
 	ThreadState state {ThreadState::initial};
 
-	std::string dying_words {};
-
 //// end of thread interlock stuff
 
 	ivytime now;
@@ -110,7 +108,8 @@ public:
     RunningStat<ivy_float,ivy_int> lock_aquisition_latency_seconds;
     RunningStat<ivy_float,ivy_int> switchover_completion_latency_seconds;
 
-    bool dieImmediately{false};
+    bool dieImmediately {false};
+    bool reported_error {false};
 
 	std::vector<TestLUN*>::iterator pTestLUN_reap_IOs_bookmark;
     std::vector<TestLUN*>::iterator pTestLUN_pop_bookmark;
@@ -123,7 +122,7 @@ public:
     epoll_event timerfd_epoll_event;
     struct epoll_event epoll_ev;
 
-    int timerfd_fd {-1};
+    int timer_fd {-1};
     struct itimerspec timerfd_setting;
 
 /*debug*/ unsigned int debug_epoll_count {0};
@@ -143,6 +142,8 @@ public:
     unsigned int wt_callcount_catch_in_flight_IOs_after_last_subinterval {0};
 #endif
 
+    size_t number_of_IOs_running_at_end_of_subinterval {0};
+
 //methods
 	WorkloadThread(std::mutex*,unsigned int /*physical_core*/, unsigned int /*hyperthread*/);
 
@@ -153,7 +154,7 @@ public:
 	std::string stateToString();
 	std::string ivydriver_main_saysToString();
 	void WorkloadThreadRun();
-	bool linux_AIO_driver_run_subinterval();
+	void linux_AIO_driver_run_subinterval();
 	void catch_in_flight_IOs_after_last_subinterval();
 
     void cancel_stalled_IOs();
@@ -165,11 +166,14 @@ public:
     unsigned int /* # of I/Os */ pop_and_process_an_Eyeo();
 
     void set_all_queue_depths_to_zero();
-    void post_Error_for_main_thread_to_say(const std::string&);
-    void post_Warning_for_main_thread_to_say(const std::string&);
 
     bool close_all_fds(); // returns true if successful
     void check_for_long_running_IOs();
+
+    void post_error  (const std::string&);
+    void post_warning(const std::string&);
+
+
 #ifdef IVYDRIVER_TRACE
     void log_bookmark_counters();
 #endif

@@ -156,6 +156,8 @@ public:
 	cooldown_mode cooldown_by_MP_busy {cooldown_mode::on};  // whether the feature has been selected in the ivyscript program
 
 	bool in_cooldown_mode {false}; // whether the ivy engine is in cooldown mode after SUCCESS or FAILURE
+	ivytime start_of_cooldown {0};
+
     unsigned int cooldown_by_MP_busy_stay_down_count_limit;  // set using Go parameter cooldown_by_MP_busy_stay_down_time_seconds defaulting to one subinterval, and that you can set to "5:00" to mean 5 minutes or "1:00:00" to mean an hour.
         // The Go parameter in seconds / minutes / hours is converted to a subinterval count in cooldown_by_MP_busy_stay_down_count_limit;
     ivy_float cooldown_by_MP_busy_stay_down_time_seconds;
@@ -254,6 +256,7 @@ public:
 
 	RunningStat<ivy_float, ivy_int> continueCooldownStopAckSeconds;
 
+    size_t number_of_IOs_running_at_end_of_subinterval {0};
 
 
     IosequencerInput

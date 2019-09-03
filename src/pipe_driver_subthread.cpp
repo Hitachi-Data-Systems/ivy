@@ -1184,7 +1184,7 @@ void pipe_driver_subthread::threadRun()
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "[CreateWorkload] at remote end failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "[CreateWorkload] at remote end failed saying \"" << reex.what() << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1209,7 +1209,7 @@ void pipe_driver_subthread::threadRun()
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "[EditWorkload] at remote end failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "[EditWorkload] at remote end failed saying \"" << reex.what() << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1232,7 +1232,7 @@ void pipe_driver_subthread::threadRun()
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "[DeleteWorkload] at remote end failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "[DeleteWorkload] at remote end failed saying \"" << reex.what() << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1277,7 +1277,7 @@ void pipe_driver_subthread::threadRun()
                             ivytime latency = now - before_sending_command;
                             std::ostringstream o;
                             o << "At "<< latency.format_as_duration_HMMSSns() << " after sending \"" << commandString
-                                << "\" to ivydriver - did not get OK - failed failed saying \"" << reex.what() << "\"." << std::endl;
+                                << "\" to ivydriver - did not get OK - failed saying \"" << reex.what() << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1328,7 +1328,7 @@ void pipe_driver_subthread::threadRun()
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "Sending \"get subinterval result\" to ivydriver failed failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "Sending \"get subinterval result\" to ivydriver failed saying \"" << reex.what() << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1839,6 +1839,68 @@ void pipe_driver_subthread::threadRun()
                             }
                         }
                         // finished parsing latencies line.
+
+                        {
+                            std::string s {};
+                            std::string remainder;
+
+                            // read and parse running IOs: line.
+                            try
+                            {
+                                s = get_line_from_pipe(ivytime(2), std::string("get running IOs:  line"));
+                            }
+                            catch (std::runtime_error& reex)
+                            {
+                                std::ostringstream o;
+                                o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for running IOs: line failed saying \"" << reex.what() << "\"." << std::endl;
+                                log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                                kill_ssh_and_harvest();
+                                commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+
+                            if ( !startsWith(std::string("running IOs: "), s, remainder) )
+                            {
+                                std::ostringstream o;
+                                o << "<Error> internal programming error - was expecting a line starting with \"running IOs: \""
+                                    << ", but saw the line \"" << s << "\"." << std::endl;
+                                log(logfilename,o.str());
+                                std::cout << o.str();
+                                kill_ssh_and_harvest();
+                                commandComplete=true;
+                                commandSuccess=false;
+                                commandErrorMessage = o.str();
+                                dead=true;
+                                s_lk.unlock();
+                                master_slave_cv.notify_all();
+                                return;
+                            }
+
+                            {
+                                std::istringstream is(remainder);
+
+                                is >> number_of_IOs_running_at_end_of_subinterval;
+
+                                if (is.fail())
+                                {
+                                    std::ostringstream o;
+                                    o << "<Error> For host " << ivyscript_hostname
+                                        << ", internal programming error - failed parsing the running IOs: line. \"" << s << "\"." << std::endl;
+                                    log(logfilename,o.str());
+                                    std::cout << o.str();
+                                    kill_ssh_and_harvest();
+                                    commandComplete=true;
+                                    commandSuccess=false;
+                                    commandErrorMessage = o.str();
+                                    dead=true;
+                                    s_lk.unlock();
+                                    master_slave_cv.notify_all();
+                                    return;
+                                }
+                            }
+                        }
 
                         {
                             std::unique_lock<std::mutex> m_lk(m_s.master_mutex);

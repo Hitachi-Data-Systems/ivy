@@ -150,8 +150,6 @@ struct IvyDriver
         slavelogfile {"/var/ivydriver_initial_log.txt"},
         input_line;
 
-    std::ostringstream WorkloadThread_dying_words;
-
     ivytime last_message_time = ivytime(0);
 
     	std::vector<std::string> luns;
@@ -172,6 +170,8 @@ struct IvyDriver
 	std::string subinterval_duration_as_string;
 
     bool spinloop {false};
+    bool reported_error {false};
+    ivytime time_error_reported {0};
 
     std::vector<std::string> workload_thread_error_messages {};
     std::vector<std::string> workload_thread_warning_messages {};
@@ -197,7 +197,7 @@ struct IvyDriver
 
     void distribute_TestLUNs_over_cores();
 
-    bool waitForSubintervalEndThenHarvest();
+    void waitForSubintervalEndThenHarvest();
 
     void continue_or_cooldown();
 
@@ -210,6 +210,8 @@ struct IvyDriver
     void log_iosequencer_settings(const std::string&);
 
     void check_CPU_temperature();
+
+    void post_error(const std::string&);
 };
 
 extern struct IvyDriver ivydriver;

@@ -151,6 +151,8 @@ public:
 
     RunningStat<long double,int> detail_line_parse_time_seconds;
 
+    size_t number_of_IOs_running_at_end_of_subinterval {0};
+
 private:
     std::string real_get_line_from_pipe
     (

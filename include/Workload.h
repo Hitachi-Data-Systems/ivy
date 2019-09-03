@@ -176,4 +176,7 @@ public:
 
     inline bool hold_back_this_time()
         { return workload_weighted_IOPS_max_skew_progress > pTestLUN->testLUN_furthest_behind_weighted_IOPS_max_skew_progress; }
+
+    void post_warning(const std::string& msg) { pTestLUN->post_warning (workloadID.workloadID + " - "s + msg); }
+
 };
