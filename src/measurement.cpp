@@ -30,15 +30,17 @@ std::string measurement::step_times_line(unsigned int measurement_number) const
     o    << " duration "      << duration()         .format_as_duration_HMMSS()
         << " = warmup "      << warmup_duration()  .format_as_duration_HMMSS()
         << " + measurement " << measure_duration() .format_as_duration_HMMSS()
-        << " + cooldown "    << cooldown_duration().format_as_duration_HMMSS()
-        << " for step name \"" << m_s.stepName;
+        << " + cooldown "    << cooldown_duration().format_as_duration_HMMSS();
+//    o   << " for step name \"" << m_s.stepName;
+//
+//    if (m_s.have_IOPS_staircase)
+//    {
+//        o << ":" << edit_rollup_text;
+//    }
+//
+//    o << "\"";
 
-    if (m_s.have_IOPS_staircase)
-    {
-        o << ":" << edit_rollup_text;
-    }
-
-    o << "\"" << std::endl;
+    o << std::endl;
 
     return o.str();
 }

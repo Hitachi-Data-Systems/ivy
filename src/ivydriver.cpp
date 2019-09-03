@@ -492,18 +492,36 @@ int IvyDriver::main(int argc, char* argv[])
 
 	while(!std::cin.eof())
 	{
+	    if (time_error_reported != ivytime(0))
+	    {
+	        ivytime now; now.setToNow();
+
+	        ivytime time_since_error = now - time_error_reported;
+
+	        if (time_since_error >= ivytime(60))
+	        {
+	            // we reported the error over a minute ago.
+                killAllSubthreads();
+                return -1;
+	        }
+
+	        one_hour = ivytime(60) - time_since_error;
+	    }
+
         {
             std::lock_guard<std::mutex> lk_guard(ivydriver_main_mutex);
 
             for (auto& e : workload_thread_error_messages)
             {
                 std::cout << e << std::flush;
+                log(slavelogfile,"Slave: "s + e);
             }
             workload_thread_error_messages.clear();
 
             for (auto& w : workload_thread_warning_messages)
             {
                 std::cout << w << std::flush;
+                log(slavelogfile,"Slave: "s + w);
             }
             workload_thread_warning_messages.clear();
         }

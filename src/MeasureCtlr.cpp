@@ -71,7 +71,7 @@ int MeasureCtlr::evaluateSubinterval()
         o << " subinterval number " << ( current - m_s.current_measurement().first_subinterval )
             << " (from zero) of at least " << ( m_s.min_warmup_count + m_s.min_measure_count )
             << " subintervals to accommodate " << m_s.warmup_seconds << " warmup_seconds and " << m_s.measure_seconds
-            << " measure_seconds with subintervals " << m_s.subinterval_seconds << " seconds long." << std::endl << std::endl;
+            << " measure_seconds." << std::endl << std::endl;
 
         std::cout << o.str();
         log(m_s.masterlogfile, o.str());

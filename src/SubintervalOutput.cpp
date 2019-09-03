@@ -473,7 +473,7 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 
 	o << ", service time = " <<  std::fixed << std::setprecision(3) <<  (service_time.avg() * 1000.0) << " ms";
 
-	o << ", submit time = " <<  std::fixed << std::setprecision(3) <<  (submit_time.avg() * 1000.0) << " ms";
+//	o << ", submit time = " <<  std::fixed << std::setprecision(3) <<  (submit_time.avg() * 1000.0) << " ms";
 
 //	o << ", running time = " <<  std::fixed << std::setprecision(3) <<  (running_time.avg() * 1000.0) << " ms";
 

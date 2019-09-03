@@ -741,10 +741,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         {
             std::ostringstream o;
             o<< "Waiting for step name " << m_s.stepName
-             << ", subinterval " << m_s.rollups.current_index() << " to complete. "
-             << "  Start " << m_s.subintervalStart.format_as_datetime()
-             << ", end " << m_s.subintervalEnd.format_as_datetime()
-             << "  Duration " << m_s.subintervalLength.format_as_duration_HMMSS() << std::endl;
+             << ", subinterval " << m_s.rollups.current_index() << " to complete. " << std::endl;
             std::cout << o.str();
             if (routine_logging) { log(m_s.masterlogfile,o.str()); }
         }
@@ -792,6 +789,11 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         hosts_sent_up.setToNow();
 
         long double host_sendup = ivytime(hosts_sent_up - m_s.subintervalEnd).getlongdoubleseconds();
+
+///*debug*/{ std::cout << std::endl
+//                     << "========================================================" << std::endl
+//                     << "Debug: there were " << m_s.number_of_IOs_running_at_end_of_subinterval << " I/Os running at the end of the last subinterval." << std::endl
+//                     << "========================================================" << std::endl << std::endl; }
 
         if (m_s.haveCmdDev)
         {
@@ -1067,7 +1069,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
             else
             {
                 std::ostringstream o;
-                o << "Cooldown duration " << m_s.current_measurement().cooldown_duration().format_as_duration_HMMSS() << " complete, posting DFC return code from last test subinterval before running cooldown subintervals." << std::endl;
+                o << "Cooldown duration " << m_s.current_measurement().cooldown_duration().format_as_duration_HMMSS() << " complete, posting DFC return code from before cooldown." << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile,o.str());
                 m_s.lastEvaluateSubintervalReturnCode = m_s.eventualEvaluateSubintervalReturnCode;
