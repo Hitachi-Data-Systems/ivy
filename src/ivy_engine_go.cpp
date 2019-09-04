@@ -87,13 +87,13 @@ ivy_engine::go(const std::string& parameters)
 
     std::string parameter_value;
 
-    std::string valid_parameter_names = "no_perf, suppress_perf, skip_LDEV, stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp"s
+    std::string valid_parameter_names = "no_perf, suppress_perf, skip_LDEV, stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_seconds, cooldown_by_wp"s
         + ",cooldown_by_MP_busy, cooldown_by_MP_busy_stay_down_time_seconds, subsystem_WP_threshold, subsystem_busy_threshold, sequential_fill"s
         + ",stepcsv, storcsv, check_failed_component"s;
 
     std::string valid_parameters_message =
         "The following parameter names are always valid:\n"
-        "    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_by_wp,\n"
+        "    stepname, subinterval_seconds, warmup_seconds, measure_seconds, cooldown_seconds, cooldown_by_wp,\n"
         "    no_perf, skip_LDEV, subsystem_WP_threshold, cooldown_by_MP_busy, cooldown_by_MP_busy_stay_down_time_seconds,\n"
         "    subsystem_busy_threshold, sequential_fill, stepcsv, storcsv, check_failed_component.\n\n"
         "For dfc = PID, additional valid parameters are:\n"
@@ -459,6 +459,34 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         kill_subthreads_and_exit();
     }
     min_measure_count = (int) ceil( measure_seconds / subinterval_seconds);
+
+
+//----------------------------------- cooldown_seconds
+
+    if (go_parameters.contains("cooldown_seconds"s))
+    {
+        std::string cs;
+        try
+        {
+            cs = go_parameters.retrieve("cooldown_seconds");
+            trim(cs);
+            double csd = number_optional_trailing_percent(rewrite_HHMMSS_to_seconds(cs));
+            cooldown_seconds = ivytime(csd);
+
+        }
+        catch(std::invalid_argument& iae)
+        {
+            ostringstream o;
+            o << "<Error> ivy engine API - go() - [Go] statement - invalid measure_seconds parameter \"" << cs << "\".  Must be a number." << std::endl;
+            log(masterlogfile,o.str());
+            std::cout << o.str();
+            kill_subthreads_and_exit();
+        }
+    }
+    else
+    {
+        cooldown_seconds = ivytime(0);
+    }
 
 //----------------------------------- suppress_perf
     if (go_parameters.contains("suppress_perf"s)) { parameter_value = go_parameters.retrieve("suppress_perf");}

@@ -121,6 +121,8 @@ struct IvyDriver
     std::map<std::string /* host+LUN part of workloadID */, TestLUN>
         testLUNs {};
 
+    int step_number {-1};
+
 
     ivytime
         test_start_time,

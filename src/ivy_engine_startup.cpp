@@ -239,7 +239,14 @@ std::pair<bool /*success*/, std::string /* message */>
             h = pear.first;
         }
 
+        unique_ivyscript_hosts.push_back(h);
+
         std::cout << GetStdoutFromCommand("ssh "s + h + " clear_hung_ivy_threads -exclude_ivymaster"s);
+        // This also seems to have the effect of "waking up" the ssh mechanism that will shortly be used to run ivydriver.
+
+        // There's no time limit on this, and sometimes it does take extra time.
+
+        // For some reason, ssh needs to be woken up first or later when we ssh hostname ivydriver, it can hang for a long time or hang seemingly forever.
     }
 
     write_clear_script();  // This writes a shell script to run the clear_hung_ivy_threads executable on all involved hosts - handy if you are a developer and you mess things up

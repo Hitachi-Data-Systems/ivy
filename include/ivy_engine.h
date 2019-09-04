@@ -213,6 +213,8 @@ public:
 
 	std::map<std::string /* hostname from "hostname" command */,std::set<std::string /* ivyscript_hostname */>> unique_hostnames;
 
+	std::vector<std::string> unique_ivyscript_hosts {};
+
 	void write_clear_script();  // this writes out "clear_hung_threads.sh"
 
 
@@ -310,6 +312,7 @@ public:
 	ivy_float subinterval_seconds {-1}; /* ==> */ ivytime subintervalLength {ivytime(subinterval_seconds_default_int)};
 	ivy_float warmup_seconds {-1};      /* ==> */ int min_warmup_count /* i.e. subinterval count */;
 	ivy_float measure_seconds {-1};     /* ==> */ int min_measure_count;
+	ivytime   cooldown_seconds {0};
 
     // measure=on and/or dfc=pid
     std::string focus_rollup_parameter; /* ==> */ RollupType* p_focus_rollup {nullptr};

@@ -1385,6 +1385,8 @@ void IvyDriver::go()
         log_TestLUN_ownership();
     }
 
+    step_number++;
+
     test_start_time.setToNow();
     next_to_harvest_subinterval=0; otherSubinterval=1;
 

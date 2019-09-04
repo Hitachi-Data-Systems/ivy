@@ -595,7 +595,7 @@ void pipe_driver_subthread::orderSlaveToDie()
     catch (std::runtime_error& reex)
     {
         std::ostringstream o;
-        o << "[Die, Earthlin!] command failed saying \"" << reex.what() << "\"." << std::endl;
+        o << "[Die, Earthlin!] command failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
         result = o.str();
         kill (ssh_pid,SIGTERM);
     }
@@ -967,7 +967,7 @@ void pipe_driver_subthread::threadRun()
         catch (std::runtime_error& reex)
         {
             std::ostringstream o;
-            o << "Initial read from pipe to ssh subthread failed saying \"" << reex.what() << "\"." << std::endl;
+            o << "Initial read from pipe to ssh subthread failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
             kill_ssh_and_harvest();
             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -986,7 +986,7 @@ void pipe_driver_subthread::threadRun()
             catch (std::runtime_error& reex)
             {
                 std::ostringstream o;
-                o << "Initial read from pipe to ssh subthread failed saying \"" << reex.what() << "\"." << std::endl;
+                o << "Initial read from pipe to ssh subthread failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                 log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                 kill_ssh_and_harvest();
                 commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1058,7 +1058,7 @@ void pipe_driver_subthread::threadRun()
             catch (std::runtime_error& reex)
             {
                 std::ostringstream o;
-                o << "\"send LUN header\" command sent to ivydriver failed saying \"" << reex.what() << "\"." << std::endl;
+                o << "\"send LUN header\" command sent to ivydriver failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                 log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                 kill_ssh_and_harvest();
                 commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1077,7 +1077,7 @@ void pipe_driver_subthread::threadRun()
                 catch (std::runtime_error& reex)
                 {
                     std::ostringstream o;
-                    o << "\"send LUN\" command sent to ivydriver failed saying \"" << reex.what() << "\"." << std::endl;
+                    o << "\"send LUN\" command sent to ivydriver failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                     log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                     kill_ssh_and_harvest();
                     commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1184,7 +1184,7 @@ void pipe_driver_subthread::threadRun()
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "[CreateWorkload] at remote end failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "[CreateWorkload] at remote end failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1209,7 +1209,7 @@ void pipe_driver_subthread::threadRun()
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "[EditWorkload] at remote end failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "[EditWorkload] at remote end failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1232,7 +1232,7 @@ void pipe_driver_subthread::threadRun()
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "[DeleteWorkload] at remote end failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "[DeleteWorkload] at remote end failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1277,7 +1277,7 @@ void pipe_driver_subthread::threadRun()
                             ivytime latency = now - before_sending_command;
                             std::ostringstream o;
                             o << "At "<< latency.format_as_duration_HMMSSns() << " after sending \"" << commandString
-                                << "\" to ivydriver - did not get OK - failed saying \"" << reex.what() << "\"." << std::endl;
+                                << "\" to ivydriver - did not get OK - failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1328,7 +1328,7 @@ void pipe_driver_subthread::threadRun()
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "Sending \"get subinterval result\" to ivydriver failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "Sending \"get subinterval result\" to ivydriver failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1464,7 +1464,7 @@ void pipe_driver_subthread::threadRun()
                             catch (std::runtime_error& reex)
                             {
                                 std::ostringstream o;
-                                o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for subsystem detail line failed saying \"" << reex.what() << "\"." << std::endl;
+                                o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for subsystem detail line failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                                 log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                                 kill_ssh_and_harvest();
                                 commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1729,7 +1729,7 @@ void pipe_driver_subthread::threadRun()
                         catch (std::runtime_error& reex)
                         {
                             std::ostringstream o;
-                            o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for subsystem detail line failed saying \"" << reex.what() << "\"." << std::endl;
+                            o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for subsystem detail line failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                             kill_ssh_and_harvest();
                             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1783,7 +1783,7 @@ void pipe_driver_subthread::threadRun()
                             catch (std::runtime_error& reex)
                             {
                                 std::ostringstream o;
-                                o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for latencies line failed saying \"" << reex.what() << "\"." << std::endl;
+                                o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for latencies line failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                                 log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                                 kill_ssh_and_harvest();
                                 commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -1852,7 +1852,7 @@ void pipe_driver_subthread::threadRun()
                             catch (std::runtime_error& reex)
                             {
                                 std::ostringstream o;
-                                o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for running IOs: line failed saying \"" << reex.what() << "\"." << std::endl;
+                                o << "For host " << ivyscript_hostname << ", get_line_from_pipe() for running IOs: line failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
                                 log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
                                 kill_ssh_and_harvest();
                                 commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
@@ -2002,7 +2002,7 @@ void pipe_driver_subthread::threadRun()
         catch (std::runtime_error& reex)
         {
             std::ostringstream o;
-            o << "For host " << ivyscript_hostname << ", sending \"exit\" command failed saying \"" << reex.what() << "\"." << std::endl;
+            o << "For host " << ivyscript_hostname << ", sending \"exit\" command failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
             log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
             kill_ssh_and_harvest();
             commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
