@@ -295,6 +295,7 @@ std::string JSON_SCHEMA = R"( {
                 "subinterval_seconds" : { "type": "integer" },
                 "warmup_seconds" : { "type": "integer" },
                 "measure_seconds" : { "type": "integer" },
+                "cooldown_seconds" : { "type": "integer" },
                 "cooldown_by_wp":      { "type": {"enum" : ["on", "off", "last"] } },
                 "cooldown_by_MP_busy": { "type": {"enum" : ["on", "off", "last"] } },
                 "cooldown_by_MP_busy_stay_down_time_seconds": { "type": "integer" },

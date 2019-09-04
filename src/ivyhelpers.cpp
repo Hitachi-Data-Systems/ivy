@@ -1454,7 +1454,25 @@ std::string convert_commas_to_semicolons(const std::string s)
     return r;
 }
 
+std::string seconds_to_hhmmss(unsigned int input_value)
+{
+    unsigned int seconds = input_value;
+    unsigned int minutes = seconds / 60;
+                 seconds = seconds % 60;
+    unsigned int hours   = minutes / 60;
+                 minutes = minutes % 60;
+    unsigned int days    = hours   / 24;
+                 hours   = hours   % 24;
 
+    std::ostringstream o;
+
+    if      ( days    > 0) { o << days << " days and " << std::setw(2) << std::setfill('0') << hours   << ":" << std::setw(2) << std::setfill('0') << minutes << ":" << std::setw(2) << std::setfill('0') << seconds; }
+    else if ( hours   > 0) { o << hours   << ":" << std::setw(2) << std::setfill('0') << minutes << ":" << std::setw(2) << std::setfill('0') << seconds; }
+    else if ( minutes > 0) { o << minutes << ":" << std::setw(2) << std::setfill('0') << seconds; }
+    else                   { o << seconds; }
+
+    return o.str();
+}
 
 
 

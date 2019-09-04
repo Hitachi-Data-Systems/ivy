@@ -429,7 +429,7 @@ void ivy_engine::write_clear_script()
 
 
 
-std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval_index = -1 to get the t=0 gather thumbnail
+std::string ivy_engine::getCLPRthumbnail(int subinterval_index) // use subinterval_index = -1 to get the t=0 gather thumbnail
 // throws std::invalid_argument.    Shows WP for each CLPR on the watch list as briefly as possible
 {
 	std::ostringstream result;
@@ -441,7 +441,8 @@ std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval
 		const std::string& CLPR {pear.first};
 		const std::string& cereal {pear.second->serial_number};
 		Hitachi_RAID_subsystem* p_RAID = (Hitachi_RAID_subsystem*) pear.second;
-		ivy_float WP;
+
+		ivy_float WP, sidefile;
 
 		try
 		{
@@ -450,7 +451,7 @@ std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval
 		catch (std::invalid_argument& iae)
 		{
 			std::ostringstream o;
-			o << "ivy_engine::getWPthumbnail(int subinterval_index="
+			o << "ivy_engine::getCLPRthumbnail(int subinterval_index="
 				<< subinterval_index << ") - WP = Subsystem.get_wp(CLPR=\"" << CLPR << "\", subinterval_index=" << subinterval_index
 				<< ") failed saying - " << iae.what();
 			log(masterlogfile,o.str());
@@ -458,9 +459,22 @@ std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval
 			throw std::invalid_argument(o.str());
 		}
 
+		try
+		{
+			sidefile = p_RAID->get_sidefile(CLPR, subinterval_index);
+		}
+		catch (std::invalid_argument& iae)
+		{
+			std::ostringstream o;
+			o << "ivy_engine::getCLPRthumbnail(int subinterval_index="
+				<< subinterval_index << ") - WP = Subsystem.get_sidefile(CLPR=\"" << CLPR << "\", subinterval_index=" << subinterval_index
+				<< ") failed saying - " << iae.what();
+			log(masterlogfile,o.str());
+			kill_subthreads_and_exit();
+			throw std::invalid_argument(o.str());
+		}
 
-
-		result << " <" << cereal << " " << CLPR << ": WP = " << std::fixed << std::setprecision(2) << (100.*WP) << '%';
+		result << "<" << cereal << " " << CLPR << ": WP = " << std::fixed << std::setprecision(2) << (100.*WP) << '%';
 
 		if (subinterval_index >-1)
 		{
@@ -472,7 +486,19 @@ std::string ivy_engine::getWPthumbnail(int subinterval_index) // use subinterval
 			result << std::fixed << std::setprecision(2) << (100.*slew_rate) << "%/sec";
 		}
 
-		result << ">";
+		result << ", sidefile = " << std::fixed << std::setprecision(2) << (100.*sidefile) << '%';
+
+		if (subinterval_index >-1)
+		{
+			ivy_float delta, slew_rate;
+			delta = p_RAID->get_sidefile_change_from_last_subinterval( CLPR,subinterval_index );
+			slew_rate = delta/subinterval_seconds;
+			result << " ";
+			if (slew_rate >= 0.0) result << '+';
+			result << std::fixed << std::setprecision(2) << (100.*slew_rate) << "%/sec";
+		}
+
+		result << "> ";
 	}
 
 	return result.str();
@@ -870,24 +896,9 @@ std::string ivy_engine::focus_caption()
 
         o << ", accuracy_plus_minus=" << std::fixed << std::setprecision(2) << (100.*accuracy_plus_minus_fraction) << "%";
         o << ", confidence="          << std::fixed << std::setprecision(2) << (100.*confidence                  ) << "%";
-        o << ", warmup_seconds=" << std::fixed << std::setprecision(0) << warmup_seconds;
-        o << ", measure_seconds=" << std::fixed << std::setprecision(0)<< measure_seconds;
-
-        {
-            int seconds = (int) timeout_seconds;
-            int minutes = seconds / 60;
-                seconds = seconds % 60;
-            int hours   = minutes / 60;
-                minutes = minutes % 60;
-            int days  = hours / 24;
-                hours = hours % 24;
-
-            o << ", timeout_seconds = ";
-            if (days > 0) o << days << " days and ";
-            o          << std::setw(2) << std::setfill('0') << hours
-                << ":" << std::setw(2) << std::setfill('0') << minutes
-                << ":" << std::setw(2) << std::setfill('0') << seconds;
-        }
+        o << ", warmup_seconds=" << seconds_to_hhmmss((unsigned int) warmup_seconds);
+        o << ", measure_seconds=" << seconds_to_hhmmss((unsigned int) measure_seconds);
+        o << ", timeout_seconds=" << seconds_to_hhmmss((unsigned int) timeout_seconds);
 
 //        if (m_s.have_max_above_or_below)
 //        {

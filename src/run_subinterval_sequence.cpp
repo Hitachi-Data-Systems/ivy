@@ -433,7 +433,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         {
             std::ostringstream o;
-            o << std::endl << "t=0 overall gather time over all subsystems was " << std::fixed << std::setprecision(1) << (1000.*t0_gather_time.getlongdoubleseconds()) << " ms - " << m_s.getWPthumbnail(-1)<< std::endl << std::endl;
+            o << std::endl << "t=0 overall gather time over all subsystems was " << std::fixed << std::setprecision(1) << (1000.*t0_gather_time.getlongdoubleseconds()) << " ms - " << m_s.getCLPRthumbnail(-1)<< std::endl << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile,o.str());
         }
@@ -938,7 +938,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
                 if (m_s.haveCmdDev && ( (!m_s.suppress_subsystem_perf) || (m_s.now_doing_suppress_perf_cooldown && m_s.suppress_perf_cooldown_subinterval_count >= 2) ) )
                 {
-                    o << m_s.getWPthumbnail(((*allAllIterator).second->subintervals.sequence.size())-1) << std::endl;
+                    o << m_s.getCLPRthumbnail(((*allAllIterator).second->subintervals.sequence.size())-1) << std::endl;
                     o << m_s.subsystem_thumbnail;
                 }
 
@@ -1175,7 +1175,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     }
 
                     std::ostringstream o;
-                    o << "DFC posted SUCCESS or FAILURE.  Entering coolcown at IOPS = 0." << std::endl;
+                    o << "Entering coolcown at IOPS = 0." << std::endl;
 
                     std::cout << o.str();
                     log(m_s.masterlogfile,o.str());

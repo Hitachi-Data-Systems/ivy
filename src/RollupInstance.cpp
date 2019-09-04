@@ -1224,7 +1224,7 @@ void RollupInstance::print_subinterval_csv_line(
     {
         try
         {
-            csvline << m_s.getWPthumbnail(i);
+            csvline << m_s.getCLPRthumbnail(i);
         }
         catch (std::invalid_argument& iae)
         {

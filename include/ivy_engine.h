@@ -526,7 +526,7 @@ public:
 
 	void error(std::string);
 
-	std::string getWPthumbnail(int subinterval_index); // throws std::invalid_argument.    Shows WP for each CLPR on the watch list as briefly as possible.
+	std::string getCLPRthumbnail(int subinterval_index); // throws std::invalid_argument.    Shows WP for each CLPR on the watch list as briefly as possible.
 
     ivy_float get_rollup_metric
     (

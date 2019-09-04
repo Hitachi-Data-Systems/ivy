@@ -241,6 +241,7 @@ RestEngineUri::handle_put(http_request request)
 
     rapidjson::Value::MemberIterator step = document.FindMember("stepname");
     rapidjson::Value::MemberIterator warmup = document.FindMember("warmup_seconds");
+    rapidjson::Value::MemberIterator cooldown_seconds = document.FindMember("cooldown_seconds");
     rapidjson::Value::MemberIterator measure_seconds = document.FindMember("measure_seconds");
     rapidjson::Value::MemberIterator subinterval = document.FindMember("subinterval_seconds");
     rapidjson::Value::MemberIterator measure = document.FindMember("measure");
@@ -262,6 +263,8 @@ RestEngineUri::handle_put(http_request request)
         parameters << ", warmup_seconds=" << warmup->value.GetInt();
     if (measure_seconds != document.MemberEnd())
         parameters << ", measure_seconds=" <<  measure_seconds->value.GetInt();
+    if (cooldown_seconds != document.MemberEnd())
+        parameters << ", cooldown_seconds=" <<  measure_seconds->value.GetInt();
     if (subinterval != document.MemberEnd())
         parameters << ", subinterval_seconds=" << subinterval->value.GetInt();
     if (measure != document.MemberEnd())

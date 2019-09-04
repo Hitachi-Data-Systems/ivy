@@ -127,8 +127,10 @@ public:
 	virtual ~Hitachi_RAID_subsystem();
 //	void add(LUN*) override;
 
-	ivy_float get_wp(const std::string& CLPR, int subinterval);  // throws std::invalid_argument
-	ivy_float get_wp_change_from_last_subinterval(const std::string& CLPR, unsigned int subinterval);  // throws std::invalid_argument
+	ivy_float get_wp                                   (const std::string& CLPR,          int subinterval);  // throws std::invalid_argument
+	ivy_float get_wp_change_from_last_subinterval      (const std::string& CLPR, unsigned int subinterval);  // throws std::invalid_argument
+	ivy_float get_sidefile                             (const std::string& CLPR,          int subinterval);  // throws std::invalid_argument
+	ivy_float get_sidefile_change_from_last_subinterval(const std::string& CLPR, unsigned int subinterval);  // throws std::invalid_argument
 
 	std::string pool_vols_by_pool_ID();
 };

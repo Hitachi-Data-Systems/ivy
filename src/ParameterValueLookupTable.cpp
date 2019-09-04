@@ -198,13 +198,13 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
                         i++; // step over ending quote
                     }
                     else
-                    { // value is unquoted alphanumerics and underscores, periods, and percent signs
-                        if (!( isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i] ))
+                    { // value is unquoted alphanumerics and underscores, periods, percent signs, and colons
+                        if (!( isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i] || ':' == s[i] ))
                         {
                             std::ostringstream o;
                             o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
                             for (unsigned int j=0; j<i; j++) o << ' ';
-                            o << '^' << std::endl << "Unquoted value must be all alphanumerics, underscores, periods, and percent signs." << std::endl;
+                            o << '^' << std::endl << "Unquoted value must be all alphanumerics, underscores \'_\', periods \'.\', percent signs \'%', and colons \':\'." << std::endl;
                             contents.clear();
                             std::cout << o.str();
                             log(m_s.masterlogfile,o.str());
@@ -213,7 +213,7 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
                         value_start=i;
                         value_length=1;
                         i++;
-                        while (i<s.length() && (isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i]))
+                        while (i<s.length() && (isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i] || ':' == s[i]))
                         {
                             i++;
                             value_length++;
@@ -275,13 +275,13 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
                 i++; // step over ending quote
             }
             else
-            { // value is unquoted alphanumerics and underscores, periods, and percent signs
-                if (!( isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i] ))
+            { // value is unquoted alphanumerics and underscores, periods, percent signs, and colons
+                if (!( isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i] || s[i] == ':'))
                 {
                     std::ostringstream o;
                     o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
                     for (unsigned int j=0; j<i; j++) o << ' ';
-                    o << '^' << std::endl << "Unquoted value must be all alphanumerics, underscores, periods, and percent signs." << std::endl;
+                    o << '^' << std::endl << "Unquoted value must be all alphanumerics, underscores \'_\', periods \'.\', percent signs \'%', and colons \':\'." << std::endl;
                     contents.clear();
                     std::cout << o.str();
                     log(m_s.masterlogfile,o.str());
@@ -290,7 +290,7 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
                 value_start=i;
                 value_length=1;
                 i++;
-                while (i<s.length() && (isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i]))
+                while (i<s.length() && (isalnum(s[i]) || '_' == s[i] || '.' == s[i] || '%' == s[i] || ':' == s[i]))
                 {
                     i++;
                     value_length++;
@@ -322,7 +322,7 @@ std::string ParameterValueLookupTable::toString()
 		value=pear.second;
 		for (unsigned int i=0; i<value.length(); i++)
 		{
-			if (!( isalnum(value[i]) || '_' == value[i] || '.' == value[i] || '%' == value[i] ))
+			if (!( isalnum(value[i]) || '_' == value[i] || '.' == value[i] || '%' == value[i] || ':' == value[i] ))
 			{
 				needs_quoting=true;
 				if ('\"' == value[i]) quote_char = '\'';

@@ -170,4 +170,4 @@ std::pair<bool /*false means attempt to read past the end*/, std::string /*field
     // for "1-1/1-2" with delimeter '/' starting with cursor 0 returns "1-1" and then "1-2"
     // for "/" returns "" then ""
 
-
+std::string seconds_to_hhmmss(unsigned int input_value);

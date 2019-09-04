@@ -68,10 +68,11 @@ int MeasureCtlr::evaluateSubinterval()
         std::ostringstream o;
         o << "This is";
         if (m_s.have_IOPS_staircase) { o << " measurement " << (m_s.measurements.size() -1 );}
-        o << " subinterval number " << ( current - m_s.current_measurement().first_subinterval )
+        o << " subinterval " << ( current - m_s.current_measurement().first_subinterval )
             << " (from zero) of at least " << ( m_s.min_warmup_count + m_s.min_measure_count )
-            << " subintervals to accommodate " << m_s.warmup_seconds << " warmup_seconds and " << m_s.measure_seconds
-            << " measure_seconds." << std::endl << std::endl;
+            << " subintervals to accommodate "
+            << "warmup_seconds = " << seconds_to_hhmmss((unsigned int) m_s.warmup_seconds)
+            << " and measure_seconds = " << seconds_to_hhmmss((unsigned int) m_s.measure_seconds) << "." << std::endl;
 
         std::cout << o.str();
         log(m_s.masterlogfile, o.str());
@@ -373,26 +374,6 @@ int MeasureCtlr::evaluateSubinterval()
                 clean=false;
                 break;
             }
-
-//            if ( m_s.have_within && abs((measured_value-m_s.target_value)/m_s.target_value) > m_s.within )
-//            {
-//                std::ostringstream o;
-//                o << "For rollup instance " << pRollupInstance->attributeNameComboID << "=" << pRollupInstance->rollupInstanceID
-//                    << " an otherwise valid subsequence average measured value "  << measured_value
-//                    << " was more than within = " << std::fixed <<std::setprecision(2) << (100.*m_s.within) << "%"
-//                    << " away from the target_value = " << m_s.target_value << "." << std::endl;
-//                o << "Otherwise valid means meeting accuracy_plus_minus=" << m_s.accuracy_plus_minus_parameter
-//                    << ", confidence=" << m_s.confidence_parameter
-//                    << ", warmup_seconds=" << std::fixed << std::setprecision(0) << m_s.warmup_seconds
-//                    << ", measure_seconds=" << std::fixed << std::setprecision(0) << m_s.measure_seconds
-//                    << "." << std::endl;
-//
-//                std::cout << o.str();
-//                log(m_s.masterlogfile, o.str());
-//
-//                return EVALUATE_SUBINTERVAL_CONTINUE;
-//            }
-
         }
 
         first_pass=false;  // the first pass we made it far enough down to examine a candidate,

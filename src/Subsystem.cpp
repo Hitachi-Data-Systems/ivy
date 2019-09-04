@@ -310,16 +310,74 @@ ivy_float Hitachi_RAID_subsystem::get_wp(const std::string& CLPR, int subinterva
 
 	std::string string_value;
 
-	ivy_float WP_MiB, size_MiB;
+//	ivy_float WP_MiB, size_MiB;
+//
+//	try
+//	{
+//		metric_value& mv = gathers[gather_index].get(std::string("CLPR"), CLPR, std::string("WP MiB"));
+//		string_value = mv.string_value();
+//		WP_MiB = number_optional_trailing_percent(string_value);
+//	}
+//	catch (std::out_of_range& oor)  // this is what gathers.get() throws
+//	{
+//		std::ostringstream o;
+//		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
+//			<< " - " << oor.what() << std::endl;
+//		throw std::invalid_argument(o.str());
+//	}
+//	catch(std::invalid_argument& iaex)  // this is what number_optional_trailing_percent() throws
+//	{
+//		std::ostringstream o;
+//		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
+//			<< " - retrieved \"WP MiB\" metric \"" << string_value << "\" did not parse as a number with optional trailing percent." << std::endl << iaex.what() << std::endl;
+//		throw std::invalid_argument(o.str());
+//	}
+//
+//
+//	try
+//	{
+//		metric_value& mv = gathers[gather_index].get(std::string("CLPR"), CLPR, std::string("size MiB"));
+//		string_value = mv.string_value();
+//		size_MiB = number_optional_trailing_percent(string_value);
+//	}
+//	catch (std::out_of_range& oor)  // this is what gathers.get() throws
+//	{
+//
+//		std::ostringstream o;
+//		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
+//			<< " - " << oor.what() << std::endl;
+//		throw std::invalid_argument(o.str());
+//	}
+//	catch(std::invalid_argument& iaex)  // this is what number_optional_trailing_percent() throws
+//	{
+//		std::ostringstream o;
+//		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
+//			<< " - retrieved \"size MiB\" metric \"" << string_value << "\" did not parse as a number with optional trailing percent." << std::endl << iaex.what() << std::endl;
+//		throw std::invalid_argument(o.str());
+//	}
+//
+//	if (size_MiB <= 0.0)
+//	{
+//		std::ostringstream o;
+//		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
+//			<< " - retrieved size_MB metric \"" << string_value << "\" which was zero or negative." << std::endl;
+//		throw std::invalid_argument(o.str());
+//	}
+//
+//	return WP_MiB / size_MiB;
+
+
+    ivy_float WP_percent;
 
 	try
 	{
-		metric_value& mv = gathers[gather_index].get(std::string("CLPR"), CLPR, std::string("WP MiB"));
+		metric_value& mv = gathers[gather_index].get(std::string("CLPR"), CLPR, std::string("WP %"));
 		string_value = mv.string_value();
-		WP_MiB = number_optional_trailing_percent(string_value);
+		WP_percent = number_optional_trailing_percent(string_value);
 	}
 	catch (std::out_of_range& oor)  // this is what gathers.get() throws
 	{
+
 		std::ostringstream o;
 		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
 			<< " - " << oor.what() << std::endl;
@@ -329,43 +387,68 @@ ivy_float Hitachi_RAID_subsystem::get_wp(const std::string& CLPR, int subinterva
 	{
 		std::ostringstream o;
 		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
-			<< " - retrieved \"WP MiB\" metric \"" << string_value << "\" did not parse as a number with optional trailing percent." << std::endl << iaex.what() << std::endl;
+			<< " - retrieved \"WP %\" metric \"" << string_value << "\" did not parse as a number with optional trailing percent." << std::endl << iaex.what() << std::endl;
 		throw std::invalid_argument(o.str());
 	}
 
-
-	try
-	{
-		metric_value& mv = gathers[gather_index].get(std::string("CLPR"), CLPR, std::string("size MiB"));
-		string_value = mv.string_value();
-		size_MiB = number_optional_trailing_percent(string_value);
-	}
-	catch (std::out_of_range& oor)  // this is what gathers.get() throws
-	{
-
-		std::ostringstream o;
-		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
-			<< " - " << oor.what() << std::endl;
-		throw std::invalid_argument(o.str());
-	}
-	catch(std::invalid_argument& iaex)  // this is what number_optional_trailing_percent() throws
-	{
-		std::ostringstream o;
-		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
-			<< " - retrieved \"size MiB\" metric \"" << string_value << "\" did not parse as a number with optional trailing percent." << std::endl << iaex.what() << std::endl;
-		throw std::invalid_argument(o.str());
-	}
-
-	if (size_MiB <= 0.0)
-	{
-		std::ostringstream o;
-		o << "<Error> Hitachi_RAID_subsystem::get_wp( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
-			<< " - retrieved size_MB metric \"" << string_value << "\" which was zero or negative." << std::endl;
-		throw std::invalid_argument(o.str());
-	}
-
-	return WP_MiB / size_MiB;
+	return WP_percent;
 }
+
+
+ivy_float Hitachi_RAID_subsystem::get_sidefile(const std::string& CLPR, int subinterval)
+{
+	// use subinterval = -1 to get the WP value from the gather at t=0
+
+	if (gathers.size() == 0)
+	{
+		std::ostringstream o;
+		o << "<Error> Hitachi_RAID_subsystem::get_sidefile( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
+			<< " - get_sidefile() called when gathers.size()=0"<< std::endl;
+		throw std::invalid_argument(o.str());
+	}
+
+	int max_subinterval = gathers.size() - 2;  // if there is one gather, the t=0 gather was performed, and we can retrieve that, but there are no subinterval end gathers yet.
+
+	if( (subinterval < -1) || (subinterval > max_subinterval))
+	{
+		std::ostringstream o;
+		o << "<Error> Hitachi_RAID_subsystem::get_sidefile( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
+			<< " - invalid subinterval.  There is a gather at t=0 (use subinterval=-1), and there are gathers for " << (gathers.size()-1) << " subintervals.  Valid subinterval numbers for get_wp are -1 through " << (gathers.size()-2) << std::endl;
+		throw std::invalid_argument(o.str());
+	}
+
+	int gather_index = subinterval+1;
+//	GatherData& gd = gathers[gather_index];
+
+	std::string string_value;
+
+    ivy_float sidefile_percent;
+
+	try
+	{
+		metric_value& mv = gathers[gather_index].get(std::string("CLPR"), CLPR, std::string("Sidefile %"));
+		string_value = mv.string_value();
+		sidefile_percent = number_optional_trailing_percent(string_value);
+	}
+	catch (std::out_of_range& oor)  // this is what gathers.get() throws
+	{
+
+		std::ostringstream o;
+		o << "<Error> Hitachi_RAID_subsystem::get_sidefile( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
+			<< " - " << oor.what() << std::endl;
+		throw std::invalid_argument(o.str());
+	}
+	catch(std::invalid_argument& iaex)  // this is what number_optional_trailing_percent() throws
+	{
+		std::ostringstream o;
+		o << "<Error> Hitachi_RAID_subsystem::get_sidefile( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
+			<< " - retrieved \"Sidefile %\" metric \"" << string_value << "\" did not parse as a number with optional trailing percent." << std::endl << iaex.what() << std::endl;
+		throw std::invalid_argument(o.str());
+	}
+
+	return sidefile_percent;
+}
+
 
 ivy_float Hitachi_RAID_subsystem::get_wp_change_from_last_subinterval(const std::string& CLPR, unsigned int subinterval)
 {
@@ -392,6 +475,31 @@ ivy_float Hitachi_RAID_subsystem::get_wp_change_from_last_subinterval(const std:
 	return WP_delta;
 }
 
+
+ivy_float Hitachi_RAID_subsystem::get_sidefile_change_from_last_subinterval(const std::string& CLPR, unsigned int subinterval)
+{
+	// throws std::invalid_argument
+
+	// slew is defined for any valid subinterval index from 0, because before subinterval 0 we did a gather at t=0.
+
+	if ( gathers.size() < (subinterval+2) )
+	{
+		std::ostringstream o;
+		o << "<Error> Hitachi_RAID_subsystem::get_sidefile_change_from_last_subinterval( CLPR = \"" << CLPR << "\", subinterval = " << subinterval << " )) for subsystem " << serial_number
+			<< " - no such subinterval \"" << subinterval << "\"."<< std::endl;
+		throw std::invalid_argument(o.str());
+	}
+
+	ivy_float sidefile_then, sidefile_the_time_before, sidefile_delta;
+
+	sidefile_then            = get_sidefile(CLPR,subinterval  );
+	sidefile_the_time_before = get_sidefile(CLPR,subinterval-1);
+	sidefile_delta = sidefile_then - sidefile_the_time_before;
+
+//*debug*/ std::cout << std::endl << " Hitachi_RAID_subsystem::get_sidefile_change_from_last_subinterval(CLPR=\"" << CLPR << "\",subinterval=" << subinterval <<") WP that time " << std::fixed << std::setprecision(3) << (100.*sidefile_then) << "%. the time before " << std::fixed << std::setprecision(3) << (100.*sidefile_the_time_before) << "%, returning delta=" << std::fixed << std::setprecision(3) << (100.*sidefile_delta) << "%" << std::endl << std::endl;
+
+	return sidefile_delta;
+}
 
 
 std::string Hitachi_RAID_subsystem::pool_vols_by_pool_ID()
