@@ -1146,7 +1146,7 @@ void RollupInstance::print_by_subinterval_header()
     std::ostringstream o;
     o << "ivy version,build date,";
     if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
-    o << "Test Name,Step Number,Step Name,Start,Measurement Duration,Write Pending,Subinterval Number,Phase,Rollup Type,Rollup Instance,Workload Count";
+    o << "Test Name,Step Number,Step Name,Start,Measurement Duration,Write Pending & Sidefile,Subinterval Number,Phase,Rollup Type,Rollup Instance,Workload Count";
     if ( m_s.haveCmdDev ) { o << Test_config_thumbnail::csv_headers(); }
     o << IosequencerInputRollup::CSVcolumnTitles();
     o << ",Rollup Total IOPS Setting";
@@ -1490,7 +1490,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
                 if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
 
-                o << "Test Name,Step Number,Step Name,Start,Warmup,Measurement Duration,Cooldown,Write Pending,valid or invalid,invalid reason,Rollup Type,Rollup Instance,Workload Count";
+                o << "Test Name,Step Number,Step Name,Start,Warmup,Measurement Duration,Cooldown,valid or invalid,invalid reason,Rollup Type,Rollup Instance,Workload Count";
 
                 if (m_s.haveCmdDev) { o << test_config_thumbnail.csv_headers(); }
                 o << IosequencerInputRollup::CSVcolumnTitles();
@@ -1594,7 +1594,6 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
             csvline << ',' << m_s.measurements[measurement_index].warmup_duration().format_as_duration_HMMSS();
             csvline << ',' << m_s.measurements[measurement_index].measure_duration().format_as_duration_HMMSS();
             csvline << ',' << m_s.measurements[measurement_index].cooldown_duration().format_as_duration_HMMSS();
-            csvline << ','; // Write Pending only shows in by-subinterval csv lines
 
             measurement_things& mt = things_by_measurement[measurement_index];
 

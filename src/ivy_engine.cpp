@@ -486,7 +486,7 @@ std::string ivy_engine::getCLPRthumbnail(int subinterval_index) // use subinterv
 			result << std::fixed << std::setprecision(2) << (100.*slew_rate) << "%/sec";
 		}
 
-		result << ", sidefile = " << std::fixed << std::setprecision(2) << (100.*sidefile) << '%';
+		result << "; sidefile = " << std::fixed << std::setprecision(2) << (100.*sidefile) << '%';
 
 		if (subinterval_index >-1)
 		{
