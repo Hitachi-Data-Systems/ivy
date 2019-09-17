@@ -31,6 +31,7 @@
 #include <regex>
 #include <string>
 #include <fcntl.h>
+#include <mutex>
 using namespace std::string_literals;
 
 #include "ivytime.h"
@@ -71,6 +72,8 @@ std::regex last_regex( R"(last=>(.*)<=[\r\n\t ]*)" );
 
 std::regex LDEV_regex( R"([[:xdigit:]]{2}:[[:xdigit:]]{2})" );
 std::regex PG_regex  ( R"([[:digit:]]{1,2}-[[:digit:]]{1,2})" );
+
+std::mutex log_mutex;
 
 void format_for_log_trailing_slashr_slashn(std::string s)
 {
@@ -184,6 +187,8 @@ std::string print_logfile_stats()
 {
     std::ostringstream o;
 
+    std::unique_lock<std::mutex> m_lk(log_mutex);
+
     o << "log file time to write a log entry:";
 
     for (auto& pear : log_stats_by_filename)
@@ -198,6 +203,9 @@ std::string print_logfile_stats()
             << " - " << pear.first;
     }
     o << std::endl;
+
+    m_lk.unlock();
+
     return o.str();
 }
 
@@ -206,6 +214,8 @@ void log(std::string filename, std::string s) {
 	ivytime now;
 
 	now.setToNow();
+
+	std::unique_lock<std::mutex> m_lk(log_mutex);
 
 	auto& pear = log_stats_by_filename[filename];
 
@@ -240,6 +250,8 @@ void log(std::string filename, std::string s) {
 
     pear.first = now;
     pear.second.push(ivytime(after-now).getlongdoubleseconds());
+
+    m_lk.unlock();
 
     return;
 }
