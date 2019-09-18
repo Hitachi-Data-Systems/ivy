@@ -70,7 +70,7 @@ int MeasureCtlr::evaluateSubinterval()
         if (m_s.have_IOPS_staircase) { o << " measurement " << (m_s.measurements.size() -1 );}
         o << " subinterval " << ( current - m_s.current_measurement().first_subinterval )
             << " (from zero) of at least " << ( m_s.min_warmup_count + m_s.min_measure_count )
-            << " subintervals to accommodate "
+            << " to accommodate "
             << "warmup_seconds = " << seconds_to_hhmmss((unsigned int) m_s.warmup_seconds)
             << " and measure_seconds = " << seconds_to_hhmmss((unsigned int) m_s.measure_seconds) << "." << std::endl;
 
