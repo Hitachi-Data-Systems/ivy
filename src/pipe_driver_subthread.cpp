@@ -748,27 +748,30 @@ void pipe_driver_subthread::threadRun()
         // redirect stdin
         if (dup2(pipe_driver_subthread_to_slave_pipe[PIPE_READ], STDIN_FILENO) == -1)
         {
-            ostringstream logmsg;
-            logmsg << "dup2(pipe_driver_subthread_to_slave_pipe[PIPE_READ], STDIN_FILENO) failed - rc = " << errno << " " << strerror(errno) << std::endl;
-            log(logfilename, logmsg.str());
+// SPM: Commented out next three lines because they are not async-signal-safe and cause hangs...
+//            ostringstream logmsg;
+//            logmsg << "dup2(pipe_driver_subthread_to_slave_pipe[PIPE_READ], STDIN_FILENO) failed - rc = " << errno << " " << strerror(errno) << std::endl;
+//            log(logfilename, logmsg.str());
             return;
         }
 
         // redirect stdout
         if (dup2(slave_to_pipe_driver_subthread_pipe[PIPE_WRITE], STDOUT_FILENO) == -1)
         {
-            ostringstream logmsg;
-            logmsg << "dup2(slave_to_pipe_driver_subthread_pipe[PIPE_WRITE], STDOUT_FILENO) failed - rc = " << errno << " " << strerror(errno) << std::endl;
-            log(logfilename, logmsg.str());
+// SPM: Commented out next three lines because they are not async-signal-safe and cause hangs...
+//            ostringstream logmsg;
+//            logmsg << "dup2(slave_to_pipe_driver_subthread_pipe[PIPE_WRITE], STDOUT_FILENO) failed - rc = " << errno << " " << strerror(errno) << std::endl;
+//            log(logfilename, logmsg.str());
             return;
         }
 
         // redirect stderr
         if (dup2(slave_to_pipe_driver_subthread_pipe[PIPE_WRITE], STDERR_FILENO) == -1)
         {
-            ostringstream logmsg;
-            logmsg << "dup2(slave_to_pipe_driver_subthread_pipe[PIPE_WRITE], STDERR_FILENO) failed - rc = " << errno << " " << strerror(errno) << std::endl;
-            log(logfilename, logmsg.str());
+// SPM: Commented out next three lines because they are not async-signal-safe and cause hangs...
+//            ostringstream logmsg;
+//            logmsg << "dup2(slave_to_pipe_driver_subthread_pipe[PIPE_WRITE], STDERR_FILENO) failed - rc = " << errno << " " << strerror(errno) << std::endl;
+//            log(logfilename, logmsg.str());
             return;
         }
 
@@ -797,10 +800,11 @@ void pipe_driver_subthread::threadRun()
             }
             if (routine_logging)
             {
-                std::ostringstream o;
-                o << "execl(\"usr/bin/ssh\", \"ssh\", \"-t\", \"-t\", \"" << login << "\", \"" << cmd << "\", \"-log\", \"" << arg << "\", \""
-                    << hitachi_product << "\", \""<< serial << "\", \"" << remote_logfilename << "\")" << std::endl;
-                log(logfilename,o.str());
+// SPM: Commented out next four lines because they are not async-signal-safe and cause hangs...
+//                std::ostringstream o;
+//                o << "execl(\"usr/bin/ssh\", \"ssh\", \"-t\", \"-t\", \"" << login << "\", \"" << cmd << "\", \"-log\", \"" << arg << "\", \""
+//                    << hitachi_product << "\", \""<< serial << "\", \"" << remote_logfilename << "\")" << std::endl;
+//                log(logfilename,o.str());
                 execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(), "-log", arg.c_str(), hitachi_product.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
             }
             else
@@ -812,13 +816,14 @@ void pipe_driver_subthread::threadRun()
         {
             cmd = m_s.path_to_ivy_executable + IVYDRIVER_EXECUTABLE;
             arg = ivyscript_hostname;
-            {
-                ostringstream execl_cmd;
-                execl_cmd << "/usr/bin/ssh ssh -t -t " << login << ' ' << cmd << ' ';
-                if (routine_logging) execl_cmd << "-log ";
-                execl_cmd << arg << std::endl;
-                if (routine_logging) { log(logfilename, execl_cmd.str()); }
-            }
+// SPM: Commented out next seven lines because logging is not async-thread-safe and causes hangs...
+//            {
+//                ostringstream execl_cmd;
+//                execl_cmd << "/usr/bin/ssh ssh -t -t " << login << ' ' << cmd << ' ';
+//                if (routine_logging) execl_cmd << "-log ";
+//                execl_cmd << arg << std::endl;
+//                if (routine_logging) { log(logfilename, execl_cmd.str()); }
+//            }
             if (routine_logging)
             {
                 if (one_thread_per_core)
@@ -844,8 +849,9 @@ void pipe_driver_subthread::threadRun()
             }
         }
 
-        log(logfilename, std::string("execl() for ssh failed\n"));
-        std::cerr << "child\'s execl() of ssh " << login << " failed." << std::endl;
+// SPM: Commented out next two lines because they are not async-signal-safe and cause hangs...
+//        log(logfilename, std::string("execl() for ssh failed\n"));
+//        std::cerr << "child\'s execl() of ssh " << login << " failed." << std::endl;
 
         return;
     }
