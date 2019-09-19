@@ -125,10 +125,10 @@ std::pair<bool /*success*/, std::string /* message */>
         return std::make_pair(false,o.str());
     }
 
-    ivy_engine_logfile = m_s.var_ivymaster_logs_testName + "/ivy_engine_API_calls.txt"s;
+    ivy_engine_calls_filename.logfilename = m_s.var_ivymaster_logs_testName + "/ivy_engine_API_calls.txt"s;
 
     if (routine_logging) { log(masterlogfile, api_log_entry); }
-    log(ivy_engine_logfile, api_log_entry);
+    log(ivy_engine_calls_filename, api_log_entry);
 
     {
         std::ostringstream o;

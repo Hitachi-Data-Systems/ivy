@@ -42,7 +42,7 @@ ivy_engine::create_rollup(
         o << ")" << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
-        log(ivy_engine_logfile,o.str());
+        log(ivy_engine_calls_filename,o.str());
     }
 
     if ( !haveHosts )
@@ -72,7 +72,7 @@ ivy_engine::delete_rollup(const std::string& attributeNameComboText)
             << ")" << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
-        log(ivy_engine_logfile,o.str());
+        log(ivy_engine_calls_filename,o.str());
     }
     bool delete_all_not_all {false};
 

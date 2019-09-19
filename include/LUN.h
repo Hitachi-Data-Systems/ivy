@@ -23,6 +23,8 @@
 #include <set>
 #include <string>
 
+#include "logger.h"
+
 class LUN
 {
 public:
@@ -32,7 +34,7 @@ public:
 //methods
 	LUN(){};
 
-	bool loadcsvline(const std::string& headerline, const std::string& dataline, const std::string& logfilename); // false on a failure to load the line properly
+	bool loadcsvline(const std::string& headerline, const std::string& dataline, logger&); // false on a failure to load the line properly
 
 	void set_attribute(const std::string& /* name */, const std::string& /* value */);
 

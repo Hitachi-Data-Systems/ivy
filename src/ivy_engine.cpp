@@ -83,7 +83,7 @@ extern bool routine_logging;
 ivy_engine m_s;
 
 std::string outputFolderRoot() {return m_s.outputFolderRoot;}
-std::string masterlogfile()    {return m_s.masterlogfile;}
+std::string masterlogfile()    {return m_s.masterlogfile.logfilename;}
 std::string testName()         {return m_s.testName;}
 std::string testFolder()       {return m_s.testFolder;}
 std::string stepNNNN()         {return m_s.stepNNNN;}
@@ -1042,7 +1042,7 @@ ivy_engine::set_iosequencer_template(
         o << ")" << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
-        log(ivy_engine_logfile,o.str());
+        log(ivy_engine_calls_filename,o.str());
     }
 
     std::unordered_map<std::string,IosequencerInput*>::iterator iogen_it;
@@ -1078,7 +1078,7 @@ ivy_engine::shutdown_subthreads()
     {
         std::string m = "ivy engine API shutdown_subthreads()\n";
         log(masterlogfile,m);
-        log(ivy_engine_logfile,m);
+        log(ivy_engine_calls_filename,m);
         std::cout << m;
     }
 
@@ -1217,7 +1217,8 @@ ivy_engine::shutdown_subthreads()
 		}
 	}
 
-	log(masterlogfile,print_logfile_stats());
+	std::string s = print_logfile_stats();  // separated out from next statement so no issues with mutex locks.
+	log(masterlogfile,s);
 
 	{
 	    std::ostringstream o;
@@ -1637,7 +1638,108 @@ bool ivy_engine::start_new_measurement()
     return true;
 }
 
+std::string ivy_engine::print_logfile_stats()
+{
+    RunningStat<long double, long> overall_durations {};
 
+    std::ostringstream o;
+
+    o << "log file time to write a log entry:" << std::endl;
+
+    {
+        std::unique_lock<std::mutex> m_lk(masterlogfile.now_speaks);
+
+        const auto& rs = masterlogfile.durations;
+
+        if (rs.count() > 0)
+        {
+            o << "count " << rs.count()
+                << ", avg " << (1000.0 * rs.avg()) << " ms"
+                << ", min " << (1000.0 * rs.min()) << " ms"
+                << ", max " << (1000.0 * rs.max()) << " ms"
+                << " - " << masterlogfile.logfilename << std::endl;
+
+            overall_durations += masterlogfile.durations;
+        }
+    }
+
+    {
+        std::unique_lock<std::mutex> m_lk(ivy_engine_calls_filename.now_speaks);
+
+        const auto& rs = ivy_engine_calls_filename.durations;
+
+        if (rs.count() > 0)
+        {
+            o << "count " << rs.count()
+                << ", avg " << (1000.0 * rs.avg()) << " ms"
+                << ", min " << (1000.0 * rs.min()) << " ms"
+                << ", max " << (1000.0 * rs.max()) << " ms"
+                << " - " << ivy_engine_calls_filename.logfilename << std::endl;
+
+            overall_durations += ivy_engine_calls_filename.durations;
+        }
+    }
+
+    for (auto& pear : host_subthread_pointers)
+    {
+        {
+            logger& bunyan = pear.second->logfilename;
+
+            std::unique_lock<std::mutex> m_lk(bunyan.now_speaks);
+
+            const auto& rs = bunyan.durations;
+
+            if (rs.count() > 0)
+            {
+                o << "count " << rs.count()
+                << ", avg " << (1000.0 * rs.avg()) << " ms"
+                << ", min " << (1000.0 * rs.min()) << " ms"
+                << ", max " << (1000.0 * rs.max()) << " ms"
+                << " - " << bunyan.logfilename << std::endl;
+
+                overall_durations += bunyan.durations;
+            }
+        }
+    }
+
+    for (auto& pear : command_device_subthread_pointers)
+    {
+        {
+            logger& bunyan = pear.second->logfilename;
+
+            std::unique_lock<std::mutex> m_lk(bunyan.now_speaks);
+
+            const auto& rs = bunyan.durations;
+
+            if (rs.count() > 0)
+            {
+                o << "count " << rs.count()
+                << ", avg " << (1000.0 * rs.avg()) << " ms"
+                << ", min " << (1000.0 * rs.min()) << " ms"
+                << ", max " << (1000.0 * rs.max()) << " ms"
+                << " - " << bunyan.logfilename << std::endl;
+
+                overall_durations += bunyan.durations;
+            }
+        }
+    }
+
+    {
+        const auto& rs = overall_durations;
+
+        o
+            << "count " << rs.count()
+            << ", avg " << (1000.0 * rs.avg()) << " ms"
+            << ", min " << (1000.0 * rs.min()) << " ms"
+            << ", max " << (1000.0 * rs.max()) << " ms"
+            << " - " << "< Overall >" << std::endl;
+    }
+    o << std::endl;
+
+    return o.str();
+}
+
+void ivy_log(std::string s) {log(m_s.masterlogfile,s);} // crutch for Builtin.cpp
 
 
 

@@ -185,7 +185,7 @@ ivy_engine::edit_rollup(const std::string& rollupText, const std::string& origin
         std::cout << o.str()
             << std::endl;  // The extra new line groups fine-grained DFC lines showing first what happened in English, and then here show setting the resulting new IOPS.
         log (m_s.masterlogfile,o.str());
-        if (!do_not_log_API_call) { log(ivy_engine_logfile,o.str()); }
+        if (!do_not_log_API_call) { log(ivy_engine_calls_filename,o.str()); }
     }
 
 //variables

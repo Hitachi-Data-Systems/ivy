@@ -114,14 +114,15 @@ std::string string_substring_of_string_int_int(const std::string s, int begin_in
     return s.substr(i,n);
 }
 
-int            int_print_of_int(int i)                  { std::ostringstream o; o << i;               std::cout << o.str(); fileappend(masterlogfile(), o.str()); return i;}
-double      double_print_of_double(double d)            { std::ostringstream o; o << std::fixed << d; std::cout << o.str(); fileappend(masterlogfile(), o.str()); return d;}
-std::string string_print_of_string(const std::string s) {                                             std::cout << s;       fileappend(masterlogfile(), s);       return s;}
-void ivy_log(std::string filename, std::string msg);
+void ivy_log(std::string msg);
 
-int int_log_of_string_string(std::string filename, std::string s)
+int            int_print_of_int(int i)                  { std::ostringstream o; o << i;               std::cout << o.str(); ivy_log(o.str()); return i;}
+double      double_print_of_double(double d)            { std::ostringstream o; o << std::fixed << d; std::cout << o.str(); ivy_log(o.str()); return d;}
+std::string string_print_of_string(const std::string s) {                                             std::cout << s;       ivy_log(s);       return s;}
+
+int int_log_of_string(std::string s)
 {
-    ivy_log(filename,s);
+    ivy_log(s);
     return 1;
 }
 
@@ -137,7 +138,7 @@ int int_regex_match_of_string_string(std::string s,std::string specified_regex)
         std::ostringstream o;
         o << "regex_error caught: " << e.what() << std::endl;
         std::cout << o.str();
-        fileappend(masterlogfile(),o.str());
+        ivy_log(o.str());
         return 0;
     }
 }
@@ -158,7 +159,7 @@ int int_regex_sub_match_count_of_string_string(std::string s, std::string specif
         std::ostringstream o;
         o << "regex_error caught: " << e.what() << std::endl;
         std::cout << o.str();
-        fileappend(masterlogfile(),o.str());
+        ivy_log(o.str());
         return -1;
     }
 }
@@ -203,7 +204,7 @@ std::string string_regex_sub_match_of_string_string_int(std::string s, std::stri
         std::ostringstream o;
         o << "regex_error caught: " << e.what() << std::endl;
         std::cout << o.str();
-        fileappend(masterlogfile(),o.str());
+        ivy_log(o.str());
         return 0;
     }
 }
@@ -335,7 +336,7 @@ std::string string_shell_command_of_string(std::string cmd) {  // DOES NOT CHECK
         std::ostringstream o;
         o << "About to issue system shell command \"" << cmd << "\"." << std::endl;
         std::cout << o.str();
-        ivy_log(masterlogfile(),o.str());
+        ivy_log(o.str());
 	}
 
     std::string data;
@@ -356,7 +357,7 @@ std::string string_shell_command_of_string(std::string cmd) {  // DOES NOT CHECK
         std::ostringstream o;
         o << "System shell command \"" << cmd << "\" was executed returning \"" << data << "\"." << std::endl;
         std::cout << o.str();
-        ivy_log(masterlogfile(),o.str());
+        ivy_log(o.str());
 	}
 
     return data;
@@ -368,7 +369,7 @@ int int_set_csvfile_of_string(std::string filename)
     csvfile& cf = csvfiles[filename];
     auto rv = cf.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); }
 
     current_csvfile_it = csvfiles.find(filename);
 
@@ -477,7 +478,7 @@ int int_csv_lookup_column_of_string_string(std::string filename, std::string hea
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return -1; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return -1; }
 
     return c.lookup_column(header);
 }
@@ -488,7 +489,7 @@ std::string string_csv_column_header_of_string_int(std::string filename, int col
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return ""; }
 
     return c.column_header(col);
 }
@@ -499,7 +500,7 @@ int int_csv_rows_of_string(std::string filename)
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return -1; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return -1; }
 
     return c.rows();
 }
@@ -510,7 +511,7 @@ int int_csv_header_columns_of_string(std::string filename)
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return -1; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return -1; }
 
     return c.header_columns();
 }
@@ -521,7 +522,7 @@ int int_csv_columns_in_row_of_string_int(std::string filename, int row)
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return -1; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return -1; }
 
     return c.columns_in_row(row);
 }
@@ -532,7 +533,7 @@ std::string string_csv_raw_cell_value_of_string_int_int(std::string filename, in
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return ""; }
 
     return c.raw_cell_value(row,col);
 }
@@ -543,7 +544,7 @@ std::string string_csv_raw_cell_value_of_string_int_string(std::string filename,
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return ""; }
 
     return c.raw_cell_value(row,col);
 }
@@ -555,7 +556,7 @@ std::string string_csv_cell_value_of_string_int_int(std::string filename, int ro
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return ""; }
 
     return c.cell_value(row,col);
 }
@@ -566,7 +567,7 @@ std::string string_csv_cell_value_of_string_int_string(std::string filename, int
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return ""; }
 
     return c.cell_value(row,col);
 }
@@ -577,7 +578,7 @@ std::string string_csv_row_of_string_int(std::string filename, int row)
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return ""; }
 
     return c.row(row);
 }
@@ -588,7 +589,7 @@ std::string string_csv_column_of_string_int(std::string filename, int column)
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return ""; }
 
     return c.column(column);
 }
@@ -599,7 +600,7 @@ std::string string_csv_column_of_string_string(std::string filename, std::string
 
     auto rv = c.load(filename);
 
-    if (!rv.first) { std::cout << rv.second; ivy_log(masterlogfile(),rv.second); return ""; }
+    if (!rv.first) { std::cout << rv.second; ivy_log(rv.second); return ""; }
 
     return c.column(column);
 }
@@ -874,6 +875,7 @@ void init_builtin_table()
 
     unaryfunc(csv_rows,csv_rows,int,string)
     unaryfunc(csv_header_columns,csv_header_columns,int,string)
+    unaryfunc(log,log,int,string)
 
     #undef unaryfunc
 
@@ -928,7 +930,6 @@ void init_builtin_table()
     binopfunc(csvfile_raw_cell_value,csvfile_raw_cell_value,string,int,string)
 
     binopfunc(fileappend,fileappend,int,string,string)
-    binopfunc(log,log,int,string,string)
     binopfunc(left,left,string,string,int)
     binopfunc(right,right,string,string,int)
     binopfunc(stringCaseInsensitiveEquality,stringCaseInsensitiveEquality,int,string,string)

@@ -37,12 +37,12 @@
 #include "ivydefines.h"
 #include "ivytime.h"
 #include "ivyhelpers.h"
+#include "ivydriver.h"
 
 class pipe_line_reader
 {
 public:
 // variables
-    std::string logfilename {};
 
     int fd {0};  // default is to read from stdin
 
@@ -60,8 +60,6 @@ public:
     ~pipe_line_reader(){};
 
     void set_fd(int f) { fd = f; }
-    void set_logfilename(const std::string& l) { logfilename = l; }
-
 
     std::string get_reassembled_line  // reassembles fragmented lines
     (

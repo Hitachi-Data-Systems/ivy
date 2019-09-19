@@ -19,6 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 // ivydriver.h
 
+#pragma once
 
 #include <algorithm>
 #include <cctype>
@@ -149,8 +150,9 @@ struct IvyDriver
         harvest_end;
 
     std::string
-        slavelogfile {"/var/ivydriver_initial_log.txt"},
         input_line;
+
+    logger slavelogfile {"/var/ivydriver_initial_log.txt"};
 
     ivytime last_message_time = ivytime(0);
 
@@ -214,6 +216,8 @@ struct IvyDriver
     void check_CPU_temperature();
 
     void post_error(const std::string&);
+
+    std::string print_logfile_stats();
 };
 
 extern struct IvyDriver ivydriver;

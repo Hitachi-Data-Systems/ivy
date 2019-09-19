@@ -694,11 +694,11 @@ void pipe_driver_subthread::threadRun()
             << "+host_" << LUN::normalize_attribute_name(pCmdDevLUN->attribute_value("ivyscript hostname"))
 //            << "+LUN_" << LUN::normalize_attribute_name(pCmdDevLUN->attribute_value("LUN Name"))
             << ".txt";
-        logfilename=lfn.str();
+        logfilename.logfilename=lfn.str();
     }
     else
     {
-        logfilename = m_s.var_ivymaster_logs_testName + "/log.ivymaster."s +ivyscript_hostname+std::string(".txt");
+        logfilename.logfilename = m_s.var_ivymaster_logs_testName + "/log.ivymaster."s +ivyscript_hostname+std::string(".txt");
     }
 
     //if (routine_logging) std::cout<< "pipe_driver_subthread inherited routine_logging = " << (routine_logging ? "true" : "false" ) << std:: endl;

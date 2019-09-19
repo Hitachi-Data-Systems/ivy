@@ -463,6 +463,10 @@
 			<Option target="remove_empty_columns" />
 			<Option target="ivycore" />
 		</Unit>
+		<Unit filename="include/logger.h">
+			<Option target="ivymaster" />
+			<Option target="ivydriver" />
+		</Unit>
 		<Unit filename="include/multi_measure.h">
 			<Option target="ivymaster" />
 		</Unit>
@@ -883,6 +887,10 @@
 			<Option target="remove_empty_columns" />
 			<Option target="test_negative_ivytimes" />
 			<Option target="ivycore" />
+		</Unit>
+		<Unit filename="src/logger.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/makedict.cpp">
 			<Option target="makedict" />

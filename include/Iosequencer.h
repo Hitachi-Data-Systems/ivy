@@ -24,6 +24,7 @@
 #include "ivytime.h"
 #include "LUN.h"
 #include "WorkloadThread.h"
+#include "logger.h"
 
 class TestLUN;
 class WorkloadThread;
@@ -36,7 +37,7 @@ class Iosequencer
 public:
 	LUN* pLUN;
 
-	std::string logfilename;
+	logger& logfilename;
 	WorkloadID workloadID;
 	WorkloadThread* pWorkloadThread;
 	TestLUN* pTestLUN;
@@ -84,7 +85,7 @@ public:
 
 //methods:
 
-	Iosequencer(LUN* pL, std::string lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
+	Iosequencer(LUN* pL, logger& lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
 		: pLUN(pL), logfilename(lf), workloadID(wID), pWorkloadThread(pWT), pTestLUN(p_tl), pWorkload(p_w) {}
 
 	virtual bool generate(Eyeo& e);

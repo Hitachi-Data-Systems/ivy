@@ -138,7 +138,7 @@ ivy_engine::get(const std::string& thingee)
 
     if (0 == t.compare(normalize_identifier("masterlogfile")))
     {
-        return std::make_pair(true,masterlogfile);
+        return std::make_pair(true,masterlogfile.logfilename);
     }
 
 

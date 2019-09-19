@@ -43,7 +43,7 @@ bool pipe_line_reader::read_from_pipe(ivytime timeout)
         {
             std::ostringstream logmsg;
             logmsg << "<Error> pipe_line_reader::read_from_pipe() - fcntl() for pipe fd = " << fd << " failed. errno = " << errno << " - " << strerror(errno);
-            log(logfilename,logmsg.str());
+            log(ivydriver.slavelogfile,logmsg.str());
             return false;
         }
 
@@ -59,7 +59,7 @@ bool pipe_line_reader::read_from_pipe(ivytime timeout)
         {
             std::ostringstream logmsg;
             logmsg << "<Error> pipe_line_reader::read_from_pipe() - pselect() failed. errno = " << errno << " - " << strerror(errno);
-            log(logfilename,logmsg.str());
+            log(ivydriver.slavelogfile,logmsg.str());
             return false;
         }
         else if (0==rc)
@@ -73,7 +73,7 @@ bool pipe_line_reader::read_from_pipe(ivytime timeout)
                 << ") reading from pipe.  "
                 << "start=" << start.format_as_datetime_with_ns() << ", now=" << now.format_as_datetime_with_ns()
                     << "  " << __FILE__ << " line " << __LINE__;
-                log(logfilename,logmsg.str());
+                log(ivydriver.slavelogfile,logmsg.str());
                 return false;
             }
         }
@@ -87,14 +87,14 @@ bool pipe_line_reader::read_from_pipe(ivytime timeout)
     {
         std::ostringstream logmsg;
         logmsg << "<Error> pipe_line_reader::read_from_pipe() - read() from pipe failed errno = " << errno << " - " << strerror(errno);
-        log(logfilename,logmsg.str());
+        log(ivydriver.slavelogfile,logmsg.str());
         return false;
     }
     else if (0==rc)
     {
         std::ostringstream logmsg;
         logmsg << "<Error> pipe_line_reader::read_from_pipe() - read() from pipe got end of file.";
-        log(logfilename,logmsg.str());
+        log(ivydriver.slavelogfile,logmsg.str());
         return false;
     }
 

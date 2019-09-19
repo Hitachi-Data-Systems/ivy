@@ -26,10 +26,11 @@
 #include "ivyhelpers.h"
 #include "ivy_engine.h"
 #include "RollupInstance.h"
+#include "logger.h"
 
 extern bool routine_logging;
 
-void rollup_Hitachi_RAID_data(const std::string& logfilename, Hitachi_RAID_subsystem* p_Hitachi_RAID_subsystem, GatherData& currentGD)
+void rollup_Hitachi_RAID_data(logger& logfilename, Hitachi_RAID_subsystem* p_Hitachi_RAID_subsystem, GatherData& currentGD)
 {
     for (auto& rolluptypepear : m_s.rollups.rollups)
     {

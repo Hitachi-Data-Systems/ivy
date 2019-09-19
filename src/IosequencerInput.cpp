@@ -972,7 +972,7 @@ void IosequencerInput::reset()
 }
 
 
-bool IosequencerInput::fromString(std::string s, std::string logfilename)
+bool IosequencerInput::fromString(std::string s, logger& bunyan)
 {
 	reset();
 	std::string n {"IosequencerInput<>"};
@@ -1001,13 +1001,13 @@ bool IosequencerInput::fromString(std::string s, std::string logfilename)
 	}
 	else
 	{
-		fileappend(logfilename,std::string("IosequencerInput::fromString() - setting parameters failed - ")+ rc.second);
+		log(bunyan,std::string("IosequencerInput::fromString() - setting parameters failed - ")+ rc.second);
 		return false;
 	}
 
 }
 
-bool IosequencerInput::fromIstream(std::istream& i, std::string logfile)
+bool IosequencerInput::fromIstream(std::istream& i, logger& logfile)
 {
 	reset();
 

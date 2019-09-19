@@ -22,6 +22,8 @@
 #include <string>
 #include <set>
 
+#include "logger.h"
+
 using namespace std;
 
 class LDEVset
@@ -35,7 +37,7 @@ public:
 
 //methods
 
-	bool add(std::string ldev_set, std::string logfilename);
+	bool add(std::string ldev_set, logger&);
 
 		// An LDEV set could be a single LDEV "0F40" or "0f:40"
 		// or a string representation of a set of LDEVs
@@ -57,7 +59,7 @@ public:
 	std::string toStringWithSemicolonSeparators();
 		// calls toString() and replaces all spaces with semicolons.
 
-	bool addWithSemicolonSeparators(std::string ldev_set, std::string logfilename);
+	bool addWithSemicolonSeparators(std::string ldev_set, logger&);
 		// this replaces all semicolons in the input string and then calls add()
 		// These functions using semicolon separators are used due to the way ivymaster reads csv files.
 

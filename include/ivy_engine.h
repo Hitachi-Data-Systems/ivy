@@ -41,6 +41,7 @@
 #include "MeasureController.h"
 #include "MeasureCtlr.h"
 #include "Test_config_thumbnail.h"
+#include "logger.h"
 
 enum class source_enum { error, workload, RAID_subsystem } ;
 enum class category_enum { error, overall, read, write, random, sequential, random_read, random_write, sequential_read, sequential_write };
@@ -274,8 +275,8 @@ public:
         };
 
 	std::string outputFolderRoot {default_outputFolderRoot}; // actually the default is in ivy_pgm.h
-	std::string masterlogfile      { "<none>"s };
-	std::string ivy_engine_logfile { "<none>"s };
+	logger masterlogfile      { "<none>"s };
+	logger ivy_engine_calls_filename { "<none>"s };
 
 	// Values of the following are updated where appropriate to communicate to csv file producing code on loop iterations
 	std::string testName;
@@ -684,8 +685,8 @@ public:
 
     // Misc.
 
-    std::string logfile()           {return masterlogfile;}   // if API user would like to append to ivy command line master thread log file
-
+    std::string logfile()           {return masterlogfile.logfilename;}   // if API user would like to append to ivy command line master thread log file
+    std::string print_logfile_stats();
     std::string show_rollup_structure();   // available for diagnostic use
 };
 

@@ -23,6 +23,7 @@
 
 #include "ivytime.h"
 #include "RunningStat.h"
+#include "logger.h"
 
 struct linuxcpucounters {
 public:
@@ -104,7 +105,7 @@ public:
 	std::string csvValues(int number_of_subintervals);
 };
 
-int getprocstat(struct procstatcounters* psc, const std::string logfilename );
+int getprocstat(struct procstatcounters* psc, logger& logfilename );
         // read /proc/stat to get cpu usage counters for overall and for each core
         // returns 0 on success, returns -1 with logfile entry on error
 
@@ -115,7 +116,7 @@ int computecpubusy(
     struct cpubusypercent* cpubusydetail, // this gets filled in as output
     struct avgcpubusypercent* cpubusysummary, // this gets filled in as output
     std::map<unsigned int,bool>& active_hyperthreads,
-	const std::string logfilename
+	logger& logfilename
 );
 
 unsigned int core_count(const std::string& /*logfilename*/);

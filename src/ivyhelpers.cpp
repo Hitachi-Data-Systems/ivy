@@ -178,85 +178,85 @@ void fileappend(std::string filename, std::string s) {
         o.close();
 }
 
-std::map<std::string /*csv filename*/,
-    std::pair<ivytime /*time of last log */,
-    RunningStat<long double, uint32_t> /*time to perform a log*/ >> log_stats_by_filename {};
+//std::map<std::string /*csv filename*/,
+//    std::pair<ivytime /*time of last log */,
+//    RunningStat<long double, uint32_t> /*time to perform a log*/ >> log_stats_by_filename {};
+//
+//
+//std::string print_logfile_stats()
+//{
+//    std::ostringstream o;
+//
+//    std::unique_lock<std::mutex> m_lk(log_mutex);
+//
+//    o << "log file time to write a log entry:";
+//
+//    for (auto& pear : log_stats_by_filename)
+//    {
+//        auto rs = pear.second.second;
+//
+//        o << std::endl
+//            << "count " << rs.count()
+//            << ", avg " << (1000.0 * rs.avg()) << " ms"
+//            << ", min " << (1000.0 * rs.min()) << " ms"
+//            << ", max " << (1000.0 * rs.max()) << " ms"
+//            << " - " << pear.first;
+//    }
+//    o << std::endl;
+//
+//    m_lk.unlock();
+//
+//    return o.str();
+//}
+//
+//
+//void log(std::string filename, std::string s) {
+//	ivytime now;
+//
+//	now.setToNow();
+//
+//	std::unique_lock<std::mutex> m_lk(log_mutex);
+//
+//	auto& pear = log_stats_by_filename[filename];
+//
+//    std::ostream* p_ostream = &std::cout;
+//
+//    std::ofstream o;
+//
+//    bool is_ofstream = filename != "<none>"s;
+//
+//    if (is_ofstream)
+//    {
+//        o.open(filename, ios::out | ios::app );
+//        p_ostream = &o;
+//    }
+//
+//    (*p_ostream) << now.format_as_datetime_with_ns();
+//
+//    if (pear.first != ivytime(0))
+//    {
+//        (*p_ostream) << " +" << ivytime(now-pear.first).format_as_duration_HMMSSns();
+//    }
+//
+//    (*p_ostream) << " "<< s;
+//
+//	if (s.length() > 0 && '\n' != s[s.length()-1]) (*p_ostream) << std::endl;
+//
+//	(*p_ostream).flush();
+//
+//    if (is_ofstream) o.close();
+//
+//    ivytime after; after.setToNow();
+//
+//    pear.first = now;
+//    pear.second.push(ivytime(after-now).getlongdoubleseconds());
+//
+//    m_lk.unlock();
+//
+//    return;
+//}
 
-
-std::string print_logfile_stats()
-{
-    std::ostringstream o;
-
-    std::unique_lock<std::mutex> m_lk(log_mutex);
-
-    o << "log file time to write a log entry:";
-
-    for (auto& pear : log_stats_by_filename)
-    {
-        auto rs = pear.second.second;
-
-        o << std::endl
-            << "count " << rs.count()
-            << ", avg " << (1000.0 * rs.avg()) << " ms"
-            << ", min " << (1000.0 * rs.min()) << " ms"
-            << ", max " << (1000.0 * rs.max()) << " ms"
-            << " - " << pear.first;
-    }
-    o << std::endl;
-
-    m_lk.unlock();
-
-    return o.str();
-}
-
-
-void log(std::string filename, std::string s) {
-	ivytime now;
-
-	now.setToNow();
-
-	std::unique_lock<std::mutex> m_lk(log_mutex);
-
-	auto& pear = log_stats_by_filename[filename];
-
-    std::ostream* p_ostream = &std::cout;
-
-    std::ofstream o;
-
-    bool is_ofstream = filename != "<none>"s;
-
-    if (is_ofstream)
-    {
-        o.open(filename, ios::out | ios::app );
-        p_ostream = &o;
-    }
-
-    (*p_ostream) << now.format_as_datetime_with_ns();
-
-    if (pear.first != ivytime(0))
-    {
-        (*p_ostream) << " +" << ivytime(now-pear.first).format_as_duration_HMMSSns();
-    }
-
-    (*p_ostream) << " "<< s;
-
-	if (s.length() > 0 && '\n' != s[s.length()-1]) (*p_ostream) << std::endl;
-
-	(*p_ostream).flush();
-
-    if (is_ofstream) o.close();
-
-    ivytime after; after.setToNow();
-
-    pear.first = now;
-    pear.second.push(ivytime(after-now).getlongdoubleseconds());
-
-    m_lk.unlock();
-
-    return;
-}
-
-void ivy_log(std::string filename, std::string s) {log(filename,s);} // crutch for Builtin.cpp
+void ivy_log(std::string s); // crutch for Builtin.cpp
 
 std::string format_utterance(std::string speaker, std::string utterance, ivytime delta)
 {

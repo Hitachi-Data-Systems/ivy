@@ -22,6 +22,7 @@
 #include "ivyhelpers.h"
 #include "pattern.h"
 #include "dedupe_method.h"
+#include "logger.h"
 
 class IosequencerInput {
 
@@ -117,8 +118,8 @@ public:
 	std::pair<bool,std::string> setMultipleParameters(std::string commaSeparatedList);
 	std::string toStringFull() const;
 	std::string toString() const;
-	bool fromString(std::string, std::string logfilename);
-	bool fromIstream(std::istream&, std::string logfile);
+	bool fromString(std::string, logger& logfilename);
+	bool fromIstream(std::istream&, logger& logfile);
 	std::string getParameterNameEqualsTextValueCommaSeparatedList() const;
 	std::string getNonDefaultParameterNameEqualsTextValueCommaSeparatedList() const;
 	void reset();

@@ -369,13 +369,13 @@ bool avgcpubusypercent::fromString(const std::string& s)
 //    procs_blocked 0
 //    softirq 4483094 10 2615773 975 370196 87400 0 17513 797030 0 594197
 
-int getprocstat(struct procstatcounters* psc, const std::string logfilename ){
+int getprocstat(struct procstatcounters* psc, logger& logfilename ){
         // read /proc/stat to get cpu usage counters for overall and for each core
         // returns 0 on success, returns -1 with logfile entry on error
 	psc->t.setToNow();
 	std::ifstream procstat("/proc/stat");
 	if (!procstat.good()){
-		fileappend(logfilename,"Failed opening /proc/stat.\n");
+		log(logfilename,"Failed opening /proc/stat.\n");
 		return -1;
 	}
 	std::string inputline;
@@ -390,7 +390,7 @@ int getprocstat(struct procstatcounters* psc, const std::string logfilename ){
 
 		if (1==line) {
 			if (inputline.substr(0,4)!=std::string("cpu ")) {
-				fileappend(logfilename,"first line from /proc/stat was not overall cpu line.\n");
+				log(logfilename,"first line from /proc/stat was not overall cpu line.\n");
 				procstat.close();
 				return -1;
 			}
@@ -406,7 +406,7 @@ int getprocstat(struct procstatcounters* psc, const std::string logfilename ){
 				}
 			}
 			if (inputline.substr(0,3)!=std::string("cpu")) {
-				fileappend(logfilename,"Did not find expected \"cpu\" detail line.\n");
+				log(logfilename,"Did not find expected \"cpu\" detail line.\n");
 				procstat.close();
 				return -1;
 			}
@@ -418,7 +418,7 @@ int getprocstat(struct procstatcounters* psc, const std::string logfilename ){
 				{
 				    std::ostringstream o; o << "<Error> internal error - in getprocstat(), failed reading cpu number in what is supposed to be a cpu detail line - \""
 				        << inputline << "\".  Occurred at " << __FILE__ << " line " << __LINE__ << ".";
-                    fileappend (logfilename,o.str());
+                    log(logfilename,o.str());
                     return -1;
 				}
 
@@ -441,7 +441,7 @@ int getprocstat(struct procstatcounters* psc, const std::string logfilename ){
 			}
 		}
 	}
-	fileappend(logfilename,"Hit end-of-file prematurely on /proc/stat.\n");
+	log(logfilename,"Hit end-of-file prematurely on /proc/stat.\n");
 	procstat.close();
 	return -1;
 }
@@ -456,24 +456,24 @@ int computecpubusy(
     struct cpubusypercent* p_cpubusydetail, // this gets filled in as output
     struct avgcpubusypercent* p_cpubusysummary, // this gets filled in as output
     std::map<unsigned int,bool>& active_hyperthreads,
-	const std::string logfilename
+	logger& logfilename
 ){
     ivy_float duration_seconds=psc2->t.getlongdoubleseconds() - psc1->t.getlongdoubleseconds();
 
 	if (psc1->eachcore.size()==0 || psc1->eachcore.size()!=psc2->eachcore.size()) {
-		{std::ostringstream o; o<< "Starting procstatcounters is size " << (psc1->eachcore).size() << ", ending procstatcounters is size " << (psc2->eachcore).size() << ".\n"; fileappend(logfilename,o.str());}
-		fileappend(logfilename,"computecpubusy(): number of cores was zero or number of cores at beginning and end not the same.\n");
+		{std::ostringstream o; o<< "Starting procstatcounters is size " << (psc1->eachcore).size() << ", ending procstatcounters is size " << (psc2->eachcore).size() << ".\n"; log(logfilename,o.str());}
+		log(logfilename,"computecpubusy(): number of cores was zero or number of cores at beginning and end not the same.\n");
 		return -1;
 	}
 	if (p_cpubusydetail->eachcore.size()!=0) {
-		fileappend(logfilename,"computecpubusy(): cpubusydetail was not empty to start.\n");
+		log(logfilename,"computecpubusy(): cpubusydetail was not empty to start.\n");
 		return -1;
 	}
 	int jiffiespersecond=sysconf(_SC_CLK_TCK);
 
 	if (-1==jiffiespersecond)
 	{
-		fileappend(logfilename,std::string("computecpubusy(): sysconf(_SC_CLK_TCK) failed.\n"));
+		log(logfilename,std::string("computecpubusy(): sysconf(_SC_CLK_TCK) failed.\n"));
 		return -1;
 	}
 	double secondsperjiffy=1.0/((double)jiffiespersecond);

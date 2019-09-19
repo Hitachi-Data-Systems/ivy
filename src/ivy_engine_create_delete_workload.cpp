@@ -40,7 +40,7 @@ ivy_engine::createWorkload(
             << ")" << std::endl;
         std::cout << o.str();
         log (m_s.masterlogfile,o.str());
-        log(ivy_engine_logfile,o.str());
+        log(ivy_engine_calls_filename,o.str());
     }
 
 	// Look at proposed workload name
@@ -290,7 +290,7 @@ ivy_engine::deleteWorkload(
             << ")" << std::endl;
         std::cout << o.str();
         log (m_s.masterlogfile,o.str());
-        log(ivy_engine_logfile,o.str());
+        log(ivy_engine_calls_filename,o.str());
    }
 
     std::list <WorkloadID> delete_list {};

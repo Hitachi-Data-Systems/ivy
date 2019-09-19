@@ -33,7 +33,7 @@ ivy_engine::go(const std::string& parameters)
             << " )" << std::endl;
         log (masterlogfile,o.str());
         std::cout << o.str();
-        log(ivy_engine_logfile,o.str());
+        log(ivy_engine_calls_filename,o.str());
     }
 
     std::pair<bool,std::string> rc {};

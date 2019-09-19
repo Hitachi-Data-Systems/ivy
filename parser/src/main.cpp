@@ -398,7 +398,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    m_s.masterlogfile = m_s.var_ivymaster_logs_testName + "/log.ivymaster.txt"s;
+    m_s.masterlogfile.logfilename = m_s.var_ivymaster_logs_testName + "/log.ivymaster.txt"s;
 
     log(m_s.masterlogfile,versions_message);
 

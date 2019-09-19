@@ -29,6 +29,7 @@
 #include "RunningStat.h"
 #include "Subinterval_CPU.h"
 #include "LUNpointerList.h"
+#include "logger.h"
 
 // pipe_driver_subthread commands from the master thread
 // - "die"
@@ -117,8 +118,7 @@ public:
     RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_lock_acquisition;
     RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_switchover;
 
-	std::string
-		logfilename;
+	logger logfilename;
 
 	int
 		pipe_driver_subthread_to_slave_pipe[2],

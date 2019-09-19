@@ -76,12 +76,12 @@ RestLogsUri::handle_put(http_request request)
         resultstr += get_schema_validation_error(&validator);
     }
 
-    rapidjson::Value::MemberIterator logname = document.FindMember("logname");
+//    rapidjson::Value::MemberIterator logname = document.FindMember("logname");
     rapidjson::Value::MemberIterator logmessage = document.FindMember("message");
 
-    if (logname != document.MemberEnd())
-        log(logname->value.GetString(), logmessage->value.GetString());
-    else
+//    if (logname != document.MemberEnd())
+//        log(logname->value.GetString(), logmessage->value.GetString());
+//    else
         log(m_s.masterlogfile, logmessage->value.GetString());
 
     http_response response(status_codes::OK);

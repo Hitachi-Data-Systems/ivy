@@ -60,7 +60,7 @@ void LUN::createNicknames()
 
 }
 
-bool LUN::loadcsvline(const std::string& headerline, const std::string& dataline, const std::string& logfilename)
+bool LUN::loadcsvline(const std::string& headerline, const std::string& dataline, logger& bunyan)
 {
 	// false on a failure to load the line properly
 	int header_columns = 1 + countCSVlineUnquotedCommas(headerline);
@@ -79,7 +79,7 @@ bool LUN::loadcsvline(const std::string& headerline, const std::string& dataline
 			o << "header columns = " << header_columns << " columns.  header: \"" << headerline << "\"." << std::endl;
 			o << "data line columns = " << (1 + countCSVlineUnquotedCommas(dataline)) << " columns.  header: \"" << dataline << "\"." << std::endl;
 			o << std::endl;
-			fileappend(logfilename, o.str());
+			log(bunyan, o.str());
 			return false;
 		}
 	}

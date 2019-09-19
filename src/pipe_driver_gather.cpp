@@ -464,7 +464,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
 
         if (!m_s.suppress_subsystem_perf) { m_s.rollups.not_participating.push_back(subsystem_summary_data()); }
 
-        void rollup_Hitachi_RAID_data(const std::string&, Hitachi_RAID_subsystem*, GatherData& currentGD);
+        void rollup_Hitachi_RAID_data(logger&, Hitachi_RAID_subsystem*, GatherData& currentGD);
 
         if
         (

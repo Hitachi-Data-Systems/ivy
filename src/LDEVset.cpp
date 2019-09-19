@@ -88,7 +88,7 @@ std::string LDEVset::toString() const
 	return toUpper(o.str());
 }
 
-bool LDEVset::add(std::string ldev_set, std::string logfilename) {
+bool LDEVset::add(std::string ldev_set, logger& bunyan) {
 
 	trim(ldev_set);  // removes leading/trailing whitespace
 	if (stringCaseInsensitiveEquality(std::string("All"),ldev_set)) {
@@ -125,18 +125,18 @@ bool LDEVset::add(std::string ldev_set, std::string logfilename) {
 		if (bytes_remaining<4) {
 			ostringstream o;
 			o << "LDEVset::add(\"" << ldev_set << "\") - ldev too short" << std::endl;
-			fileappend(logfilename,o.str());
+			log(bunyan,o.str());
 			return false;
 		} // ldev must be at least 4 hex digits long
 		if ((!isxdigit(ldev_set[cursor])) || (!isxdigit(ldev_set[cursor+1]))) {
 			ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - first 2 chars of ldev not hex digits" << std::endl;
-			fileappend(logfilename,o.str());
+			log(bunyan,o.str());
 			return false;
 		}
 		if (':'==ldev_set[cursor+2]) {
 			if ((bytes_remaining<5) || (!isxdigit(ldev_set[cursor+3])) || (!isxdigit(ldev_set[cursor+4]))){
 				ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - did not find 2 hex digits after \':\'" << std::endl;
-				fileappend(logfilename,o.str());
+				log(bunyan,o.str());
 				return false;
 			}
         	std::istringstream h(ldev_set.substr(cursor,2));
@@ -147,7 +147,7 @@ bool LDEVset::add(std::string ldev_set, std::string logfilename) {
 		} else {
 			if ((!isxdigit(ldev_set[cursor+2])) || (!isxdigit(ldev_set[cursor+3]))) {
 				ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - last 2 chars of ldev not hex digits" << std::endl;
-				fileappend(logfilename,o.str());
+				log(bunyan,o.str());
 				return false;
 			}
         	std::istringstream h(ldev_set.substr(cursor,2));
@@ -193,25 +193,25 @@ bool LDEVset::add(std::string ldev_set, std::string logfilename) {
 
                 if (0==bytes_remaining) {
                     ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - missing second LDEV after hyphen (\'-\')." << std::endl;
-                    fileappend(logfilename,o.str());
+                    log(bunyan,o.str());
                     return false;
                 }
 
                 // read in ending LDEV ID in the form 001a or 00:1A
                 if (bytes_remaining<4) {
                     ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - 2nd ldev too short" << std::endl;
-                    fileappend(logfilename,o.str());
+                    log(bunyan,o.str());
                     return false;
                 } // ldev must be at least 4 hex digits long
                 if ((!isxdigit(ldev_set[cursor])) || (!isxdigit(ldev_set[cursor+1]))) {
                     ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - LDEV must have 4 hex digits not including colon if present." << std::endl;
-                    fileappend(logfilename,o.str());
+                    log(bunyan,o.str());
                     return false;
                 }
                 if (':'==ldev_set[cursor+2]) {
                     if ((bytes_remaining<5) || (!isxdigit(ldev_set[cursor+3])) || (!isxdigit(ldev_set[cursor+4]))){
                         ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - did not find 2 hex digits after \':\' in 2nd LDEV in range" << std::endl;
-                        fileappend(logfilename,o.str());
+                        log(bunyan,o.str());
                         return false;
                     }
                     std::istringstream h(ldev_set.substr(cursor,2));
@@ -222,7 +222,7 @@ bool LDEVset::add(std::string ldev_set, std::string logfilename) {
                 } else {
                     if ((!isxdigit(ldev_set[cursor+2])) || (!isxdigit(ldev_set[cursor+3]))) {
                         ostringstream o; o << "LDEVset::add(\"" << ldev_set << "\") - last 2 chars of ldev not hex digits in 2nd LDEV in range" << std::endl;
-                        fileappend(logfilename,o.str());
+                        log(bunyan,o.str());
                         return false;
                     }
                     std::istringstream h(ldev_set.substr(cursor,2));
@@ -234,7 +234,7 @@ bool LDEVset::add(std::string ldev_set, std::string logfilename) {
                 last = (high << 8) + low;
                 if  (last<first) {
                     ostringstream o; o << "LDEVset.add(): ldev range is backwards, lowest LDEV ID must come first." << std::endl;
-                    fileappend(logfilename,o.str());
+                    log(bunyan,o.str());
                     return false;
                 }
                 // insert range
@@ -255,12 +255,12 @@ std::string LDEVset::toStringWithSemicolonSeparators() {
 	return s;
 }
 
-bool LDEVset::addWithSemicolonSeparators(std::string ldev_set, std::string logfilename) {
+bool LDEVset::addWithSemicolonSeparators(std::string ldev_set, logger& bunyan) {
 	std::string s=ldev_set;
 	if (s.length()>0) {
 		for (unsigned int i=0; i<s.length(); i++) if (s[i]==';') s[i]=' ';
 	}
-	return add(s,logfilename);
+	return add(s,bunyan);
 }
 
 int LDEVset::LDEVtoInt(std::string s) {

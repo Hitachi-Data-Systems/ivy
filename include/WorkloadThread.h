@@ -36,6 +36,7 @@
 #include "pattern.h"
 #include "Subinterval.h"
 #include "DedupeTargetSpreadRegulator.h"
+#include "logger.h"
 
 //#define IVYDRIVER_TRACE
 
@@ -65,7 +66,7 @@ class WorkloadThread {
 public:
 
 // variables
-    std::string slavethreadlogfile {};
+    logger slavethreadlogfile {};
 
 	std::mutex* p_ivydriver_main_mutex;
 

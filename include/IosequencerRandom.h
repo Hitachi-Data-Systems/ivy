@@ -35,7 +35,7 @@ protected:
 	long long int   hot_zone_coverageStartBlock {0},   hot_zone_coverageEndBlock {0},   hot_zone_numberOfCoverageBlocks {0};
 
 public:
-	IosequencerRandom(LUN* pL, std::string lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
+	IosequencerRandom(LUN* pL, logger& lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
 	    : Iosequencer(pL, lf, wID, pWT, p_tl, p_w) {}
     ~IosequencerRandom() {}
 	virtual std::string instanceType()=0;

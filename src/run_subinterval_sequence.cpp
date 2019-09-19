@@ -907,7 +907,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         if ( m_s.rollups.rollups.end() == allTypeIterator )
         {
-            fileappend(m_s.masterlogfile,std::string("Couldn\'t find the \"all\" RollupType to print the subinterval thumbnail line.\n"));
+            log(m_s.masterlogfile,std::string("Couldn\'t find the \"all\" RollupType to print the subinterval thumbnail line.\n"));
         }
         else
         {
@@ -915,7 +915,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
             if ( (*allTypeIterator).second->instances.end() == allAllIterator )
             {
-                fileappend(m_s.masterlogfile,std::string("Found the \"all\" RollupType, but couldn\'t find the \"all\" RollupInstance to print the subinterval thumbnail line.\n"));
+                log(m_s.masterlogfile,std::string("Found the \"all\" RollupType, but couldn\'t find the \"all\" RollupInstance to print the subinterval thumbnail line.\n"));
             }
             else
             {
@@ -1629,7 +1629,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         log(m_s.masterlogfile,o.str());
 
-        log(m_s.masterlogfile,print_logfile_stats());
+        std::string s = m_s.print_logfile_stats(); // separated from next statement to avoid any issues with mutex locks.
+        log(m_s.masterlogfile,s);
 
         // log gather time breakdown
         if (routine_logging) for (auto& pear : m_s.command_device_subthread_pointers)

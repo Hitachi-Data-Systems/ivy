@@ -1075,8 +1075,8 @@ void RollupInstance::print_pid_csv_files()
 
         o << gain_history.str();
 
-        log(adaptive_gain_test_filename, o.str());
-        log(adaptive_gain_step_filename, o.str());
+        fileappend(adaptive_gain_test_filename, o.str());
+        fileappend(adaptive_gain_step_filename, o.str());
     }
 
     struct stat struct_stat;

@@ -21,7 +21,7 @@
 
 class IosequencerSequential : public Iosequencer {
 public:
-	IosequencerSequential(LUN* pL, std::string lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
+	IosequencerSequential(LUN* pL, logger& lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)
 	    : Iosequencer(pL, lf, wID, pWT, p_tl, p_w) {}
     ~IosequencerSequential(){}
 	bool generate(Eyeo&) override;

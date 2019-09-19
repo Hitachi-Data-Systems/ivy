@@ -249,7 +249,7 @@ int IvyDriver::main(int argc, char* argv[])
 	std::string erase_earlier_log_files = "rm -f /var/ivydriver_logs/log.ivydriver."s + ivyscript_hostname + "*"s;
 	system(erase_earlier_log_files.c_str());
 
-    slavelogfile = "/var/ivydriver_logs/log.ivydriver."s + ivyscript_hostname + ".txt"s;
+    slavelogfile.logfilename = "/var/ivydriver_logs/log.ivydriver."s + ivyscript_hostname + ".txt"s;
 
     {
         std::ostringstream o;
@@ -430,7 +430,7 @@ int IvyDriver::main(int argc, char* argv[])
 
             o << ".txt";
 
-            p_WorkloadThread->slavethreadlogfile = o.str();
+            p_WorkloadThread->slavethreadlogfile.logfilename = o.str();
         }
 
         // Invoke thread
@@ -479,12 +479,11 @@ int IvyDriver::main(int argc, char* argv[])
 
     disco.discover();
 
-	if(std::cin.eof()) {log("std::cin.eof()\n",slavelogfile); return 0;}
+	if(std::cin.eof()) {log(slavelogfile, "std::cin.eof()\n"); return 0;}
 
 	pipe_line_reader getline {};
 
 	getline.set_fd(0); // reading from stdin
-	getline.set_logfilename(slavelogfile);
 
 	ivytime one_hour = ivytime(60*60);
         // one hour so that if ivydriver somehow would wait forever, this makes it explode after an hour.
@@ -552,7 +551,8 @@ int IvyDriver::main(int argc, char* argv[])
 		{
 			say(std::string("[what?]"));
 
-			log(slavelogfile,print_logfile_stats());
+            std::string s = print_logfile_stats(); // separated from next statement to avoid any issues with mutex locks.
+			log(slavelogfile,s);
 
 			// When ivymaster subthread encounters an error and is terminating abnormally
 			killAllSubthreads();
@@ -564,7 +564,8 @@ int IvyDriver::main(int argc, char* argv[])
 		{
 		    std::string s = "<Error> " + ivyscript_hostname + " - ignoring \""s + input_line + "\" because I previously reported an error.\n"s;
 		    say(s);
-		    log(slavelogfile,print_logfile_stats());
+            std::string s2 = print_logfile_stats(); // separated from next statement to avoid any issues with mutex locks.
+			log(slavelogfile,s2);
             continue;
 		}
 
@@ -648,7 +649,8 @@ int IvyDriver::main(int argc, char* argv[])
 	}
 	// at eof on std::cin
 
-	log(slavelogfile,print_logfile_stats());
+    std::string s = print_logfile_stats(); // separated from next statement to avoid any issues with mutex locks.
+    log(slavelogfile,s);
 
 	killAllSubthreads();
 
@@ -934,8 +936,6 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
 	ivydriver_view_subinterval_start = ivydriver_view_subinterval_start + subinterval_duration;
 	ivydriver_view_subinterval_end   = ivydriver_view_subinterval_end   + subinterval_duration;
 	// These are just used to print a message without looking into a particular WorkloadThread.
-
-//*debug*/{std::ostringstream o; o << "debug: " << print_logfile_stats() << std::endl; log(slavelogfile,o.str()); }
 
 	return;
 }
@@ -1920,6 +1920,67 @@ void IvyDriver::post_error(const std::string& msg)
     say(s);
 
     return;
+}
+
+
+std::string IvyDriver::print_logfile_stats()
+{
+    RunningStat<long double, long> overall_durations {};
+
+    std::ostringstream o;
+
+    o << "log file time to write a log entry:" << std::endl;
+
+    {
+        std::unique_lock<std::mutex> m_lk(slavelogfile.now_speaks);
+
+        const auto& rs = slavelogfile.durations;
+
+        if (rs.count() > 0)
+        {
+            o << "count " << rs.count()
+                << ", avg " << (1000.0 * rs.avg()) << " ms"
+                << ", min " << (1000.0 * rs.min()) << " ms"
+                << ", max " << (1000.0 * rs.max()) << " ms"
+                << " - " << slavelogfile.logfilename << std::endl;
+
+            overall_durations += slavelogfile.durations;
+        }
+    }
+
+    for (auto& pear : all_workload_threads)
+    {
+        {
+            logger& bunyan = pear.second->slavethreadlogfile;
+
+            std::unique_lock<std::mutex> m_lk(bunyan.now_speaks);
+
+            const auto& rs = bunyan.durations;
+
+            if (rs.count() > 0)
+            {
+                o << "count " << rs.count()
+                    << ", avg " << (1000.0 * rs.avg()) << " ms"
+                    << ", min " << (1000.0 * rs.min()) << " ms"
+                    << ", max " << (1000.0 * rs.max()) << " ms"
+                    << " - " << bunyan.logfilename << std::endl;
+
+                overall_durations += bunyan.durations;
+            }
+        }
+    }
+
+    {
+        const auto& rs = overall_durations;
+
+        o << "count " << rs.count()
+            << ", avg " << (1000.0 * rs.avg()) << " ms"
+            << ", min " << (1000.0 * rs.min()) << " ms"
+            << ", max " << (1000.0 * rs.max()) << " ms"
+            << " - " << "< Overall >" << std::endl;
+    }
+
+    return o.str();
 }
 
 
