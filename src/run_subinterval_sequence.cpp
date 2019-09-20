@@ -1175,7 +1175,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                     }
 
                     std::ostringstream o;
-                    o << "Entering coolcown at IOPS = 0." << std::endl;
+                    o << "Entering cooldown, setting IOPS = 0." << std::endl;
 
                     std::cout << o.str();
                     log(m_s.masterlogfile,o.str());

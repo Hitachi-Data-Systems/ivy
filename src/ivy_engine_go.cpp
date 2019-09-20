@@ -318,12 +318,24 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
         }
     }
 
+    auto has_workload_parms = go_parameters.contains_these_parameter_names(valid_IosequencerInput_parameters);
+    if (has_workload_parms.first)
+    {
+        std::ostringstream o;
+        o << std::endl << "<Error> ivy engine API - go() - the following workload parameter(s) were provided as [Go] parameters ==> " << has_workload_parms.second << std::endl << std::endl
+                           << "If you wish to loop over a workload parameter once with a single value, put the value in parentheses like \"maxTags = ( 4 )\"." << std::endl << std::endl;
+        std::cout << o.str();
+        log(masterlogfile,o.str());
+        kill_subthreads_and_exit();
+    }
+
     auto names_are_valid = go_parameters.containsOnlyValidParameterNames(valid_parameter_names);
     if (!names_are_valid.first)
     {
         std::ostringstream o;
         o << std::endl << "<Error> ivy engine API - invalid [Go] parameter(s) ==> " << names_are_valid.second << std::endl << std::endl
-                           << valid_parameters_message << std::endl << std::endl;
+                           << valid_parameters_message << std::endl << std::endl
+                           << "Once again, the invalid parameter(s) were " << names_are_valid.second << std::endl << std::endl;
         std::cout << o.str();
         log(masterlogfile,o.str());
         kill_subthreads_and_exit();
