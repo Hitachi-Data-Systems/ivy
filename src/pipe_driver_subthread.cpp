@@ -49,6 +49,8 @@
 #include <algorithm>
 #include <stdexcept>
 #include <syscall.h>
+#include <sys/prctl.h>
+#include <signal.h>
 
 using namespace std;
 
@@ -741,6 +743,29 @@ void pipe_driver_subthread::threadRun()
     if (0 == ssh_pid)
     {
         // child
+
+        // This next block causes a SIGKILL (-9) to be sent if the parent proces dies.
+        // SIGKILL is (of course) not catchable, so we will die.
+        {
+            if (prctl(PR_SET_PDEATHSIG, SIGKILL) == -1) {
+                // Could not set death signal.
+// SPM: Commented out next three lines because they are not async-signal-safe and cause hangs...
+//              ostringstream logmsg;
+//              logmsg << "prctl(PR_SET_PDEATHSIG, SIGKILL) failed - rc = " << errno << " " << strerror(errno) << std::endl;
+//              log(logfilename, logmsg.str());
+                return;
+            }
+            // Check for race condition, in which parent process died before
+            // we called prctl() to set death signal.
+            if (getppid() == (pid_t) 1) {
+                // Parent process ID is 1 (init), so parent has already died. We should die, too.
+// SPM: Commented out next three lines because they are not async-signal-safe and cause hangs...
+//              ostringstream logmsg;
+//              logmsg << "parent process has already died" << std::endl;
+//              log(logfilename, logmsg.str());
+                return;
+            }
+        }
 
         ssh_sub_subthread_tid = syscall(SYS_gettid);
 
