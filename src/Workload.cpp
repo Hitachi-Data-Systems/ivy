@@ -214,6 +214,8 @@ void Workload::build_Eyeos()
 
     void* vp = (void*) ewe_neek.get();
 
+    memset(vp,0x0F,buffer_pool_size);
+
     uint64_t aio_buf_cursor = (uint64_t) vp;
 
     while (0 != (aio_buf_cursor % 4096)) aio_buf_cursor++;
