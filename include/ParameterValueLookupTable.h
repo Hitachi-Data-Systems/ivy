@@ -23,6 +23,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <set>
 
 #include "nestedit.h"
 
@@ -56,6 +57,5 @@ public:
 	bool contains(std::string key);
 	std::string retrieve(std::string key);  // returns empty string if the key is not present
 	std::pair<bool,std::string> containsOnlyValidParameterNames(std::string listOfValidParameterNames);
-
-
+	std::pair<bool,std::string> contains_these_parameter_names(const std::set<std::string>&);
 };

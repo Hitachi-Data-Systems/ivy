@@ -369,7 +369,7 @@ std::string ParameterValueLookupTable::retrieve(std::string key)
 
 std::pair<bool,string> ParameterValueLookupTable::containsOnlyValidParameterNames(std::string s) // s = listOfValidParameterNames
 {
-	// Input is list of valid parameter names, like "blocksize, iorate".
+	// Input is list of valid go parameter names.
 	// Comma separators are optional.
 	// Returns false on malformed input list of valid parameter names, or if "contents" contains any invalid keys.
 
@@ -424,7 +424,35 @@ std::pair<bool,string> ParameterValueLookupTable::containsOnlyValidParameterName
 	return std::make_pair(bad_names.str().size() == 0, bad_names.str());
 }
 
-std::map<std::string,std::string> ParameterValueLookupTable::parameter_name_rehydration_table
+
+std::pair<bool,std::string> ParameterValueLookupTable::contains_these_parameter_names(const std::set<std::string>& set_of_names)
+{
+    // returns true with a string like "IOPS, blocksize" if any of the set of names is present.
+
+    bool got_one {false};
+
+    std::string return_value {};
+
+	for (auto& pear : contents)
+	{
+	    std::string normalized = normalize_identifier(pear.first);
+
+		if (set_of_names.end() != set_of_names.find(normalized))
+		{
+			if (got_one) return_value += ", "s;
+
+			got_one = true;
+
+			return_value += rehydrate_parameter_name(normalized);
+		}
+	}
+
+    return std::make_pair(got_one, return_value);
+}
+
+
+
+/*static*/ std::map<std::string,std::string> ParameterValueLookupTable::parameter_name_rehydration_table
 {
     {"accumulatortype",         "accumulator_type"},
     {"accuracyplusminus",       "accuracy_plus_minus"},
@@ -463,7 +491,23 @@ std::map<std::string,std::string> ParameterValueLookupTable::parameter_name_rehy
     {"suppressperf",            "suppress_perf"},
     {"targetvalue",             "target_value"},
     {"timeoutseconds",          "timeout_seconds"},
-    {"warmupseconds",           "warmup_seconds"}
+    {"warmupseconds",           "warmup_seconds"},
+    {"maxtags",                 "maxTags"},
+    {"iops",                    "IOPS"},
+    {"skewweight",              "skew_weight"},
+    {"fractionread",            "fractionRead"},
+    {"rangestart",              "RangeStart"},
+    {"rangeend",                "RangeEnd"},
+    {"seqstartpoint",           "SeqStartPoint"},
+    {"dedupemethod",            "dedupe_method"},
+    {"dedupeunitbytes",         "dedupe_unit_bytes"},
+    {"threadsinworkloadname",   "threads_in_workload_name"},
+    {"thisthreadinworkload",    "this_thread_in_workload"},
+    {"patternseed",             "pattern_seed"},
+    {"hotzonesizebytes",        "hot_zone_size_bytes"},
+    {"hotzonereadfraction",     "hot_zone_read_fraction"},
+    {"hotzonewritefraction",    "hot_zone_write_fraction"},
+    {"hotzoneiopsfraction",     "hot_zone_IOPS_fraction"}
 };
 
 std::string ParameterValueLookupTable::rehydrate_parameter_name(const std::string& n)

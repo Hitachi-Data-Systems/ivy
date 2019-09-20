@@ -59,8 +59,10 @@ float      (([0-9]+\.[0-9]*)|([0-9]*\.[0-9]+)([eE][+-]?[0-9]{1,3})?)|([0-9]+[eE]
 zero255    ([0-9])|([1-9][0-9])|(1[0-9][0-9])|(2[0-4][0-9])|(25[0-5])
 dottedquad_ip_addr {zero255}\.{zero255}\.{zero255}\.{zero255}
 raw_del    %%
+raw_start  <<
+raw_end    >>
 
-%x	STRING STRING_ESCAPE inklude RAWSTRING
+%x	STRING STRING_ESCAPE inklude RAWSTRING RAWSTRINGTOO
 
 %%
 
@@ -523,6 +525,24 @@ inklude	BEGIN(inklude);
 
 <RAWSTRING>.	(*yylval->p_str)+= yytext;
 
+<INITIAL>{raw_start}	{
+		yylval->p_str = new std::string;
+		if (!yylval->p_str) {
+			context_ref.error("out of memory in lexer");
+			exit(1);
+		}
+		BEGIN RAWSTRINGTOO;
+	}
+
+<RAWSTRINGTOO>{raw_end}	{
+		BEGIN INITIAL;
+
+    /*debug*/if(trace_lexer) std::cout << std::endl << "lexer returning (raw) STRING_CONSTANT \"" << *yylval->p_str << "\"." << std::endl;
+
+		return token::STRING_CONSTANT;
+	}
+
+<RAWSTRINGTOO>.	(*yylval->p_str)+= yytext;
 
 "\+"	{yylval->p_chars="+"; /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning PLUS (\'" << yylval->p_chars << "\')." << std::endl; return token::PLUS;}
 "-" 	{yylval->p_chars="-"; /*debug*/ if (trace_lexer) std::cout << std::endl << "lexer returning MINUS (\'" << yylval->p_chars << "\')." << std::endl; return token::MINUS;}
