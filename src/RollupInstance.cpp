@@ -1438,13 +1438,12 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
     SubintervalOutput& mro = mr.outputRollup;
     subsystem_summary_data& ssd = mt.subsystem_data;
 
-    const std::string& rollupTypeName = pRollupType->attributeNameCombo.attributeNameComboID;
     struct stat struct_stat;
 
     if (routine_logging)
     {
         std::ostringstream o;
-        o << std::endl << "Making csv files for " << attributeNameComboID << "=" << rollupInstanceID << "." << std::endl;
+        o << std::endl << "Making csv files for " << attributeNameComboID  << "=" << rollupInstanceID << "." << std::endl;
         log(m_s.masterlogfile,o.str());
     }
 
@@ -1458,12 +1457,12 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
         std::ostringstream filename_prefix;
         filename_prefix << pRollupType->measurementRollupFolder << "/"
-                        //<< edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName )
+                        //<< edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName ) // testName is already a filename, so we don't need to worry about converting it to a filename.
                         << m_s.testName
                         << '.'
-                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(rollupTypeName)
+                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_or_plus_to_underscore(attributeNameComboID)
                         << '='
-                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(instanceFilename)
+                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_or_plus_to_underscore(instanceFilename)
                         << '.';
 
         std::ostringstream type_filename_prefix;
@@ -1471,7 +1470,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                         //<< edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(m_s.testName )
                         << m_s.testName
                         << '.'
-                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(rollupTypeName)
+                        << edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_or_plus_to_underscore(attributeNameComboID)
                         << '.';
 
         measurement_rollup_by_test_step_csv_filename      =      filename_prefix.str() + std::string("summary.csv");
@@ -1494,6 +1493,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
                 if (m_s.haveCmdDev) { o << test_config_thumbnail.csv_headers(); }
                 o << IosequencerInputRollup::CSVcolumnTitles();
+                o << ",measure accuracy_plus_minus";
                 o << ",Rollup Total IOPS Setting";
                 o << m_s.measurements[measurement_index].measurement_rollup_CPU.csvTitles();
                 o << Subinterval_CPU_temp::csvTitles();
@@ -1634,6 +1634,8 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
             csvline << mr.inputRollup.CSVcolumnValues(true);
                 // true shows how many occurences of each value, false shows "multiple"
+
+            csvline << ","; if(m_s.have_measure) { csvline << (100.0 * m_s.accuracy_plus_minus_fraction) << "%";}
 
             csvline << "," << mt.Total_IOPS_setting_string;
 

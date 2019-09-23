@@ -1840,18 +1840,30 @@ void pipe_driver_subthread::threadRun()
                                 return;
                             }
 
+                            trim(remainder);
+
                             {
                                 std::istringstream is(remainder);
 
-                                if
-                                (
-                                     (!dispatching_latency_seconds_accumulator               .fromIstream(is))
-                                  || (!lock_aquisition_latency_seconds_accumulator           .fromIstream(is))
-                                  || (!switchover_completion_latency_seconds_accumulator     .fromIstream(is))
-                                  || (!distribution_over_workloads_of_avg_dispatching_latency.fromIstream(is))
-                                  || (!distribution_over_workloads_of_avg_lock_acquisition   .fromIstream(is))
-                                  || (!distribution_over_workloads_of_avg_switchover         .fromIstream(is))
-                                )
+//                                if
+//                                (
+//                                     (!dispatching_latency_seconds_accumulator               .fromIstream(is))
+//                                  || (!lock_aquisition_latency_seconds_accumulator           .fromIstream(is))
+//                                  || (!switchover_completion_latency_seconds_accumulator     .fromIstream(is))
+//                                  || (!distribution_over_workloads_of_avg_dispatching_latency.fromIstream(is))
+//                                  || (!distribution_over_workloads_of_avg_lock_acquisition   .fromIstream(is))
+//                                  || (!distribution_over_workloads_of_avg_switchover         .fromIstream(is))
+//                                )
+//The fromIstream() method of parsing is WAY slower, so we will use original C style sscanf()
+//
+                                if ((6*5) != sscanf(remainder.c_str(),"<%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf>",
+                                     &dispatching_latency_seconds_accumulator.n,&dispatching_latency_seconds_accumulator.M1,&dispatching_latency_seconds_accumulator.M2,&dispatching_latency_seconds_accumulator.min_value,&dispatching_latency_seconds_accumulator.max_value
+                                    ,&lock_aquisition_latency_seconds_accumulator.n,&lock_aquisition_latency_seconds_accumulator.M1,&lock_aquisition_latency_seconds_accumulator.M2,&lock_aquisition_latency_seconds_accumulator.min_value,&lock_aquisition_latency_seconds_accumulator.max_value
+                                    ,&switchover_completion_latency_seconds_accumulator.n,&switchover_completion_latency_seconds_accumulator.M1,&switchover_completion_latency_seconds_accumulator.M2,&switchover_completion_latency_seconds_accumulator.min_value,&switchover_completion_latency_seconds_accumulator.max_value
+                                    ,&distribution_over_workloads_of_avg_dispatching_latency.n,&distribution_over_workloads_of_avg_dispatching_latency.M1,&distribution_over_workloads_of_avg_dispatching_latency.M2,&distribution_over_workloads_of_avg_dispatching_latency.min_value,&distribution_over_workloads_of_avg_dispatching_latency.max_value
+                                    ,&distribution_over_workloads_of_avg_lock_acquisition.n,&distribution_over_workloads_of_avg_lock_acquisition.M1,&distribution_over_workloads_of_avg_lock_acquisition.M2,&distribution_over_workloads_of_avg_lock_acquisition.min_value,&distribution_over_workloads_of_avg_lock_acquisition.max_value
+                                    ,&distribution_over_workloads_of_avg_switchover.n,&distribution_over_workloads_of_avg_switchover.M1,&distribution_over_workloads_of_avg_switchover.M2,&distribution_over_workloads_of_avg_switchover.min_value,&distribution_over_workloads_of_avg_switchover.max_value
+                                ))
                                 {
                                     std::ostringstream o;
                                     o << "<Error> For host " << ivyscript_hostname

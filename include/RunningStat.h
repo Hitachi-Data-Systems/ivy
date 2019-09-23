@@ -40,7 +40,7 @@ template <typename FloatType, typename IntType> RunningStat<FloatType, IntType> 
 template <typename FloatType, typename IntType>
 class RunningStat {
 
-private:
+public:
 // variables
         IntType n {0};
         FloatType M1 {0.}, M2 {0.};
@@ -297,3 +297,21 @@ bool RunningStat<FloatType, IntType>::fromString(const std::string& s) {
 	if (!is.fail()) return false;
 	return true;
 }
+
+
+struct RunningStat_double_long_int
+{
+    long int n;
+    double M1, M2, min_value, max_value;
+
+    void clear();
+
+    bool fromString(const std::string&);  // returns true if successful, clears RunningStat and returns false if unsuccessful.
+};
+
+
+
+
+
+
+

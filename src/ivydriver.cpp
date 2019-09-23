@@ -738,13 +738,13 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
 
     ivy_float min_seq_fill_fraction = 1.0;
 
-    RunningStat<ivy_float,ivy_int> dispatching_latency_seconds_accumulator;  // These are a new instance each pass through, so don't need clearing.
-    RunningStat<ivy_float,ivy_int> lock_aquisition_latency_seconds_accumulator;
-    RunningStat<ivy_float,ivy_int> switchover_completion_latency_seconds_accumulator;
+    RunningStat<double, long int> dispatching_latency_seconds_accumulator;  // These are a new instance each pass through, so don't need clearing.
+    RunningStat<double, long int> lock_aquisition_latency_seconds_accumulator;
+    RunningStat<double, long int> switchover_completion_latency_seconds_accumulator;
 
-    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_dispatching_latency;
-    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_lock_acquisition;
-    RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_switchover;
+    RunningStat<double, long int> distribution_over_workloads_of_avg_dispatching_latency;
+    RunningStat<double, long int> distribution_over_workloads_of_avg_lock_acquisition;
+    RunningStat<double, long int> distribution_over_workloads_of_avg_switchover;
 
     std::vector<std::string> detail_lines;
 

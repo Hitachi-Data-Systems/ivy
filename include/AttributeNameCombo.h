@@ -25,6 +25,8 @@ class AttributeNameCombo  // serial_number+Port
 public:
 //variables
 	std::string attributeNameComboID;  // for example, "serial number+port"
+    std::string attributeNameComboID_preserving_case;
+
 	std::list<std::string> attributeNames;
 	bool isValid {false};
 

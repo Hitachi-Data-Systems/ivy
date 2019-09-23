@@ -159,7 +159,7 @@ void RollupType::rebuild()
         auto it = instances.find(toLower(rollupInstanceKey));
         if (instances.end() == it)
         {
-            pRollupInstance = new RollupInstance(this, pRollupSet, attributeNameCombo.attributeNameComboID,rollupInstanceKey);
+            pRollupInstance = new RollupInstance(this, pRollupSet, attributeNameCombo.attributeNameComboID_preserving_case,rollupInstanceKey);
             instances[toLower(rollupInstanceKey)] = pRollupInstance;
         }
         else
@@ -392,7 +392,7 @@ std::string RollupType::getDataValidationCsvValues()
 
 void RollupType::make_step_subfolder()
 {
-    step_subfolder_name = m_s.stepFolder + std::string("/") + attributeNameCombo.attributeNameComboID;
+    step_subfolder_name = m_s.stepFolder + std::string("/") + edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_or_plus_to_underscore(attributeNameCombo.attributeNameComboID_preserving_case);
 
     if (mkdir(step_subfolder_name.c_str(),
           S_IRWXU  // r,w,x user
@@ -421,12 +421,12 @@ void RollupType::print_measurement_summary_csv_line(unsigned int measurement_ind
 {
     struct stat struct_stat;
 
-    const std::string& rollupTypeName = attributeNameCombo.attributeNameComboID;
+    const std::string& rollupTypeName = attributeNameCombo.attributeNameComboID_preserving_case;
 
     if (routine_logging)
     {
         std::ostringstream o;
-        o << std::endl << "Making csv files for " << rollupTypeName << "=" << attributeNameCombo.attributeNameComboID << "." << std::endl;
+        o << std::endl << "Making csv files for rollup type \"" << rollupTypeName << "\"." << std::endl;
         log(m_s.masterlogfile,o.str());
     }
 
@@ -495,7 +495,7 @@ void RollupType::print_measurement_summary_csv_line(unsigned int measurement_ind
     {
         std::ostringstream o;
         o 	<< m_s.testName << ',' << m_s.stepNNNN << ',' << m_s.stepName
-            << ',' << attributeNameCombo.attributeNameComboID
+            << ',' << attributeNameCombo.attributeNameComboID_preserving_case
             << ',' << getDataValidationCsvValues();
 
         {

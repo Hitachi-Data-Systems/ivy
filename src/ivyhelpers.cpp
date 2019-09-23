@@ -620,6 +620,11 @@ std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_un
     return convert_invalid_characters_to_underscore(s, std::string( R"(-一-龯ぁ-んァ-ン[:alnum:]_=)"));
 }
 
+std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_or_plus_to_underscore(std::string s)
+{
+    return convert_invalid_characters_to_underscore(s, std::string( R"(-一-龯ぁ-んァ-ン[:alnum:]_=+)"));
+}
+
 bool stringCaseInsensitiveEquality(std::string s1, std::string s2) {
         if (s1.length()!=s2.length()) return false;
         if (s1.length()==0) return true;

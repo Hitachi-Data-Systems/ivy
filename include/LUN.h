@@ -53,7 +53,7 @@ public:
 	void push_attribute_values(std::map<std::string /* LUN attribute name */, std::set<std::string> /* LUN attribute values */>&) const;
     void push_attribute_names(std::set<std::string>& column_headers) const;
 
-static std::string normalize_attribute_name(const std::string& column_title);
+static std::string normalize_attribute_name(const std::string& column_title, bool preserve_case=false);
 
 };
 

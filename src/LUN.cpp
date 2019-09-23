@@ -179,7 +179,7 @@ bool LUN::attribute_value_matches(const std::string& attribute_name, const std::
 	return stringCaseInsensitiveEquality(value,(*it).second.second);
 }
 
-std::string LUN::normalize_attribute_name(const std::string& column_title)
+std::string LUN::normalize_attribute_name(const std::string& column_title, bool preserve_case)
 {
 	if (0 == column_title.length())	return std::string("");
 
@@ -190,7 +190,11 @@ std::string LUN::normalize_attribute_name(const std::string& column_title)
 
 	for (unsigned int i=0; i < column_title.length(); i++)
 	{
-		c = tolower(column_title[i]);
+        if (!preserve_case)
+        {
+    		c = tolower(column_title[i]);
+        }
+
 		if (!isalnum(c))
 		{
 		    if (!last_char_was_underscore) result.push_back('_');
@@ -223,15 +227,13 @@ std::string LUN::original_name(const std::string& attribute_name) const
     std::string normalized_name = LUN::normalize_attribute_name(attribute_name);
 
     auto it = attributes.find(normalized_name);
-    if (it != attributes.end())
+    if (it == attributes.end())
+    {
+        return attribute_name;
+    }
+    else
     {
         return it->second.first;
-    }
-
-    {
-        std::ostringstream o;
-        o << "<No such attribute \"" << attribute_name << "\">";
-        return o.str();
     }
 }
 

@@ -698,6 +698,10 @@
 		<Unit filename="src/RollupType.cpp">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="src/RunningStat.cpp">
+			<Option target="ivymaster" />
+			<Option target="ivydriver" />
+		</Unit>
 		<Unit filename="src/Subinterval.cpp">
 			<Option target="ivydriver" />
 		</Unit>

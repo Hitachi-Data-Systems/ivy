@@ -59,20 +59,12 @@ bool SubintervalOutput::fromIstream(std::istream& is) {
 	return true;
 }
 
-
-struct running_stat_double_long_int
-{
-    long int n;
-    double m1, m2, min_value, max_value;
-};
-
-
 bool SubintervalOutput::toBuffer(char* buffer, size_t buffer_size) // same as toString(), but faster. returns false if buffer wasn't big enough.
 {
-    if (sizeof(running_stat_double_long_int) != sizeof(RunningStat<double, long int>))
+    if (sizeof(RunningStat_double_long_int) != sizeof(RunningStat<double, long int>))
     {
         std::ostringstream o;
-        o << "<Error> internal programming error - SubintervalOutput::toBuffer() - sizeof(running_stat_double_long_int) = " << sizeof(running_stat_double_long_int)
+        o << "<Error> internal programming error - SubintervalOutput::toBuffer() - sizeof(RunningStat_double_long_int) = " << sizeof(RunningStat_double_long_int)
             << " is different from sizeof(RunningStat<double, long int>) = " << sizeof(RunningStat<double, long int>) << "." << std::endl;
         std::cout << o.str();
         throw runtime_error(o.str());
@@ -86,9 +78,9 @@ bool SubintervalOutput::toBuffer(char* buffer, size_t buffer_size) // same as to
 
     for (unsigned int i = 0; i < RunningStatCount(); i++)
     {
-        running_stat_double_long_int* p_rs = (running_stat_double_long_int*) &((u.accumulator_array)[i]);
+        RunningStat_double_long_int* p_rs = (RunningStat_double_long_int*) &((u.accumulator_array)[i]);
 
-        int rc = snprintf(p, bytes_left, "<%li;%lf;%lf;%lf;%lf>", p_rs->n, p_rs->m1, p_rs->m2, p_rs->min_value, p_rs->max_value);
+        int rc = snprintf(p, bytes_left, "<%li;%lf;%lf;%lf;%lf>", p_rs->n, p_rs->M1, p_rs->M2, p_rs->min_value, p_rs->max_value);
 
         if (rc < 0 || ((size_t)rc) >= bytes_left) return false;
 
@@ -112,15 +104,6 @@ bool SubintervalOutput::fromString(const std::string& s)
 
     size_t start, length;
 
-    if (sizeof(running_stat_double_long_int) != sizeof(RunningStat<double, long int>))
-    {
-        std::ostringstream o;
-        o << "<Error> internal programming error - SubintervalOutput::fromString() - sizeof(running_stat_double_long_int) = " << sizeof(running_stat_double_long_int)
-            << " is different from sizeof(RunningStat<double, long int>) = " << sizeof(RunningStat<double, long int>) << "." << std::endl;
-        std::cout << o.str();
-        throw runtime_error(o.str());
-    }
-
     for (unsigned int i = 0; i < RunningStatCount(); i++)
     {
         start = cursor;
@@ -136,9 +119,9 @@ bool SubintervalOutput::fromString(const std::string& s)
 
         length = cursor - start;
 
-        running_stat_double_long_int* p = (running_stat_double_long_int*) &((u.accumulator_array)[i]);
+        RunningStat_double_long_int* p = (RunningStat_double_long_int*) &((u.accumulator_array)[i]);
 
-        if (5 != sscanf(s.substr(start,length).c_str(),"<%li;%lf;%lf;%lf;%lf>",&(p->n),&(p->m1),&(p->m2),&(p->min_value),&(p->max_value))) { clear(); return false; }
+        if (!p->fromString(s.substr(start,length))) { clear(); return false; }
     }
 
 	return true;

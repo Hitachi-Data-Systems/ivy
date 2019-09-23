@@ -49,6 +49,7 @@ std::pair<bool,std::string> isValidAttributeName(const std::string& token, const
 void AttributeNameCombo::clone( AttributeNameCombo& other )
 {
 	attributeNameComboID = other.attributeNameComboID;
+	attributeNameComboID_preserving_case = other.attributeNameComboID_preserving_case;
 	attributeNames.clear(); for (auto& name : other.attributeNames) attributeNames.push_back(name);
 	isValid=other.isValid;
 }
@@ -57,6 +58,7 @@ void AttributeNameCombo::clone( AttributeNameCombo& other )
 void AttributeNameCombo::clear()
 {
 	attributeNameComboID.clear();
+	attributeNameComboID_preserving_case.clear();
 	attributeNames.clear();
 	isValid=false;
 }
@@ -88,7 +90,7 @@ std::pair<bool,std::string> AttributeNameCombo::set(const std::string& t, LUN* p
 
 	clear();
 
-    std::string token {};
+    std::string token {}, token_preserving_case {};
 
     for (unsigned int i = 0; i < t.size(); i++)
     {
@@ -124,8 +126,18 @@ std::pair<bool,std::string> AttributeNameCombo::set(const std::string& t, LUN* p
             if (retval.first)  // either a LUN-lister column heading, or an ivy nickname
             {
                 attributeNames.push_back(token);
-                if (attributeNameComboID.size() > 0) attributeNameComboID += "+"s;
-                attributeNameComboID += token;
+
+                token_preserving_case = pSampleLUN->original_name(token);
+
+                if (attributeNameComboID.size() > 0)
+                {
+                    attributeNameComboID                 += "+"s;
+                    attributeNameComboID_preserving_case += "+"s;
+                }
+
+                attributeNameComboID                 += token;
+                attributeNameComboID_preserving_case += token_preserving_case;
+
                 token.clear();
             }
             else
