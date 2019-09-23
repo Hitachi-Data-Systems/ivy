@@ -249,7 +249,7 @@ std::pair<bool /*success*/, std::string /* message */>
         // For some reason, ssh needs to be woken up first or later when we ssh hostname ivydriver, it can hang for a long time or hang seemingly forever.
     }
 
-    write_clear_script();  // This writes a shell script to run the clear_hung_ivy_threads executable on all involved hosts - handy if you are a developer and you mess things up
+    //write_clear_script();  // This writes a shell script to run the clear_hung_ivy_threads executable on all involved hosts - handy if you are a developer and you mess things up
 
     JSON_select select;
 
