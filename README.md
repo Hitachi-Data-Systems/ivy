@@ -27,13 +27,13 @@ With the Hitachi command device connector, ivy
 * Filters real-time subsystem data by ivy "rollup instance" enabling fine-grained dynamic feedback control of IOPS to hit a target utilization of a component inside the subsystem.
 
 ## Getting started
-Look in the doc subfolder and read the "01.Introduction_to_ivy" PowerPoint or .pdf presentation material, or else watch the "Introduction to ivy" video (link below).
+Look in the doc subfolder and read the "Introduction to ivy" PowerPoint or .pdf presentation material, or else watch the "Introduction to ivy" video (link below).
 
 ## Source code
 See src subfolder.  ivy is built using the CodeBlocks IDE.
 
 ## Binary Linux executables
-Download version 3.31.00 from https://hcpanywhere.hitachivantara.com/u/3nn_mVd5_xrMef-Y/ivy.3.31.00.bin.zip?l
+Download version 3.32.00 from https://hcpanywhere.hitachivantara.com/u/j_TfuAb03z-d9N-5/ivy.3.32.00.bin.zip?l
 
 The binaries for LUN_discovery are included.
 
@@ -49,6 +49,8 @@ Download from https://hcpanywhere.hitachivantara.com/u/9K41Z32uNePmrjVm/ivy_samp
 See the doc subfolder.
 
 ## Videos
+
+(These videos are now a bit dated, sorry.  Please take a look at the sample output - link just above - to see what these demos look like with the current ivy version.  The PID loop feature has in particular been greatly simplified.)
 
 Executive summary
 * [Standalone 6-minute executive summary clips from "introduction to ivy"](https://youtu.be/l5-lSqleP4s)

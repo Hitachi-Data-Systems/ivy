@@ -112,7 +112,7 @@ int MeasureCtlr::evaluateSubinterval()
         m.success = true;
 
         std::ostringstream o;
-        o   << "Successful measurement from subinterval " << m_s.current_measurement().firstMeasurementIndex << " to " << m_s.current_measurement().lastMeasurementIndex
+        o   << "Successful fixed duration measurement from subinterval " << m_s.current_measurement().firstMeasurementIndex << " to " << m_s.current_measurement().lastMeasurementIndex
             << "." << std::endl << std::endl;
         std::cout << o.str();
         log(m_s.masterlogfile, o.str());
@@ -128,7 +128,7 @@ int MeasureCtlr::evaluateSubinterval()
         if (m_s.keep_filling)
         {
             std::ostringstream o;
-            o   << "Successful measurement from subinterval " << m_s.current_measurement().firstMeasurementIndex << " to " << m_s.current_measurement().lastMeasurementIndex
+            o   << "Successful measurement using \"measure\" feature from subinterval " << m_s.current_measurement().firstMeasurementIndex << " to " << m_s.current_measurement().lastMeasurementIndex
                 << " is being extended from now at subinterval " << current << " until sequential fill is complete." << std::endl << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile, o.str());
@@ -138,7 +138,7 @@ int MeasureCtlr::evaluateSubinterval()
         else
         {
             std::ostringstream o;
-            o   << "Successful measurement from subinterval " << m_s.current_measurement().firstMeasurementIndex << " to " << m_s.current_measurement().lastMeasurementIndex
+            o   << "Successful measurement using \"measure\" feature  from subinterval " << m_s.current_measurement().firstMeasurementIndex << " to " << m_s.current_measurement().lastMeasurementIndex
                 << " has been extended until sequential fill was complete at subinterval " << current << "." << std::endl << std::endl;
             std::cout << o.str();
             log(m_s.masterlogfile, o.str());

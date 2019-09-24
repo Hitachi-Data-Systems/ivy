@@ -80,7 +80,14 @@ bool process_successful_measurement() // returns true if we have started the nex
 {
     {
         std::ostringstream o;
-        o << "Successful valid measurement, either fixed duration, or using the \"measure\" feature." << std::endl;
+        if (m_s.have_measure)
+        {
+            o << "Successful valid measurement using the \"measure\" feature." << std::endl;
+        }
+        else
+        {
+            o << "Successful fixed duration measurement." << std::endl;
+        }
         std::cout << o.str();
         log(m_s.masterlogfile,o.str());
     }
