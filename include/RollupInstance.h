@@ -43,6 +43,7 @@ struct measurement_things
 
     std::string Total_IOPS_setting_string;
     std::string achieved_IOPS_as_percent_of_Total_IOPS_setting {};
+    std::string achieved_IOPS_delta;
 
     bool subsystem_IOPS_as_fraction_of_host_IOPS_failure {false};
     bool failed_to_achieve_total_IOPS_setting {false};

@@ -132,6 +132,12 @@ std::pair<bool,std::string> RollupInstance::makeMeasurementRollup()
                     mt.achieved_IOPS_as_percent_of_Total_IOPS_setting = o.str();
                 }
 
+                {
+                    std::ostringstream o;
+                    o << std::fixed << (100.0 * ((mt.application_IOPS - mt.IOPS_setting) / mt.IOPS_setting)) << "%";
+                    mt.achieved_IOPS_delta = o.str();
+                }
+
                 if
                 (
                        mt.application_IOPS < ((1.0 - m_s.achieved_IOPS_tolerance) * mt.IOPS_setting)
@@ -1622,8 +1628,8 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
             if (mt.failed_to_achieve_total_IOPS_setting)
             {
                 std::ostringstream o;
-                o << "[Achieved IOPS off by more than \"achieved_IOPS_tolerance\" = "
-                    << (100.0 * m_s.achieved_IOPS_tolerance) << "% from Rollup Total IOPS Setting.]";
+                o << "[Achieved IOPS off by " << mt.achieved_IOPS_delta << "from Rollup Total IOPS Setting, which is more than \"achieved_IOPS_tolerance\" = "
+                    << (100.0 * m_s.achieved_IOPS_tolerance) << "% .]";
                 validation_errors += o.str();
             }
 

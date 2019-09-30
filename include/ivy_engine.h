@@ -515,7 +515,7 @@ public:
 
     std::set<std::string> warning_messages {};
 
-    ivy_float achieved_IOPS_tolerance {0.001}; // ivy_engine_get("achieved_IOPS_tolerance"), ivy_engine_set("achieved_IOPS_tolerance", "0.1%").
+    ivy_float achieved_IOPS_tolerance {0.0025}; // ivy_engine_get("achieved_IOPS_tolerance"), ivy_engine_set("achieved_IOPS_tolerance", "0.25%").
 
 
 // methods
