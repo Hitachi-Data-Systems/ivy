@@ -74,8 +74,6 @@ std::pair<bool,std::string> RollupInstance::makeMeasurementRollup()
 
     things_by_measurement.emplace_back();
 
-    achieved_IOPS_as_percent_of_Total_IOPS_settting.clear();
-
     {
         measurement_things& mt = things_by_measurement.back();
         SubintervalRollup& mr = mt.measurementRollup;
@@ -130,14 +128,14 @@ std::pair<bool,std::string> RollupInstance::makeMeasurementRollup()
             {
                 {
                     std::ostringstream o;
-                    o << std::fixed << std::setprecision(2) << (100.0 * (mt.application_IOPS / mt.IOPS_setting)) << "%";
-                    achieved_IOPS_as_percent_of_Total_IOPS_settting = o.str();
+                    o << std::fixed << (100.0 * (mt.application_IOPS / mt.IOPS_setting)) << "%";
+                    mt.achieved_IOPS_as_percent_of_Total_IOPS_setting = o.str();
                 }
 
                 if
                 (
-                       mt.application_IOPS < (0.999 * mt.IOPS_setting)
-                    || mt.application_IOPS > (1.001 * mt.IOPS_setting)
+                       mt.application_IOPS < ((1.0 - m_s.achieved_IOPS_tolerance) * mt.IOPS_setting)
+                    || mt.application_IOPS > ((1.0 + m_s.achieved_IOPS_tolerance) * mt.IOPS_setting)
                 )
                 {
                     m.failed_to_achieve_total_IOPS_setting = mt.failed_to_achieve_total_IOPS_setting = true;
@@ -1622,7 +1620,12 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 validation_errors += std::string("[subsystem IOPS is more than 15% different from host IOPS.]");
 
             if (mt.failed_to_achieve_total_IOPS_setting)
-                validation_errors += std::string("[Achieved IOPS off by more than .1% from Rollup Total IOPS Setting.]");
+            {
+                std::ostringstream o;
+                o << "[Achieved IOPS off by more than \"achieved_IOPS_tolerance\" = "
+                    << (100.0 * m_s.achieved_IOPS_tolerance) << "% from Rollup Total IOPS Setting.]";
+                validation_errors += o.str();
+            }
 
             csvline << ',' << validation_errors;
 
@@ -1731,7 +1734,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                         ivy_float application_service_time_ms = 1000.* st.avg();
                         if (application_service_time_ms > 0.0)
                         {
-                            csvline << std::fixed << std::setprecision(3) << (subsystem_service_time_ms / application_service_time_ms) * 100.0 << '%';
+                            csvline << std::fixed << (subsystem_service_time_ms / application_service_time_ms) * 100.0 << '%';
                         }
                     }
 
@@ -1750,7 +1753,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 csvline << "," << m_s.non_random_sample_correction_factor;
                 csvline << "," << plus_minus_series_confidence_default;
 
-                csvline << "," << achieved_IOPS_as_percent_of_Total_IOPS_settting;
+                csvline << "," << mt.achieved_IOPS_as_percent_of_Total_IOPS_setting;
 
                 csvline << mro.csvValues(seconds,&(mr),m_s.non_random_sample_correction_factor, (!mt.failed_to_achieve_total_IOPS_setting));
 

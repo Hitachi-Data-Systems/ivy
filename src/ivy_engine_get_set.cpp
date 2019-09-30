@@ -62,7 +62,8 @@ std::string valid_get_parameters()
             << ", last_result"
             << ", step_NNNN"
             << ", step_name"
-            << ", and step_folder."
+            << ", step_folder"
+            << ", and achieved_IOPS_tolerance"
                 << std::endl
             << "(Parameter names are not case sensitive and underscores are ignored in parameter names, and thus OutputFolderRoot is equivalent to output_folder_root.)"
                 << std::endl << std::endl;
@@ -154,6 +155,15 @@ ivy_engine::get(const std::string& thingee)
     }
 
 
+    if (0 == t.compare(normalize_identifier("achieved_IOPS_tolerance")))
+    {
+        std::ostringstream o;
+        o << (100.0 * achieved_IOPS_tolerance) << "%";
+
+        return std::make_pair(true,o.str());
+    }
+
+
     {
         std::ostringstream o;
         o << "<Error> Unknown ivy engine get parameter \"" << thingee << "\"." << std::endl << std::endl
@@ -187,6 +197,36 @@ ivy_engine::set(const std::string& thingee,
         thing = value;
         return std::make_pair(true,"");
     }
+
+
+    if (0 == t.compare(normalize_identifier("achieved_IOPS_tolerance")))
+    {
+        ivy_float v;
+
+        try
+        {
+            v = number_optional_trailing_percent(value,"achieved_IOPS_tolerance");
+        }
+        catch (const std::invalid_argument& ia)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"achieved_IOPS_tolerance\", \"" << value << "\") - achieved_IOPS_tolerance value must be a positive number with optional trailing %."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        if (v <= 0.0)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"achieved_IOPS_tolerance\", \"" << value << "\") - achieved_IOPS_tolerance value must be a positive number with optional trailing %."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        achieved_IOPS_tolerance = v;
+        return std::make_pair(true,"");
+    }
+
 
 
     {
