@@ -38,6 +38,8 @@
 #include <exception>
 #include <math.h>  /* for ceil() */
 #include <csignal>
+#include <sys/prctl.h>
+#include <sched.h>
 
 //#define IVYDRIVER_TRACE
 // IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
@@ -153,6 +155,34 @@ void WorkloadThread::WorkloadThreadRun()
         std::ostringstream o;
         o << "getpid() = " << my_pid << ", gettid() = " << my_tid << ", getpgid(my_tid=" << my_tid << ") = " << my_pgid << std::endl;
         log(slavethreadlogfile,o.str());
+    }
+
+    // Set timer slack for this thread to 1 uS (i.e., 1,000 nS).
+
+    int rc = prctl(PR_SET_TIMERSLACK, 1000, 0, 0, 0);
+    if (routine_logging) {
+        std::ostringstream o;
+        o << "prctl(PR_SET_TIMERSLACK, 1, 0, 0, 0) returned " << rc;
+        if (rc < 0) {
+            o << "; errno = " << errno << " (" << std::strerror(errno) << ")";
+        }
+        o << "." << std::endl;
+        log(slavethreadlogfile, o.str());
+    }
+
+    // Set real-time scheduler (FIFO) for this thread. Choose mid-point realtime priority.
+
+    struct sched_param sched_param;
+    sched_param.__sched_priority = (sched_get_priority_min(SCHED_FIFO) + sched_get_priority_max(SCHED_FIFO)) / 2;
+    rc = sched_setscheduler(0, SCHED_FIFO, &sched_param);
+    if (routine_logging) {
+        std::ostringstream o;
+        o << "sched_setscheduler(0, SCHED_FIFO, &sched_param) returned " << rc;
+        if (rc < 0) {
+            o << "; errno = " << errno << " (" << std::strerror(errno) << ")";
+        }
+        o << "." << std::endl;
+        log(slavethreadlogfile, o.str());
     }
 
 //   The workload thread is initially in "waiting for command" state.
