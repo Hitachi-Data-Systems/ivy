@@ -391,7 +391,7 @@ int MeasureCtlr::evaluateSubinterval()
 
                 std::ostringstream o; o << "Successful measurement from subinterval "
                     << ( m_s.current_measurement().firstMeasurementIndex - m_s.current_measurement().first_subinterval )
-                    << " to " << (m_s.current_measurement().lastMeasurementIndex - m_s.current_measurement().first_subinterval )
+                    << " to " << (current - m_s.current_measurement().first_subinterval)
                     << " will be extended until sequential fill is complete." << std::endl << std::endl;
                 std::cout << o.str();
                 log(m_s.masterlogfile, o.str());
@@ -399,15 +399,15 @@ int MeasureCtlr::evaluateSubinterval()
                 return EVALUATE_SUBINTERVAL_CONTINUE;
             }
 
+            m.lastMeasurementIndex = current;
+            m.measure_end   = m.warmup_start + ivytime((1 + m.lastMeasurementIndex  - m.first_subinterval) * m_s.subinterval_seconds);
+            m.success = true;
+
             std::ostringstream o; o << "Successful measurement from subinterval " << (m_s.current_measurement().firstMeasurementIndex - m_s.current_measurement().first_subinterval)
                 << " to " << (m_s.current_measurement().lastMeasurementIndex - m_s.current_measurement().first_subinterval) << "." << std::endl;
 
             std::cout << o.str();
             log(m_s.masterlogfile, o.str());
-
-            m.lastMeasurementIndex = current;
-            m.measure_end   = m.warmup_start + ivytime((1 + m.lastMeasurementIndex  - m.first_subinterval) * m_s.subinterval_seconds);
-            m.success = true;
 
             return EVALUATE_SUBINTERVAL_SUCCESS;
         }

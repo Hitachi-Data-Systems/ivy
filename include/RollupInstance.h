@@ -42,6 +42,8 @@ struct measurement_things
     ivy_float subsystem_IOPS_as_fraction_of_host_IOPS {-1.0};
 
     std::string Total_IOPS_setting_string;
+    std::string achieved_IOPS_as_percent_of_Total_IOPS_setting {};
+    std::string achieved_IOPS_delta;
 
     bool subsystem_IOPS_as_fraction_of_host_IOPS_failure {false};
     bool failed_to_achieve_total_IOPS_setting {false};
@@ -191,9 +193,6 @@ public:
 
     std::string measurement_rollup_by_test_step_csv_filename;      // goes in measurementRollupFolder
     std::string measurement_rollup_by_test_step_csv_type_filename; // goes in measurementRollupFolder
-
-    std::string achieved_IOPS_as_percent_of_Total_IOPS_settting {};
-
 
 // methods
 	RollupInstance(RollupType* pRT, RollupSet* pRS, std::string nameCombo, std::string valueCombo)
