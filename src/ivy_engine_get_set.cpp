@@ -149,12 +149,6 @@ ivy_engine::get(const std::string& thingee)
     }
 
 
-    if (0 == t.compare(normalize_identifier("thing")))
-    {
-        return std::make_pair(true,thing);
-    }
-
-
     if (0 == t.compare(normalize_identifier("achieved_IOPS_tolerance")))
     {
         std::ostringstream o;
@@ -192,13 +186,6 @@ ivy_engine::set(const std::string& thingee,
     }
 
 
-    if (0 == t.compare(normalize_identifier("thing")))
-    {
-        thing = value;
-        return std::make_pair(true,"");
-    }
-
-
     if (0 == t.compare(normalize_identifier("achieved_IOPS_tolerance")))
     {
         ivy_float v;
@@ -232,6 +219,7 @@ ivy_engine::set(const std::string& thingee,
     {
         std::ostringstream o;
         o << "<Error> Unknown ivy engine set parameter \"" << thingee << "\"." << std::endl << std::endl;
+        o << "The valid set() parameter is \"achieved_IOPS_tolerance\"." << std::endl << std::endl;
         return std::make_pair(false,o.str());
     }
 }

@@ -970,26 +970,29 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
             o << "Sequential fill progress is "
                 << std::fixed << std::setprecision(2)
-                << (100*m_s.min_sequential_fill_progress) << "%";
+                << (100*m_s.min_sequential_fill_progress) << "% of specified range within LUN";
 
-            ivytime now;
-            now.setToNow();
+            if (!m_s.in_cooldown_mode)
+            {
+                ivytime now;
+                now.setToNow();
 
-            ivytime duration = now - m_s.get_go;
-            o << " after " << duration.format_as_duration_HMMSS() << ".";
+                ivytime duration = now - m_s.get_go;
+                o << " after " << duration.format_as_duration_HMMSS() << ".";
 
-            auto duration_seconds = duration.getlongdoubleseconds();
+                auto duration_seconds = duration.getlongdoubleseconds();
 
-            ivytime estimated_total_duration( duration_seconds / m_s.min_sequential_fill_progress);
+                ivytime estimated_total_duration( duration_seconds / m_s.min_sequential_fill_progress);
 
-            ivytime estimated_completion(m_s.get_go + estimated_total_duration);
+                ivytime estimated_completion(m_s.get_go + estimated_total_duration);
 
-            ivytime remaining = estimated_completion - now;
+                ivytime remaining = estimated_completion - now;
 
-            o << "  Estimated remaining " << remaining.format_as_duration_HMMSS()
-                << " to complete fill at " << estimated_completion.format_as_datetime() << "."
-                << std::endl
-                << std::endl;
+                o << "  Estimated remaining " << remaining.format_as_duration_HMMSS()
+                    << " to complete fill at " << estimated_completion.format_as_datetime();
+            }
+
+            o << "." << std::endl << std::endl;
 
             std::cout << o.str();
             log(m_s.masterlogfile,o.str());

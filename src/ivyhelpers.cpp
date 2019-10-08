@@ -1492,7 +1492,21 @@ std::string seconds_to_hhmmss(unsigned int input_value)
 }
 
 
+bool parse_boolean(const std::string& s) // throws std::invalid_argument
+{
+    std::string p = s;
 
+    trim (p);
+
+    if (      stringCaseInsensitiveEquality(std::string("on"),    p)
+           || stringCaseInsensitiveEquality(std::string("true"),  p)
+           || stringCaseInsensitiveEquality(std::string("yes"),   p) ) return true;
+    else if ( stringCaseInsensitiveEquality(std::string("off"),   p)
+           || stringCaseInsensitiveEquality(std::string("false"), p)
+           || stringCaseInsensitiveEquality(std::string("no"),    p) ) return false;
+
+    throw std::invalid_argument("<Error> parse_boolean(\""s + s + "\") - only yes/no, on/off, or true/false are accepted."s);
+}
 
 
 

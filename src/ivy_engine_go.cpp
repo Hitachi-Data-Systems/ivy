@@ -503,16 +503,17 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 //----------------------------------- suppress_perf
     if (go_parameters.contains("suppress_perf"s)) { parameter_value = go_parameters.retrieve("suppress_perf");}
     else                                          { parameter_value = go_parameters.retrieve("no_perf");}
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
-           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
-           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) suppress_subsystem_perf = true;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
-           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
-           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) suppress_subsystem_perf = false;
-    else
+
+    try
     {
-        ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid no_perf (same as suppress_perf)  parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
+        suppress_subsystem_perf = parse_boolean(parameter_value);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> invalid [Go] \"";
+        if (go_parameters.contains("suppress_perf"s)) { o << "suppress_perf"; } else { o << "no_perf"; }
+        o << "\") parameter value - " << ia.what() << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
@@ -520,16 +521,14 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
 //----------------------------------- stepcsv
     parameter_value = go_parameters.retrieve("stepcsv");
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
-           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
-           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) stepcsv = true;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
-           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
-           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) stepcsv = false;
-    else
+    try
     {
-        ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid stepcsv parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
+        stepcsv = parse_boolean(parameter_value);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> invalid [Go] \"stepcsv\" parameter value - " << ia.what() << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
@@ -537,73 +536,63 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
 //----------------------------------- storcsv
     parameter_value = go_parameters.retrieve("storcsv");
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
-           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
-           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) storcsv = true;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
-           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
-           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) storcsv = false;
-    else
+    try
     {
-        ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid storcsv parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
+        storcsv = parse_boolean(parameter_value);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> invalid [Go] \"storcsv\" parameter value - " << ia.what() << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
     }
 //----------------------------------- check_failed_component
     parameter_value = go_parameters.retrieve("check_failed_component");
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
-           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
-           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) check_failed_component = true;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
-           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
-           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) check_failed_component = false;
-    else
+    try
     {
-        ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid check_failed_component parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
+        check_failed_component = parse_boolean(parameter_value);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> invalid [Go] \"check_failed_component\" parameter value - " << ia.what() << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
     }
-
 
 //----------------------------------- skip_LDEV
     parameter_value = go_parameters.retrieve("skip_LDEV");
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
-           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
-           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) skip_ldev_data = true;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
-           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
-           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) skip_ldev_data = false;
-    else
+    try
     {
-        ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid skip_LDEV parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
+        skip_ldev_data = parse_boolean(parameter_value);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> invalid [Go] \"skip_LDEV\" parameter value - " << ia.what() << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
     }
-
 
 //----------------------------------- cooldown_by_wp
     parameter_value = go_parameters.retrieve("cooldown_by_wp");
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
-           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
-           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) cooldown_by_wp = cooldown_mode::on;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
-           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
-           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) cooldown_by_wp = cooldown_mode::off;
-    else
+    try
     {
-        ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid cooldown_by_wp parameter \"" << parameter_value << "\".  Must be \"on\" or \"off\"." << std::endl;
+        bool b = parse_boolean(parameter_value);
+        cooldown_by_wp = b ? cooldown_mode::on : cooldown_mode::off;
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> invalid [Go] \"cooldown_by_WP\" parameter value - " << ia.what() << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();
     }
-
 
 //----------------------------------- subsystem_WP_threshold  - goes with cooldown_by_wp
     std::string subsystem_WP_threshold_parameter = go_parameters.retrieve("subsystem_WP_threshold");
@@ -618,16 +607,15 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
 
 //----------------------------------- cooldown_by_MP_busy
     parameter_value = go_parameters.retrieve("cooldown_by_MP_busy");
-    if      ( stringCaseInsensitiveEquality(std::string("on"),    parameter_value)
-           || stringCaseInsensitiveEquality(std::string("true"),  parameter_value)
-           || stringCaseInsensitiveEquality(std::string("yes"),   parameter_value) ) cooldown_by_MP_busy = cooldown_mode::on;
-    else if ( stringCaseInsensitiveEquality(std::string("off"),   parameter_value)
-           || stringCaseInsensitiveEquality(std::string("false"), parameter_value)
-           || stringCaseInsensitiveEquality(std::string("no"),    parameter_value) ) cooldown_by_MP_busy = cooldown_mode::off;
-    else
+    try
     {
-        ostringstream o;
-        o << "<Error> ivy engine API - go() - [Go] statement - invalid cooldown_by_MP_busy parameter \"" << go_parameters.retrieve("cooldown_by_wp") << "\".  Must be \"on\" or \"off\"." << std::endl;
+        bool b = parse_boolean(parameter_value);
+        cooldown_by_MP_busy = b ? cooldown_mode::on : cooldown_mode::off;
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> invalid [Go] \"cooldown_by_MP_busy\" parameter value - " << ia.what() << std::endl;
         log(masterlogfile,o.str());
         std::cout << o.str();
         kill_subthreads_and_exit();

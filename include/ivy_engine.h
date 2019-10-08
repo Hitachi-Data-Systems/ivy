@@ -504,9 +504,6 @@ public:
 
     std::string command_device_etc_version {};
 
-    std::string thing {};  // something you can set a value into to test ivy_engine_set and ivy_engine_get
-
-
     std::string subsystem_thumbnail {};
 
     bool last_command_was_stop {false};

@@ -24,6 +24,14 @@
 #include "dedupe_method.h"
 #include "logger.h"
 
+enum class rangeType
+{
+    invalid = 0,
+    fraction,
+    percent,
+    MB, MiB, GB, GiB, TB, TiB
+};
+
 class IosequencerInput {
 
 	// this is the object that gets sent from ivymaster
@@ -78,7 +86,9 @@ public:
 		        // Actually, we could use sequential values between 0 and 1 to emulate pathological vdbench random ... later maybe
 
 		rangeStart {rangeStart_default}, // default is start at sector 1.  Sector 0 is considered "out of bounds".
-		rangeEnd {rangeEnd_default}; // default is 1.0 maps to the last aligned block of that blocksize that fits.
+		rangeEnd   {rangeEnd_default  }; // default is 1.0 maps to the last aligned block of that blocksize that fits.
+
+    rangeType rangeStartType {rangeType::fraction}, rangeEndType {rangeType::fraction};
 
 	ivy_float // Only sequential looks at this
 		seqStartPoint {seqStartPoint_default};
@@ -131,8 +141,8 @@ public:
 	bool defaultIOPS()         const { return IOPS_default == IOPS; }
 	bool defaultskew_weight()  const { return skew_weight_default == skew_weight; }
 	bool defaultFractionRead() const { return fractionRead_default == fractionRead; }
-	bool defaultRangeStart()   const { return rangeStart_default == rangeStart; }
-	bool defaultRangeEnd()     const { return rangeEnd_default == rangeEnd; }
+	bool defaultRangeStart()   const { return (rangeStart_default == rangeStart) && (rangeStartType == rangeType::fraction); }
+	bool defaultRangeEnd()     const { return (rangeEnd_default == rangeEnd) && (rangeEndType == rangeType::fraction); }
 	bool defaultSeqStartPoint() const
 	{
 		if (stringCaseInsensitiveEquality(std::string("sequential"),iosequencer_type))
@@ -154,5 +164,7 @@ public:
 	bool defaultThreads_in_workload_name() const { return threads_in_workload_name == threads_in_workload_name_default;}
 	bool defaultThis_thread_in_workload()  const { return this_thread_in_workload == this_thread_in_workload_default;}
 	bool defaultPattern_seed()             const { return pattern_seed == pattern_seed_default;}
+	std::string rangeStartValue() const;
+	std::string rangeEndValue() const;
 };
 

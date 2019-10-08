@@ -490,37 +490,85 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 
 	if ( normalized_identifier_equality(parameterName, std::string("VolumeCoverageFractionStart")) || normalized_identifier_equality(parameterName, std::string("RangeStart")))
 	{
-		if (0 == parameterValue.length()) { return std::make_pair(false, "RangeStart may not be set to the empty string."); }
+	    std::string working_parameter_value = parameterValue;
 
-		bool hadPercent {false};
-		if ('%' == parameterValue[-1 + parameterValue.length()])
+	    trim(working_parameter_value);
+
+		if (0 == working_parameter_value.length()) { return std::make_pair(false, "RangeStart may not be set to the empty string."); }
+
+		if ('%' == working_parameter_value[-1 + working_parameter_value.length()])
 		{
-			hadPercent = true;
-			parameterValue.erase(-1 + parameterValue.length(),1); // hopefully erase last character
-			trim(parameterValue);
+			rangeStartType = rangeType::percent;
+			working_parameter_value.erase(-1 + working_parameter_value.length(),1); // hopefully erase last character
+		}
+		else if ((working_parameter_value.size() >= 2) && stringCaseInsensitiveEquality("MB"s, working_parameter_value.substr(working_parameter_value.size()-2,2)))
+		{
+			rangeStartType = rangeType::MB;
+			working_parameter_value.erase(-2 + working_parameter_value.length(),2);
+		}
+		else if ((working_parameter_value.size() >= 3) && stringCaseInsensitiveEquality("MiB"s, working_parameter_value.substr(working_parameter_value.size()-3,3)))
+		{
+			rangeStartType = rangeType::MiB;
+			working_parameter_value.erase(-3 + working_parameter_value.length(),3);
+		}
+		else if ((working_parameter_value.size() >= 2) && stringCaseInsensitiveEquality("GB"s, working_parameter_value.substr(working_parameter_value.size()-2,2)))
+		{
+			rangeStartType = rangeType::GB;
+			working_parameter_value.erase(-2 + working_parameter_value.length(),2);
+		}
+		else if ((working_parameter_value.size() >= 3) && stringCaseInsensitiveEquality("GiB"s, working_parameter_value.substr(working_parameter_value.size()-3,3)))
+		{
+			rangeStartType = rangeType::GiB;
+			working_parameter_value.erase(-3 + working_parameter_value.length(),3);
+		}
+		else if ((working_parameter_value.size() >= 2) && stringCaseInsensitiveEquality("TB"s, working_parameter_value.substr(working_parameter_value.size()-2,2)))
+		{
+			rangeStartType = rangeType::TB;
+			working_parameter_value.erase(-2 + working_parameter_value.length(),2);
+		}
+		else if ((working_parameter_value.size() >= 3) && stringCaseInsensitiveEquality("TiB"s, working_parameter_value.substr(working_parameter_value.size()-3,3)))
+		{
+			rangeStartType = rangeType::TiB;
+			working_parameter_value.erase(-3 + working_parameter_value.length(),3);
+		}
+		else
+		{
+		    rangeStartType = rangeType::fraction;
 		}
 
-		std::istringstream is(parameterValue);
+        trim(working_parameter_value);
+
+        if (working_parameter_value.size() == 0) { return std::make_pair(false, "RangeStart value may not be set to the empty string."); }
+
+		std::istringstream is(working_parameter_value);
+
 		ivy_float ld;
-		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) )
+
+		if ( (!(is >> ld)) || (!is.eof()) )
+		{
+            std::ostringstream o;
+			o << "invalid RangeStart parameter setting \"" << parameterValue << "\" - value did not parse as number";
+			return std::make_pair(false,o.str());
+		}
+
+		if
+		(
+		       ( ld < 0.0 )
+		    || ( (rangeStartType == rangeType::percent)  && ( ld > 100.0 ) )
+		    || ( (rangeStartType == rangeType::fraction) && ( ld > 1.0 )   )
+        )
 		{
             std::ostringstream o;
 			o << "invalid RangeStart parameter setting \"" << parameterValue;
-			if (hadPercent) o << " %";
-			o << "\".";
 			return std::make_pair(false,o.str());
 		}
 
 		rangeStart=ld;
 
-		if (hadPercent) rangeStart = rangeStart / 100.0;
-
-		if (rangeStart >= rangeEnd)
+		if ( (rangeStartType == rangeEndType) && (rangeStart >= rangeEnd) )
 		{
 			std::ostringstream o;
-			o << "invalid RangeStart parameter setting \"" << parameterValue;
-			if (hadPercent) o << "%";
-            o << "\".   RangeStart must be before RangeEnd.";
+			o << "invalid RangeStart parameter setting \"" << parameterValue << "\".   RangeStart must be before RangeEnd.";
 			return std::make_pair(false,o.str());
 		}
 
@@ -529,41 +577,87 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 
 	if ( normalized_identifier_equality(parameterName, std::string("VolumeCoverageFractionEnd")) || normalized_identifier_equality(parameterName, std::string("RangeEnd")))
 	{
-		if (0 == parameterValue.length()) { return std::make_pair(false, "RangeEnd may not be set to the empty string."); }
+	    std::string working_parameter_value = parameterValue;
 
-		bool hadPercent {false};
-		if ('%' == parameterValue[-1 + parameterValue.length()])
+	    trim(working_parameter_value);
+
+		if (0 == working_parameter_value.length()) { return std::make_pair(false, "RangeEnd may not be set to the empty string."); }
+
+		if ('%' == working_parameter_value[-1 + working_parameter_value.length()])
 		{
-			hadPercent = true;
-			parameterValue.erase(-1 + parameterValue.length(),1); // hopefully erase last character
-			trim(parameterValue);
+			rangeEndType = rangeType::percent;
+			working_parameter_value.erase(-1 + working_parameter_value.length(),1); // hopefully erase last character
+		}
+		else if ((working_parameter_value.size() >= 2) && stringCaseInsensitiveEquality("MB"s, working_parameter_value.substr(working_parameter_value.size()-2,2)))
+		{
+			rangeEndType = rangeType::MB;
+			working_parameter_value.erase(-2 + working_parameter_value.length(),2);
+		}
+		else if ((working_parameter_value.size() >= 3) && stringCaseInsensitiveEquality("MiB"s, working_parameter_value.substr(working_parameter_value.size()-3,3)))
+		{
+			rangeEndType = rangeType::MiB;
+			working_parameter_value.erase(-3 + working_parameter_value.length(),3);
+		}
+		else if ((working_parameter_value.size() >= 2) && stringCaseInsensitiveEquality("GB"s, working_parameter_value.substr(working_parameter_value.size()-2,2)))
+		{
+			rangeEndType = rangeType::GB;
+			working_parameter_value.erase(-2 + working_parameter_value.length(),2);
+		}
+		else if ((working_parameter_value.size() >= 3) && stringCaseInsensitiveEquality("GiB"s, working_parameter_value.substr(working_parameter_value.size()-3,3)))
+		{
+			rangeEndType = rangeType::GiB;
+			working_parameter_value.erase(-3 + working_parameter_value.length(),3);
+		}
+		else if ((working_parameter_value.size() >= 2) && stringCaseInsensitiveEquality("TB"s, working_parameter_value.substr(working_parameter_value.size()-2,2)))
+		{
+			rangeEndType = rangeType::TB;
+			working_parameter_value.erase(-2 + working_parameter_value.length(),2);
+		}
+		else if ((working_parameter_value.size() >= 3) && stringCaseInsensitiveEquality("TiB"s, working_parameter_value.substr(working_parameter_value.size()-3,3)))
+		{
+			rangeEndType = rangeType::TiB;
+			working_parameter_value.erase(-3 + working_parameter_value.length(),3);
+		}
+		else
+		{
+		    rangeEndType = rangeType::fraction;
 		}
 
+        trim(working_parameter_value);
 
-		std::istringstream is(parameterValue);
+        if (working_parameter_value.size() == 0) { return std::make_pair(false, "RangeEnd value may not be set to the empty string."); }
+
+		std::istringstream is(working_parameter_value);
+
 		ivy_float ld;
-		if ( (!(is >> ld)) || (!is.eof()) || (ld<0.) || (ld>(hadPercent ? 100.0 : 1.0) ) )
+
+		if ( (!(is >> ld)) || (!is.eof()) )
 		{
-			std::ostringstream o;
-			o << "invalid RangeEnd parameter setting \"" << parameterValue;
-			if (hadPercent) o << " %";
-			o << "\".";
+            std::ostringstream o;
+			o << "invalid RangeEnd parameter setting \"" << parameterValue << "\" - value did not parse as number";
 			return std::make_pair(false,o.str());
 		}
 
-		if (hadPercent) ld /= 100.0;
+		if
+		(
+		       ( ld < 0.0 )
+		    || ( (rangeEndType == rangeType::percent)  && ( ld > 100.0 ) )
+		    || ( (rangeEndType == rangeType::fraction) && ( ld > 1.0 )   )
+        )
+		{
+            std::ostringstream o;
+			o << "invalid RangeEnd parameter setting \"" << parameterValue;
+			return std::make_pair(false,o.str());
+		}
 
 		rangeEnd=ld;
 
-		if (rangeEnd<=rangeStart)
+		if ( (rangeStartType == rangeEndType) && (rangeStart >= rangeEnd) )
 		{
-            std::ostringstream o;
-            o << "invalid RangeEnd parameter setting \"" << parameterValue;
-            if (hadPercent) o << "%";
-            o << "\".  RangeStart must be before RangeEnd.";
+			std::ostringstream o;
+			o << "invalid RangeEnd parameter setting \"" << parameterValue << "\".   RangeEnd must be after RangeStart.";
 			return std::make_pair(false,o.str());
 		}
-
 
 		return std::make_pair(true,"");
 	}
@@ -922,6 +1016,8 @@ std::pair<bool,std::string> IosequencerInput::setMultipleParameters(std::string 
         composite_error_message += o.str();
     }
 
+    if (rangeStart == 0) {rangeStartType = rangeEndType;}
+
 	return std::make_pair(sawGoodOne && (!sawBadOne),composite_error_message);
 }
 
@@ -950,8 +1046,8 @@ void IosequencerInput::reset()
 	IOPS=IOPS_default; // -1.0 means "drive I/Os as fast as possible"
 	skew_weight=skew_weight_default;
 	fractionRead=fractionRead_default;
-	rangeStart=rangeStart_default;
-	rangeEnd=rangeEnd_default;
+	rangeStart=rangeStart_default; rangeStartType = rangeType::fraction;
+	rangeEnd=rangeEnd_default;     rangeEndType   = rangeType::fraction;
 	seqStartPoint=seqStartPoint_default;
 
 	dedupe = dedupe_default;
@@ -1040,8 +1136,11 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
 	else          o << ",IOPS=" << IOPS;
 	o << ",skew_weight=" << skew_weight;
 	o << ",fractionRead=" << fractionRead;
-	o << ",RangeStart=" <<  rangeStart;
-	o << ",RangeEnd=" << rangeEnd;
+
+	o << ",RangeStart=" << rangeStartValue();
+
+	o << ",RangeEnd=" << rangeEndValue();
+
     if(normalized_identifier_equality(iosequencer_type,std::string("sequential")))
     {
 		o << ",SeqStartPoint=" << seqStartPoint;
@@ -1123,9 +1222,9 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 
 	if ( ! defaultFractionRead() )              { o << ",fractionRead=" << fractionRead; }
 
-	if ( ! defaultRangeStart())   { o << ",RangeStart=" <<  rangeStart; }
+	if ( ! defaultRangeStart())                 { o << ",RangeStart=" << rangeStartValue(); }
 
-	if( ! defaultRangeEnd() )     { o << ",RangeEnd=" << rangeEnd; }
+	if( ! defaultRangeEnd() )                   { o << ",RangeEnd=" << rangeEndValue(); }
 
     if( ! defaultSeqStartPoint() )	{ o << ",SeqStartPoint=" << seqStartPoint; }
 
@@ -1183,8 +1282,8 @@ void IosequencerInput::copy(const IosequencerInput& source)
 	IOPS             = source.IOPS;
 	skew_weight      = source.skew_weight;
 	fractionRead     = source.fractionRead;
-	rangeStart       = source.rangeStart;
-	rangeEnd         = source.rangeEnd;
+	rangeStart       = source.rangeStart; rangeStartType = source.rangeStartType;
+	rangeEnd         = source.rangeEnd;   rangeEndType   = source.rangeEndType;
 	seqStartPoint    = source.seqStartPoint;
 
 	dedupe                = source.dedupe;
@@ -1205,4 +1304,42 @@ void IosequencerInput::copy(const IosequencerInput& source)
 
 }
 
+std::string IosequencerInput::rangeStartValue() const
+{
+    std::ostringstream o;
 
+    switch (rangeStartType)
+    {
+        case rangeType::fraction: o << rangeStart;          break;
+        case rangeType::MB:       o << rangeStart << " MB";  break;
+        case rangeType::MiB:      o << rangeStart << " MiB"; break;
+        case rangeType::GB:       o << rangeStart << " GB";  break;
+        case rangeType::GiB:      o << rangeStart << " GiB"; break;
+        case rangeType::TB:       o << rangeStart << " TB";  break;
+        case rangeType::TiB:      o << rangeStart << " TiB"; break;
+        case rangeType::percent:  o << rangeStart << "%";   break;
+        case rangeType::invalid:  o << "<invalid>";         break;
+        default: o << "< Unrecognized RangeStartType = " << ((unsigned int) rangeStartType) << " with rangeStartValue = " << rangeStartValue() << " >";
+    }
+    return o.str();
+}
+
+std::string IosequencerInput::rangeEndValue() const
+{
+    std::ostringstream o;
+
+    switch (rangeEndType)
+    {
+        case rangeType::fraction: o << rangeEnd;          break;
+        case rangeType::MB:       o << rangeEnd << " MB";  break;
+        case rangeType::MiB:      o << rangeEnd << " MiB"; break;
+        case rangeType::GB:       o << rangeEnd << " GB";  break;
+        case rangeType::GiB:      o << rangeEnd << " GiB"; break;
+        case rangeType::TB:       o << rangeEnd << " TB";  break;
+        case rangeType::TiB:      o << rangeEnd << " TiB"; break;
+        case rangeType::percent:  o << rangeEnd << "%";   break;
+        case rangeType::invalid:  o << "<invalid>";         break;
+        default: o << "< Unrecognized RangeEndType = " << ((unsigned int) rangeEndType) << " with rangeEndValue = " << rangeEndValue() << " >";
+    }
+    return o.str();
+}

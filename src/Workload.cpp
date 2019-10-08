@@ -145,7 +145,7 @@ void Workload::prepare_to_run()
 
     if (!p_my_iosequencer->setFrom_IosequencerInput(p_current_IosequencerInput))
     {
-        std::ostringstream o; o << "start() - call to iosequencer::setFrom_IosequencerInput() failed." << std::endl;
+        std::ostringstream o; o << "<Error> Workload::start() - call to iosequencer::setFrom_IosequencerInput() failed." << std::endl;
         throw std::runtime_error(o.str());
     }
 }

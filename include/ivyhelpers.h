@@ -170,3 +170,5 @@ std::pair<bool /*false means attempt to read past the end*/, std::string /*field
     // for "/" returns "" then ""
 
 std::string seconds_to_hhmmss(unsigned int input_value);
+
+bool parse_boolean(const std::string&); // throws std::invalid_argument
