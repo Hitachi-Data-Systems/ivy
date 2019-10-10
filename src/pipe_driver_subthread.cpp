@@ -2069,7 +2069,8 @@ void pipe_driver_subthread::threadRun()
 //        copycmd << "/usr/bin/scp " << "/var/ivydriver_logs/log.ivydriver." << ivyscript_hostname << ".log* " << m_s.testFolder;
 //
 //        log(logfilename, std::string("copying logs from remote host \"")+copycmd.str()+std::string("\"\n"));
-//        if ( 0 == system(copycmd.str().c_str()) )
+//        int rc = system(copycmd.str().c_str());
+//        if (WIFEXITED(rc) && (0 == WEXITSTATUS(rc))) )
 //        {
 //            if (routine_logging) { log (logfilename, std::string("copy command successful.")); }
 //            std::string cmd = "ssh

@@ -1193,13 +1193,15 @@ ivy_engine::shutdown_subthreads()
 			std::ostringstream o;
 			o << "scp -p " << SLAVEUSERID << '@' << host << ":" << "/var/ivydriver_logs/log.ivydriver." << host << ".* " << testFolder << "/logs";
 			log(masterlogfile,o.str());
-			if (0 == system(o.str().c_str()))
+            int rc = system(o.str().c_str());
+			if (WIFEXITED(rc) && (0 == WEXITSTATUS(rc)))
 			{
 				log(masterlogfile,std::string("success: ")+o.str()+std::string("\n"));
 				std::ostringstream rm;
 				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << "/var/ivydriver_logs/log.ivydriver." << host << ".*";
 				log(masterlogfile,rm.str());
-				if (0 == system(rm.str().c_str()))
+				int rc = system(rm.str().c_str());
+                if (WIFEXITED(rc) && (0 == WEXITSTATUS(rc)))
 				{
 					log(masterlogfile,std::string("success: ")+rm.str()+std::string("\n"));
                 }
@@ -1224,7 +1226,7 @@ ivy_engine::shutdown_subthreads()
 	    std::ostringstream o;
 	    o << "cp -p " << m_s.var_ivymaster_logs_testName << "/* " << m_s.testFolder << "/logs";
 	    int rc = system(o.str().c_str());
-        if (0 != rc)
+        if (!WIFEXITED(rc) || (0 != WEXITSTATUS(rc)))
         {
             std::cout << "error copying ivy master host logs to the output folder using the command \"" << o.str() << "\"." << std::endl;
         }

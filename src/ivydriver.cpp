@@ -175,7 +175,8 @@ int IvyDriver::main(int argc, char* argv[])
     //sigaction(SIGUSR1, &sigactshun, NULL);
     //sigaction(SIGTERM, &sigactshun, NULL);
 
-    if (0 != system("stty -echo"))
+    int rc = system("stty -echo");
+    if (!WIFEXITED(rc) || (0 != WEXITSTATUS(rc)))
     {
         std::cout << "<Error> Failed turn ing off stdin echo using \"stty -echo\" command.\n";
         return -1;
