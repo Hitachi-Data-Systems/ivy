@@ -159,6 +159,8 @@ void WorkloadThread::WorkloadThreadRun()
 
     // Set timer slack for this thread to 1 uS (i.e., 1,000 nS).
 
+    // Ian: this shouldn't have any effect, since WorkloadThread only ever has one timer going at a time:
+
     int rc = prctl(PR_SET_TIMERSLACK, 1000, 0, 0, 0);
     if (routine_logging) {
         std::ostringstream o;
