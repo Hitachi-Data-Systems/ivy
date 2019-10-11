@@ -90,7 +90,8 @@ std::pair<bool /*success*/, std::string /* message */>
             return std::make_pair(false,o.str());
         }
         // output folder already exists and is a directory, so we delete it to make a fresh one.
-        if (0 == system((std::string("rm -rf ")+testFolder).c_str()))   // ugly but easy.
+        int rc = system((std::string("rm -rf ")+testFolder).c_str());   // ugly but easy.
+        if (WIFEXITED(rc) && (0 == WEXITSTATUS(rc)))
         {
             std::ostringstream o;
             o << "      Deleted pre-existing folder \"" << testFolder << "\"." << std::endl;
@@ -147,7 +148,8 @@ std::pair<bool /*success*/, std::string /* message */>
     {
         std::string copyivyscriptcmd = std::string("cp -p ") + ivyscript_filename + std::string(" ") +
                                        testFolder + std::string("/") + testName + std::string(".ivyscript");
-        if (0!=system(copyivyscriptcmd.c_str()))   // now getting lazy, but purist maintainers could write C++ code to do this.
+        int rc = system(copyivyscriptcmd.c_str());   // now getting lazy, but purist maintainers could write C++ code to do this.
+        if (!WIFEXITED(rc) || (0 != WEXITSTATUS(rc)))
         {
             std::ostringstream o;
             o << "<Error> Failed trying to copy input ivyscript to output folder: \"" << copyivyscriptcmd << "\"." << std::endl;
