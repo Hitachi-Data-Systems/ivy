@@ -507,7 +507,8 @@ std::pair<bool,std::string> ParameterValueLookupTable::contains_these_parameter_
     {"hotzonesizebytes",        "hot_zone_size_bytes"},
     {"hotzonereadfraction",     "hot_zone_read_fraction"},
     {"hotzonewritefraction",    "hot_zone_write_fraction"},
-    {"hotzoneiopsfraction",     "hot_zone_IOPS_fraction"}
+    {"hotzoneiopsfraction",     "hot_zone_IOPS_fraction"},
+    {"totaliops",               "total_IOPS"}
 };
 
 std::string ParameterValueLookupTable::rehydrate_parameter_name(const std::string& n)

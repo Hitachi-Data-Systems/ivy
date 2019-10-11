@@ -41,6 +41,9 @@ std::set<std::string> valid_IosequencerInput_parameters
     , "volumecoveragefractionend", "rangeend", "seqstartfractionofcoverage", "seqstartpoint", "dedupe"
     , "pattern", "compressibility", "dedupeunitbytes", "dedupemethod", "fractionzeropattern"
     , "threadsinworkloadname", "thisthreadinworkload", "patternseed"
+    , "totaliops" // total_IOPS isn't a valid IosequencerInput parameter, but these parameter names are for
+                  // checking in the go statement, where total_IOPS = (100, 200) is valid, as these
+                  // parameter settings are applied using edit rollup, where total_IOPS is valid.
 };
 
 std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameterNameEqualsValue) {
