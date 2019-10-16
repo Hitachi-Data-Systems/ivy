@@ -20,8 +20,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include "ivy_engine.h"
-#include "ivyhelpers.h"
+
 #include "DedupeConstantRatioRegulator.h"
 #include "DedupeConstantRatioTable.h"
 #include "Eyeo.h"

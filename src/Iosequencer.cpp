@@ -19,31 +19,10 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 using namespace std;
 
-#include <string>
 #include <random>
-#include <fcntl.h>  // for open64, O_RDWR etc.
-#include <functional> // for std::hash
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <math.h>
-#include <list>
-#include <map>
-#include <algorithm> // for ivyhelpers.h
-#include <linux/aio_abi.h>
-#include <iostream>
-#include <sstream>
 
-
-#include "ivyhelpers.h"
-#include "ivytime.h"
-#include "ivydefines.h"
 #include "IosequencerInput.h"
-#include "LUN.h"
-#include "Eyeo.h"
-#include "WorkloadID.h"
 #include "Iosequencer.h"
-#include "TestLUN.h"
 
 extern bool routine_logging;
 

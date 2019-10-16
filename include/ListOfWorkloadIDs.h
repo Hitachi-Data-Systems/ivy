@@ -22,7 +22,7 @@
 #include <list>
 #include <string>
 
-class WorkloadID;
+#include "Workload.h"
 
 class ListOfWorkloadIDs
 {

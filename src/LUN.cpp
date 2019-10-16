@@ -22,16 +22,8 @@
 //172.17.19.159,1,/dev/sdb,DF800S,AMS2100,83011441,2A,4,0004,,,,,,,2247098367,1150514.364416,1097216.000000,1150.514364,1071.500000,1.150514,1.046387,HITACHI ,DF600F          ,0000,Emulex LPe11002-S 4Gb 2-port PCIe FC HBA on PCI bus 21 device 00 irq 59 port 0 Logical Link Speed: 4
 //sun159,1,/dev/sdb,DF800S,AMS2100,83011441,2A,4,0004,,,,,,,2247098367,1150514.364416,1097216.000000,1150.514364,1071.500000,1.150514,1.046387,HITACHI ,DF600F          ,0000,Emulex LPe11002-S 4Gb 2-port PCIe FC HBA on PCI bus 21 device 00 irq 59 port 0 Logical Link Speed: 4
 
-#include <cctype> // for tolower()
-#include <iostream>
-#include <sstream>
-#include <list>
-#include <algorithm>
-#include <map>
 #include <string>
 using namespace std::string_literals;  // for std::string literals like "bork"s
-
-#include "ivyhelpers.h"
 
 #include "LUN.h"
 

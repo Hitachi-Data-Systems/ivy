@@ -19,6 +19,8 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
+#include "Iosequencer.h"
+
 extern std::default_random_engine deafrangen;
 
 class IosequencerRandom : public Iosequencer {

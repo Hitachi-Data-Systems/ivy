@@ -17,26 +17,12 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-//#include "time.h"
-#include <stdint.h> // for unit64_t
-#include <unistd.h> // for sysconf(_SC_CLK_TCK) which returns clock ticks per second
 
+#include <unistd.h> // for sysconf(_SC_CLK_TCK) which returns clock ticks per second
 #include <iostream>
 #include <fstream>
-#include <sstream>
-#include <iomanip>
-#include <string>
-#include <list>
-#include <algorithm> // for find_if
-#include <map>
-#include <stdio.h>
 
-#include "ivytime.h"
-#include "ivydefines.h"
-#include "ivyhelpers.h"
 #include "ivylinuxcpubusy.h"
-#include "Subinterval_CPU.h"
-#include "ivydriver.h"
 
 //#define IVY_LINUX_CPU_BUSY_DETAIL
 

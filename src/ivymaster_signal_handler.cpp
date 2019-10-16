@@ -21,7 +21,6 @@
 #include "ivy_engine.h"
 #include "pipe_driver_subthread.h"
 
-
 struct sigaction ivymaster_sigaction;
 
 void ivymaster_signal_handler(int sig, siginfo_t *p_siginfo, void *context)

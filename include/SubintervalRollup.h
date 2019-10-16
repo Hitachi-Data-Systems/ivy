@@ -20,6 +20,8 @@
 #pragma once
 
 #include "IosequencerInputRollup.h"
+#include "ivytime.h"
+#include "SubintervalOutput.h"
 
 class SubintervalRollup
 {

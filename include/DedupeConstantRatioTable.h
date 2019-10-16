@@ -18,7 +18,9 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-	std::map<unsigned int /*sides*/, std::map<unsigned int /*throws*/, long double /* dedupe_ratio */>> constant_ratio_map
+#include <map>
+
+std::map<unsigned int /*sides*/, std::map<unsigned int /*throws*/, long double /* dedupe_ratio */>> constant_ratio_map
 	{
 		{ 2, {
 			{ 2, 1.33333 } // compute time 0.000000 seconds.

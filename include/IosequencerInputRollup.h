@@ -22,6 +22,8 @@
 #include <map>
 #include <string>
 
+#include "ivydefines.h"
+
 class IosequencerInputRollup {
 
 // The idea here is that when we show what inputs were used in a rollup summary csv file line

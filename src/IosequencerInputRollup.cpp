@@ -17,20 +17,9 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <string>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <stdlib.h> // atoi
-#include <algorithm>
-#include <list>
-#include <map>
-
-#include "ivyhelpers.h"
-#include "ivydefines.h"
 
 #include "IosequencerInputRollup.h"
-#include "ivy_engine.h"
+#include "ivyhelpers.h"
 
 using namespace std::string_literals;
 

@@ -17,16 +17,7 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-//#include <stdlib.h> // atoi
-#include <stdexcept>
-#include <vector>
 
-
-#include "ivydefines.h"
-#include "RunningStat.h"
 
 #include "Accumulators_by_io_type.h"
 

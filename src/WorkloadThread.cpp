@@ -18,56 +18,18 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include <stdint.h> /* for uint64_t */
-#include <fcntl.h>  /* for open64() O_RDWR etc. */
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <stdio.h>              /* for perror() */
-#include <unistd.h>             /* for syscall() */
-#include <sys/syscall.h>        /* for __NR_* definitions */
-#include <linux/aio_abi.h>      /* for AIO types and constants */
-#include <malloc.h>  /* for memalign */
-#include <errno.h>   /* creates the external symbol errno */
-#include <scsi/sg.h>
-#include <string.h>
-#include <random>  /* uniform int distribution, etc. */
-#include <stack>
-#include <queue>
-#include <list>
-#include <exception>
-#include <math.h>  /* for ceil() */
-#include <csignal>
 #include <sys/prctl.h>
-#include <sched.h>
 
 //#define IVYDRIVER_TRACE
 // IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
 //  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
 //  - you can turn on tracing separately for each class in its own source file.
 
-#include "ivytime.h"
-#include "ivydefines.h"
-#include "ivyhelpers.h"
-#include "RunningStat.h"
-#include "Eyeo.h"
-#include "LUN.h"
-#include "WorkloadID.h"
-#include "IosequencerInput.h"
-#include "Iosequencer.h"
-#include "ivylinuxcpubusy.h"
-#include "RunningStat.h"
-#include "Accumulators_by_io_type.h"
-#include "SubintervalOutput.h"
-#include "Subinterval.h"
 #include "WorkloadThread.h"
-#include "IosequencerRandom.h"
 #include "IosequencerRandomSteady.h"
 #include "IosequencerRandomIndependent.h"
 #include "IosequencerSequential.h"
 #include "ivydriver.h"
-#include "TestLUN.h"
-#include "DedupeTargetSpreadRegulator.h"
 
 //#define CHECK_FOR_LONG_RUNNING_IOS
 

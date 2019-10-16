@@ -19,6 +19,8 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
+#include "Iosequencer.h"
+
 class IosequencerSequential : public Iosequencer {
 public:
 	IosequencerSequential(LUN* pL, logger& lf, std::string wID, WorkloadThread* pWT, TestLUN* p_tl, Workload* p_w)

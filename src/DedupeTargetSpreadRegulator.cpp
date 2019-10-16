@@ -19,10 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #include <assert.h>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <functional>
+
 #include "DedupeTargetSpreadRegulator.h"
 #include "ivytime.h"
 #include "ivyhelpers.h"

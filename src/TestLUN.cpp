@@ -18,18 +18,14 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include <fcntl.h>
-#include <unistd.h>
+#define _LARGE_FILE_API
 #include <sys/eventfd.h>
 
 #include "TestLUN.h"
 #include "Workload.h"
 #include "WorkloadThread.h"
 #include "LUN.h"
-#include "ivytime.h"
 #include "Eyeo.h"
-#include "ivydefines.h"
-#include "ivydriver.h"
 
 //#define IVYDRIVER_TRACE
 // IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that

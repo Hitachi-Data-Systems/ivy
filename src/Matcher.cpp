@@ -2,15 +2,7 @@
 // Author Allart Ian Vogelesang, Hitachi Data Systems
 // Copyright Hitachi Data Systems 2015
 //
-#include <iostream>
-#include <sstream>
 
-
-#include "ivyhelpers.h"
-
-#include "LDEVset.h"
-#include "LUN.h"
-#include "SelectClause.h"
 #include "Matcher.h"
 
 //#define IVY_MATCHER_TRACE_ON

@@ -17,17 +17,11 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <list>
-#include <algorithm>    // std::find_if  for ivyhelpers.h
+
 #include <regex>
 #include <unistd.h>
 
 #include "ivyhelpers.h"
-#include "ivydefines.h"
-
 #include "discover_luns.h"
 
 // This was very early ivy code from before C++11 and before std::regex had been fixed.

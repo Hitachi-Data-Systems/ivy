@@ -40,6 +40,8 @@
 
 //#define IVYDRIVER_TRACE
 
+class TestLUN;
+
 enum class ThreadState
 {
     undefined,

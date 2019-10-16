@@ -17,79 +17,17 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <errno.h>
-#include <fcntl.h>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <fstream>
-#include <list>
-#include <locale>
-#include <malloc.h>
-#include <poll.h>
-#include <regex>
-#include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <string.h>
-#include <string>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
+
 #include <sys/wait.h>
-#include <thread>
-#include <unistd.h>
-#include <vector>
-#include <mutex>
-#include <condition_variable>
-#include <unordered_map>
-#include <map>
-#include <limits.h> // LLONG_MAX, LLONG_MIN
-#include <algorithm>
-#include <stdexcept>
-#include <syscall.h>
 #include <sys/prctl.h>
-#include <signal.h>
 
 using namespace std;
 
 // invoked "ivy scriptname.ivyscript" or just "ivy scriptname"
 
-#include "ivyhelpers.h"
-#include "ivytime.h"
-// SHOULD GET AROUND TO GIVING IVYTIME THE ABILITY TO PARSE AT LEAST YYYY-MM-DD HH:MM:SS AND YYYY-MM-DD HH:MM:SS.NNNNNNNNN
-// ... except that regexes seem to be broken and are known to be broken in this version of libstdc++
-
-#include "ivydefines.h"
-#include "RunningStat.h"
-#include "discover_luns.h"
-#include "LDEVset.h"
-#include "IosequencerInput.h"
-#include "IosequencerInputRollup.h"
-#include "RunningStat.h"
-#include "Accumulators_by_io_type.h"
-#include "SubintervalOutput.h"
-#include "ivylinuxcpubusy.h"
-#include "Subinterval_CPU.h"
-#include "WorkloadID.h"
-#include "ListOfWorkloadIDs.h"
-#include "LUN.h"
-#include "LUNpointerList.h"
-#include "GatherData.h"
-#include "Subsystem.h"
 #include "pipe_driver_subthread.h"
-#include "WorkloadTracker.h"
-#include "WorkloadTrackers.h"
-#include "SubintervalRollup.h"
-#include "SequenceOfSubintervalRollup.h"
-#include "AttributeNameCombo.h"
-#include "RollupInstance.h"
-#include "RollupType.h"
-#include "RollupSet.h"
 #include "ivy_engine.h"
 #include "Subinterval_detail_line.h"
-
 
 #define PIPE_READ 0
 #define PIPE_WRITE 1

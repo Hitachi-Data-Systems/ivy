@@ -19,12 +19,6 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 // ivydriver.cpp
 
-//#include <csignal>
-#include <signal.h>
-#include <string.h>
-#include <execinfo.h>
-#include <functional>  // for std::hash
-#include <unistd.h>
 #include <sys/utsname.h>
 #include <linux/limits.h>
 

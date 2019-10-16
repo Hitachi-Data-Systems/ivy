@@ -17,22 +17,9 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include "ivytime.h"
-#include "ivyhelpers.h"
+
 #include "ivydefines.h"
-#include "IosequencerInput.h"
-#include "IosequencerInputRollup.h"
-#include "RunningStat.h"
-#include "Accumulators_by_io_type.h"
-#include "SubintervalOutput.h"
 #include "SubintervalRollup.h"
-#include "SequenceOfSubintervalRollup.h"
-#include "WorkloadID.h"
-#include "ListOfWorkloadIDs.h"
-#include "RollupInstance.h"
-#include "LUN.h"
-#include "AttributeNameCombo.h"
-#include "RollupType.h"
 #include "ivy_engine.h"
 
 void SubintervalRollup::clear()

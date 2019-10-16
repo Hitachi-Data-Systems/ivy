@@ -28,11 +28,7 @@
 #include <sys/stat.h>
 #include <string.h>
 
-#include "ivytime.h"
-#include "ivydefines.h"
-#include "ivyhelpers.h"
 #include "ivy_engine.h"
-
 #include "GatherData.h"
 
 std::string metric_value::toString()

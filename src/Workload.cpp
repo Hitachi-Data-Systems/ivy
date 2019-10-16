@@ -20,8 +20,6 @@
 
 #include "Workload.h"
 #include "ivydriver.h"
-#include "Iosequencer.h"
-#include "IosequencerRandom.h"
 #include "IosequencerRandomIndependent.h"
 #include "IosequencerRandomSteady.h"
 #include "IosequencerSequential.h"

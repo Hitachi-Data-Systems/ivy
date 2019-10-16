@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "RunningStat.h"
+#include "ivydefines.h"
 
 extern std::vector<std::tuple<std::string,ivy_float, ivy_float>> io_time_clip_levels;
 

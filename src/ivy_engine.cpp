@@ -18,65 +18,9 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 using namespace std;
-#include <string>
-using namespace std::string_literals;  // for std::string literals like "bork"s
-#include <list>
-#include <algorithm>
-#include <map>
-#include <unordered_map>
-#include <iostream>
-#include <sstream>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <set>
-#include <unistd.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <signal.h>
 #include <sys/stat.h>
-#include <cmath>
 
-#include "ParameterValueLookupTable.h"
-#include "MeasureCtlr.h"
-#include "run_subinterval_sequence.h"
-
-#include "ivytime.h"
-#include "ivydefines.h"
-#include "ivyhelpers.h"
-#include "LUN.h"
-#include "AttributeNameCombo.h"
-#include "IosequencerInputRollup.h"
-#include "RunningStat.h"
-#include "Accumulators_by_io_type.h"
-#include "IosequencerInput.h"
-#include "SubintervalOutput.h"
-#include "SubintervalRollup.h"
-#include "SequenceOfSubintervalRollup.h"
-#include "WorkloadID.h"
-#include "ListOfWorkloadIDs.h"
-#include "RollupInstance.h"
-#include "AttributeNameCombo.h"
-#include "RollupType.h"
-#include "ivylinuxcpubusy.h"
-#include "Subinterval_CPU.h"
-#include "LUN.h"
-#include "LUNpointerList.h"
-#include "ivylinuxcpubusy.h"
-#include "GatherData.h"
-#include "Subsystem.h"
-#include "pipe_driver_subthread.h"
-#include "WorkloadTracker.h"
-#include "WorkloadTrackers.h"
-#include "Subinterval_CPU.h"
-#include "RollupSet.h"
 #include "ivy_engine.h"
-#include "NameEqualsValueList.h"
-#include "ListOfNameEqualsValueList.h"
-#include "Ivy_pgm.h"
-#include "skew_weight.h"
 
 extern bool routine_logging;
 

@@ -17,14 +17,9 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <iostream>
-#include <sstream>
-#include <list>
 
 #include "LUN.h"
 #include "JSON_select.h"
-#include "LDEVset.h"
-#include "ivyhelpers.h"
 #include "ivy_engine.h"
 #include "select/select.parser.hh"
 

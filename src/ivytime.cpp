@@ -17,30 +17,11 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#define _LARGE_FILE_API
+
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <iomanip>
-#include <vector>
-#include <string>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <stdio.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <string.h>
-#include <chrono>
-#include <ctime>
-#include <random>
-#include <functional>
-#include <cstdlib>
-#include <unistd.h>
-#include <algorithm>
-#include <malloc.h>
-#include <string.h>
-#include <scsi/sg.h>
 
 using namespace std;
 

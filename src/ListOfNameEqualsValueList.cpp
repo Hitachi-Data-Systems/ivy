@@ -19,13 +19,8 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 //NameEqualsValueList.cpp
 
-#include <cctype> // for isalpha(), etc.
-#include <iostream>
-#include <sstream>
-
 #include "ivyhelpers.h"
 
-#include "NameEqualsValueList.h"
 #include "ListOfNameEqualsValueList.h"
 
 //#define IVY_PARSE_TRACE_ON

@@ -17,46 +17,9 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <string>
-#include <list>
-#include <algorithm>
-#include <map>
-#include <unordered_map>
-#include <iostream>
-#include <sstream>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <set>
 
 using namespace std;
 
-#include "ivytime.h"
-#include "ivydefines.h"
-#include "ivyhelpers.h"
-#include "LUN.h"
-#include "AttributeNameCombo.h"
-#include "IosequencerInputRollup.h"
-#include "RunningStat.h"
-#include "Accumulators_by_io_type.h"
-#include "IosequencerInput.h"
-#include "IosequencerInputRollup.h"
-#include "SubintervalOutput.h"
-#include "SubintervalRollup.h"
-#include "SequenceOfSubintervalRollup.h"
-#include "WorkloadID.h"
-#include "ListOfWorkloadIDs.h"
-#include "RollupInstance.h"
-#include "AttributeNameCombo.h"
-#include "RollupType.h"
-#include "ivylinuxcpubusy.h"
-#include "LUNpointerList.h"
-#include "GatherData.h"
-#include "Subsystem.h"
-#include "pipe_driver_subthread.h"
-#include "WorkloadTracker.h"
-#include "WorkloadTrackers.h"
-#include "Subinterval_CPU.h"
 #include "RollupSet.h"
 #include "ivy_engine.h"
 
@@ -66,7 +29,6 @@ void RollupSet::rebuild()
 
     for (auto& pear : rollups) pear.second->rebuild();
 }
-
 
 
 std::string RollupSet::debugListRollups()

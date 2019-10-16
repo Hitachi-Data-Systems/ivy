@@ -20,7 +20,6 @@
 
 #include "ivy_engine.h"
 #include "pipe_driver_subthread.h"
-#include "ivyhelpers.h"
 
 extern bool routine_logging;
 

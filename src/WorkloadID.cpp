@@ -17,12 +17,8 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <string>
-#include <iostream>
-#include <sstream>
 
 #include "WorkloadID.h"
-
 
 bool WorkloadID::set(const std::string& ID)
 {

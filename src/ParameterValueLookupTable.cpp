@@ -17,6 +17,7 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
+
 #include <set>
 
 #include "ivyhelpers.h"
@@ -74,7 +75,7 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
 			i++;
 		}
 
-		if (i>=s.length() || '=' != s[i])
+		if ( (i>=s.length()) || ( ('=' != s[i]) && ('(' != s[i])) )
 		{
             std::ostringstream o;
 			o << "ParameterValueLookupTable::fromString() invalid input string:" << std::endl << s << std::endl;
@@ -85,12 +86,17 @@ std::pair<bool,std::string> ParameterValueLookupTable::addString(std::string s)
 			log(m_s.masterlogfile,o.str());
 			return std::make_pair(false,o.str());
 		}
-		i++; // step over '='
 
-		while (i<s.length() && isspace(s[i]))
-		{ // step over whitespace following '='
-			i++;
-		}
+		if (s[i] == '=') // if s[i] is '(', the '=' is optional before the parenthesized list.
+		{
+		    i++; // step over '='
+
+            while (i<s.length() && isspace(s[i])) // step over whitespace following '='
+            {
+                i++;
+            }
+        }
+
 
 		if (i>=s.length())
 		{

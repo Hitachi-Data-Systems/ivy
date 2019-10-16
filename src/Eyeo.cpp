@@ -17,43 +17,19 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
+
 #include <assert.h>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <linux/aio_abi.h>
-#include <string.h> // for memset()
-#include <malloc.h> // for memalign()
-#include <mutex>
-#include <stdlib.h>
 
 using namespace std;
 
-#include "ivytime.h"
-#include "ivydefines.h"
-#include "ivyhelpers.h"
-
 #include "Eyeo.h"
-#include "ivyhelpers.h"
-#include "RunningStat.h"
 #include "LUN.h"
-#include "WorkloadID.h"
-#include "IosequencerInput.h"
-#include "Iosequencer.h"
-#include "RunningStat.h"
-#include "Accumulators_by_io_type.h"
-#include "SubintervalOutput.h"
-#include "Subinterval.h"
-#include "WorkloadThread.h"
-#include "Workload.h"
-#include "DedupeConstantRatioRegulator.h"
-
-extern std::string printable_ascii;
-extern std::default_random_engine deafrangen;
-
 #include "../../LUN_discovery/include/printableAndHex.h"
     // display_memory_contents() is part of "printableAndHex" which is in the LUN_discovery project
     // https://github.com/Hitachi-Data-Systems/LUN_discovery
+
+extern std::string printable_ascii;
+extern std::default_random_engine deafrangen;
 
 Eyeo::Eyeo(Workload* pw) : pWorkload(pw)
 {

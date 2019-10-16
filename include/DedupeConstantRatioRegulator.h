@@ -21,8 +21,10 @@
 #pragma once
 
 #include <random>
-#include "ivytime.h"
-#include "ivyhelpers.h"
+
+#include "ivydefines.h"
+
+class Eyeo;
 
 class DedupeConstantRatioRegulator
 {

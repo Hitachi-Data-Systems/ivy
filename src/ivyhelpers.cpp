@@ -20,23 +20,13 @@
 // ivyhelpers.cpp
 
 
-#include <cctype>
 #include <iostream>
 #include <fstream>
-#include <iomanip>
-#include <sstream>
 #include <unistd.h>
-#include <list>
-#include <algorithm>    // std::find_if
-#include <regex>
-#include <string>
 #include <fcntl.h>
 #include <mutex>
-using namespace std::string_literals;
 
-#include "ivytime.h"
 #include "ivyhelpers.h"
-
 
 using namespace std;
 
