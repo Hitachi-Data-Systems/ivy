@@ -292,6 +292,7 @@ before_ivymaster:
 	test -d $(OBJDIR_IVYMASTER)/src || mkdir -p $(OBJDIR_IVYMASTER)/src
 	test -d $(OBJDIR_IVYMASTER)/__/LUN_discovery/src || mkdir -p $(OBJDIR_IVYMASTER)/__/LUN_discovery/src
 	test -d $(OBJDIR_IVYMASTER)/parser/src || mkdir -p $(OBJDIR_IVYMASTER)/parser/src
+	test -d $(OBJDIR_IVYMASTER)/parser/lexyacc || mkdir -p $(OBJDIR_IVYMASTER)/parser/lexyacc
 	test -d $(OBJDIR_IVYMASTER)/src/select || mkdir -p $(OBJDIR_IVYMASTER)/src/select
 	test -d $(OBJDIR_IVYMASTER)/src/hosts || mkdir -p $(OBJDIR_IVYMASTER)/src/hosts
 
