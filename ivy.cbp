@@ -3,9 +3,19 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="ivy" />
+		<Option makefile="Makefile.mak" />
+		<Option makefile_is_custom="1" />
 		<Option pch_mode="2" />
 		<Option default_target="ivymaster" />
 		<Option compiler="gcc" />
+		<MakeCommands>
+			<Build command="$make -f $makefile $target" />
+			<CompileFile command="$make -f $makefile $file" />
+			<Clean command="$make -f $makefile clean_$target" />
+			<DistClean command="$make -f $makefile distclean$target" />
+			<AskRebuildNeeded command="$make -q -f $makefile $target" />
+			<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+		</MakeCommands>
 		<Build>
 			<Target title="ivymaster">
 				<Option output="bin/ivy" prefix_auto="1" extension_auto="1" />
@@ -32,6 +42,14 @@
 				<ExtraCommands>
 					<Add before="touch include/ivybuilddate.h" />
 				</ExtraCommands>
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="ivydriver">
 				<Option output="bin/ivydriver" prefix_auto="1" extension_auto="1" />
@@ -52,18 +70,42 @@
 				<ExtraCommands>
 					<Add before="touch include/ivybuilddate.h" />
 				</ExtraCommands>
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="clear_hung_ivy_threads">
 				<Option output="bin/clear_hung_ivy_threads" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="makedict">
 				<Option output="bin/makedict" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option parameters="public_domain_dictionary/pg29765.webster_1913.txt" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="csv_rows">
 				<Option platforms="Unix;" />
@@ -71,6 +113,14 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="csv_header_columns">
 				<Option platforms="Unix;" />
@@ -78,6 +128,14 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="csv_columns_in_row">
 				<Option platforms="Unix;" />
@@ -85,6 +143,14 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="csv_column_header">
 				<Option platforms="Unix;" />
@@ -92,6 +158,14 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="csv_raw_cell_value">
 				<Option platforms="Unix;" />
@@ -99,6 +173,14 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="csv_cell_value">
 				<Option platforms="Unix;" />
@@ -107,6 +189,14 @@
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
 				<Option parameters='csv_cell_value /home/ivogelesang/Desktop/eraseme/a.csv 0 1 2 3 &quot;step name&quot;' />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="csv_lookup_column">
 				<Option platforms="Unix;" />
@@ -114,6 +204,14 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="csv_row">
 				<Option platforms="Unix;" />
@@ -121,6 +219,14 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="csv_column">
 				<Option platforms="Unix;" />
@@ -128,27 +234,67 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="testRegex">
 				<Option output="bin/testRegex" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="test_LDEVset">
 				<Option output="bin/testRegex" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="remove_empty_columns">
 				<Option output="bin/remove_empty_columns" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option parameters="/home/ian/Desktop/one.csv" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="test_hosts_list">
 				<Option output="bin/test_hosts_list" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="test_negative_ivytimes">
 				<Option output="bin/test_negative_ivytimes/ivy" prefix_auto="1" extension_auto="1" />
@@ -162,18 +308,42 @@
 				<Linker>
 					<Add option="-s" />
 				</Linker>
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="ivycore">
 				<Option output="bin/ivycore" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 			<Target title="DedupeConstantRatioTableGenerator">
 				<Option output="bin/DedupeConstantRatioTableGenerator" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<MakeCommands>
+					<Build command="$make -f $makefile $target -j32" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean_$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target -j32 &gt; $(CMD_NULL)" />
+				</MakeCommands>
 			</Target>
 		</Build>
 		<VirtualTargets>
@@ -183,10 +353,10 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=c++14" />
 			<Add option="-fPIC" />
 			<Add option="-Og" />
 			<Add option="-g" />
+			<Add option="-std=c++14" />
 			<Add directory="src" />
 			<Add directory="include" />
 		</Compiler>
