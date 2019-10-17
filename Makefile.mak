@@ -27,7 +27,7 @@ RCFLAGS_IVYMASTER = $(RCFLAGS)
 LIBDIR_IVYMASTER = $(LIBDIR) -L/usr/local/lib -L/usr/lib64
 LIB_IVYMASTER = $(LIB) /usr/local/lib/libcpprest.a /usr/local/lib/libboost_system.a -lcrypto -lssl
 LDFLAGS_IVYMASTER = $(LDFLAGS) -pthread -lrt
-OBJDIR_IVYMASTER = .objs
+OBJDIR_IVYMASTER = .objs/.ivymaster
 DEP_IVYMASTER = 
 OUT_IVYMASTER = bin/ivy
 
@@ -38,7 +38,7 @@ RCFLAGS_IVYDRIVER = $(RCFLAGS)
 LIBDIR_IVYDRIVER = $(LIBDIR)
 LIB_IVYDRIVER = $(LIB)
 LDFLAGS_IVYDRIVER = $(LDFLAGS) -pthread -lrt
-OBJDIR_IVYDRIVER = .objs
+OBJDIR_IVYDRIVER = .objs/.ivydriver
 DEP_IVYDRIVER = 
 OUT_IVYDRIVER = bin/ivydriver
 
@@ -49,7 +49,7 @@ RCFLAGS_CLEAR_HUNG_IVY_THREADS = $(RCFLAGS)
 LIBDIR_CLEAR_HUNG_IVY_THREADS = $(LIBDIR)
 LIB_CLEAR_HUNG_IVY_THREADS = $(LIB)
 LDFLAGS_CLEAR_HUNG_IVY_THREADS = $(LDFLAGS)
-OBJDIR_CLEAR_HUNG_IVY_THREADS = .objs
+OBJDIR_CLEAR_HUNG_IVY_THREADS = .objs/.clear_hung_ivy_threads
 DEP_CLEAR_HUNG_IVY_THREADS = 
 OUT_CLEAR_HUNG_IVY_THREADS = bin/clear_hung_ivy_threads
 
@@ -60,7 +60,7 @@ RCFLAGS_MAKEDICT = $(RCFLAGS)
 LIBDIR_MAKEDICT = $(LIBDIR)
 LIB_MAKEDICT = $(LIB)
 LDFLAGS_MAKEDICT = $(LDFLAGS)
-OBJDIR_MAKEDICT = .objs
+OBJDIR_MAKEDICT = .objs/.makedict
 DEP_MAKEDICT = 
 OUT_MAKEDICT = bin/makedict
 
@@ -71,7 +71,7 @@ RCFLAGS_CSV_ROWS = $(RCFLAGS)
 LIBDIR_CSV_ROWS = $(LIBDIR)
 LIB_CSV_ROWS = $(LIB)
 LDFLAGS_CSV_ROWS = $(LDFLAGS)
-OBJDIR_CSV_ROWS = .objs
+OBJDIR_CSV_ROWS = .objs/.csv_rows
 DEP_CSV_ROWS = 
 OUT_CSV_ROWS = bin/csv_rows
 
@@ -82,7 +82,7 @@ RCFLAGS_CSV_HEADER_COLUMNS = $(RCFLAGS)
 LIBDIR_CSV_HEADER_COLUMNS = $(LIBDIR)
 LIB_CSV_HEADER_COLUMNS = $(LIB)
 LDFLAGS_CSV_HEADER_COLUMNS = $(LDFLAGS)
-OBJDIR_CSV_HEADER_COLUMNS = .objs
+OBJDIR_CSV_HEADER_COLUMNS = .objs/.csv_header_columns
 DEP_CSV_HEADER_COLUMNS = 
 OUT_CSV_HEADER_COLUMNS = bin/csv_header_columns
 
@@ -93,7 +93,7 @@ RCFLAGS_CSV_COLUMNS_IN_ROW = $(RCFLAGS)
 LIBDIR_CSV_COLUMNS_IN_ROW = $(LIBDIR)
 LIB_CSV_COLUMNS_IN_ROW = $(LIB)
 LDFLAGS_CSV_COLUMNS_IN_ROW = $(LDFLAGS)
-OBJDIR_CSV_COLUMNS_IN_ROW = .objs
+OBJDIR_CSV_COLUMNS_IN_ROW = .objs/.csv_columns_in_row
 DEP_CSV_COLUMNS_IN_ROW = 
 OUT_CSV_COLUMNS_IN_ROW = bin/csv_columns_in_row
 
@@ -104,7 +104,7 @@ RCFLAGS_CSV_COLUMN_HEADER = $(RCFLAGS)
 LIBDIR_CSV_COLUMN_HEADER = $(LIBDIR)
 LIB_CSV_COLUMN_HEADER = $(LIB)
 LDFLAGS_CSV_COLUMN_HEADER = $(LDFLAGS)
-OBJDIR_CSV_COLUMN_HEADER = .objs
+OBJDIR_CSV_COLUMN_HEADER = .objs/.csv_column_header
 DEP_CSV_COLUMN_HEADER = 
 OUT_CSV_COLUMN_HEADER = bin/csv_column_header
 
@@ -115,7 +115,7 @@ RCFLAGS_CSV_RAW_CELL_VALUE = $(RCFLAGS)
 LIBDIR_CSV_RAW_CELL_VALUE = $(LIBDIR)
 LIB_CSV_RAW_CELL_VALUE = $(LIB)
 LDFLAGS_CSV_RAW_CELL_VALUE = $(LDFLAGS)
-OBJDIR_CSV_RAW_CELL_VALUE = .objs
+OBJDIR_CSV_RAW_CELL_VALUE = .objs/.csv_raw_cell_value
 DEP_CSV_RAW_CELL_VALUE = 
 OUT_CSV_RAW_CELL_VALUE = bin/csv_raw_cell_value
 
@@ -126,7 +126,7 @@ RCFLAGS_CSV_CELL_VALUE = $(RCFLAGS)
 LIBDIR_CSV_CELL_VALUE = $(LIBDIR)
 LIB_CSV_CELL_VALUE = $(LIB)
 LDFLAGS_CSV_CELL_VALUE = $(LDFLAGS)
-OBJDIR_CSV_CELL_VALUE = .objs
+OBJDIR_CSV_CELL_VALUE = .objs/.csv_cell_value
 DEP_CSV_CELL_VALUE = 
 OUT_CSV_CELL_VALUE = bin/csv_cell_value
 
@@ -137,7 +137,7 @@ RCFLAGS_CSV_LOOKUP_COLUMN = $(RCFLAGS)
 LIBDIR_CSV_LOOKUP_COLUMN = $(LIBDIR)
 LIB_CSV_LOOKUP_COLUMN = $(LIB)
 LDFLAGS_CSV_LOOKUP_COLUMN = $(LDFLAGS)
-OBJDIR_CSV_LOOKUP_COLUMN = .objs
+OBJDIR_CSV_LOOKUP_COLUMN = .objs/.csv_lookup_column
 DEP_CSV_LOOKUP_COLUMN = 
 OUT_CSV_LOOKUP_COLUMN = bin/csv_lookup_column
 
@@ -148,7 +148,7 @@ RCFLAGS_CSV_ROW = $(RCFLAGS)
 LIBDIR_CSV_ROW = $(LIBDIR)
 LIB_CSV_ROW = $(LIB)
 LDFLAGS_CSV_ROW = $(LDFLAGS)
-OBJDIR_CSV_ROW = .objs
+OBJDIR_CSV_ROW = .objs/.csv_row
 DEP_CSV_ROW = 
 OUT_CSV_ROW = bin/csv_row
 
@@ -159,7 +159,7 @@ RCFLAGS_CSV_COLUMN = $(RCFLAGS)
 LIBDIR_CSV_COLUMN = $(LIBDIR)
 LIB_CSV_COLUMN = $(LIB)
 LDFLAGS_CSV_COLUMN = $(LDFLAGS)
-OBJDIR_CSV_COLUMN = .objs
+OBJDIR_CSV_COLUMN = .objs/.csv_column
 DEP_CSV_COLUMN = 
 OUT_CSV_COLUMN = bin/csv_column
 
@@ -170,7 +170,7 @@ RCFLAGS_TESTREGEX = $(RCFLAGS)
 LIBDIR_TESTREGEX = $(LIBDIR)
 LIB_TESTREGEX = $(LIB)
 LDFLAGS_TESTREGEX = $(LDFLAGS)
-OBJDIR_TESTREGEX = .objs
+OBJDIR_TESTREGEX = .objs/.testregex
 DEP_TESTREGEX = 
 OUT_TESTREGEX = bin/testRegex
 
@@ -181,7 +181,7 @@ RCFLAGS_TEST_LDEVSET = $(RCFLAGS)
 LIBDIR_TEST_LDEVSET = $(LIBDIR)
 LIB_TEST_LDEVSET = $(LIB)
 LDFLAGS_TEST_LDEVSET = $(LDFLAGS)
-OBJDIR_TEST_LDEVSET = .objs
+OBJDIR_TEST_LDEVSET = .objs/.test_ldevset
 DEP_TEST_LDEVSET = 
 OUT_TEST_LDEVSET = bin/testRegex
 
@@ -192,7 +192,7 @@ RCFLAGS_REMOVE_EMPTY_COLUMNS = $(RCFLAGS)
 LIBDIR_REMOVE_EMPTY_COLUMNS = $(LIBDIR)
 LIB_REMOVE_EMPTY_COLUMNS = $(LIB)
 LDFLAGS_REMOVE_EMPTY_COLUMNS = $(LDFLAGS)
-OBJDIR_REMOVE_EMPTY_COLUMNS = .objs
+OBJDIR_REMOVE_EMPTY_COLUMNS = .objs/.remove_empty_columns
 DEP_REMOVE_EMPTY_COLUMNS = 
 OUT_REMOVE_EMPTY_COLUMNS = bin/remove_empty_columns
 
@@ -203,7 +203,7 @@ RCFLAGS_TEST_HOSTS_LIST = $(RCFLAGS)
 LIBDIR_TEST_HOSTS_LIST = $(LIBDIR)
 LIB_TEST_HOSTS_LIST = $(LIB)
 LDFLAGS_TEST_HOSTS_LIST = $(LDFLAGS)
-OBJDIR_TEST_HOSTS_LIST = .objs
+OBJDIR_TEST_HOSTS_LIST = .objs/.test_hosts_list
 DEP_TEST_HOSTS_LIST = 
 OUT_TEST_HOSTS_LIST = bin/test_hosts_list
 
@@ -214,7 +214,7 @@ RCFLAGS_TEST_NEGATIVE_IVYTIMES = $(RCFLAGS)
 LIBDIR_TEST_NEGATIVE_IVYTIMES = $(LIBDIR)
 LIB_TEST_NEGATIVE_IVYTIMES = $(LIB)
 LDFLAGS_TEST_NEGATIVE_IVYTIMES = $(LDFLAGS) -s
-OBJDIR_TEST_NEGATIVE_IVYTIMES = obj/test_negative_ivytimes
+OBJDIR_TEST_NEGATIVE_IVYTIMES = .objs/.test_negative_ivytimes
 DEP_TEST_NEGATIVE_IVYTIMES = 
 OUT_TEST_NEGATIVE_IVYTIMES = bin/test_negative_ivytimes/ivy
 
@@ -225,7 +225,7 @@ RCFLAGS_IVYCORE = $(RCFLAGS)
 LIBDIR_IVYCORE = $(LIBDIR)
 LIB_IVYCORE = $(LIB)
 LDFLAGS_IVYCORE = $(LDFLAGS)
-OBJDIR_IVYCORE = .objs
+OBJDIR_IVYCORE = .objs/.ivycore
 DEP_IVYCORE = 
 OUT_IVYCORE = bin/ivycore
 
@@ -236,11 +236,11 @@ RCFLAGS_DEDUPECONSTANTRATIOTABLEGENERATOR = $(RCFLAGS)
 LIBDIR_DEDUPECONSTANTRATIOTABLEGENERATOR = $(LIBDIR)
 LIB_DEDUPECONSTANTRATIOTABLEGENERATOR = $(LIB)
 LDFLAGS_DEDUPECONSTANTRATIOTABLEGENERATOR = $(LDFLAGS)
-OBJDIR_DEDUPECONSTANTRATIOTABLEGENERATOR = .objs
+OBJDIR_DEDUPECONSTANTRATIOTABLEGENERATOR = .objs/.dedupeconstantratiotablegenerator
 DEP_DEDUPECONSTANTRATIOTABLEGENERATOR = 
 OUT_DEDUPECONSTANTRATIOTABLEGENERATOR = bin/DedupeConstantRatioTableGenerator
 
-OBJ_IVYMASTER = $(OBJDIR_IVYMASTER)/src/Subinterval_detail_line.o $(OBJDIR_IVYMASTER)/src/RestHandler.o $(OBJDIR_IVYMASTER)/src/RestLogsUri.o $(OBJDIR_IVYMASTER)/src/RestRollupsUri.o $(OBJDIR_IVYMASTER)/src/RestSessionsUri.o $(OBJDIR_IVYMASTER)/src/RestWorkloadsUri.o $(OBJDIR_IVYMASTER)/src/RollupInstance.o $(OBJDIR_IVYMASTER)/src/RollupSet.o $(OBJDIR_IVYMASTER)/src/RollupType.o $(OBJDIR_IVYMASTER)/src/RunningStat.o $(OBJDIR_IVYMASTER)/src/SubintervalOutput.o $(OBJDIR_IVYMASTER)/src/SubintervalRollup.o $(OBJDIR_IVYMASTER)/src/Subinterval_CPU.o $(OBJDIR_IVYMASTER)/src/RestEngineUri.o $(OBJDIR_IVYMASTER)/src/Subsystem.o $(OBJDIR_IVYMASTER)/src/Test_config_thumbnail.o $(OBJDIR_IVYMASTER)/src/WorkloadID.o $(OBJDIR_IVYMASTER)/src/WorkloadTracker.o $(OBJDIR_IVYMASTER)/src/WorkloadTrackerPointerList.o $(OBJDIR_IVYMASTER)/src/GatherData.o $(OBJDIR_IVYMASTER)/src/IosequencerInput.o $(OBJDIR_IVYMASTER)/src/IosequencerInputRollup.o $(OBJDIR_IVYMASTER)/src/JSON_select.o $(OBJDIR_IVYMASTER)/src/select/select.scanner.o $(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.parser.o $(OBJDIR_IVYMASTER)/src/select/select.parser.o $(OBJDIR_TEST_HOSTS_LIST)/src/hosts/hosts.scanner.o $(OBJDIR_TEST_HOSTS_LIST)/src/hosts/hosts.parser.o $(OBJDIR_IVYMASTER)/src/LDEVset.o $(OBJDIR_IVYMASTER)/src/LUN.o $(OBJDIR_IVYMASTER)/src/LUNpointerList.o $(OBJDIR_IVYMASTER)/src/ListOfNameEqualsValueList.o $(OBJDIR_IVYMASTER)/src/ListOfWorkloadIDs.o $(OBJDIR_IVYMASTER)/src/MeasureController.o $(OBJDIR_IVYMASTER)/src/MeasureCtlr.o $(OBJDIR_IVYMASTER)/src/NameEqualsValueList.o $(OBJDIR_IVYMASTER)/src/ParameterValueLookupTable.o $(OBJDIR_IVYMASTER)/src/RestBaseUri.o $(OBJDIR_IVYMASTER)/src/RestCsvqueryUri.o $(OBJDIR_IVYMASTER)/src/run_subinterval_sequence.o $(OBJDIR_IVYMASTER)/src/measurement.o $(OBJDIR_IVYMASTER)/src/multi_measure.o $(OBJDIR_IVYMASTER)/src/nestedit.o $(OBJDIR_IVYMASTER)/src/pattern.o $(OBJDIR_IVYMASTER)/src/pipe_driver_gather.o $(OBJDIR_IVYMASTER)/src/pipe_driver_subthread.o $(OBJDIR_IVYMASTER)/src/prepare_dedupe.o $(OBJDIR_IVYMASTER)/src/process_cmddev_commands.o $(OBJDIR_IVYMASTER)/src/rollup_Hitachi_RAID_data.o $(OBJDIR_IVYMASTER)/src/logger.o $(OBJDIR_IVYMASTER)/src/skew_weight.o $(OBJDIR_IVYMASTER)/src/studentsTdistribution.o $(OBJDIR_IVYMASTER)/src/subsystem_summary_data.o $(OBJDIR_IVYMASTER)/src/ivy_engine.o $(OBJDIR_IVYMASTER)/src/csvfile.o $(OBJDIR_IVYMASTER)/src/dedupe_method.o $(OBJDIR_IVYMASTER)/src/discover_luns.o $(OBJDIR_IVYMASTER)/src/hosts_list.o $(OBJDIR_IVYMASTER)/src/AttributeNameCombo.o $(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_rollup.o $(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_workload.o $(OBJDIR_IVYMASTER)/src/ivy_engine_edit_rollup.o $(OBJDIR_IVYMASTER)/src/ivy_engine_get_set.o $(OBJDIR_IVYMASTER)/src/ivy_engine_go.o $(OBJDIR_IVYMASTER)/src/ivy_engine_startup.o $(OBJDIR_IVYMASTER)/src/ivyhelpers.o $(OBJDIR_IVYMASTER)/src/ivylinuxcpubusy.o $(OBJDIR_IVYMASTER)/src/ivymaster_signal_handler.o $(OBJDIR_IVYMASTER)/src/ivytime.o $(OBJDIR_IVYMASTER)/__/LUN_discovery/src/printableAndHex.o $(OBJDIR_IVYMASTER)/parser/src/Block.o $(OBJDIR_IVYMASTER)/parser/src/Arg.o $(OBJDIR_IVYMASTER)/parser/src/Builtin.o $(OBJDIR_IVYMASTER)/parser/src/Frame.o $(OBJDIR_IVYMASTER)/parser/src/Ivy_pgm.o $(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.scanner.o $(OBJDIR_IVYMASTER)/parser/src/IvyscriptLine.o $(OBJDIR_IVYMASTER)/parser/src/OverloadSet.o $(OBJDIR_IVYMASTER)/parser/src/Stmt.o $(OBJDIR_IVYMASTER)/parser/src/Stmt_nested_Block.o $(OBJDIR_IVYMASTER)/parser/src/SymbolTableEntry.o $(OBJDIR_IVYMASTER)/parser/src/Type.o $(OBJDIR_IVYMASTER)/parser/src/Xpr.o $(OBJDIR_IVYMASTER)/parser/src/main.o $(OBJDIR_IVYMASTER)/src/Accumulators_by_io_type.o
+OBJ_IVYMASTER = $(OBJDIR_IVYMASTER)/src/Subinterval_detail_line.o $(OBJDIR_IVYMASTER)/src/RestHandler.o $(OBJDIR_IVYMASTER)/src/RestLogsUri.o $(OBJDIR_IVYMASTER)/src/RestRollupsUri.o $(OBJDIR_IVYMASTER)/src/RestSessionsUri.o $(OBJDIR_IVYMASTER)/src/RestWorkloadsUri.o $(OBJDIR_IVYMASTER)/src/RollupInstance.o $(OBJDIR_IVYMASTER)/src/RollupSet.o $(OBJDIR_IVYMASTER)/src/RollupType.o $(OBJDIR_IVYMASTER)/src/RunningStat.o $(OBJDIR_IVYMASTER)/src/SubintervalOutput.o $(OBJDIR_IVYMASTER)/src/SubintervalRollup.o $(OBJDIR_IVYMASTER)/src/Subinterval_CPU.o $(OBJDIR_IVYMASTER)/src/RestEngineUri.o $(OBJDIR_IVYMASTER)/src/Subsystem.o $(OBJDIR_IVYMASTER)/src/Test_config_thumbnail.o $(OBJDIR_IVYMASTER)/src/WorkloadID.o $(OBJDIR_IVYMASTER)/src/WorkloadTracker.o $(OBJDIR_IVYMASTER)/src/WorkloadTrackerPointerList.o $(OBJDIR_IVYMASTER)/src/GatherData.o $(OBJDIR_IVYMASTER)/src/IosequencerInput.o $(OBJDIR_IVYMASTER)/src/IosequencerInputRollup.o $(OBJDIR_IVYMASTER)/src/JSON_select.o $(OBJDIR_IVYMASTER)/src/select/select.scanner.o $(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.parser.o $(OBJDIR_IVYMASTER)/src/select/select.parser.o $(OBJDIR_IVYMASTER)/src/hosts/hosts.scanner.o $(OBJDIR_IVYMASTER)/src/hosts/hosts.parser.o $(OBJDIR_IVYMASTER)/src/LDEVset.o $(OBJDIR_IVYMASTER)/src/LUN.o $(OBJDIR_IVYMASTER)/src/LUNpointerList.o $(OBJDIR_IVYMASTER)/src/ListOfNameEqualsValueList.o $(OBJDIR_IVYMASTER)/src/ListOfWorkloadIDs.o $(OBJDIR_IVYMASTER)/src/MeasureController.o $(OBJDIR_IVYMASTER)/src/MeasureCtlr.o $(OBJDIR_IVYMASTER)/src/NameEqualsValueList.o $(OBJDIR_IVYMASTER)/src/ParameterValueLookupTable.o $(OBJDIR_IVYMASTER)/src/RestBaseUri.o $(OBJDIR_IVYMASTER)/src/RestCsvqueryUri.o $(OBJDIR_IVYMASTER)/src/run_subinterval_sequence.o $(OBJDIR_IVYMASTER)/src/measurement.o $(OBJDIR_IVYMASTER)/src/multi_measure.o $(OBJDIR_IVYMASTER)/src/nestedit.o $(OBJDIR_IVYMASTER)/src/pattern.o $(OBJDIR_IVYMASTER)/src/pipe_driver_gather.o $(OBJDIR_IVYMASTER)/src/pipe_driver_subthread.o $(OBJDIR_IVYMASTER)/src/prepare_dedupe.o $(OBJDIR_IVYMASTER)/src/process_cmddev_commands.o $(OBJDIR_IVYMASTER)/src/rollup_Hitachi_RAID_data.o $(OBJDIR_IVYMASTER)/src/logger.o $(OBJDIR_IVYMASTER)/src/skew_weight.o $(OBJDIR_IVYMASTER)/src/studentsTdistribution.o $(OBJDIR_IVYMASTER)/src/subsystem_summary_data.o $(OBJDIR_IVYMASTER)/src/ivy_engine.o $(OBJDIR_IVYMASTER)/src/csvfile.o $(OBJDIR_IVYMASTER)/src/dedupe_method.o $(OBJDIR_IVYMASTER)/src/discover_luns.o $(OBJDIR_IVYMASTER)/src/hosts_list.o $(OBJDIR_IVYMASTER)/src/AttributeNameCombo.o $(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_rollup.o $(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_workload.o $(OBJDIR_IVYMASTER)/src/ivy_engine_edit_rollup.o $(OBJDIR_IVYMASTER)/src/ivy_engine_get_set.o $(OBJDIR_IVYMASTER)/src/ivy_engine_go.o $(OBJDIR_IVYMASTER)/src/ivy_engine_startup.o $(OBJDIR_IVYMASTER)/src/ivyhelpers.o $(OBJDIR_IVYMASTER)/src/ivylinuxcpubusy.o $(OBJDIR_IVYMASTER)/src/ivymaster_signal_handler.o $(OBJDIR_IVYMASTER)/src/ivytime.o $(OBJDIR_IVYMASTER)/__/LUN_discovery/src/printableAndHex.o $(OBJDIR_IVYMASTER)/parser/src/Block.o $(OBJDIR_IVYMASTER)/parser/src/Arg.o $(OBJDIR_IVYMASTER)/parser/src/Builtin.o $(OBJDIR_IVYMASTER)/parser/src/Frame.o $(OBJDIR_IVYMASTER)/parser/src/Ivy_pgm.o $(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.scanner.o $(OBJDIR_IVYMASTER)/parser/src/IvyscriptLine.o $(OBJDIR_IVYMASTER)/parser/src/OverloadSet.o $(OBJDIR_IVYMASTER)/parser/src/Stmt.o $(OBJDIR_IVYMASTER)/parser/src/Stmt_nested_Block.o $(OBJDIR_IVYMASTER)/parser/src/SymbolTableEntry.o $(OBJDIR_IVYMASTER)/parser/src/Type.o $(OBJDIR_IVYMASTER)/parser/src/Xpr.o $(OBJDIR_IVYMASTER)/parser/src/main.o $(OBJDIR_IVYMASTER)/src/Accumulators_by_io_type.o
 
 OBJ_IVYDRIVER = $(OBJDIR_IVYDRIVER)/src/RunningStat.o $(OBJDIR_IVYDRIVER)/src/Subinterval.o $(OBJDIR_IVYDRIVER)/src/SubintervalOutput.o $(OBJDIR_IVYDRIVER)/src/TestLUN.o $(OBJDIR_IVYDRIVER)/src/Workload.o $(OBJDIR_IVYDRIVER)/src/WorkloadID.o $(OBJDIR_IVYDRIVER)/src/WorkloadThread.o $(OBJDIR_IVYDRIVER)/src/WorkloadTracker.o $(OBJDIR_IVYDRIVER)/src/WorkloadTrackerPointerList.o $(OBJDIR_IVYDRIVER)/src/IosequencerSequential.o $(OBJDIR_IVYDRIVER)/src/Count_by_workloadID.o $(OBJDIR_IVYDRIVER)/src/DedupeConstantRatioRegulator.o $(OBJDIR_IVYDRIVER)/src/DedupeTargetSpreadRegulator.o $(OBJDIR_IVYDRIVER)/src/Eyeo.o $(OBJDIR_IVYDRIVER)/src/Iosequencer.o $(OBJDIR_IVYDRIVER)/src/IosequencerInput.o $(OBJDIR_IVYDRIVER)/src/IosequencerInputRollup.o $(OBJDIR_IVYDRIVER)/src/IosequencerRandom.o $(OBJDIR_IVYDRIVER)/src/IosequencerRandomIndependent.o $(OBJDIR_IVYDRIVER)/src/IosequencerRandomSteady.o $(OBJDIR_IVYDRIVER)/src/LDEVset.o $(OBJDIR_IVYDRIVER)/src/LUN.o $(OBJDIR_IVYDRIVER)/src/ListOfWorkloadIDs.o $(OBJDIR_IVYDRIVER)/src/pattern.o $(OBJDIR_IVYDRIVER)/src/pipe_line_reader.o $(OBJDIR_IVYDRIVER)/src/logger.o $(OBJDIR_IVYDRIVER)/src/studentsTdistribution.o $(OBJDIR_IVYDRIVER)/src/unique_words.o $(OBJDIR_IVYDRIVER)/src/dedupe_method.o $(OBJDIR_IVYDRIVER)/src/discover_luns.o $(OBJDIR_IVYDRIVER)/src/AttributeNameCombo.o $(OBJDIR_IVYDRIVER)/src/ivydriver.o $(OBJDIR_IVYDRIVER)/src/ivyhelpers.o $(OBJDIR_IVYDRIVER)/src/ivylinuxcpubusy.o $(OBJDIR_IVYDRIVER)/src/ivytime.o $(OBJDIR_IVYDRIVER)/__/LUN_discovery/src/printableAndHex.o $(OBJDIR_IVYDRIVER)/src/Accumulators_by_io_type.o
 
@@ -281,7 +281,7 @@ OBJ_IVYCORE = $(OBJDIR_IVYCORE)/src/ivycore.o $(OBJDIR_IVYCORE)/src/ivyhelpers.o
 OBJ_DEDUPECONSTANTRATIOTABLEGENERATOR = $(OBJDIR_DEDUPECONSTANTRATIOTABLEGENERATOR)/src/DedupeConstantRatioTable.o
 
 #all: ivymaster ivydriver clear_hung_ivy_threads makedict csv_rows csv_header_columns csv_columns_in_row csv_column_header csv_raw_cell_value csv_cell_value csv_lookup_column csv_row csv_column testregex test_ldevset remove_empty_columns test_hosts_list test_negative_ivytimes ivycore dedupeconstantratiotablegenerator
-all: ivymaster ivydriver clear_hung_ivy_threads makedict csv_rows csv_header_columns csv_columns_in_row csv_column_header csv_raw_cell_value csv_cell_value csv_lookup_column csv_row csv_column testregex remove_empty_columns test_hosts_list test_negative_ivytimes ivycore dedupeconstantratiotablegenerator
+all: ivymaster ivydriver clear_hung_ivy_threads makedict csv_rows csv_header_columns csv_columns_in_row csv_column_header csv_raw_cell_value csv_cell_value csv_lookup_column csv_row csv_column testregex test_hosts_list remove_empty_columns test_negative_ivytimes ivycore dedupeconstantratiotablegenerator
 
 #clean: clean_ivymaster clean_ivydriver clean_clear_hung_ivy_threads clean_makedict clean_csv_rows clean_csv_header_columns clean_csv_columns_in_row clean_csv_column_header clean_csv_raw_cell_value clean_csv_cell_value clean_csv_lookup_column clean_csv_row clean_csv_column clean_testregex clean_test_ldevset clean_remove_empty_columns clean_test_hosts_list clean_test_negative_ivytimes clean_ivycore clean_dedupeconstantratiotablegenerator
 clean: clean_ivymaster clean_ivydriver clean_clear_hung_ivy_threads clean_makedict clean_csv_rows clean_csv_header_columns clean_csv_columns_in_row clean_csv_column_header clean_csv_raw_cell_value clean_csv_cell_value clean_csv_lookup_column clean_csv_row clean_csv_column clean_testregex clean_remove_empty_columns clean_test_hosts_list clean_test_negative_ivytimes clean_ivycore clean_dedupeconstantratiotablegenerator
@@ -289,6 +289,7 @@ clean: clean_ivymaster clean_ivydriver clean_clear_hung_ivy_threads clean_makedi
 before_ivymaster: 
 	touch include/ivybuilddate.h
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_IVYMASTER) || mkdir -p $(OBJDIR_IVYMASTER)
 	test -d $(OBJDIR_IVYMASTER)/src || mkdir -p $(OBJDIR_IVYMASTER)/src
 	test -d $(OBJDIR_IVYMASTER)/__/LUN_discovery/src || mkdir -p $(OBJDIR_IVYMASTER)/__/LUN_discovery/src
 	test -d $(OBJDIR_IVYMASTER)/parser/src || mkdir -p $(OBJDIR_IVYMASTER)/parser/src
@@ -383,6 +384,12 @@ $(OBJDIR_IVYMASTER)/src/select/select.scanner.o: src/select/select.scanner.cc sr
 
 $(OBJDIR_IVYMASTER)/src/select/select.parser.o: src/select/select.parser.cc
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/select/select.parser.cc -o $(OBJDIR_IVYMASTER)/src/select/select.parser.o
+
+$(OBJDIR_IVYMASTER)/src/hosts/hosts.scanner.o: src/hosts/hosts.scanner.cc src/hosts/hosts.parser.cc
+	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/hosts/hosts.scanner.cc -o $(OBJDIR_IVYMASTER)/src/hosts/hosts.scanner.o
+
+$(OBJDIR_IVYMASTER)/src/hosts/hosts.parser.o: src/hosts/hosts.parser.cc
+	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/hosts/hosts.parser.cc -o $(OBJDIR_IVYMASTER)/src/hosts/hosts.parser.o
 
 $(OBJDIR_IVYMASTER)/src/LDEVset.o: src/LDEVset.cpp
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/LDEVset.cpp -o $(OBJDIR_IVYMASTER)/src/LDEVset.o
@@ -567,13 +574,12 @@ $(OBJDIR_IVYMASTER)/src/Accumulators_by_io_type.o: src/Accumulators_by_io_type.c
 clean_ivymaster: 
 	rm -f $(OBJ_IVYMASTER) $(OUT_IVYMASTER)
 	rm -rf bin
-	rm -rf $(OBJDIR_IVYMASTER)/src
-	rm -rf $(OBJDIR_IVYMASTER)/__/LUN_discovery/src
-	rm -rf $(OBJDIR_IVYMASTER)/parser/src
+	rm -rf $(OBJDIR_IVYMASTER)
 
 before_ivydriver: 
 	touch include/ivybuilddate.h
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_IVYDRIVER) || mkdir -p $(OBJDIR_IVYDRIVER)
 	test -d $(OBJDIR_IVYDRIVER)/src || mkdir -p $(OBJDIR_IVYDRIVER)/src
 	test -d $(OBJDIR_IVYDRIVER)/__/LUN_discovery/src || mkdir -p $(OBJDIR_IVYDRIVER)/__/LUN_discovery/src
 
@@ -698,11 +704,11 @@ $(OBJDIR_IVYDRIVER)/src/Accumulators_by_io_type.o: src/Accumulators_by_io_type.c
 clean_ivydriver: 
 	rm -f $(OBJ_IVYDRIVER) $(OUT_IVYDRIVER)
 	rm -rf bin
-	rm -rf $(OBJDIR_IVYDRIVER)/src
-	rm -rf $(OBJDIR_IVYDRIVER)/__/LUN_discovery/src
+	rm -rf $(OBJDIR_IVYDRIVER)
 
 before_clear_hung_ivy_threads: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_CLEAR_HUNG_IVY_THREADS) || mkdir -p $(OBJDIR_CLEAR_HUNG_IVY_THREADS)
 	test -d $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src || mkdir -p $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src
 
 after_clear_hung_ivy_threads: 
@@ -724,10 +730,11 @@ $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/ivytime.o: src/ivytime.cpp
 clean_clear_hung_ivy_threads: 
 	rm -f $(OBJ_CLEAR_HUNG_IVY_THREADS) $(OUT_CLEAR_HUNG_IVY_THREADS)
 	rm -rf bin
-	rm -rf $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src
+	rm -rf $(OBJDIR_CLEAR_HUNG_IVY_THREADS)
 
 before_makedict: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_MAKEDICT) || mkdir -p $(OBJDIR_MAKEDICT)
 	test -d $(OBJDIR_MAKEDICT)/src || mkdir -p $(OBJDIR_MAKEDICT)/src
 
 after_makedict: 
@@ -743,10 +750,11 @@ $(OBJDIR_MAKEDICT)/src/makedict.o: src/makedict.cpp
 clean_makedict: 
 	rm -f $(OBJ_MAKEDICT) $(OUT_MAKEDICT)
 	rm -rf bin
-	rm -rf $(OBJDIR_MAKEDICT)/src
+	rm -rf $(OBJDIR_MAKEDICT)
 
 before_csv_rows: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_CSV_ROWS) || mkdir -p $(OBJDIR_CSV_ROWS)
 	test -d $(OBJDIR_CSV_ROWS)/src || mkdir -p $(OBJDIR_CSV_ROWS)/src
 
 after_csv_rows: 
@@ -774,10 +782,11 @@ $(OBJDIR_CSV_ROWS)/src/ivytime.o: src/ivytime.cpp
 clean_csv_rows: 
 	rm -f $(OBJ_CSV_ROWS) $(OUT_CSV_ROWS)
 	rm -rf bin
-	rm -rf $(OBJDIR_CSV_ROWS)/src
+	rm -rf $(OBJDIR_CSV_ROWS)
 
 before_csv_header_columns: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_CSV_HEADER_COLUMNS) || mkdir -p $(OBJDIR_CSV_HEADER_COLUMNS)
 	test -d $(OBJDIR_CSV_HEADER_COLUMNS)/src || mkdir -p $(OBJDIR_CSV_HEADER_COLUMNS)/src
 
 after_csv_header_columns: 
@@ -805,10 +814,11 @@ $(OBJDIR_CSV_HEADER_COLUMNS)/src/ivytime.o: src/ivytime.cpp
 clean_csv_header_columns: 
 	rm -f $(OBJ_CSV_HEADER_COLUMNS) $(OUT_CSV_HEADER_COLUMNS)
 	rm -rf bin
-	rm -rf $(OBJDIR_CSV_HEADER_COLUMNS)/src
+	rm -rf $(OBJDIR_CSV_HEADER_COLUMNS)
 
 before_csv_columns_in_row: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_CSV_COLUMNS_IN_ROW) || mkdir -p $(OBJDIR_CSV_COLUMNS_IN_ROW)
 	test -d $(OBJDIR_CSV_COLUMNS_IN_ROW)/src || mkdir -p $(OBJDIR_CSV_COLUMNS_IN_ROW)/src
 
 after_csv_columns_in_row: 
@@ -836,10 +846,11 @@ $(OBJDIR_CSV_COLUMNS_IN_ROW)/src/ivytime.o: src/ivytime.cpp
 clean_csv_columns_in_row: 
 	rm -f $(OBJ_CSV_COLUMNS_IN_ROW) $(OUT_CSV_COLUMNS_IN_ROW)
 	rm -rf bin
-	rm -rf $(OBJDIR_CSV_COLUMNS_IN_ROW)/src
+	rm -rf $(OBJDIR_CSV_COLUMNS_IN_ROW)
 
 before_csv_column_header: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_CSV_COLUMN_HEADER) || mkdir -p $(OBJDIR_CSV_COLUMN_HEADER)
 	test -d $(OBJDIR_CSV_COLUMN_HEADER)/src || mkdir -p $(OBJDIR_CSV_COLUMN_HEADER)/src
 
 after_csv_column_header: 
@@ -867,10 +878,11 @@ $(OBJDIR_CSV_COLUMN_HEADER)/src/ivytime.o: src/ivytime.cpp
 clean_csv_column_header: 
 	rm -f $(OBJ_CSV_COLUMN_HEADER) $(OUT_CSV_COLUMN_HEADER)
 	rm -rf bin
-	rm -rf $(OBJDIR_CSV_COLUMN_HEADER)/src
+	rm -rf $(OBJDIR_CSV_COLUMN_HEADER)
 
 before_csv_raw_cell_value: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_CSV_RAW_CELL_VALUE) || mkdir -p $(OBJDIR_CSV_RAW_CELL_VALUE)
 	test -d $(OBJDIR_CSV_RAW_CELL_VALUE)/src || mkdir -p $(OBJDIR_CSV_RAW_CELL_VALUE)/src
 
 after_csv_raw_cell_value: 
@@ -898,10 +910,11 @@ $(OBJDIR_CSV_RAW_CELL_VALUE)/src/ivytime.o: src/ivytime.cpp
 clean_csv_raw_cell_value: 
 	rm -f $(OBJ_CSV_RAW_CELL_VALUE) $(OUT_CSV_RAW_CELL_VALUE)
 	rm -rf bin
-	rm -rf $(OBJDIR_CSV_RAW_CELL_VALUE)/src
+	rm -rf $(OBJDIR_CSV_RAW_CELL_VALUE)
 
 before_csv_cell_value: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_CSV_CELL_VALUE) || mkdir -p $(OBJDIR_CSV_CELL_VALUE)
 	test -d $(OBJDIR_CSV_CELL_VALUE)/src || mkdir -p $(OBJDIR_CSV_CELL_VALUE)/src
 
 after_csv_cell_value: 
@@ -929,10 +942,11 @@ $(OBJDIR_CSV_CELL_VALUE)/src/ivytime.o: src/ivytime.cpp
 clean_csv_cell_value: 
 	rm -f $(OBJ_CSV_CELL_VALUE) $(OUT_CSV_CELL_VALUE)
 	rm -rf bin
-	rm -rf $(OBJDIR_CSV_CELL_VALUE)/src
+	rm -rf $(OBJDIR_CSV_CELL_VALUE)
 
 before_csv_lookup_column: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_CSV_LOOKUP_COLUMN) || mkdir -p $(OBJDIR_CSV_LOOKUP_COLUMN)
 	test -d $(OBJDIR_CSV_LOOKUP_COLUMN)/src || mkdir -p $(OBJDIR_CSV_LOOKUP_COLUMN)/src
 
 after_csv_lookup_column: 
@@ -960,10 +974,11 @@ $(OBJDIR_CSV_LOOKUP_COLUMN)/src/ivytime.o: src/ivytime.cpp
 clean_csv_lookup_column: 
 	rm -f $(OBJ_CSV_LOOKUP_COLUMN) $(OUT_CSV_LOOKUP_COLUMN)
 	rm -rf bin
-	rm -rf $(OBJDIR_CSV_LOOKUP_COLUMN)/src
+	rm -rf $(OBJDIR_CSV_LOOKUP_COLUMN)
 
 before_csv_row: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_CSV_ROW) || mkdir -p $(OBJDIR_CSV_ROW)
 	test -d $(OBJDIR_CSV_ROW)/src || mkdir -p $(OBJDIR_CSV_ROW)/src
 
 after_csv_row: 
@@ -991,10 +1006,11 @@ $(OBJDIR_CSV_ROW)/src/ivytime.o: src/ivytime.cpp
 clean_csv_row: 
 	rm -f $(OBJ_CSV_ROW) $(OUT_CSV_ROW)
 	rm -rf bin
-	rm -rf $(OBJDIR_CSV_ROW)/src
+	rm -rf $(OBJDIR_CSV_ROW)
 
 before_csv_column: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_CSV_COLUMN) || mkdir -p $(OBJDIR_CSV_COLUMN)
 	test -d $(OBJDIR_CSV_COLUMN)/src || mkdir -p $(OBJDIR_CSV_COLUMN)/src
 
 after_csv_column: 
@@ -1022,10 +1038,11 @@ $(OBJDIR_CSV_COLUMN)/src/ivytime.o: src/ivytime.cpp
 clean_csv_column: 
 	rm -f $(OBJ_CSV_COLUMN) $(OUT_CSV_COLUMN)
 	rm -rf bin
-	rm -rf $(OBJDIR_CSV_COLUMN)/src
+	rm -rf $(OBJDIR_CSV_COLUMN)
 
 before_testregex: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_TESTREGEX) || mkdir -p $(OBJDIR_TESTREGEX)
 	test -d $(OBJDIR_TESTREGEX)/src || mkdir -p $(OBJDIR_TESTREGEX)/src
 
 after_testregex: 
@@ -1047,10 +1064,11 @@ $(OBJDIR_TESTREGEX)/src/ivytime.o: src/ivytime.cpp
 clean_testregex: 
 	rm -f $(OBJ_TESTREGEX) $(OUT_TESTREGEX)
 	rm -rf bin
-	rm -rf $(OBJDIR_TESTREGEX)/src
+	rm -rf $(OBJDIR_TESTREGEX)
 
 #before_test_ldevset: 
 #	test -d bin || mkdir -p bin
+#	test -d $(OBJDIR_TEST_LDEVSET) || mkdir -p $(OBJDIR_TEST_LDEVSET)
 #	test -d $(OBJDIR_TEST_LDEVSET)/src || mkdir -p $(OBJDIR_TEST_LDEVSET)/src
 
 #after_test_ldevset: 
@@ -1075,10 +1093,11 @@ clean_testregex:
 #clean_test_ldevset: 
 #	rm -f $(OBJ_TEST_LDEVSET) $(OUT_TEST_LDEVSET)
 #	rm -rf bin
-#	rm -rf $(OBJDIR_TEST_LDEVSET)/src
+#	rm -rf $(OBJDIR_TEST_LDEVSET)
 
 before_remove_empty_columns: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_REMOVE_EMPTY_COLUMNS) || mkdir -p $(OBJDIR_REMOVE_EMPTY_COLUMNS)
 	test -d $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src || mkdir -p $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src
 
 after_remove_empty_columns: 
@@ -1103,11 +1122,13 @@ $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/ivytime.o: src/ivytime.cpp
 clean_remove_empty_columns: 
 	rm -f $(OBJ_REMOVE_EMPTY_COLUMNS) $(OUT_REMOVE_EMPTY_COLUMNS)
 	rm -rf bin
-	rm -rf $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src
+	rm -rf $(OBJDIR_REMOVE_EMPTY_COLUMNS)
 
 before_test_hosts_list: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_TEST_HOSTS_LIST) || mkdir -p $(OBJDIR_TEST_HOSTS_LIST)
 	test -d $(OBJDIR_TEST_HOSTS_LIST)/src || mkdir -p $(OBJDIR_TEST_HOSTS_LIST)/src
+	test -d $(OBJDIR_TEST_HOSTS_LIST)/src/hosts || mkdir -p $(OBJDIR_TEST_HOSTS_LIST)/src/hosts
 
 after_test_hosts_list: 
 
@@ -1137,10 +1158,11 @@ $(OBJDIR_TEST_HOSTS_LIST)/src/hosts/hosts.parser.o: src/hosts/hosts.parser.cc
 clean_test_hosts_list: 
 	rm -f $(OBJ_TEST_HOSTS_LIST) $(OUT_TEST_HOSTS_LIST)
 	rm -rf bin
-	rm -rf $(OBJDIR_TEST_HOSTS_LIST)/src
+	rm -rf $(OBJDIR_TEST_HOSTS_LIST)
 
 before_test_negative_ivytimes: 
 	test -d bin/test_negative_ivytimes || mkdir -p bin/test_negative_ivytimes
+	test -d $(OBJDIR_TEST_NEGATIVE_IVYTIMES) || mkdir -p $(OBJDIR_TEST_NEGATIVE_IVYTIMES)
 	test -d $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src || mkdir -p $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src
 
 after_test_negative_ivytimes: 
@@ -1159,10 +1181,11 @@ $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src/ivytime.o: src/ivytime.cpp
 clean_test_negative_ivytimes: 
 	rm -f $(OBJ_TEST_NEGATIVE_IVYTIMES) $(OUT_TEST_NEGATIVE_IVYTIMES)
 	rm -rf bin/test_negative_ivytimes
-	rm -rf $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src
+	rm -rf $(OBJDIR_TEST_NEGATIVE_IVYTIMES)
 
 before_ivycore: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_IVYCORE) || mkdir -p $(OBJDIR_IVYCORE)
 	test -d $(OBJDIR_IVYCORE)/src || mkdir -p $(OBJDIR_IVYCORE)/src
 
 after_ivycore: 
@@ -1184,10 +1207,11 @@ $(OBJDIR_IVYCORE)/src/ivytime.o: src/ivytime.cpp
 clean_ivycore: 
 	rm -f $(OBJ_IVYCORE) $(OUT_IVYCORE)
 	rm -rf bin
-	rm -rf $(OBJDIR_IVYCORE)/src
+	rm -rf $(OBJDIR_IVYCORE)
 
 before_dedupeconstantratiotablegenerator: 
 	test -d bin || mkdir -p bin
+	test -d $(OBJDIR_DEDUPECONSTANTRATIOTABLEGENERATOR) || mkdir -p $(OBJDIR_DEDUPECONSTANTRATIOTABLEGENERATOR)
 	test -d $(OBJDIR_DEDUPECONSTANTRATIOTABLEGENERATOR)/src || mkdir -p $(OBJDIR_DEDUPECONSTANTRATIOTABLEGENERATOR)/src
 
 after_dedupeconstantratiotablegenerator: 
@@ -1203,7 +1227,7 @@ $(OBJDIR_DEDUPECONSTANTRATIOTABLEGENERATOR)/src/DedupeConstantRatioTable.o: src/
 clean_dedupeconstantratiotablegenerator: 
 	rm -f $(OBJ_DEDUPECONSTANTRATIOTABLEGENERATOR) $(OUT_DEDUPECONSTANTRATIOTABLEGENERATOR)
 	rm -rf bin
-	rm -rf $(OBJDIR_DEDUPECONSTANTRATIOTABLEGENERATOR)/src
+	rm -rf $(OBJDIR_DEDUPECONSTANTRATIOTABLEGENERATOR)
 
 virtual_all: ivymaster ivydriver clear_hung_ivy_threads ivyenglib
 
