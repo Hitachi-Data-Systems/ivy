@@ -1880,12 +1880,15 @@ void IvyDriver::check_CPU_temperature()
     {
         if (digital_readouts.min() == 0.0)
         {
-            std::ostringstream o; o << "<Error> CPU temperature has hit the critical limit and CPU operation has been throttled.  Test aborting." << std::endl;
-            throw std::runtime_error(o.str());
+            //std::ostringstream o; o << "<Error> CPU temperature has hit the critical limit and CPU operation has been throttled.  Test aborting." << std::endl;
+            //throw std::runtime_error(o.str());
+            std::cout << "<Warning> CPU temperature has hit the critical limit and CPU operation has been throttled.  Suppressing <Error> for the time being.  Check dmesg & /var/log/messages."
+                << "  You may need to run with a longer subinterval_seconds if the throttling causes ivy interlock protocol timeouts." << std::endl;
         }
         else if (digital_readouts.min() <= 5.0)
         {
-            std::cout << "<Warning> CPU temperature reached " << digital_readouts.min() << " degrees C of the critical limit.  Machine checks have been observed in this range.  Check dmesg & /var/log/messages." << std::endl;
+            std::cout << "<Warning> CPU temperature reached " << digital_readouts.min() << " degrees C of the critical limit.  Machine checks have been observed in this range.  Check dmesg & /var/log/messages."
+                << "  You may need to run with a longer subinterval_seconds if CPU throttling causes ivy interlock protocol timeouts." << std::endl;
         }
     }
 

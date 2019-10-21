@@ -1295,7 +1295,9 @@ void ivy_engine::print_latency_csvfiles()
 
                                   "distribution over_workloads of avg dispatching latency",
                                   "distribution over_workloads of avg lock acquisition",
-                                  "distribution over_workloads of avg switchover"            })
+                                  "distribution over_workloads of avg switchover",
+
+                                  "make measurement rollup seconds"                })
     {
         h << "," << s << " avg";
     }
@@ -1318,7 +1320,9 @@ void ivy_engine::print_latency_csvfiles()
 
                                   "distribution over_workloads of avg dispatching latency",
                                   "distribution over_workloads of avg lock acquisition",
-                                  "distribution over_workloads of avg switchover"            })
+                                  "distribution over_workloads of avg switchover",
+
+                                  "make measurement rollup seconds"                })
     {
         h << "," << s << " avg";
         h << "," << s << " min";
@@ -1360,6 +1364,8 @@ void ivy_engine::print_latency_csvfiles()
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .avg();
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_switchover         .avg();
 
+        latency_line << ',' << m_s.makeMeasurementRollup_seconds                         .avg();
+
         latency_line << ",details:";
 // The avg columsn repeat in the full set so that they can be used standalone
 
@@ -1380,6 +1386,8 @@ void ivy_engine::print_latency_csvfiles()
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.avg() << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.min() << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.max() << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.count();
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .avg() << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .min() << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .max() << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .count();
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_switchover         .avg() << ',' << m_s.distribution_over_workloads_of_avg_switchover         .min() << ',' << m_s.distribution_over_workloads_of_avg_switchover         .max() << ',' << m_s.distribution_over_workloads_of_avg_switchover         .count();
+
+        latency_line << ',' << m_s.makeMeasurementRollup_seconds                         .avg() << ',' << m_s.makeMeasurementRollup_seconds                         .min() << ',' << m_s.makeMeasurementRollup_seconds                         .max() << ',' << m_s.makeMeasurementRollup_seconds                         .count();
 
         latency_line << std::endl;
 

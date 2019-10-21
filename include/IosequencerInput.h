@@ -108,7 +108,7 @@ public:
 
     ivy_float skew_weight {skew_weight_default};
 
-    uint64_t hot_zone_size_bytes {0};
+    uint64_t hot_zone_size_bytes {1024*1024};
     ivy_float hot_zone_IOPS_fraction {0};
     ivy_float hot_zone_read_fraction {0};
     ivy_float hot_zone_write_fraction {0};

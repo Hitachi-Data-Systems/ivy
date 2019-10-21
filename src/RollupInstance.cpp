@@ -1605,7 +1605,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
             if (mt.failed_to_achieve_total_IOPS_setting)
             {
                 std::ostringstream o;
-                o << "[Achieved IOPS off by " << mt.achieved_IOPS_delta << "from Rollup Total IOPS Setting, which is more than \"achieved_IOPS_tolerance\" = "
+                o << "[Achieved IOPS off by " << mt.achieved_IOPS_delta << "from Rollup Total IOPS Setting - which is more than \"achieved_IOPS_tolerance\" = "
                     << (100.0 * m_s.achieved_IOPS_tolerance) << "% .]";
                 validation_errors += o.str();
             }

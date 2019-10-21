@@ -142,7 +142,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
     }
 
 //	        "For iosequencer = { random_steady, random_independent } additional parameters are \n"
-//        "                  hot_zone_size_bytes - default 0 (zero), accepts KiB, MiB, GiB, TiB suffixes,\n"
+//        "                  hot_zone_size_bytes - default 1 MiB, accepts KiB, MiB, GiB, TiB suffixes,\n"
 //        "                  hot_zone_fraction - default 0 (zero) fraction of all I/Os that should go to the hit_area.  Accepts % suffix.\n"
 //        "                  hot_zone_read_fraction - default 0 (zero) fraction of all read I/Os that should go to the hit_area.\n"
 //        "                  hot_zone_write_fraction - default 0 (zero) fraction of all write I/Os that should go to the hit_area.\n"
@@ -202,6 +202,15 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
                 << ", parameter value \"" << parameterValue << "\")"
                 << " - invalid parameter value.  Must be an unsigned integer (digits) optionally followed by KiB, MiB, GiB, or TiB." << std::endl
                 << "Error when trying to parse the value was " << e.what() << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        if (hot_zone_size_bytes == 0)
+        {
+            std::ostringstream o;
+            o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
+                << ", parameter value \"" << parameterValue << "\")"
+                << " - hot_zone_size_bytes may not be set to zero (0)." << std::endl;
             return std::make_pair(false,o.str());
         }
 
@@ -1054,7 +1063,7 @@ void IosequencerInput::reset()
 	this_thread_in_workload = this_thread_in_workload_default;
 	pattern_seed = pattern_seed_default;
 
-	hot_zone_size_bytes = 0;
+	hot_zone_size_bytes = 1024*1024;
 	hot_zone_IOPS_fraction = 0.0;
 	hot_zone_read_fraction = 0.0;
 	hot_zone_write_fraction = 0.0;
@@ -1247,7 +1256,7 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
     if( normalized_identifier_equality(iosequencer_type,std::string("random_steady"))
      || normalized_identifier_equality(iosequencer_type,std::string("random_independent")) )
     {
-        if (hot_zone_size_bytes > 0)
+        if (hot_zone_size_bytes != (1024*1024))
         {
             o << ",hot_zone_size_bytes=" << put_on_KiB_etc_suffix(hot_zone_size_bytes);
 

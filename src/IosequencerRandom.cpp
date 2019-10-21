@@ -53,7 +53,7 @@ bool IosequencerRandom::set_hot_zone_parameters (IosequencerInput *p_ii)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::set_hot_zone_parameters() for " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
-    if (((uint64_t)0) == p_ii->hot_zone_size_bytes)
+    if ((0 == p_ii->hot_zone_size_bytes) || (0.0 == p_ii->hot_zone_IOPS_fraction && 0.0 == p_ii->hot_zone_read_fraction && 0.0 == p_ii->hot_zone_write_fraction))
     {
         hot_zone_coverageStartBlock =   hot_zone_coverageEndBlock =   hot_zone_numberOfCoverageBlocks = (uint64_t) 0;
         return true;
@@ -127,7 +127,7 @@ bool IosequencerRandom::generate(Eyeo& slang)
 
     uint64_t current_block;
 
-    if (p_IosequencerInput->hot_zone_size_bytes == 0)
+    if (p_IosequencerInput->hot_zone_IOPS_fraction == 0.0 && p_IosequencerInput->hot_zone_read_fraction == 0.0 && p_IosequencerInput->hot_zone_write_fraction == 0.0)
     {
         if (nullptr == p_uniform_int_distribution)
         {
@@ -138,6 +138,12 @@ bool IosequencerRandom::generate(Eyeo& slang)
     }
     else
     {
+        if (p_IosequencerInput->hot_zone_size_bytes == 0)
+        {
+            log(logfilename, std::string("<Error> internal programming error - IosequencerRandom::generate() - Non-zero fraction of I/Os going to hot zone, but hot_zone_size_bytes is zero (0).\n"));
+            return false;
+        }
+
         if (nullptr == p_hot_zone_block_distribution)
         {
             log(logfilename, std::string("<Error> internal programming error - IosequencerRandom::generate() - p_hot_zone_block_distribution not initialized.\n"));

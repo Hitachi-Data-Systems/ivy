@@ -65,8 +65,10 @@ bool multi_measure_proceed_to_next()  // returns true if we have started a new m
 
     if (!m.success) return false;
 
-    if (m.failed_to_achieve_total_IOPS_setting) return false;
 
+    // NOTE: If the user specifies "step" and "steps", this gets transformed into "step" and "ending_IOPS",
+    //       so if have_staircase_ending_IOPS == false, we are testing to saturation.
+    if ((!m_s.have_staircase_ending_IOPS) && m.failed_to_achieve_total_IOPS_setting) return false;
 
     if (m_s.have_staircase_step_percent_increment)
     {

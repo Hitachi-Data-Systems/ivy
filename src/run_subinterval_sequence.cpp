@@ -51,6 +51,8 @@ void process_completed_measurement()
         m_s.measurement_by_subinterval.push_back(m_s.measurements.size() -1);
     }
 
+    ivytime b4_makeMeasurementRollup; b4_makeMeasurementRollup.setToNow();
+
     auto retval = m_s.rollups.makeMeasurementRollup();
     if (!retval.first)
     {
@@ -62,6 +64,13 @@ void process_completed_measurement()
         m_s.kill_subthreads_and_exit();
         exit(-1);
     }
+
+    ivytime after_makeMeasurementRollup; after_makeMeasurementRollup.setToNow();
+
+    ivytime makeMeasurementRollup_duration;
+    makeMeasurementRollup_duration = after_makeMeasurementRollup - b4_makeMeasurementRollup;
+
+    m_s.makeMeasurementRollup_seconds.push(makeMeasurementRollup_duration.getlongdoubleseconds());
 
     retval = m.make_measurement_rollup_CPU();
     if (!retval.first)
@@ -197,6 +206,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     m_s.cruiseSeconds.clear();
     m_s.continueCooldownStopAckSeconds.clear();
     m_s.subinterval_start_end_times.clear();
+
+    m_s.makeMeasurementRollup_seconds.clear();
 
     m_s.now_doing_suppress_perf_cooldown = false;
     m_s.suppress_perf_cooldown_subinterval_count = 0;

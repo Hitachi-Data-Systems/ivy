@@ -1,3 +1,25 @@
+[[2019-10-21 I just realized I didn't update this when adding DFC=IOPS_staircase - Ian.
+
+To support DFC=IOPS_staircase, run_subinterval_sequence and ivy_engine.h were updated
+to enable making multiple "measurements" within one continuous subinterval sequence.
+
+ivy_engine.h now has a vector of "measurement" objects, which tracks for each
+measurement the subinterval numbers and times for warmup, measurement, and cooldown.
+
+Then each RollupInstance has a vector of "measurement_things" which track the
+measurements made during each "measurement", including both a SubintervalOutput
+rollup and a subsystem_summary_data rollup.  These are used at the end of the
+subinterval sequence (end of a "go") to print for each Rollup Instance a
+summary csv file line for each measurement.
+
+At the end of each measurement, either process_successful_measurement()
+or process_failed_measurement() is called, then if the measurement was
+a success (as declared by the "measure" controller), the ivy_engine
+start_new_measurement() is called to determine if we need to proceed
+to another measurement, or if we need to cooldown and end the subinterval
+sequence, and print the csv files.]]
+
+
 Run subinterval sequence outline
 --------------------------------
 

@@ -257,6 +257,8 @@ public:
     RunningStat<ivy_float, ivy_int> overallGatherTimeSeconds;
 	RunningStat<ivy_float, ivy_int> cruiseSeconds;
 
+	RunningStat<ivy_float, ivy_int> makeMeasurementRollup_seconds;
+
 	RunningStat<ivy_float, ivy_int> continueCooldownStopAckSeconds;
 
     size_t number_of_IOs_running_at_end_of_subinterval {0};

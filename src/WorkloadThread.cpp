@@ -763,9 +763,9 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 				        Workload* pWorkload = & pear.second;
                         if ( pWorkload->subinterval_array[pWorkload->currentSubintervalIndex].subinterval_status != subinterval_state::ready_to_run )
                         {
-                            std::ostringstream o; o << "WorkloadThread told to keep going, but next subinterval not marked READY_TO_RUN" << std::endl
-                                << " for workload " << pWorkload->workloadID.workloadID << std::endl
-                                << "Master host late to post command, or has stopped.  Internal error or else subinterval_seconds too short." << std::endl;
+                            std::ostringstream o; o << "WorkloadThread told to keep going, but next subinterval not marked READY_TO_RUN"
+                                << " for workload " << pWorkload->workloadID.workloadID
+                                << "  Master host late to post command, or has stopped.  Try increasing subinterval_seconds." << std::endl;
                             wkld_lk.unlock();
                             post_error(o.str());
                             goto wait_for_command;
