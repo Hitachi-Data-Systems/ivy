@@ -63,7 +63,11 @@ bool multi_measure_proceed_to_next()  // returns true if we have started a new m
 
     measurement& m = m_s.current_measurement();
 
-    if (!m.success) return false;
+    if (!m.success)
+    {
+/*debug*/log(m_s.masterlogfile,"multi_measure_proceed_to_next() - !m.success");
+        return false;
+    }
 
 
     // NOTE: If the user specifies "step" and "steps", this gets transformed into "step" and "ending_IOPS",
@@ -81,8 +85,11 @@ bool multi_measure_proceed_to_next()  // returns true if we have started a new m
 
     if (m_s.have_staircase_ending_IOPS)
     {
+/*debug*/{std::ostringstream o; o << "debug: multi_measure_proceed_to_next() - current_IOPS_staircase_total_IOPS = " << current_IOPS_staircase_total_IOPS << ", n_s.staircase_ending_IOPS = " << m_s.staircase_ending_IOPS << ".";log(m_s.masterlogfile,o.str());}
+
         if (current_IOPS_staircase_total_IOPS > (1.001 * m_s.staircase_ending_IOPS))
         {
+/*debug*/log(m_s.masterlogfile,"multi_measure_proceed_to_next() - total IOPS has reached ending IOPS.");
             return false;
         }
     }

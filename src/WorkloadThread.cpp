@@ -119,35 +119,25 @@ void WorkloadThread::WorkloadThreadRun()
         log(slavethreadlogfile,o.str());
     }
 
-    // Set timer slack for this thread to 1 uS (i.e., 1,000 nS).
-
-    // Ian: this shouldn't have any effect, since WorkloadThread only ever has one timer going at a time:
-
-    int rc = prctl(PR_SET_TIMERSLACK, 1000, 0, 0, 0);
-    if (routine_logging) {
-        std::ostringstream o;
-        o << "prctl(PR_SET_TIMERSLACK, 1, 0, 0, 0) returned " << rc;
-        if (rc < 0) {
-            o << "; errno = " << errno << " (" << std::strerror(errno) << ")";
-        }
-        o << "." << std::endl;
-        log(slavethreadlogfile, o.str());
-    }
-
-    // Set real-time scheduler (FIFO) for this thread. Choose mid-point realtime priority.
-
-    struct sched_param sched_param;
-    sched_param.__sched_priority = (sched_get_priority_min(SCHED_FIFO) + sched_get_priority_max(SCHED_FIFO)) / 2;
-    rc = sched_setscheduler(0, SCHED_FIFO, &sched_param);
-    if (routine_logging) {
-        std::ostringstream o;
-        o << "sched_setscheduler(0, SCHED_FIFO, &sched_param) returned " << rc;
-        if (rc < 0) {
-            o << "; errno = " << errno << " (" << std::strerror(errno) << ")";
-        }
-        o << "." << std::endl;
-        log(slavethreadlogfile, o.str());
-    }
+// Note: Setting the thread as a real-time thread was intended to reduce odd higher-than- expected service
+//       times for large blocksizes.  However, this caused problems with DFC=IOPS_staircase, where the
+//       interlock protocol between pipe_driver_thread and ivydriver stalled and failed after running for
+//       a while.  Commenting this next bit out resolved the issue.
+//
+//    // Set real-time scheduler (FIFO) for this thread. Choose mid-point realtime priority.
+//
+//    struct sched_param sched_param;
+//    sched_param.__sched_priority = (sched_get_priority_min(SCHED_FIFO) + sched_get_priority_max(SCHED_FIFO)) / 2;
+//    int rc = sched_setscheduler(0, SCHED_FIFO, &sched_param);
+//    if (routine_logging) {
+//        std::ostringstream o;
+//        o << "sched_setscheduler(0, SCHED_FIFO, &sched_param) returned " << rc;
+//        if (rc < 0) {
+//            o << "; errno = " << errno << " (" << std::strerror(errno) << ")";
+//        }
+//        o << "." << std::endl;
+//        log(slavethreadlogfile, o.str());
+//    }
 
 //   The workload thread is initially in "waiting for command" state.
 //

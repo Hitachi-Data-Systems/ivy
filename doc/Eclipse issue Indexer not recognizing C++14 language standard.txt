@@ -1,0 +1,37 @@
+From:	Stephen Morgan
+Sent:	Monday, October 21, 2019 2:42 PM
+To:	Ian Vogelesang
+Subject:	Eclipse issue: Indexer not recognizing C++14 language standard
+
+Hi Ian,
+
+I’ve finally managed to identify and fix the problem with Eclipse not recognizing the C++14 language 
+standard. (In fact, it was set not to even recognize C++11.)
+
+Here’s how to fix it:
+
+1.	In “Project Explorer” click on the project (ivy).
+2.	In the ribbon on the top, select “Project.”
+3.	Select “Properties.”
+4.	Select “C/C++ General.”
+5.	Select “Preprocessor Include Paths, Macros, etc.” (You will probably only be able to read the 
+first part of this.)
+6.	On the right hand side, you can choose from tabs marked, “Entries” or “Providers.”  Select 
+“Entries.”
+7.	Below that, select “GNU C++.”
+8.	To the right, under “Setting Entries,” select “CDT User Setting Entries.”
+9.	Click on the “Add” button.
+10.	In the upper left hand, there is a drop-down menu that currently says, “Include Directory.” 
+Select the menu and choose the “#Preprocessor Macro” entry.
+11.	In the “Name” field, type in “__cplusplus”. (Note that it starts with two ‘_’ underscores.)
+12.	In the “Value” field, type in “201402L”. (That’s the correct value for C++14.)
+13.	Select the “Treat as built-in” button.
+14.	Click on “OK.”
+15.	On the lower right of the menu, select “Apply and Close.”
+16.	You must re-index the project before this will take effect. Either restart Eclipse or:
+a.	Select “Project.”
+b.	Select “C/C++ Index.”
+c.	Select “Rebuild.”
+
+Steve
+

@@ -184,6 +184,8 @@ struct IvyDriver
 
     char subintervalOutput_buffer[200000]; // for printing a workload detail line
 
+    bool warn_on_critical_temp {false};
+
 
 // methods
 

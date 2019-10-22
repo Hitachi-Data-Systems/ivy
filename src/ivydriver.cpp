@@ -184,8 +184,11 @@ int IvyDriver::main(int argc, char* argv[])
     {
         std::string item {argv[arg_index]};
 
-        if (item == "-log")         { routine_logging = true;           continue;}
-        if (item == "-one_thread_per_core") { subthread_per_hyperthread = false; continue;}
+        if (item == "-warn_on_critical_temp")  { warn_on_critical_temp     = true;  continue;}
+        if (item == "-error_on_critical_temp") { warn_on_critical_temp     = false; continue;}
+        if (item == "-log")                    { routine_logging           = true;  continue;}
+        if (item == "-one_thread_per_core")    { subthread_per_hyperthread = false; continue;}
+
 
         if (arg_index != (argc-1))
         {
@@ -483,6 +486,7 @@ int IvyDriver::main(int argc, char* argv[])
 	ivytime one_hour = ivytime(60*60);
         // one hour so that if ivydriver somehow would wait forever, this makes it explode after an hour.
         // Ivydriver gets a command every subinterval, so this would limit subinterval_seconds to one hour.
+
 
 	while(!std::cin.eof())
 	{
@@ -1880,10 +1884,16 @@ void IvyDriver::check_CPU_temperature()
     {
         if (digital_readouts.min() == 0.0)
         {
-            //std::ostringstream o; o << "<Error> CPU temperature has hit the critical limit and CPU operation has been throttled.  Test aborting." << std::endl;
-            //throw std::runtime_error(o.str());
-            std::cout << "<Warning> CPU temperature has hit the critical limit and CPU operation has been throttled.  Suppressing <Error> for the time being.  Check dmesg & /var/log/messages."
-                << "  You may need to run with a longer subinterval_seconds if the throttling causes ivy interlock protocol timeouts." << std::endl;
+            if (warn_on_critical_temp)
+            {
+                std::cout << "<Warning> CPU temperature has hit the critical limit and CPU operation has been throttled.  Test data is invalid.  Check dmesg & /var/log/messages."
+                    << "  You may need to run with a longer subinterval_seconds if the throttling causes ivy interlock protocol timeouts." << std::endl;
+            }
+            else
+            {
+                std::ostringstream o; o << "<Error> CPU temperature has hit the critical limit and CPU operation has been throttled.  Test aborting." << std::endl;
+                throw std::runtime_error(o.str());
+            }
         }
         else if (digital_readouts.min() <= 5.0)
         {

@@ -214,6 +214,26 @@ ivy_engine::set(const std::string& thingee,
         return std::make_pair(true,"");
     }
 
+    if (0 == t.compare(normalize_identifier("critical_temp")))
+    {
+        if (stringCaseInsensitiveEquality(value,"warn") || stringCaseInsensitiveEquality(value,"warning"))
+        {
+            warn_on_critical_temp=true;
+            return std::make_pair(true,"");
+        }
+        else if (stringCaseInsensitiveEquality(value,"error"))
+        {
+            warn_on_critical_temp=false;
+            return std::make_pair(true,"");
+        }
+        else
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"critical_temp\", \"" << value << "\") - may only be set to \"warn\" or \"error\"."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+    }
 
 
     {

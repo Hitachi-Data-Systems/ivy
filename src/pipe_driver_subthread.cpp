@@ -748,7 +748,16 @@ void pipe_driver_subthread::threadRun()
 
         login = SLAVEUSERID + std::string("@") + ivyscript_hostname;
 
-        std::string cmd, arg, hitachi_product, serial, remote_logfilename;
+        std::string cmd, arg, hitachi_product, serial, remote_logfilename, critical_temp_parameter;
+
+        if (m_s.warn_on_critical_temp)
+        {
+            critical_temp_parameter = "-warn_on_critical_temp";
+        }
+        else
+        {
+            critical_temp_parameter = "-error_on_critical_temp";
+        }
 
         if (pCmdDevLUN)
         {
@@ -791,11 +800,11 @@ void pipe_driver_subthread::threadRun()
             {
                 if (one_thread_per_core)
                 {
-                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-log","-one_thread_per_core",arg.c_str(),(char*)NULL);
+                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),"-log","-one_thread_per_core",arg.c_str(),(char*)NULL);
                 }
                 else
                 {
-                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-log", arg.c_str(),(char*)NULL);
+                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),"-log", arg.c_str(),(char*)NULL);
                 }
 
             }
@@ -803,11 +812,11 @@ void pipe_driver_subthread::threadRun()
             {
                 if (one_thread_per_core)
                 {
-                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),"-one_thread_per_core",arg.c_str(),(char*)NULL);
+                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),"-one_thread_per_core",arg.c_str(),(char*)NULL);
                 }
                 else
                 {
-                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(),arg.c_str(),(char*)NULL);
+                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),arg.c_str(),(char*)NULL);
                 }
             }
         }

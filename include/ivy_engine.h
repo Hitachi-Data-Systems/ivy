@@ -516,6 +516,8 @@ public:
 
     ivy_float achieved_IOPS_tolerance {0.0025}; // ivy_engine_get("achieved_IOPS_tolerance"), ivy_engine_set("achieved_IOPS_tolerance", "0.25%").
 
+    bool warn_on_critical_temp {false};
+
 
 // methods
 

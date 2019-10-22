@@ -668,15 +668,15 @@ unsigned int core_count(const std::string& logfilename)
 std::ostream& operator<<(std::ostream& o, const struct linuxcpubusypercent& c)
 {
     o << "total (user+system) = " << c.total() << "%"
-        << "%, user = "           << c.user << "%"
-        << "%, nice = "           << c.nice << "%"
-        << "%, system = "         << c.system << "%"
-        << "%, idle = "           << c.idle << "%"
-        << "%, iowait = "         << c.iowait << "%"
-        << "%, irq = "            << c.irq << "%"
-        << "%, softirq = "        << c.softirq << "%"
-        << "%, stealtime = "      << c.stealtime << "%"
-        << "%, virtualguest = "   << c.virtualguest << "%"
+        << ", user = "           << c.user << "%"
+        << ", nice = "           << c.nice << "%"
+        << ", system = "         << c.system << "%"
+        << ", idle = "           << c.idle << "%"
+        << ", iowait = "         << c.iowait << "%"
+        << ", irq = "            << c.irq << "%"
+        << ", softirq = "        << c.softirq << "%"
+        << ", stealtime = "      << c.stealtime << "%"
+        << ", virtualguest = "   << c.virtualguest << "%"
         ;
     return o;
 }
