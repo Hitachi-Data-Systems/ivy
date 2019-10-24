@@ -75,6 +75,7 @@ int main(int argc,char* argv[])
                 std::ostringstream o;
                 o << "<Error> \"" << column << "\" is not a valid column title (column header)." << std::endl;
                 std::cout << o.str() << csv_usage << o.str();
+                return -1;
             }
             else
             {
