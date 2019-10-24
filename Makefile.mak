@@ -20,7 +20,7 @@ LIBDIR = -L/opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7
 LIB = /opt/rh/devtoolset-7/root/lib/gcc/x86_64-redhat-linux/7/libstdc++.a
 LDFLAGS = -static-libstdc++ -lrt -static-libstdc++
 
-INC_IVYMASTER = $(INC) -Iinclude -Iparser/include -Iparser/lexyacc -Iivy/include
+INC_IVYMASTER = $(INC) -Iparser/include -Iparser/lexyacc -Iivy/include
 CFLAGS_IVYMASTER = $(CFLAGS) -pthread
 RESINC_IVYMASTER = $(RESINC)
 RCFLAGS_IVYMASTER = $(RCFLAGS)
@@ -183,7 +183,7 @@ LIB_TEST_LDEVSET = $(LIB)
 LDFLAGS_TEST_LDEVSET = $(LDFLAGS)
 OBJDIR_TEST_LDEVSET = .objs/.test_ldevset
 DEP_TEST_LDEVSET = 
-OUT_TEST_LDEVSET = bin/testRegex
+OUT_TEST_LDEVSET = bin/ldevset
 
 INC_REMOVE_EMPTY_COLUMNS = $(INC)
 CFLAGS_REMOVE_EMPTY_COLUMNS = $(CFLAGS)
@@ -549,7 +549,7 @@ parser/lexyacc/ivy.scanner.cc: parser/lexyacc/ivy.l
 parser/lexyacc/ivy.parser.cc: parser/lexyacc/ivy.y
 	$(BISON) -t -v -d parser/lexyacc/ivy.y -o parser/lexyacc/ivy.parser.cc
 
-$(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.parser.o: parser/lexyacc/ivy.parser.cc
+$(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.parser.o: parser/lexyacc/ivy.parser.cc parser/lexyacc/ivy.scanner.cc
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/lexyacc/ivy.parser.cc -o $(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.parser.o
 
 $(OBJDIR_IVYMASTER)/parser/src/IvyscriptLine.o: parser/src/IvyscriptLine.cpp
@@ -583,6 +583,27 @@ clean_ivymaster:
 	rm -f $(OBJ_IVYMASTER) $(OUT_IVYMASTER)
 	rm -rf bin
 	rm -rf $(OBJDIR_IVYMASTER)
+	rm -f parser/lexyacc/ivy.scanner.cc
+	rm -f parser/lexyacc/ivy.parser.cc
+	rm -f parser/lexyacc/ivy.parser.hh
+	rm -f parser/lexyacc/ivy.parser.output
+	rm -f parser/lexyacc/location.hh
+	rm -f parser/lexyacc/position.hh
+	rm -f parser/lexyacc/stack.hh
+	rm -f src/hosts/hosts.parser.cc
+	rm -f src/hosts/hosts.parser.hh
+	rm -f src/hosts/hosts.parser.output
+	rm -f src/hosts/hosts.scanner.cc
+	rm -f src/hosts/location.hh
+	rm -f src/hosts/position.hh
+	rm -f src/hosts/stack.hh
+	rm -f src/select/select.scanner.cc
+	rm -f src/select/select.parser.cc
+	rm -f src/select/select.parser.hh
+	rm -f src/select/select.parser.output
+	rm -f src/select/location.hh
+	rm -f src/select/position.hh
+	rm -f src/select/stack.hh
 
 before_ivydriver: 
 	touch include/ivybuilddate.h
@@ -1188,7 +1209,7 @@ $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src/ivytime.o: src/ivytime.cpp
 
 clean_test_negative_ivytimes: 
 	rm -f $(OBJ_TEST_NEGATIVE_IVYTIMES) $(OUT_TEST_NEGATIVE_IVYTIMES)
-	rm -rf bin/test_negative_ivytimes
+	rm -rf bin
 	rm -rf $(OBJDIR_TEST_NEGATIVE_IVYTIMES)
 
 before_ivycore: 
