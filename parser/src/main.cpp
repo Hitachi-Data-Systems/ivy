@@ -260,6 +260,8 @@ int main(int argc, char* argv[])
          || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-suppress_perf")))  { m_s.suppress_subsystem_perf_default = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_check_failed_component")))  { m_s.check_failed_component_default = false; continue; }
 
+        if (item.size() > 0 && item[0] == '-') { std::cout << "Invalid option \"" << item << "\"." << std::endl << std::endl; usage_message(argv[0]); return -1; }
+
         if (arg_index != (argc-1)) { usage_message(argv[0]); return -1; }
 
         ivyscriptFilename = item;
