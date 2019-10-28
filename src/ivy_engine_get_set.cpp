@@ -236,10 +236,30 @@ ivy_engine::set(const std::string& thingee,
     }
 
 
+    if (0 == t.compare(normalize_identifier("provisional_csv_lines")))
+    {
+        try
+        {
+            provisional_csv_lines = parse_boolean(value);
+        }
+        catch (const std::invalid_argument& ia)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"provisional_csv_lines\", \"" << value << "\") - provisional_csv_lines may only be set to \"on\"/\"off\", or \"true\"/\"false\"."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        std::cout << "ivy_engine_set(\"provisional_csv_lines\", \"" << value << "\") was successful." << std::endl;
+
+        return std::make_pair(true,"");
+    }
+
+
     {
         std::ostringstream o;
         o << "<Error> Unknown ivy engine set parameter \"" << thingee << "\"." << std::endl << std::endl;
-        o << "The valid set() parameter is \"achieved_IOPS_tolerance\"." << std::endl << std::endl;
+        o << "Valid set() parameters are \"achieved_IOPS_tolerance\", \"critical_temp\", and \"provisional_csv_lines\"." << std::endl << std::endl;
         return std::make_pair(false,o.str());
     }
 }

@@ -905,7 +905,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 #ifdef TRACE_RSS
 {std::ostringstream trss; trss << "TRACE_RSS: About to print the by-subinterval \"provisional\" csv line.\n" << std::endl; log(m_s.masterlogfile, trss.str()); std::cout << trss.str();}
 #endif
-        if (m_s.stepcsv) for (auto& pear: m_s.rollups.rollups)
+        if (m_s.provisional_csv_lines && m_s.stepcsv) for (auto& pear: m_s.rollups.rollups)
         {
             for (auto& peach : pear.second->instances)
             {

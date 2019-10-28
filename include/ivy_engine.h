@@ -468,6 +468,7 @@ public:
     bool have_parsed_OutputFolderRoot {false};
     bool haveOutputFolderRoot {false};
     bool haveHosts {false};
+    bool provisional_csv_lines {false};
 
     std::string ivyscript_line{}, trimmed_ivyscript_line{};
     bool allThreadsSentTheLUNsTheySee {false};
