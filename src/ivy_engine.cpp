@@ -1136,8 +1136,9 @@ ivy_engine::shutdown_subthreads()
         int rc = system(copy_back_ivy_logs_sh_filename.c_str());
         if (WIFEXITED(rc) && (0 == WEXITSTATUS(rc)))
         {
-            std::string cmd = "rm -f "s + m_s.copy_back_ivy_logs_sh_filename;
-            system(cmd.c_str());
+            //commented out because the script now deletes itself if it is successful
+            //std::string cmd = "rm -f "s + m_s.copy_back_ivy_logs_sh_filename;
+            // system(cmd.c_str());
         }
         else
         {
@@ -1804,6 +1805,8 @@ void ivy_engine::write_copy_back_ivy_logs_dot_sh()
     o << "then" << std::endl;
 
     o << "\t" << "logtail " << testFolder << "/logs" << std::endl;
+
+    o << "\t" << "rm -f " << copy_back_ivy_logs_sh_filename << std::endl;
 
     o << "fi" << std::endl;
 
