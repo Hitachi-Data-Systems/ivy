@@ -224,6 +224,18 @@ std::pair<bool /*success*/, std::string /* message */>
         return std::make_pair(false,o.str());
     }
 
+    if (copy_back_ivy_logs_sh_filename.size() > 0)
+    {
+        try
+        {
+            write_copy_back_ivy_logs_dot_sh();
+        }
+        catch (std::runtime_error& reex)
+        {
+            return std::make_pair(false, reex.what());
+        }
+    }
+
     for (const auto& pear : unique_hostnames)
     {
         std::string h;
@@ -284,9 +296,9 @@ std::pair<bool /*success*/, std::string /* message */>
     sigaction(SIGINT, &ivymaster_sigaction, NULL);
     sigaction(SIGHUP, &ivymaster_sigaction, NULL);
 //    sigaction(SIGCHLD, &ivymaster_sigaction, NULL);
-//    sigaction(SIGSEGV, &ivymaster_sigaction, NULL);
+//    sigaction(SIGSEGV, &ivymaster_sigaction, NULL);  // interestingly, catching SEGV with the handler does indeed copy the log files, but then we don't get a core file for gdb.
     sigaction(SIGUSR1, &ivymaster_sigaction, NULL);
-//    sigaction(SIGTERM, &ivymaster_sigaction, NULL);
+    sigaction(SIGTERM, &ivymaster_sigaction, NULL);
 
     for ( auto& host : hosts )
     {

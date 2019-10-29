@@ -336,6 +336,18 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    if (!is_python_script)
+    {
+        m_s.copy_back_ivy_logs_sh_filename = ivyscriptFilename.substr(0,ivyscriptFilename.size() - ".ivyscript"s.size()) + ".copy_back_ivy_logs.sh"s;
+
+        if (m_s.copy_back_ivy_logs_sh_filename[0] != '/' && m_s.copy_back_ivy_logs_sh_filename.substr(0,2) != "./"s)
+        {
+            std::string path = GetStdoutFromCommand("pwd");
+            trim(path);
+            m_s.copy_back_ivy_logs_sh_filename = path + "/"s + m_s.copy_back_ivy_logs_sh_filename;
+        }
+    }
+
     m_s.test_start_time.setToNow();
 
     if (is_python_script)

@@ -1131,61 +1131,76 @@ ivy_engine::shutdown_subthreads()
 
     bool something_bad_happened {false};
 
-	for (auto& host : hosts)
-	{
-		{
-			std::ostringstream o;
-			o << "scp -p " << SLAVEUSERID << '@' << host << ":" << "/var/ivydriver_logs/log.ivydriver." << host << ".* " << testFolder << "/logs";
-			log(masterlogfile,o.str());
-            int rc = system(o.str().c_str());
-			if (WIFEXITED(rc) && (0 == WEXITSTATUS(rc)))
-			{
-				log(masterlogfile,std::string("success: ")+o.str()+std::string("\n"));
-				std::ostringstream rm;
-				rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << "/var/ivydriver_logs/log.ivydriver." << host << ".*";
-				log(masterlogfile,rm.str());
-				int rc = system(rm.str().c_str());
-                if (WIFEXITED(rc) && (0 == WEXITSTATUS(rc)))
-				{
-					log(masterlogfile,std::string("success: ")+rm.str()+std::string("\n"));
-                }
-				else
-				{
-					log(masterlogfile,std::string("failure: ")+rm.str()+std::string("\n"));
-					something_bad_happened = true;
-				}
-			}
-			else
-			{
-			    something_bad_happened = true;
-			    log(masterlogfile,std::string("failure: ")+o.str()+std::string("\n"));
-            }
-		}
-	}
-
-	std::string s = print_logfile_stats();  // separated out from next statement so no issues with mutex locks.
-	log(masterlogfile,s);
-
-	{
-	    std::ostringstream o;
-	    o << "cp -p " << m_s.var_ivymaster_logs_testName << "/* " << m_s.testFolder << "/logs";
-	    int rc = system(o.str().c_str());
-        if (!WIFEXITED(rc) || (0 != WEXITSTATUS(rc)))
+    if (m_s.copy_back_ivy_logs_sh_filename.size() > 0)
+    {
+        int rc = system(copy_back_ivy_logs_sh_filename.c_str());
+        if (WIFEXITED(rc) && (0 == WEXITSTATUS(rc)))
         {
-            std::cout << "error copying ivy master host logs to the output folder using the command \"" << o.str() << "\"." << std::endl;
+            std::string cmd = "rm -f "s + m_s.copy_back_ivy_logs_sh_filename;
+            system(cmd.c_str());
         }
         else
         {
-            std::string cmd = "rm -rf " + var_ivymaster_logs_testName;
-
-            system(cmd.c_str());
+            something_bad_happened = true;
         }
     }
+    else
+    {
+        for (auto& host : hosts)
+        {
+            {
+                std::ostringstream o;
+                o << "scp -p " << SLAVEUSERID << '@' << host << ":" << "/var/ivydriver_logs/log.ivydriver." << host << ".* " << testFolder << "/logs";
+                log(masterlogfile,o.str());
+                int rc = system(o.str().c_str());
+                if (WIFEXITED(rc) && (0 == WEXITSTATUS(rc)))
+                {
+                    log(masterlogfile,std::string("success: ")+o.str()+std::string("\n"));
+                    std::ostringstream rm;
+                    rm << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << "/var/ivydriver_logs/log.ivydriver." << host << ".*";
+                    log(masterlogfile,rm.str());
+                    int rc = system(rm.str().c_str());
+                    if (WIFEXITED(rc) && (0 == WEXITSTATUS(rc)))
+                    {
+                        log(masterlogfile,std::string("success: ")+rm.str()+std::string("\n"));
+                    }
+                    else
+                    {
+                        log(masterlogfile,std::string("failure: ")+rm.str()+std::string("\n"));
+                        something_bad_happened = true;
+                    }
+                }
+                else
+                {
+                    something_bad_happened = true;
+                    log(masterlogfile,std::string("failure: ")+o.str()+std::string("\n"));
+                }
+            }
+        }
 
-    std::string logtailcmd = "logtail "s + testFolder + "/logs"s;
+        std::string s = print_logfile_stats();  // separated out from next statement so no issues with mutex locks.
+        log(masterlogfile,s);
 
-    system(logtailcmd.c_str());
+        {
+            std::ostringstream o;
+            o << "cp -p " << m_s.var_ivymaster_logs_testName << "/* " << m_s.testFolder << "/logs";
+            int rc = system(o.str().c_str());
+            if (!WIFEXITED(rc) || (0 != WEXITSTATUS(rc)))
+            {
+                std::cout << "error copying ivy master host logs to the output folder using the command \"" << o.str() << "\"." << std::endl;
+            }
+            else
+            {
+                std::string cmd = "rm -rf " + var_ivymaster_logs_testName;
 
+                system(cmd.c_str());
+            }
+        }
+
+        std::string logtailcmd = "logtail "s + testFolder + "/logs"s;
+
+        system(logtailcmd.c_str());
+    }
 
     if (need_harakiri)
     {
@@ -1693,10 +1708,113 @@ std::string ivy_engine::print_logfile_stats()
     return o.str();
 }
 
+
 void ivy_log(std::string s) {log(m_s.masterlogfile,s);} // crutch for Builtin.cpp
 
 
+void ivy_engine::write_copy_back_ivy_logs_dot_sh()
+{
+    std::ofstream o;
 
+    o.open(copy_back_ivy_logs_sh_filename);
+
+    if (o.fail())
+    {
+        std::ostringstream e; e << "<Error> Failed trying to open \"" << copy_back_ivy_logs_sh_filename << "\" for output to write script." << std::endl;
+        throw std::runtime_error(e.str());
+    }
+
+    o << "#!/bin/bash" << std::endl << std::endl;
+
+    o << "encountered_error=0" << std::endl << std::endl;
+
+    std::string cmd, cmd2;
+
+	for (auto& host : hosts)
+	{
+		{ std::ostringstream c; c << "scp -p " << SLAVEUSERID << '@' << host << ":" << "/var/ivydriver_logs/log.ivydriver." << host << ".* " << testFolder << "/logs"; cmd = c.str(); }
+
+        o << "if " << cmd << ";" << std::endl;
+
+        o << "then" << std::endl;
+
+        o << "\t" << "echo " << "Success: " << cmd << std::endl << std::endl;
+
+        { std::ostringstream c; c << "ssh " << SLAVEUSERID << '@' << host << " rm -f " << "/var/ivydriver_logs/log.ivydriver." << host << ".*"; cmd2 = c.str(); }
+
+        o << "\t" << "if " << cmd2 << ";" << std::endl;
+
+        o << "\t" << "then" << std::endl;
+
+        o << "\t\t" << "echo " << "Success: " << cmd2 << std::endl;
+
+        o << "\t" << "else" << std::endl;
+
+        o << "\t\t" << "echo " << "Failure: " << cmd2 << std::endl;
+
+        o << "\t\t" << "encountered_error=1" << std::endl;
+
+        o << "\t" << "fi" << std::endl;
+
+        o << "else" << std::endl;
+
+        o << "\t" << "echo " << "Failure: " << cmd << std::endl;
+
+        o << "\t" << "encountered_error=1" << std::endl;
+
+        o << "fi" << std::endl << std::endl;
+    }
+
+    { std::ostringstream c; c << "cp -p " << m_s.var_ivymaster_logs_testName << "/* " << m_s.testFolder << "/logs"; cmd = c.str(); }
+
+    o << "if " << cmd << ";" << std::endl;
+
+    o << "then" << std::endl;
+
+    o << "\t" << "echo " << "Success: " << cmd << std::endl << std::endl;
+
+    cmd2 = "rm -rf "s + var_ivymaster_logs_testName;
+
+    o << "\t" << "if " << cmd2 << ";" << std::endl;
+
+    o << "\t" << "then" << std::endl;
+
+    o << "\t\t" << "echo " << "Success: " << cmd2 << std::endl;
+
+    o << "\t" << "else" << std::endl;
+
+    o << "\t\t" << "echo " << "Failure: " << cmd2 << std::endl;
+
+    o << "\t\t" << "encountered_error=1" << std::endl;
+
+    o << "\t" << "fi" << std::endl;
+
+    o << "else" << std::endl;
+
+    o << "\t" << "echo " << "Failure: " << cmd << std::endl;
+
+    o << "\t" << "encountered_error=1" << std::endl;
+
+    o << "fi" << std::endl;
+
+    o << std::endl;
+
+    o << "if [ 0 -eq $encountered_error ] ;" << std::endl;
+
+    o << "then" << std::endl;
+
+    o << "\t" << "logtail " << testFolder << "/logs" << std::endl;
+
+    o << "fi" << std::endl;
+
+    o << std::endl << "exit $encountered_error" << std::endl;
+
+    o.close();
+
+    chmod(copy_back_ivy_logs_sh_filename.c_str(),S_IRWXU | S_IRWXG | S_IRWXO);
+
+    return;
+}
 
 
 

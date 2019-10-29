@@ -519,6 +519,8 @@ public:
 
     bool warn_on_critical_temp {false};
 
+    std::string copy_back_ivy_logs_sh_filename {};
+
 
 // methods
 
@@ -692,6 +694,7 @@ public:
     std::string logfile()           {return masterlogfile.logfilename;}   // if API user would like to append to ivy command line master thread log file
     std::string print_logfile_stats();
     std::string show_rollup_structure();   // available for diagnostic use
+    void write_copy_back_ivy_logs_dot_sh(); // throws runtime_error
 };
 
 extern ivy_engine m_s;
