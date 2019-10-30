@@ -14,7 +14,7 @@ BISON = /bin/bison
 FLEX = /bin/flex
 
 INC = -Isrc -Iinclude
-CFLAGS = -Wall -std=c++14 -fPIC -Og -g
+CFLAGS = -Wall -std=c++14 -fPIC -O3 -g
 RESINC = 
 LIBDIR = -L/opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7
 LIB = /opt/rh/devtoolset-7/root/lib/gcc/x86_64-redhat-linux/7/libstdc++.a

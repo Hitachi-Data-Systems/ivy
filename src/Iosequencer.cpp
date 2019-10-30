@@ -90,7 +90,7 @@ bool Iosequencer::setFrom_IosequencerInput(IosequencerInput* p_i_i)
         default:
         {
             std::ostringstream o;
-            o << "<Error> invalid RangeStart value \"" << p_IosequencerInput -> rangeStartValue()
+            o << "<Error> internal programming error - invalid RangeStart \"rangeType\" " << ((unsigned int)p_IosequencerInput->rangeStartType) << " with RangeStart value \"" << p_IosequencerInput -> rangeStartValue()
                 << "\".  Error occurred in iosequencer for workload " << pWorkload->workloadID;
             throw std::runtime_error(o.str());
         }
@@ -141,7 +141,7 @@ bool Iosequencer::setFrom_IosequencerInput(IosequencerInput* p_i_i)
         default:
         {
             std::ostringstream o;
-            o << "<Error> invalid RangeEnd value \"" << p_IosequencerInput -> rangeEndValue() << "\"."
+            o << "<Error> invalid RangeEnd \"rangeType\" " << ((unsigned int)p_IosequencerInput->rangeEndType) << " with RangeEnd value \"" << p_IosequencerInput -> rangeEndValue() << "\"."
                 << "  Error occurred in iosequencer for workload " << pWorkload->workloadID;
             throw std::runtime_error(o.str());
         }

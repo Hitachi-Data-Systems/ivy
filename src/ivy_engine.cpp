@@ -1138,7 +1138,7 @@ ivy_engine::shutdown_subthreads()
         {
             //commented out because the script now deletes itself if it is successful
             //std::string cmd = "rm -f "s + m_s.copy_back_ivy_logs_sh_filename;
-            // system(cmd.c_str());
+            //system(cmd.c_str());
         }
         else
         {
