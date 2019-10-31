@@ -1950,7 +1950,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 warmup_start = m_s.rollups.starting_ending_times[0].first;
                 warmup_complete = m_s.rollups.starting_ending_times[m_s.rollups.starting_ending_times.size() - 1 ].second;
                 warmup_duration = warmup_complete - warmup_start;
-                cooldown_duration = ivytime(0);
+                cooldown_duration = ivytime_zero;
             }
             else
             {
@@ -1959,7 +1959,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 warmup_duration = warmup_complete - warmup_start;
                 if (warmup_complete == m_s.rollups.starting_ending_times[m_s.rollups.starting_ending_times.size()-1].second)
                 {
-                    cooldown_duration = ivytime(0);
+                    cooldown_duration = ivytime_zero;
                 }
                 else
                 {

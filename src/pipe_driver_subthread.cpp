@@ -167,7 +167,7 @@ void pipe_driver_subthread::real_send_string(std::string s)
     }
 //*debug*/ {std::ostringstream o; o <<  ivyscript_hostname << "pipe_driver_subthread::real_send_string(std::string s = \"" << render_string_harmless(s) << "\") - after writing to pipe.\n"; log(logfilename,o.str());}
 
-    if (last_message_time == ivytime(0))
+    if (last_message_time == ivytime_zero)
     {
         last_message_time.setToNow();
     }
@@ -429,7 +429,7 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
             now.setToNow();
 
             remaining = timeout - (now-entry_time);
-            if (remaining < ivytime(0))
+            if (remaining < ivytime_zero)
             {
                 std::ostringstream o;
                 o << "For host " << ivyscript_hostname << ", pipe_driver_subthread::get_line_from_pipe(timeout=" << timeout.format_as_duration_HMMSSns()
@@ -452,10 +452,10 @@ std::string pipe_driver_subthread::real_get_line_from_pipe
     {
         ivytime delta;
 
-        if (last_message_time == ivytime(0))
+        if (last_message_time == ivytime_zero)
         {
             last_message_time.setToNow();
-            delta = ivytime(0);
+            delta = ivytime_zero;
         }
         else
         {

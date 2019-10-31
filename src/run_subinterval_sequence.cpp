@@ -1070,7 +1070,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                 ( (m_s.cooldown_by_MP_busy != cooldown_mode::off)       && m_s.some_subsystem_still_busy()  )  // this clause has to go first to make sure we are counting the number of subintervals MP busy stays below the limit.
              || ( (m_s.cooldown_by_wp      != cooldown_mode::off)       && m_s.some_cooldown_WP_not_empty() )
              || ( (m_s.number_of_IOs_running_at_end_of_subinterval > 0) && (cooldown_duration < ivytime(60)) )
-             || ( (m_s.cooldown_seconds > ivytime(0))                   && (cooldown_duration < m_s.cooldown_seconds) )
+             || ( (m_s.cooldown_seconds > ivytime_zero)                 && (cooldown_duration < m_s.cooldown_seconds) )
             )
             {
                 m_s.lastEvaluateSubintervalReturnCode = EVALUATE_SUBINTERVAL_CONTINUE;
@@ -1174,7 +1174,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
                          ( (m_s.cooldown_by_wp      != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_cooldown_WP_not_empty() ) )
                       || ( (m_s.cooldown_by_MP_busy != cooldown_mode::off) && ( m_s.suppress_subsystem_perf || m_s.some_subsystem_still_busy()  ) )
                       || ( m_s.number_of_IOs_running_at_end_of_subinterval > 0 )
-                      || ( m_s.cooldown_seconds > ivytime(0) )
+                      || ( m_s.cooldown_seconds > ivytime_zero )
                     )
                 )
                 {

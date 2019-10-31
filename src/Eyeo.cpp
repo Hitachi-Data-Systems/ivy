@@ -43,7 +43,7 @@ ivytime Eyeo::since_start_time() // returns ivytime(0) if start_time is not in t
 {
     ivytime now;
     now.setToNow();
-    if (start_time >= now) return ivytime(0);
+    if (start_time >= now) return ivytime_zero;
     else                   return now - start_time;
 }
 
@@ -61,7 +61,7 @@ void Eyeo::resetForNextIO() {
 	eyeocb.aio_nbytes = save_aio_nbytes;
 
 	iops_max_counted = false;
-	scheduled_time = start_time = running_time = end_time = ivytime(0);
+	scheduled_time = start_time = running_time = end_time = ivytime_zero;
 }
 
 std::ostream& operator<<(std::ostream& o, const struct io_event& e)
@@ -152,7 +152,7 @@ std::string Eyeo::thumbnail()
 
 	o << "Eyeo " << pWorkload->workloadID << "#" << io_sequence_number;
 
-	if (ivytime(0) == scheduled_time)
+	if (ivytime_zero == scheduled_time)
 	{
 	    o << " IOPS=max";
 	}
@@ -161,13 +161,13 @@ std::string Eyeo::thumbnail()
 	    o << " scheduled" << scheduled_time.format_as_datetime();
 	}
 
-	if (end_time != ivytime(0))
+	if (end_time != ivytime_zero)
 	{
 	    o << ", service_time=" << (service_time_seconds()/1000.0) << " ms";
 	}
 	else
 	{
-	    if (start_time == ivytime(0))
+	    if (start_time == ivytime_zero)
 	    {
 	        o << ", not started";
 	    }
@@ -184,28 +184,28 @@ std::string Eyeo::thumbnail()
 
 ivy_float Eyeo::service_time_seconds()
 {
-	if (ivytime(0) == end_time || ivytime(0) == start_time) return -1.0;
+	if (ivytime_zero == end_time || ivytime_zero == start_time) return -1.0;
 	ivytime service_time = end_time - start_time;
 	return (ivy_float) service_time;
 }
 
 ivy_float Eyeo::response_time_seconds()
 {
-	if (ivytime(0) == end_time || ivytime(0) == scheduled_time) return -1.0;
+	if (ivytime_zero == end_time || ivytime_zero == scheduled_time) return -1.0;
 	ivytime response_time = end_time - scheduled_time;
 	return (ivy_float) response_time;
 }
 
 ivy_float Eyeo::submit_time_seconds()
 {
-	if (ivytime(0) == start_time || ivytime(0) == running_time) return -1.0;
+	if (ivytime_zero == start_time || ivytime_zero == running_time) return -1.0;
 	ivytime submit_time = running_time - start_time;
 	return (ivy_float) submit_time;
 }
 
 ivy_float Eyeo::running_time_seconds()
 {
-	if (ivytime(0) == end_time || ivytime(0) == running_time) return -1.0;
+	if (ivytime_zero == end_time || ivytime_zero == running_time) return -1.0;
 	ivytime run_time = end_time - running_time;
 	return (ivy_float) run_time;
 }

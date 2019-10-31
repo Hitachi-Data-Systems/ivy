@@ -182,7 +182,7 @@ bool Iosequencer::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 
 	numberOfCoverageBlocks = 1 + coverageEndBlock - coverageStartBlock;
 
-	previous_scheduled_time = ivytime(0);
+	previous_scheduled_time = ivytime_zero;
 
     if (routine_logging)
     {

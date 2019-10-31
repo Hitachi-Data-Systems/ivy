@@ -29,6 +29,8 @@ using namespace std;
 
 ivytime ivytime_reference_delta (0);
 
+ivytime ivytime_zero (0);
+
 // NOTE:
 //
 // ivytime uses the Linux-specific call clock_gettime(CLOCK_MONOTONIC_RAW,&t)
@@ -536,7 +538,7 @@ void ivytime::setToNow()
 
 ivytime& ivytime::get_ivytime_reference_delta() const
 {
-    if (ivytime_reference_delta == ivytime(0))
+    if (ivytime_reference_delta == ivytime_zero)
     {
         int rc;
 

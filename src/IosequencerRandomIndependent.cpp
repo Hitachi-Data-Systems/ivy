@@ -73,11 +73,11 @@ bool IosequencerRandomIndependent::generate(Eyeo& slang)
 
 	if (-1 == p_IosequencerInput->IOPS)
 	{	// iorate=max
-		slang.scheduled_time = ivytime(0);
+		slang.scheduled_time = ivytime_zero;
 	}
 	else
 	{
-		if (ivytime(0) == previous_scheduled_time)
+		if (ivytime_zero == previous_scheduled_time)
 		{
 			slang.scheduled_time.setToNow();
 		}

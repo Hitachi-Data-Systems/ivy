@@ -497,7 +497,7 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     }
     else
     {
-        cooldown_seconds = ivytime(0);
+        cooldown_seconds = ivytime_zero;
     }
 
 //----------------------------------- suppress_perf

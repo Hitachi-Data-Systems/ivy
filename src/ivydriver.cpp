@@ -79,7 +79,7 @@ void IvyDriver::say(std::string s)
 
  	if (s.length()==0 || s[s.length()-1] != '\n') s.push_back('\n');
 
-    if (ivydriver.last_message_time == ivytime(0))
+    if (ivydriver.last_message_time == ivytime_zero)
     {
         ivydriver.last_message_time.setToNow();
     }
@@ -490,7 +490,7 @@ int IvyDriver::main(int argc, char* argv[])
 
 	while(!std::cin.eof())
 	{
-	    if (time_error_reported != ivytime(0))
+	    if (time_error_reported != ivytime_zero)
 	    {
 	        ivytime now; now.setToNow();
 
@@ -529,7 +529,7 @@ int IvyDriver::main(int argc, char* argv[])
 
 		lasttime.setToNow();
 
-        if (last_message_time == ivytime(0))
+        if (last_message_time == ivytime_zero)
         {
             last_message_time.setToNow();
         }

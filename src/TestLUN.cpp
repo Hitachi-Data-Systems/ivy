@@ -627,14 +627,14 @@ ivytime TestLUN::next_scheduled_io()
 
         auto pEyeo = pWorkload->precomputeQ.front();
 
-        if (tijd == ivytime(0))
+        if (tijd == ivytime_zero)
         {
             tijd = pEyeo->scheduled_time;
         }
         else
         {
             // we know we have a previous non-zero time to compare to
-            if ( pEyeo->scheduled_time != ivytime(0) )
+            if ( pEyeo->scheduled_time != ivytime_zero )
             {
                 // This one is non-zero as well, so select the earlier
                 if (tijd > pEyeo->scheduled_time)
