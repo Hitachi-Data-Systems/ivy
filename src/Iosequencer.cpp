@@ -26,7 +26,16 @@ using namespace std;
 
 extern bool routine_logging;
 
-std::default_random_engine deafrangen;
+uint64_t xorshift64s(struct xorshift64s_state *state) // from https://en.wikipedia.org/wiki/Xorshift
+{
+	uint64_t x = state->a;	/* The state must be seeded with a nonzero value. */
+	x ^= x >> 12; // a
+	x ^= x << 25; // b
+	x ^= x >> 27; // c
+	state->a = x;
+	return x * UINT64_C(0x2545F4914F6CDD1D);
+}
+
 
 bool Iosequencer::generate(Eyeo& e)
 {
@@ -43,6 +52,12 @@ bool Iosequencer::generate(Eyeo& e)
 bool Iosequencer::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
 	p_IosequencerInput = p_i_i;
+
+	ivytime set_seed; set_seed.setToNow();
+
+	uint64_t* p_seed = (uint64_t*) &set_seed;
+
+	xors.a = *p_seed;
 
 	// set the first/last LBAs and "blocksize_bytes" block numbers.
 

@@ -79,7 +79,7 @@ public:
 			// saying "IOPS = +x .25" means increase IOPS by 25%, and "IOPS = -x25%" means reduce IOPS by 25%.
 
 			// 0.0 means don't issue any new I/Os.
-	ivy_float
+	long double
 
 		fractionRead{fractionRead_default},
 			// For random can be any value from 0.0 to 1.0.  For sequential must be either 0.0 or 1.0.
@@ -109,9 +109,9 @@ public:
     ivy_float skew_weight {skew_weight_default};
 
     uint64_t hot_zone_size_bytes {1024*1024};
-    ivy_float hot_zone_IOPS_fraction {0};
-    ivy_float hot_zone_read_fraction {0};
-    ivy_float hot_zone_write_fraction {0};
+
+    long double hot_zone_read_fraction {0};
+    long double hot_zone_write_fraction {0};
 
 public:
 	inline IosequencerInput(){reset();}
