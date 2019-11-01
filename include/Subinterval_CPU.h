@@ -33,8 +33,10 @@ public:
 	void rollup(const Subinterval_CPU&);  // used to make an average over a series of subintervals.
 	static std::string csvTitles();
 	std::string csvValuesAvgOverHosts();
-	std::string csvValues(std::string hostname);
+	std::string csvValues(const std::string& hostname);
 	void clear();
+	double active_core_average_busy_overall();
+	double active_core_average_busy_by_host(const std::string& hostname);
 };
 
 class Subinterval_CPU_temp

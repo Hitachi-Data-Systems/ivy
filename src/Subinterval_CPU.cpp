@@ -75,7 +75,7 @@ std::string Subinterval_CPU::csvValuesAvgOverHosts()
 }
 
 
-std::string Subinterval_CPU::csvValues(std::string hostname)
+std::string Subinterval_CPU::csvValues(const std::string& hostname)
 {
 	if (0 == rollup_count)
 	{
@@ -91,6 +91,32 @@ std::string Subinterval_CPU::csvValues(std::string hostname)
 	return (*it).second.csvValues(rollup_count);
 }
 
+double Subinterval_CPU::active_core_average_busy_overall()
+{
+	if (0 == rollup_count)
+	{
+		throw std::runtime_error("SubintervalCPU::active_core_average_busy_overall() is being called for an empty SubintervalCPU object.");
+	}
+
+	return overallCPU.avg_activecore_total;
+}
+
+
+double Subinterval_CPU::active_core_average_busy_by_host(const std::string& hostname)
+{
+	if (0 == rollup_count)
+	{
+		throw std::runtime_error("SubintervalCPU::active_core_average_busy_by_host(hostname=\""s + hostname + "\") is being called for an empty SubintervalCPU object."s);
+	}
+
+	std::map<std::string, avgcpubusypercent>::iterator it = eachHostCPU.find(hostname);
+	if (eachHostCPU.end() == it)
+	{
+		throw std::runtime_error("SubintervalCPU::active_core_average_busy_by_host(hostname=\"" + hostname + "\") is being called for an invalid hostname."s);
+	}
+
+	return (*it).second.avg_activecore_total;
+}
 
 // ==================================================================================================================
 

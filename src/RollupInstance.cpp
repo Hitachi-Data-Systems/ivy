@@ -1576,7 +1576,39 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
             csvline << ',' << m_s.measurements[measurement_index].measure_duration().format_as_duration_HMMSS();
             csvline << ',' << m_s.measurements[measurement_index].cooldown_duration().format_as_duration_HMMSS();
 
+            measurement& m = m_s.measurements[measurement_index];
+
             measurement_things& mt = things_by_measurement[measurement_index];
+
+            std::string validation_errors {};
+
+            double active_core_average_busy;
+
+            if (stringCaseInsensitiveEquality(std::string("host"),pRollupType->attributeNameCombo.attributeNameComboID))
+            {
+                active_core_average_busy = m.measurement_rollup_CPU.active_core_average_busy_by_host(toLower(rollupInstanceID));
+            }
+            else
+            {
+                active_core_average_busy = m.measurement_rollup_CPU.active_core_average_busy_overall();
+            }
+
+            active_core_average_busy /= 100.0;
+
+            bool active_core_busy_error {false};
+
+            if (active_core_average_busy > m_s.max_active_core_busy)
+            {
+                active_core_busy_error = true;
+
+                std::ostringstream o;
+
+                o << "[Average ivydriver active core % busy is " << std::fixed << std::setprecision(2) << (100.0 * active_core_average_busy) << "%"
+                    << " which is over the limit max_active_core_busy = "<< std::fixed << std::setprecision(2) << (100.0 * m_s.max_active_core_busy) << "%."
+                    << "  This limit is set using ivy_engine_set().]";
+                validation_errors += o.str();
+            }
+
 
             if
             (
@@ -1584,6 +1616,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 || !m_s.rollups.passesDataVariationValidation().first
                 || mt.subsystem_IOPS_as_fraction_of_host_IOPS_failure
                 || mt.failed_to_achieve_total_IOPS_setting
+                || active_core_busy_error
             )
             {
                 csvline << ",invalid"; // subintervalIndex;
@@ -1593,7 +1626,6 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 csvline << ",valid"; // subintervalIndex;
             }
 
-            std::string validation_errors {};
 
             if (m_s.measurements[measurement_index].have_timeout_rollup) validation_errors = "[measurement timeout]";
 
@@ -1624,8 +1656,6 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
             csvline << ","; if(m_s.have_measure) { csvline << (100.0 * m_s.accuracy_plus_minus_fraction) << "%";}
 
             csvline << "," << mt.Total_IOPS_setting_string;
-
-            measurement& m = m_s.measurements[measurement_index];
 
             csvline << ','; // CPU - 2 columns
             if (stringCaseInsensitiveEquality(std::string("host"),pRollupType->attributeNameCombo.attributeNameComboID))

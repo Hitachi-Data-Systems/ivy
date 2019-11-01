@@ -182,7 +182,11 @@ std::string LUN::normalize_attribute_name(const std::string& column_title, bool 
 
 	for (unsigned int i=0; i < column_title.length(); i++)
 	{
-        if (!preserve_case)
+        if (preserve_case)
+        {
+            c = column_title[i];
+        }
+        else
         {
     		c = tolower(column_title[i]);
         }

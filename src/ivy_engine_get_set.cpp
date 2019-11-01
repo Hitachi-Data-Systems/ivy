@@ -157,6 +157,13 @@ ivy_engine::get(const std::string& thingee)
         return std::make_pair(true,o.str());
     }
 
+    if (0 == t.compare(normalize_identifier("max_active_core_busy")))
+    {
+        std::ostringstream o;
+        o << std::fixed << std::setprecision(2) << (100.0 * max_active_core_busy) << "%";
+
+        return std::make_pair(true,o.str());
+    }
 
     {
         std::ostringstream o;
@@ -255,11 +262,40 @@ ivy_engine::set(const std::string& thingee,
         return std::make_pair(true,"");
     }
 
+    if (0 == t.compare(normalize_identifier("max_active_core_busy")))
+    {
+        ivy_float v;
+
+        try
+        {
+            v = number_optional_trailing_percent(value,"max_active_core_busy");
+        }
+        catch (const std::invalid_argument& ia)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"max_active_core_busy\", \"" << value << "\") - max_active_core_busy value must be a positive number with optional trailing %.  The value must be less than or equal to 1.0 or 100%."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        if (v <= 0.0 || v > 1.0)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"max_active_core_busy\", \"" << value << "\") - max_active_core_busy value must be a positive number with optional trailing %.  The value must be less than or equal to 1.0 or 100%."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        max_active_core_busy = v;
+
+        return std::make_pair(true,"");
+    }
+
 
     {
         std::ostringstream o;
         o << "<Error> Unknown ivy engine set parameter \"" << thingee << "\"." << std::endl << std::endl;
-        o << "Valid set() parameters are \"achieved_IOPS_tolerance\", \"critical_temp\", and \"provisional_csv_lines\"." << std::endl << std::endl;
+        o << "Valid set() parameters are \"achieved_IOPS_tolerance\", \"critical_temp\", \"max_active_core_busy\", and \"provisional_csv_lines\"." << std::endl << std::endl;
         return std::make_pair(false,o.str());
     }
 }

@@ -521,6 +521,8 @@ public:
 
     std::string copy_back_ivy_logs_sh_filename {};
 
+    double max_active_core_busy { 0.97 };
+
 
 // methods
 
