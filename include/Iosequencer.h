@@ -19,6 +19,8 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
+#include <stdint.h>
+
 #include "Eyeo.h"
 #include "IosequencerInput.h"
 #include "ivytime.h"
@@ -31,6 +33,12 @@ class WorkloadThread;
 class Workload;
 class Eyeo;
 
+struct xorshift64s_state {  // from https://en.wikipedia.org/wiki/Xorshift
+  uint64_t a;
+};
+
+uint64_t xorshift64s(struct xorshift64s_state *stat);
+
 class Iosequencer
 {
 
@@ -42,6 +50,8 @@ public:
 	WorkloadThread* pWorkloadThread;
 	TestLUN* pTestLUN;
 	Workload* pWorkload;
+
+	xorshift64s_state xors;
 
 	bool parameters_are_valid=false;  // this will be set by setFrom_IosequencerInput()
 

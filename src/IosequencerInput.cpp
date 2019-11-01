@@ -231,7 +231,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
 
         try
         {
-            hot_zone_IOPS_fraction = number_optional_trailing_percent(parameterValue,"");
+            hot_zone_read_fraction = hot_zone_write_fraction = number_optional_trailing_percent(parameterValue,"");
         }
         catch (const std::exception &e)
         {
@@ -243,7 +243,7 @@ std::pair<bool,std::string> IosequencerInput::setParameter(std::string parameter
             return std::make_pair(false,o.str());
         }
 
-        if (hot_zone_IOPS_fraction > 1.0 || hot_zone_IOPS_fraction < 0.0)
+        if (hot_zone_read_fraction > 1.0 || hot_zone_read_fraction < 0.0)
         {
             std::ostringstream o;
             o << "IosequencerInput::setParameter( parameter name \"" << parameterName << "\""
@@ -1064,7 +1064,7 @@ void IosequencerInput::reset()
 	pattern_seed = pattern_seed_default;
 
 	hot_zone_size_bytes = 1024*1024;
-	hot_zone_IOPS_fraction = 0.0;
+//	hot_zone_IOPS_fraction = 0.0;
 	hot_zone_read_fraction = 0.0;
 	hot_zone_write_fraction = 0.0;
 
@@ -1180,17 +1180,18 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
     if( normalized_identifier_equality(iosequencer_type,std::string("random_steady"))
      || normalized_identifier_equality(iosequencer_type,std::string("random_independent")) )
     {
-        o << ",hot_zone_size_bytes=" << put_on_KiB_etc_suffix(hot_zone_size_bytes);
-
+//        o << ",hot_zone_size_bytes=" << put_on_KiB_etc_suffix(hot_zone_size_bytes);
+//
         if (hot_zone_read_fraction != 0.0 || hot_zone_write_fraction != 0.0)
         {
+            if (hot_zone_size_bytes != 1024*1024) { o << ",hot_zone_size_bytes=" << put_on_KiB_etc_suffix(hot_zone_size_bytes); }
             o << ",hot_zone_read_fraction=\"" << (hot_zone_read_fraction*100.0) << "%\"";
             o << ",hot_zone_write_fraction=\"" << (hot_zone_write_fraction*100.0) << "%\"";
         }
-        else
-        {
-            o << ",hot_zone_IOPS_fraction=\"" << (hot_zone_IOPS_fraction*100.0) << "%\"";
-        }
+//        else
+//        {
+//            o << ",hot_zone_IOPS_fraction=\"" << (hot_zone_IOPS_fraction*100.0) << "%\"";
+//        }
     }
 
 	return o.str();
@@ -1256,19 +1257,11 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
     if( normalized_identifier_equality(iosequencer_type,std::string("random_steady"))
      || normalized_identifier_equality(iosequencer_type,std::string("random_independent")) )
     {
-        if (hot_zone_size_bytes != (1024*1024))
+        if (hot_zone_read_fraction != 0.0 || hot_zone_write_fraction != 0.0)
         {
-            o << ",hot_zone_size_bytes=" << put_on_KiB_etc_suffix(hot_zone_size_bytes);
-
-            if (hot_zone_read_fraction != 0.0 || hot_zone_write_fraction != 0.0)
-            {
-                o << ",hot_zone_read_fraction=\"" << (hot_zone_read_fraction*100.0) << "%\"";
-                o << ",hot_zone_write_fraction=\"" << (hot_zone_write_fraction*100.0) << "%\"";
-            }
-            else
-            {
-                o << ",hot_zone_IOPS_fraction=\"" << (hot_zone_IOPS_fraction*100.0) << "%\"";
-            }
+            if (hot_zone_size_bytes != (1024*1024)) { o << ",hot_zone_size_bytes=" << put_on_KiB_etc_suffix(hot_zone_size_bytes); }
+            o << ",hot_zone_read_fraction=\"" << (hot_zone_read_fraction*100.0) << "%\"";
+            o << ",hot_zone_write_fraction=\"" << (hot_zone_write_fraction*100.0) << "%\"";
         }
     }
 
@@ -1301,7 +1294,6 @@ void IosequencerInput::copy(const IosequencerInput& source)
 	pattern_seed             = source.pattern_seed;
 
 	hot_zone_size_bytes     = source.hot_zone_size_bytes;
-	hot_zone_IOPS_fraction  = source.hot_zone_IOPS_fraction;
 	hot_zone_read_fraction  = source.hot_zone_read_fraction;
 	hot_zone_write_fraction = source.hot_zone_write_fraction;
 

@@ -61,13 +61,6 @@ bool IosequencerRandomIndependent::generate(Eyeo& slang)
     o << "Entering IosequencerRandomIndependent::generate() for " << workloadID << " - Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
-
-	if (NULL == p_uniform_real_distribution_0_to_1)
-	{
-		log(logfilename,std::string("IosequencerRandomIndependent::generate() - p_uniform_real_distribution_0_to_1 was not initialized.\n"));
-		return false;
-	}
-
 	if (!IosequencerRandom::generate(slang))
 		return false;
 
@@ -83,8 +76,8 @@ bool IosequencerRandomIndependent::generate(Eyeo& slang)
 		}
 		else
 		{
-			ivy_float R=0.0, inter_IO_arrival_time;
-			while (R == 0.0 || R == 1.0) R = (*p_uniform_real_distribution_0_to_1)(deafrangen);  // The "while" was just in case we actually got 0.0 or 1.0
+			long double R=0.0, inter_IO_arrival_time;
+			while (R == 0.0 || R == 1.0) R = generate_float_between_0_and_1();  // The "while" was just in case we actually got 0.0 or 1.0
 
 			inter_IO_arrival_time = - log(1.0-R) / (p_IosequencerInput->IOPS);
 
