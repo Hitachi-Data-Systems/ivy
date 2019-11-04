@@ -26,19 +26,19 @@ void SubintervalRollup::clear()
 {
     inputRollup.clear();
     outputRollup.clear();
-    startIvytime = ivytime(0);
-    endIvytime   = ivytime(0);
+    startIvytime = ivytime_zero;
+    endIvytime   = ivytime_zero;
     for (auto& rs : IOPS_series        ) { rs.clear(); }
     for (auto& rs : service_time_series) { rs.clear(); }
 }
 
 void SubintervalRollup::addIn(const SubintervalRollup& other)
 {
-	if (ivytime(0) == startIvytime) startIvytime=other.startIvytime;
-	else if ( (!(ivytime(0) == other.startIvytime)) && other.startIvytime < startIvytime) startIvytime = other.startIvytime;
+	if (ivytime_zero == startIvytime) startIvytime=other.startIvytime;
+	else if ( (!(ivytime_zero == other.startIvytime)) && other.startIvytime < startIvytime) startIvytime = other.startIvytime;
 
-	if (ivytime(0) == endIvytime) endIvytime=other.endIvytime;
-	else if ( (!(ivytime(0) == other.endIvytime)) && other.endIvytime > endIvytime) endIvytime = other.endIvytime;
+	if (ivytime_zero == endIvytime) endIvytime=other.endIvytime;
+	else if ( (!(ivytime_zero == other.endIvytime)) && other.endIvytime > endIvytime) endIvytime = other.endIvytime;
 
 	inputRollup.merge(other.inputRollup);
 	outputRollup.add(other.outputRollup);

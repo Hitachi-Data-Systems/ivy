@@ -824,17 +824,17 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
         //   - end of subinterval
         //   - time to start next scheduled I/O over my TestLUNs, if there is a scheduled (not IOPS=max) I/O.
 
-        ivytime next_overall_io = ivytime(0);
+        ivytime next_overall_io = ivytime_zero;
 
         for (auto& pTestLUN : pTestLUNs)
         {
             ivytime next_this_LUN = pTestLUN->next_scheduled_io();
 
-            if (next_overall_io == ivytime(0))
+            if (next_overall_io == ivytime_zero)
             {
                 next_overall_io = next_this_LUN;
             }
-            else if (next_this_LUN   != ivytime(0) && next_overall_io != ivytime(0) && next_this_LUN < next_overall_io)
+            else if (next_this_LUN   != ivytime_zero && next_overall_io != ivytime_zero && next_this_LUN < next_overall_io)
             {
                 next_overall_io = next_this_LUN;
             }
@@ -842,7 +842,7 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
         ivytime wait_until_this_time = thread_view_subinterval_end;
 
-        if (next_overall_io != ivytime(0) && next_overall_io < thread_view_subinterval_end)
+        if (next_overall_io != ivytime_zero && next_overall_io < thread_view_subinterval_end)
         {
             wait_until_this_time = next_overall_io;
         }
@@ -851,7 +851,7 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
         if (wait_until_this_time <= now)
         {
-            wait_duration = ivytime(0);
+            wait_duration = ivytime_zero;
         }
         else
         {
@@ -873,7 +873,7 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
         // timerfd is used because epoll_wait() is an integer number of milliseconds and we need finer resolution.
 
-        if (wait_duration == ivytime(0))
+        if (wait_duration == ivytime_zero)
         {
             epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, 0);
         }

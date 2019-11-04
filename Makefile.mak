@@ -312,73 +312,393 @@ ivymaster: before_ivymaster out_ivymaster after_ivymaster
 out_ivymaster: before_ivymaster $(OBJ_IVYMASTER) $(DEP_IVYMASTER)
 	$(LD) $(LIBDIR_IVYMASTER) -o $(OUT_IVYMASTER) $(OBJ_IVYMASTER)  $(LDFLAGS_IVYMASTER) $(LIB_IVYMASTER)
 
-$(OBJDIR_IVYMASTER)/src/Subinterval_detail_line.o: src/Subinterval_detail_line.cpp
+$(OBJDIR_IVYMASTER)/src/Subinterval_detail_line.o: src/Subinterval_detail_line.cpp \
+	include/Subinterval_detail_line.h include/WorkloadID.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/Subinterval_detail_line.cpp -o $(OBJDIR_IVYMASTER)/src/Subinterval_detail_line.o
 
-$(OBJDIR_IVYMASTER)/src/RestHandler.o: src/RestHandler.cpp
+$(OBJDIR_IVYMASTER)/src/RestHandler.o: src/RestHandler.cpp include/RestHandler.h \
+	include/RestBaseUri.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/RestEngineUri.h include/RestLogsUri.h include/RestWorkloadsUri.h \
+	include/RestCsvqueryUri.h include/RestRollupsUri.h \
+	include/RestSessionsUri.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RestHandler.cpp -o $(OBJDIR_IVYMASTER)/src/RestHandler.o
 
-$(OBJDIR_IVYMASTER)/src/RestLogsUri.o: src/RestLogsUri.cpp
+$(OBJDIR_IVYMASTER)/src/RestLogsUri.o: src/RestLogsUri.cpp include/RestHandler.h \
+	include/RestBaseUri.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/RestEngineUri.h include/RestLogsUri.h include/RestWorkloadsUri.h \
+	include/RestCsvqueryUri.h include/RestRollupsUri.h \
+	include/RestSessionsUri.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RestLogsUri.cpp -o $(OBJDIR_IVYMASTER)/src/RestLogsUri.o
 
-$(OBJDIR_IVYMASTER)/src/RestRollupsUri.o: src/RestRollupsUri.cpp
+$(OBJDIR_IVYMASTER)/src/RestRollupsUri.o: src/RestRollupsUri.cpp include/RestHandler.h \
+	include/RestBaseUri.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/RestEngineUri.h include/RestLogsUri.h include/RestWorkloadsUri.h \
+	include/RestCsvqueryUri.h include/RestRollupsUri.h \
+	include/RestSessionsUri.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RestRollupsUri.cpp -o $(OBJDIR_IVYMASTER)/src/RestRollupsUri.o
 
-$(OBJDIR_IVYMASTER)/src/RestSessionsUri.o: src/RestSessionsUri.cpp
+$(OBJDIR_IVYMASTER)/src/RestSessionsUri.o: src/RestSessionsUri.cpp include/RestHandler.h \
+	include/RestBaseUri.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/RestEngineUri.h include/RestLogsUri.h include/RestWorkloadsUri.h \
+	include/RestCsvqueryUri.h include/RestRollupsUri.h \
+	include/RestSessionsUri.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RestSessionsUri.cpp -o $(OBJDIR_IVYMASTER)/src/RestSessionsUri.o
 
-$(OBJDIR_IVYMASTER)/src/RestWorkloadsUri.o: src/RestWorkloadsUri.cpp
+$(OBJDIR_IVYMASTER)/src/RestWorkloadsUri.o: src/RestWorkloadsUri.cpp include/RestHandler.h \
+	include/RestBaseUri.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/RestEngineUri.h include/RestLogsUri.h include/RestWorkloadsUri.h \
+	include/RestCsvqueryUri.h include/RestRollupsUri.h \
+	include/RestSessionsUri.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RestWorkloadsUri.cpp -o $(OBJDIR_IVYMASTER)/src/RestWorkloadsUri.o
 
-$(OBJDIR_IVYMASTER)/src/RollupInstance.o: src/RollupInstance.cpp
+$(OBJDIR_IVYMASTER)/src/RollupInstance.o: src/RollupInstance.cpp include/RollupInstance.h \
+	include/subsystem_summary_data.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h \
+	include/SubintervalRollup.h include/IosequencerInputRollup.h \
+	include/ivytime.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/logger.h \
+	include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/Test_config_thumbnail.h \
+	include/LUN.h include/LDEVset.h include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/Iosequencer.h include/Eyeo.h include/WorkloadThread.h \
+	include/Subinterval_CPU.h include/ivylinuxcpubusy.h include/RollupSet.h \
+	include/RollupType.h include/AttributeNameCombo.h \
+	include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/studentsTdistribution.h include/ivybuilddate.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RollupInstance.cpp -o $(OBJDIR_IVYMASTER)/src/RollupInstance.o
 
-$(OBJDIR_IVYMASTER)/src/RollupSet.o: src/RollupSet.cpp
+$(OBJDIR_IVYMASTER)/src/RollupSet.o: src/RollupSet.cpp include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/LUN.h include/logger.h \
+	include/RunningStat.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/RollupInstance.h include/subsystem_summary_data.h \
+	include/SubintervalRollup.h include/IosequencerInputRollup.h \
+	include/SequenceOfSubintervalRollup.h include/ListOfWorkloadIDs.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/Iosequencer.h include/Eyeo.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RollupSet.cpp -o $(OBJDIR_IVYMASTER)/src/RollupSet.o
 
-$(OBJDIR_IVYMASTER)/src/RollupType.o: src/RollupType.cpp
+$(OBJDIR_IVYMASTER)/src/RollupType.o: src/RollupType.cpp include/RollupType.h \
+	include/AttributeNameCombo.h include/LUN.h include/logger.h \
+	include/RunningStat.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/RollupInstance.h include/subsystem_summary_data.h \
+	include/SubintervalRollup.h include/IosequencerInputRollup.h \
+	include/SequenceOfSubintervalRollup.h include/ListOfWorkloadIDs.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/Iosequencer.h include/Eyeo.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/LUNpointerList.h \
+	include/JSON_select.h include/pipe_driver_subthread.h \
+	include/Subsystem.h include/GatherData.h parser/include/IvyscriptLine.h \
+	include/ParameterValueLookupTable.h include/nestedit.h \
+	include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RollupType.cpp -o $(OBJDIR_IVYMASTER)/src/RollupType.o
 
-$(OBJDIR_IVYMASTER)/src/RunningStat.o: src/RunningStat.cpp
+$(OBJDIR_IVYMASTER)/src/RunningStat.o: src/RunningStat.cpp include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RunningStat.cpp -o $(OBJDIR_IVYMASTER)/src/RunningStat.o
 
-$(OBJDIR_IVYMASTER)/src/SubintervalOutput.o: src/SubintervalOutput.cpp
+$(OBJDIR_IVYMASTER)/src/SubintervalOutput.o: src/SubintervalOutput.cpp \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/RunningStat.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/ivytime.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/SubintervalOutput.cpp -o $(OBJDIR_IVYMASTER)/src/SubintervalOutput.o
 
-$(OBJDIR_IVYMASTER)/src/SubintervalRollup.o: src/SubintervalRollup.cpp
+$(OBJDIR_IVYMASTER)/src/SubintervalRollup.o: src/SubintervalRollup.cpp include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/ivytime.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/RunningStat.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/logger.h \
+	include/TestLUN.h include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/SubintervalRollup.cpp -o $(OBJDIR_IVYMASTER)/src/SubintervalRollup.o
 
-$(OBJDIR_IVYMASTER)/src/Subinterval_CPU.o: src/Subinterval_CPU.cpp
+$(OBJDIR_IVYMASTER)/src/Subinterval_CPU.o: src/Subinterval_CPU.cpp include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/ivytime.h include/RunningStat.h \
+	include/logger.h include/ivyhelpers.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/Subinterval_CPU.cpp -o $(OBJDIR_IVYMASTER)/src/Subinterval_CPU.o
 
-$(OBJDIR_IVYMASTER)/src/RestEngineUri.o: src/RestEngineUri.cpp
+$(OBJDIR_IVYMASTER)/src/RestEngineUri.o: src/RestEngineUri.cpp include/RestHandler.h \
+	include/RestBaseUri.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/RestEngineUri.h include/RestLogsUri.h include/RestWorkloadsUri.h \
+	include/RestCsvqueryUri.h include/RestRollupsUri.h \
+	include/RestSessionsUri.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RestEngineUri.cpp -o $(OBJDIR_IVYMASTER)/src/RestEngineUri.o
 
-$(OBJDIR_IVYMASTER)/src/Subsystem.o: src/Subsystem.cpp
+$(OBJDIR_IVYMASTER)/src/Subsystem.o: src/Subsystem.cpp include/Subsystem.h include/LUN.h \
+	include/logger.h include/RunningStat.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/GatherData.h include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/TestLUN.h include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
+	include/Subinterval_CPU.h include/ivylinuxcpubusy.h include/RollupSet.h \
+	include/RollupType.h include/AttributeNameCombo.h \
+	include/RollupInstance.h include/subsystem_summary_data.h \
+	include/SubintervalRollup.h include/IosequencerInputRollup.h \
+	include/SequenceOfSubintervalRollup.h include/ListOfWorkloadIDs.h \
+	include/Test_config_thumbnail.h include/LDEVset.h \
+	include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h parser/include/IvyscriptLine.h \
+	include/ParameterValueLookupTable.h include/nestedit.h \
+	include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/Subsystem.cpp -o $(OBJDIR_IVYMASTER)/src/Subsystem.o
 
-$(OBJDIR_IVYMASTER)/src/Test_config_thumbnail.o: src/Test_config_thumbnail.cpp
+$(OBJDIR_IVYMASTER)/src/Test_config_thumbnail.o: src/Test_config_thumbnail.cpp \
+	include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/Test_config_thumbnail.cpp -o $(OBJDIR_IVYMASTER)/src/Test_config_thumbnail.o
 
-$(OBJDIR_IVYMASTER)/src/WorkloadID.o: src/WorkloadID.cpp
+$(OBJDIR_IVYMASTER)/src/WorkloadID.o: src/WorkloadID.cpp include/WorkloadID.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/WorkloadID.cpp -o $(OBJDIR_IVYMASTER)/src/WorkloadID.o
 
-$(OBJDIR_IVYMASTER)/src/WorkloadTracker.o: src/WorkloadTracker.cpp
+$(OBJDIR_IVYMASTER)/src/WorkloadTracker.o: src/WorkloadTracker.cpp include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/WorkloadTracker.cpp -o $(OBJDIR_IVYMASTER)/src/WorkloadTracker.o
 
-$(OBJDIR_IVYMASTER)/src/WorkloadTrackerPointerList.o: src/WorkloadTrackerPointerList.cpp
+$(OBJDIR_IVYMASTER)/src/WorkloadTrackerPointerList.o: src/WorkloadTrackerPointerList.cpp \
+	include/WorkloadTrackerPointerList.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/WorkloadTrackerPointerList.cpp -o $(OBJDIR_IVYMASTER)/src/WorkloadTrackerPointerList.o
 
-$(OBJDIR_IVYMASTER)/src/GatherData.o: src/GatherData.cpp
+$(OBJDIR_IVYMASTER)/src/GatherData.o: src/GatherData.cpp include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/GatherData.cpp -o $(OBJDIR_IVYMASTER)/src/GatherData.o
 
-$(OBJDIR_IVYMASTER)/src/IosequencerInput.o: src/IosequencerInput.cpp
+$(OBJDIR_IVYMASTER)/src/IosequencerInput.o: src/IosequencerInput.cpp include/IosequencerInput.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h \
+	include/logger.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/IosequencerInput.cpp -o $(OBJDIR_IVYMASTER)/src/IosequencerInput.o
 
-$(OBJDIR_IVYMASTER)/src/IosequencerInputRollup.o: src/IosequencerInputRollup.cpp
+$(OBJDIR_IVYMASTER)/src/IosequencerInputRollup.o: src/IosequencerInputRollup.cpp \
+	include/IosequencerInputRollup.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/ivyhelpers.h include/ivytime.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/IosequencerInputRollup.cpp -o $(OBJDIR_IVYMASTER)/src/IosequencerInputRollup.o
 
-$(OBJDIR_IVYMASTER)/src/JSON_select.o: src/JSON_select.cpp
+$(OBJDIR_IVYMASTER)/src/JSON_select.o: src/JSON_select.cpp include/LUN.h include/logger.h \
+	include/RunningStat.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/JSON_select.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
+	include/Subinterval_CPU.h include/ivylinuxcpubusy.h include/RollupSet.h \
+	include/RollupType.h include/AttributeNameCombo.h \
+	include/RollupInstance.h include/subsystem_summary_data.h \
+	include/SubintervalRollup.h include/IosequencerInputRollup.h \
+	include/SequenceOfSubintervalRollup.h include/ListOfWorkloadIDs.h \
+	include/Test_config_thumbnail.h include/LDEVset.h \
+	include/LUNpointerList.h include/pipe_driver_subthread.h \
+	include/Subsystem.h include/GatherData.h parser/include/IvyscriptLine.h \
+	include/ParameterValueLookupTable.h include/nestedit.h \
+	include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/JSON_select.cpp -o $(OBJDIR_IVYMASTER)/src/JSON_select.o
 
 src/select/select.scanner.cc: src/select/select.l
@@ -387,160 +707,708 @@ src/select/select.scanner.cc: src/select/select.l
 src/select/select.parser.cc: src/select/select.y
 	$(BISON) -t -v -d src/select/select.y -o src/select/select.parser.cc
 
-$(OBJDIR_IVYMASTER)/src/select/select.scanner.o: src/select/select.scanner.cc src/select/select.parser.cc
+$(OBJDIR_IVYMASTER)/src/select/select.scanner.o: src/select/select.scanner.cc include/JSON_select.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/select/select.scanner.cc -o $(OBJDIR_IVYMASTER)/src/select/select.scanner.o
 
-$(OBJDIR_IVYMASTER)/src/select/select.parser.o: src/select/select.parser.cc
+$(OBJDIR_IVYMASTER)/src/select/select.parser.o: src/select/select.parser.cc include/JSON_select.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/select/select.parser.cc -o $(OBJDIR_IVYMASTER)/src/select/select.parser.o
 
-$(OBJDIR_IVYMASTER)/src/hosts/hosts.scanner.o: src/hosts/hosts.scanner.cc src/hosts/hosts.parser.cc
+$(OBJDIR_IVYMASTER)/src/hosts/hosts.scanner.o: src/hosts/hosts.scanner.cc include/hosts_list.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/hosts/hosts.scanner.cc -o $(OBJDIR_IVYMASTER)/src/hosts/hosts.scanner.o
 
-$(OBJDIR_IVYMASTER)/src/hosts/hosts.parser.o: src/hosts/hosts.parser.cc
+$(OBJDIR_IVYMASTER)/src/hosts/hosts.parser.o: src/hosts/hosts.parser.cc include/hosts_list.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/hosts/hosts.parser.cc -o $(OBJDIR_IVYMASTER)/src/hosts/hosts.parser.o
 
-$(OBJDIR_IVYMASTER)/src/LDEVset.o: src/LDEVset.cpp
+$(OBJDIR_IVYMASTER)/src/LDEVset.o: src/LDEVset.cpp include/LDEVset.h include/logger.h \
+	include/RunningStat.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/LDEVset.cpp -o $(OBJDIR_IVYMASTER)/src/LDEVset.o
 
-$(OBJDIR_IVYMASTER)/src/LUN.o: src/LUN.cpp
+$(OBJDIR_IVYMASTER)/src/LUN.o: src/LUN.cpp include/LUN.h include/logger.h include/RunningStat.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/LUN.cpp -o $(OBJDIR_IVYMASTER)/src/LUN.o
 
-$(OBJDIR_IVYMASTER)/src/LUNpointerList.o: src/LUNpointerList.cpp
+$(OBJDIR_IVYMASTER)/src/LUNpointerList.o: src/LUNpointerList.cpp include/LUN.h include/logger.h \
+	include/RunningStat.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/LUNpointerList.h include/JSON_select.h include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/TestLUN.h include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
+	include/Subinterval_CPU.h include/ivylinuxcpubusy.h include/RollupSet.h \
+	include/RollupType.h include/AttributeNameCombo.h \
+	include/RollupInstance.h include/subsystem_summary_data.h \
+	include/SubintervalRollup.h include/IosequencerInputRollup.h \
+	include/SequenceOfSubintervalRollup.h include/ListOfWorkloadIDs.h \
+	include/Test_config_thumbnail.h include/LDEVset.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/LUNpointerList.cpp -o $(OBJDIR_IVYMASTER)/src/LUNpointerList.o
 
-$(OBJDIR_IVYMASTER)/src/ListOfNameEqualsValueList.o: src/ListOfNameEqualsValueList.cpp
+$(OBJDIR_IVYMASTER)/src/ListOfNameEqualsValueList.o: src/ListOfNameEqualsValueList.cpp \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h \
+	include/ListOfNameEqualsValueList.h include/NameEqualsValueList.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ListOfNameEqualsValueList.cpp -o $(OBJDIR_IVYMASTER)/src/ListOfNameEqualsValueList.o
 
-$(OBJDIR_IVYMASTER)/src/ListOfWorkloadIDs.o: src/ListOfWorkloadIDs.cpp
+$(OBJDIR_IVYMASTER)/src/ListOfWorkloadIDs.o: src/ListOfWorkloadIDs.cpp \
+	include/ListOfWorkloadIDs.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ListOfWorkloadIDs.cpp -o $(OBJDIR_IVYMASTER)/src/ListOfWorkloadIDs.o
 
-$(OBJDIR_IVYMASTER)/src/MeasureController.o: src/MeasureController.cpp
+$(OBJDIR_IVYMASTER)/src/MeasureController.o: src/MeasureController.cpp \
+	include/MeasureController.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/MeasureController.cpp -o $(OBJDIR_IVYMASTER)/src/MeasureController.o
 
-$(OBJDIR_IVYMASTER)/src/MeasureCtlr.o: src/MeasureCtlr.cpp
+$(OBJDIR_IVYMASTER)/src/MeasureCtlr.o: src/MeasureCtlr.cpp include/MeasureCtlr.h \
+	include/MeasureController.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/Workload.h \
+	include/Subinterval.h include/IosequencerInput.h include/ivyhelpers.h \
+	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/MeasureCtlr.cpp -o $(OBJDIR_IVYMASTER)/src/MeasureCtlr.o
 
-$(OBJDIR_IVYMASTER)/src/NameEqualsValueList.o: src/NameEqualsValueList.cpp
+$(OBJDIR_IVYMASTER)/src/NameEqualsValueList.o: src/NameEqualsValueList.cpp \
+	include/NameEqualsValueList.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/NameEqualsValueList.cpp -o $(OBJDIR_IVYMASTER)/src/NameEqualsValueList.o
 
-$(OBJDIR_IVYMASTER)/src/ParameterValueLookupTable.o: src/ParameterValueLookupTable.cpp
+$(OBJDIR_IVYMASTER)/src/ParameterValueLookupTable.o: src/ParameterValueLookupTable.cpp \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h \
+	include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ParameterValueLookupTable.cpp -o $(OBJDIR_IVYMASTER)/src/ParameterValueLookupTable.o
 
-$(OBJDIR_IVYMASTER)/src/RestBaseUri.o: src/RestBaseUri.cpp
+$(OBJDIR_IVYMASTER)/src/RestBaseUri.o: src/RestBaseUri.cpp include/RestHandler.h \
+	include/RestBaseUri.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/RestEngineUri.h include/RestLogsUri.h include/RestWorkloadsUri.h \
+	include/RestCsvqueryUri.h include/RestRollupsUri.h \
+	include/RestSessionsUri.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RestBaseUri.cpp -o $(OBJDIR_IVYMASTER)/src/RestBaseUri.o
 
-$(OBJDIR_IVYMASTER)/src/RestCsvqueryUri.o: src/RestCsvqueryUri.cpp
+$(OBJDIR_IVYMASTER)/src/RestCsvqueryUri.o: src/RestCsvqueryUri.cpp include/RestHandler.h \
+	include/RestBaseUri.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/RestEngineUri.h include/RestLogsUri.h include/RestWorkloadsUri.h \
+	include/RestCsvqueryUri.h include/RestRollupsUri.h \
+	include/RestSessionsUri.h include/csvfile.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/RestCsvqueryUri.cpp -o $(OBJDIR_IVYMASTER)/src/RestCsvqueryUri.o
 
-$(OBJDIR_IVYMASTER)/src/run_subinterval_sequence.o: src/run_subinterval_sequence.cpp
+$(OBJDIR_IVYMASTER)/src/run_subinterval_sequence.o: src/run_subinterval_sequence.cpp \
+	include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/run_subinterval_sequence.cpp -o $(OBJDIR_IVYMASTER)/src/run_subinterval_sequence.o
 
-$(OBJDIR_IVYMASTER)/src/measurement.o: src/measurement.cpp
+$(OBJDIR_IVYMASTER)/src/measurement.o: src/measurement.cpp include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/measurement.cpp -o $(OBJDIR_IVYMASTER)/src/measurement.o
 
-$(OBJDIR_IVYMASTER)/src/multi_measure.o: src/multi_measure.cpp
+$(OBJDIR_IVYMASTER)/src/multi_measure.o: src/multi_measure.cpp include/multi_measure.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/Workload.h \
+	include/Subinterval.h include/IosequencerInput.h include/ivyhelpers.h \
+	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/multi_measure.cpp -o $(OBJDIR_IVYMASTER)/src/multi_measure.o
 
-$(OBJDIR_IVYMASTER)/src/nestedit.o: src/nestedit.cpp
+$(OBJDIR_IVYMASTER)/src/nestedit.o: src/nestedit.cpp include/nestedit.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/nestedit.cpp -o $(OBJDIR_IVYMASTER)/src/nestedit.o
 
-$(OBJDIR_IVYMASTER)/src/pattern.o: src/pattern.cpp
+$(OBJDIR_IVYMASTER)/src/pattern.o: src/pattern.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/pattern.cpp -o $(OBJDIR_IVYMASTER)/src/pattern.o
 
-$(OBJDIR_IVYMASTER)/src/pipe_driver_gather.o: src/pipe_driver_gather.cpp
+$(OBJDIR_IVYMASTER)/src/pipe_driver_gather.o: src/pipe_driver_gather.cpp include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/pipe_driver_gather.cpp -o $(OBJDIR_IVYMASTER)/src/pipe_driver_gather.o
 
-$(OBJDIR_IVYMASTER)/src/pipe_driver_subthread.o: src/pipe_driver_subthread.cpp
+$(OBJDIR_IVYMASTER)/src/pipe_driver_subthread.o: src/pipe_driver_subthread.cpp \
+	include/pipe_driver_subthread.h include/ListOfWorkloadIDs.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/Subsystem.h include/LUN.h \
+	include/GatherData.h include/Subinterval_CPU.h include/ivylinuxcpubusy.h \
+	include/LUNpointerList.h include/JSON_select.h include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/Iosequencer.h include/Eyeo.h include/WorkloadThread.h \
+	include/RollupSet.h include/RollupType.h include/AttributeNameCombo.h \
+	include/RollupInstance.h include/subsystem_summary_data.h \
+	include/SubintervalRollup.h include/IosequencerInputRollup.h \
+	include/SequenceOfSubintervalRollup.h include/Test_config_thumbnail.h \
+	include/LDEVset.h parser/include/IvyscriptLine.h \
+	include/ParameterValueLookupTable.h include/nestedit.h \
+	include/MeasureController.h include/MeasureCtlr.h \
+	include/Subinterval_detail_line.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/pipe_driver_subthread.cpp -o $(OBJDIR_IVYMASTER)/src/pipe_driver_subthread.o
 
-$(OBJDIR_IVYMASTER)/src/prepare_dedupe.o: src/prepare_dedupe.cpp
+$(OBJDIR_IVYMASTER)/src/prepare_dedupe.o: src/prepare_dedupe.cpp include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/prepare_dedupe.cpp -o $(OBJDIR_IVYMASTER)/src/prepare_dedupe.o
 
-$(OBJDIR_IVYMASTER)/src/process_cmddev_commands.o: src/process_cmddev_commands.cpp
+$(OBJDIR_IVYMASTER)/src/process_cmddev_commands.o: src/process_cmddev_commands.cpp \
+	include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/process_cmddev_commands.cpp -o $(OBJDIR_IVYMASTER)/src/process_cmddev_commands.o
 
-$(OBJDIR_IVYMASTER)/src/rollup_Hitachi_RAID_data.o: src/rollup_Hitachi_RAID_data.cpp
+$(OBJDIR_IVYMASTER)/src/rollup_Hitachi_RAID_data.o: src/rollup_Hitachi_RAID_data.cpp \
+	include/GatherData.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/Subsystem.h \
+	include/LUN.h include/logger.h include/RunningStat.h \
+	include/ivyhelpers.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
+	include/Subinterval_CPU.h include/ivylinuxcpubusy.h include/RollupSet.h \
+	include/RollupType.h include/AttributeNameCombo.h \
+	include/RollupInstance.h include/subsystem_summary_data.h \
+	include/SubintervalRollup.h include/IosequencerInputRollup.h \
+	include/SequenceOfSubintervalRollup.h include/ListOfWorkloadIDs.h \
+	include/Test_config_thumbnail.h include/LDEVset.h \
+	include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h parser/include/IvyscriptLine.h \
+	include/ParameterValueLookupTable.h include/nestedit.h \
+	include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/rollup_Hitachi_RAID_data.cpp -o $(OBJDIR_IVYMASTER)/src/rollup_Hitachi_RAID_data.o
 
-$(OBJDIR_IVYMASTER)/src/logger.o: src/logger.cpp
+$(OBJDIR_IVYMASTER)/src/logger.o: src/logger.cpp include/logger.h include/RunningStat.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/logger.cpp -o $(OBJDIR_IVYMASTER)/src/logger.o
 
-$(OBJDIR_IVYMASTER)/src/skew_weight.o: src/skew_weight.cpp
+$(OBJDIR_IVYMASTER)/src/skew_weight.o: src/skew_weight.cpp include/skew_weight.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/WorkloadID.h include/ListOfWorkloadIDs.h include/Workload.h \
+	include/Subinterval.h include/IosequencerInput.h include/ivyhelpers.h \
+	include/ivytime.h include/RunningStat.h include/logger.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/TestLUN.h include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/Iosequencer.h include/Eyeo.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/Test_config_thumbnail.h include/LDEVset.h \
+	include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/skew_weight.cpp -o $(OBJDIR_IVYMASTER)/src/skew_weight.o
 
-$(OBJDIR_IVYMASTER)/src/studentsTdistribution.o: src/studentsTdistribution.cpp
+$(OBJDIR_IVYMASTER)/src/studentsTdistribution.o: src/studentsTdistribution.cpp \
+	include/studentsTdistribution.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/ivyhelpers.h include/ivytime.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/studentsTdistribution.cpp -o $(OBJDIR_IVYMASTER)/src/studentsTdistribution.o
 
-$(OBJDIR_IVYMASTER)/src/subsystem_summary_data.o: src/subsystem_summary_data.cpp
+$(OBJDIR_IVYMASTER)/src/subsystem_summary_data.o: src/subsystem_summary_data.cpp \
+	include/subsystem_summary_data.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/logger.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/TestLUN.h include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/SubintervalRollup.h include/IosequencerInputRollup.h \
+	include/SequenceOfSubintervalRollup.h include/ListOfWorkloadIDs.h \
+	include/Test_config_thumbnail.h include/LDEVset.h \
+	include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/subsystem_summary_data.cpp -o $(OBJDIR_IVYMASTER)/src/subsystem_summary_data.o
 
-$(OBJDIR_IVYMASTER)/src/ivy_engine.o: src/ivy_engine.cpp
+$(OBJDIR_IVYMASTER)/src/ivy_engine.o: src/ivy_engine.cpp include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/multi_measure.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivy_engine.cpp -o $(OBJDIR_IVYMASTER)/src/ivy_engine.o
 
-$(OBJDIR_IVYMASTER)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_IVYMASTER)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/csvfile.cpp -o $(OBJDIR_IVYMASTER)/src/csvfile.o
 
-$(OBJDIR_IVYMASTER)/src/dedupe_method.o: src/dedupe_method.cpp
+$(OBJDIR_IVYMASTER)/src/dedupe_method.o: src/dedupe_method.cpp include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/dedupe_method.cpp -o $(OBJDIR_IVYMASTER)/src/dedupe_method.o
 
-$(OBJDIR_IVYMASTER)/src/discover_luns.o: src/discover_luns.cpp
+$(OBJDIR_IVYMASTER)/src/discover_luns.o: src/discover_luns.cpp include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h include/discover_luns.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/discover_luns.cpp -o $(OBJDIR_IVYMASTER)/src/discover_luns.o
 
-$(OBJDIR_IVYMASTER)/src/hosts_list.o: src/hosts_list.cpp
+$(OBJDIR_IVYMASTER)/src/hosts_list.o: src/hosts_list.cpp include/hosts_list.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/hosts_list.cpp -o $(OBJDIR_IVYMASTER)/src/hosts_list.o
 
-$(OBJDIR_IVYMASTER)/src/AttributeNameCombo.o: src/AttributeNameCombo.cpp
+$(OBJDIR_IVYMASTER)/src/AttributeNameCombo.o: src/AttributeNameCombo.cpp \
+	include/AttributeNameCombo.h include/LUN.h include/logger.h \
+	include/RunningStat.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/AttributeNameCombo.cpp -o $(OBJDIR_IVYMASTER)/src/AttributeNameCombo.o
 
-$(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_rollup.o: src/ivy_engine_create_delete_rollup.cpp
+$(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_rollup.o: src/ivy_engine_create_delete_rollup.cpp include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivy_engine_create_delete_rollup.cpp -o $(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_rollup.o
 
-$(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_workload.o: src/ivy_engine_create_delete_workload.cpp
+$(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_workload.o: src/ivy_engine_create_delete_workload.cpp include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivy_engine_create_delete_workload.cpp -o $(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_workload.o
 
-$(OBJDIR_IVYMASTER)/src/ivy_engine_edit_rollup.o: src/ivy_engine_edit_rollup.cpp
+$(OBJDIR_IVYMASTER)/src/ivy_engine_edit_rollup.o: src/ivy_engine_edit_rollup.cpp \
+	include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/ListOfNameEqualsValueList.h include/NameEqualsValueList.h \
+	include/skew_weight.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivy_engine_edit_rollup.cpp -o $(OBJDIR_IVYMASTER)/src/ivy_engine_edit_rollup.o
 
-$(OBJDIR_IVYMASTER)/src/ivy_engine_get_set.o: src/ivy_engine_get_set.cpp
+$(OBJDIR_IVYMASTER)/src/ivy_engine_get_set.o: src/ivy_engine_get_set.cpp include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivy_engine_get_set.cpp -o $(OBJDIR_IVYMASTER)/src/ivy_engine_get_set.o
 
-$(OBJDIR_IVYMASTER)/src/ivy_engine_go.o: src/ivy_engine_go.cpp
+$(OBJDIR_IVYMASTER)/src/ivy_engine_go.o: src/ivy_engine_go.cpp include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/run_subinterval_sequence.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivy_engine_go.cpp -o $(OBJDIR_IVYMASTER)/src/ivy_engine_go.o
 
-$(OBJDIR_IVYMASTER)/src/ivy_engine_startup.o: src/ivy_engine_startup.cpp
+$(OBJDIR_IVYMASTER)/src/ivy_engine_startup.o: src/ivy_engine_startup.cpp include/ivybuilddate.h \
+	include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/hosts_list.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivy_engine_startup.cpp -o $(OBJDIR_IVYMASTER)/src/ivy_engine_startup.o
 
-$(OBJDIR_IVYMASTER)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_IVYMASTER)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivyhelpers.cpp -o $(OBJDIR_IVYMASTER)/src/ivyhelpers.o
 
-$(OBJDIR_IVYMASTER)/src/ivylinuxcpubusy.o: src/ivylinuxcpubusy.cpp
+$(OBJDIR_IVYMASTER)/src/ivylinuxcpubusy.o: src/ivylinuxcpubusy.cpp include/ivylinuxcpubusy.h \
+	include/ivytime.h include/RunningStat.h include/logger.h \
+	include/ivyhelpers.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivylinuxcpubusy.cpp -o $(OBJDIR_IVYMASTER)/src/ivylinuxcpubusy.o
 
-$(OBJDIR_IVYMASTER)/src/ivymaster_signal_handler.o: src/ivymaster_signal_handler.cpp
+$(OBJDIR_IVYMASTER)/src/ivymaster_signal_handler.o: src/ivymaster_signal_handler.cpp \
+	include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivymaster_signal_handler.cpp -o $(OBJDIR_IVYMASTER)/src/ivymaster_signal_handler.o
 
-$(OBJDIR_IVYMASTER)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_IVYMASTER)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ivytime.cpp -o $(OBJDIR_IVYMASTER)/src/ivytime.o
 
-$(OBJDIR_IVYMASTER)/__/LUN_discovery/src/printableAndHex.o: ../LUN_discovery/src/printableAndHex.cpp
+$(OBJDIR_IVYMASTER)/__/LUN_discovery/src/printableAndHex.o: ../LUN_discovery/src/printableAndHex.cpp \
+	../LUN_discovery/src/../include/printableAndHex.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c ../LUN_discovery/src/printableAndHex.cpp -o $(OBJDIR_IVYMASTER)/__/LUN_discovery/src/printableAndHex.o
 
-$(OBJDIR_IVYMASTER)/parser/src/Block.o: parser/src/Block.cpp
+$(OBJDIR_IVYMASTER)/parser/src/Block.o: parser/src/Block.cpp parser/include/Stmt.h \
+	parser/include/Ivy_pgm.h parser/include/SymbolTableEntry.h \
+	parser/include/Type.h parser/include/Builtin.h include/csvfile.h \
+	parser/include/OverloadSet.h parser/include/Frame.h parser/include/Arg.h \
+	parser/include/Block.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h parser/include/Xpr.h \
+	include/JSON_select.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/Block.cpp -o $(OBJDIR_IVYMASTER)/parser/src/Block.o
 
-$(OBJDIR_IVYMASTER)/parser/src/Arg.o: parser/src/Arg.cpp
+$(OBJDIR_IVYMASTER)/parser/src/Arg.o: parser/src/Arg.cpp parser/include/Arg.h parser/include/Type.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/Arg.cpp -o $(OBJDIR_IVYMASTER)/parser/src/Arg.o
 
-$(OBJDIR_IVYMASTER)/parser/src/Builtin.o: parser/src/Builtin.cpp
+$(OBJDIR_IVYMASTER)/parser/src/Builtin.o: parser/src/Builtin.cpp parser/include/Builtin.h \
+	parser/include/Type.h include/csvfile.h parser/include/OverloadSet.h \
+	parser/include/Ivy_pgm.h parser/include/SymbolTableEntry.h \
+	parser/include/Frame.h parser/include/Arg.h parser/include/Block.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/Builtin.cpp -o $(OBJDIR_IVYMASTER)/parser/src/Builtin.o
 
-$(OBJDIR_IVYMASTER)/parser/src/Frame.o: parser/src/Frame.cpp
+$(OBJDIR_IVYMASTER)/parser/src/Frame.o: parser/src/Frame.cpp parser/include/Frame.h parser/include/Arg.h \
+	parser/include/Type.h parser/include/Block.h \
+	parser/include/SymbolTableEntry.h parser/include/Builtin.h \
+	include/csvfile.h parser/include/OverloadSet.h parser/include/Ivy_pgm.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/Frame.cpp -o $(OBJDIR_IVYMASTER)/parser/src/Frame.o
 
-$(OBJDIR_IVYMASTER)/parser/src/Ivy_pgm.o: parser/src/Ivy_pgm.cpp
+$(OBJDIR_IVYMASTER)/parser/src/Ivy_pgm.o: parser/src/Ivy_pgm.cpp parser/include/Type.h \
+	parser/include/Ivy_pgm.h parser/include/SymbolTableEntry.h \
+	parser/include/Builtin.h include/csvfile.h parser/include/OverloadSet.h \
+	parser/include/Frame.h parser/include/Arg.h parser/include/Block.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h parser/include/Stmt.h \
+	parser/include/Xpr.h include/JSON_select.h parser/lexyacc/ivy.parser.hh \
+	include/ivy_engine.h include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/Ivy_pgm.cpp -o $(OBJDIR_IVYMASTER)/parser/src/Ivy_pgm.o
 
-$(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.scanner.o: parser/lexyacc/ivy.scanner.cc
+$(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.scanner.o: parser/lexyacc/ivy.scanner.cc parser/include/Ivy_pgm.h \
+	parser/include/SymbolTableEntry.h parser/include/Type.h \
+	parser/include/Builtin.h include/csvfile.h parser/include/OverloadSet.h \
+	parser/include/Frame.h parser/include/Arg.h parser/include/Block.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h parser/lexyacc/ivy.parser.hh
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/lexyacc/ivy.scanner.cc -o $(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.scanner.o
 
 parser/lexyacc/ivy.scanner.cc: parser/lexyacc/ivy.l
@@ -549,34 +1417,127 @@ parser/lexyacc/ivy.scanner.cc: parser/lexyacc/ivy.l
 parser/lexyacc/ivy.parser.cc: parser/lexyacc/ivy.y
 	$(BISON) -t -v -d parser/lexyacc/ivy.y -o parser/lexyacc/ivy.parser.cc
 
-$(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.parser.o: parser/lexyacc/ivy.parser.cc parser/lexyacc/ivy.scanner.cc
+$(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.parser.o: parser/lexyacc/ivy.parser.cc include/JSON_select.h \
+	parser/include/Xpr.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h parser/include/Ivy_pgm.h \
+	parser/include/SymbolTableEntry.h parser/include/Type.h \
+	parser/include/Builtin.h include/csvfile.h parser/include/OverloadSet.h \
+	parser/include/Frame.h parser/include/Arg.h parser/include/Block.h \
+	parser/include/Stmt.h parser/include/Stmt_nested_Block.h \
+	include/ivyhelpers.h include/ivytime.h include/RunningStat.h \
+	include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/lexyacc/ivy.parser.cc -o $(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.parser.o
 
-$(OBJDIR_IVYMASTER)/parser/src/IvyscriptLine.o: parser/src/IvyscriptLine.cpp
+$(OBJDIR_IVYMASTER)/parser/src/IvyscriptLine.o: parser/src/IvyscriptLine.cpp include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h \
+	parser/include/IvyscriptLine.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/IvyscriptLine.cpp -o $(OBJDIR_IVYMASTER)/parser/src/IvyscriptLine.o
 
-$(OBJDIR_IVYMASTER)/parser/src/OverloadSet.o: parser/src/OverloadSet.cpp
+$(OBJDIR_IVYMASTER)/parser/src/OverloadSet.o: parser/src/OverloadSet.cpp parser/include/OverloadSet.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/OverloadSet.cpp -o $(OBJDIR_IVYMASTER)/parser/src/OverloadSet.o
 
-$(OBJDIR_IVYMASTER)/parser/src/Stmt.o: parser/src/Stmt.cpp
+$(OBJDIR_IVYMASTER)/parser/src/Stmt.o: parser/src/Stmt.cpp parser/include/Ivy_pgm.h \
+	parser/include/SymbolTableEntry.h parser/include/Type.h \
+	parser/include/Builtin.h include/csvfile.h parser/include/OverloadSet.h \
+	parser/include/Frame.h parser/include/Arg.h parser/include/Block.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h parser/include/Stmt.h \
+	parser/include/Xpr.h include/JSON_select.h include/ivy_engine.h include/WorkloadTrackers.h \
+	include/WorkloadTracker.h include/WorkloadID.h include/Iosequencer.h \
+	include/Eyeo.h include/ivytime.h include/Workload.h \
+	include/Subinterval.h include/IosequencerInput.h include/ivyhelpers.h \
+	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/Stmt.cpp -o $(OBJDIR_IVYMASTER)/parser/src/Stmt.o
 
-$(OBJDIR_IVYMASTER)/parser/src/Stmt_nested_Block.o: parser/src/Stmt_nested_Block.cpp
+$(OBJDIR_IVYMASTER)/parser/src/Stmt_nested_Block.o: parser/src/Stmt_nested_Block.cpp \
+	parser/include/Stmt_nested_Block.h parser/include/Stmt.h \
+	parser/include/Ivy_pgm.h parser/include/SymbolTableEntry.h \
+	parser/include/Type.h parser/include/Builtin.h include/csvfile.h \
+	parser/include/OverloadSet.h parser/include/Frame.h parser/include/Arg.h \
+	parser/include/Block.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h parser/include/Xpr.h \
+	include/JSON_select.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/Stmt_nested_Block.cpp -o $(OBJDIR_IVYMASTER)/parser/src/Stmt_nested_Block.o
 
-$(OBJDIR_IVYMASTER)/parser/src/SymbolTableEntry.o: parser/src/SymbolTableEntry.cpp
+$(OBJDIR_IVYMASTER)/parser/src/SymbolTableEntry.o: parser/src/SymbolTableEntry.cpp \
+	parser/include/Frame.h parser/include/Arg.h parser/include/Type.h \
+	parser/include/Block.h parser/include/SymbolTableEntry.h \
+	parser/include/Builtin.h include/csvfile.h parser/include/OverloadSet.h \
+	parser/include/Ivy_pgm.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/SymbolTableEntry.cpp -o $(OBJDIR_IVYMASTER)/parser/src/SymbolTableEntry.o
 
-$(OBJDIR_IVYMASTER)/parser/src/Type.o: parser/src/Type.cpp
+$(OBJDIR_IVYMASTER)/parser/src/Type.o: parser/src/Type.cpp parser/include/Type.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/Type.cpp -o $(OBJDIR_IVYMASTER)/parser/src/Type.o
 
-$(OBJDIR_IVYMASTER)/parser/src/Xpr.o: parser/src/Xpr.cpp
+$(OBJDIR_IVYMASTER)/parser/src/Xpr.o: parser/src/Xpr.cpp parser/include/Xpr.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h parser/include/Ivy_pgm.h \
+	parser/include/SymbolTableEntry.h parser/include/Type.h \
+	parser/include/Builtin.h include/csvfile.h parser/include/OverloadSet.h \
+	parser/include/Frame.h parser/include/Arg.h parser/include/Block.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/Xpr.cpp -o $(OBJDIR_IVYMASTER)/parser/src/Xpr.o
 
-$(OBJDIR_IVYMASTER)/parser/src/main.o: parser/src/main.cpp
+$(OBJDIR_IVYMASTER)/parser/src/main.o: parser/src/main.cpp parser/include/Ivy_pgm.h \
+	parser/include/SymbolTableEntry.h parser/include/Type.h \
+	parser/include/Builtin.h include/csvfile.h parser/include/OverloadSet.h \
+	parser/include/Frame.h parser/include/Arg.h parser/include/Block.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h parser/lexyacc/ivy.parser.hh \
+	include/ivyhelpers.h include/ivytime.h include/RunningStat.h include/ivy_engine.h \
+	include/WorkloadTrackers.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h include/Subinterval_CPU.h \
+	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
+	include/AttributeNameCombo.h include/RollupInstance.h \
+	include/subsystem_summary_data.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/SequenceOfSubintervalRollup.h \
+	include/ListOfWorkloadIDs.h include/Test_config_thumbnail.h \
+	include/LDEVset.h include/LUNpointerList.h include/JSON_select.h \
+	include/pipe_driver_subthread.h include/Subsystem.h include/GatherData.h \
+	parser/include/IvyscriptLine.h include/ParameterValueLookupTable.h \
+	include/nestedit.h include/MeasureController.h include/MeasureCtlr.h \
+	include/ivybuilddate.h include/RestHandler.h include/RestBaseUri.h \
+	include/RestEngineUri.h include/RestLogsUri.h include/RestWorkloadsUri.h \
+	include/RestCsvqueryUri.h include/RestRollupsUri.h \
+	include/RestSessionsUri.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c parser/src/main.cpp -o $(OBJDIR_IVYMASTER)/parser/src/main.o
 
-$(OBJDIR_IVYMASTER)/src/Accumulators_by_io_type.o: src/Accumulators_by_io_type.cpp
+$(OBJDIR_IVYMASTER)/src/Accumulators_by_io_type.o: src/Accumulators_by_io_type.cpp \
+	include/Accumulators_by_io_type.h include/RunningStat.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/Accumulators_by_io_type.cpp -o $(OBJDIR_IVYMASTER)/src/Accumulators_by_io_type.o
 
 clean_ivymaster: 
@@ -619,115 +1580,296 @@ ivydriver: before_ivydriver out_ivydriver after_ivydriver
 out_ivydriver: before_ivydriver $(OBJ_IVYDRIVER) $(DEP_IVYDRIVER)
 	$(LD) $(LIBDIR_IVYDRIVER) -o $(OUT_IVYDRIVER) $(OBJ_IVYDRIVER)  $(LDFLAGS_IVYDRIVER) $(LIB_IVYDRIVER)
 
-$(OBJDIR_IVYDRIVER)/src/RunningStat.o: src/RunningStat.cpp
+$(OBJDIR_IVYDRIVER)/src/RunningStat.o: src/RunningStat.cpp include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/RunningStat.cpp -o $(OBJDIR_IVYDRIVER)/src/RunningStat.o
 
-$(OBJDIR_IVYDRIVER)/src/Subinterval.o: src/Subinterval.cpp
+$(OBJDIR_IVYDRIVER)/src/Subinterval.o: src/Subinterval.cpp include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/Subinterval.cpp -o $(OBJDIR_IVYDRIVER)/src/Subinterval.o
 
-$(OBJDIR_IVYDRIVER)/src/SubintervalOutput.o: src/SubintervalOutput.cpp
+$(OBJDIR_IVYDRIVER)/src/SubintervalOutput.o: src/SubintervalOutput.cpp \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/RunningStat.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/SubintervalRollup.h \
+	include/IosequencerInputRollup.h include/ivytime.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/SubintervalOutput.cpp -o $(OBJDIR_IVYDRIVER)/src/SubintervalOutput.o
 
-$(OBJDIR_IVYDRIVER)/src/TestLUN.o: src/TestLUN.cpp
+$(OBJDIR_IVYDRIVER)/src/TestLUN.o: src/TestLUN.cpp include/TestLUN.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/ivytime.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/ivyhelpers.h include/RunningStat.h include/logger.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/WorkloadID.h include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
+	include/LUN.h include/Eyeo.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/TestLUN.cpp -o $(OBJDIR_IVYDRIVER)/src/TestLUN.o
 
-$(OBJDIR_IVYDRIVER)/src/Workload.o: src/Workload.cpp
+$(OBJDIR_IVYDRIVER)/src/Workload.o: src/Workload.cpp include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/ivydriver.h \
+	include/ListOfWorkloadIDs.h include/LUN.h include/discover_luns.h \
+	include/ivybuilddate.h include/ivylinuxcpubusy.h include/Eyeo.h \
+	include/Iosequencer.h include/WorkloadThread.h \
+	include/IosequencerRandomIndependent.h include/IosequencerRandom.h \
+	include/IosequencerRandomSteady.h include/IosequencerSequential.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/Workload.cpp -o $(OBJDIR_IVYDRIVER)/src/Workload.o
 
-$(OBJDIR_IVYDRIVER)/src/WorkloadID.o: src/WorkloadID.cpp
+$(OBJDIR_IVYDRIVER)/src/WorkloadID.o: src/WorkloadID.cpp include/WorkloadID.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/WorkloadID.cpp -o $(OBJDIR_IVYDRIVER)/src/WorkloadID.o
 
-$(OBJDIR_IVYDRIVER)/src/WorkloadThread.o: src/WorkloadThread.cpp
+$(OBJDIR_IVYDRIVER)/src/WorkloadThread.o: src/WorkloadThread.cpp include/WorkloadThread.h \
+	include/pattern.h include/Subinterval.h include/IosequencerInput.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/dedupe_method.h include/RunningStat.h include/logger.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/DedupeTargetSpreadRegulator.h include/IosequencerRandomSteady.h \
+	include/IosequencerRandom.h include/Iosequencer.h include/Eyeo.h \
+	include/Workload.h include/WorkloadID.h include/TestLUN.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/IosequencerRandomIndependent.h include/IosequencerSequential.h \
+	include/ivydriver.h include/ListOfWorkloadIDs.h include/discover_luns.h \
+	include/ivybuilddate.h include/ivylinuxcpubusy.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/WorkloadThread.cpp -o $(OBJDIR_IVYDRIVER)/src/WorkloadThread.o
 
-$(OBJDIR_IVYDRIVER)/src/WorkloadTracker.o: src/WorkloadTracker.cpp
+$(OBJDIR_IVYDRIVER)/src/WorkloadTracker.o: src/WorkloadTracker.cpp include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/WorkloadTracker.cpp -o $(OBJDIR_IVYDRIVER)/src/WorkloadTracker.o
 
-$(OBJDIR_IVYDRIVER)/src/WorkloadTrackerPointerList.o: src/WorkloadTrackerPointerList.cpp
+$(OBJDIR_IVYDRIVER)/src/WorkloadTrackerPointerList.o: src/WorkloadTrackerPointerList.cpp \
+	include/WorkloadTrackerPointerList.h include/WorkloadTracker.h \
+	include/WorkloadID.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/WorkloadTrackerPointerList.cpp -o $(OBJDIR_IVYDRIVER)/src/WorkloadTrackerPointerList.o
 
-$(OBJDIR_IVYDRIVER)/src/IosequencerSequential.o: src/IosequencerSequential.cpp
+$(OBJDIR_IVYDRIVER)/src/IosequencerSequential.o: src/IosequencerSequential.cpp \
+	include/IosequencerSequential.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/IosequencerSequential.cpp -o $(OBJDIR_IVYDRIVER)/src/IosequencerSequential.o
 
-$(OBJDIR_IVYDRIVER)/src/Count_by_workloadID.o: src/Count_by_workloadID.cpp
+$(OBJDIR_IVYDRIVER)/src/Count_by_workloadID.o: src/Count_by_workloadID.cpp \
+	include/Count_by_workloadID.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/Count_by_workloadID.cpp -o $(OBJDIR_IVYDRIVER)/src/Count_by_workloadID.o
 
-$(OBJDIR_IVYDRIVER)/src/DedupeConstantRatioRegulator.o: src/DedupeConstantRatioRegulator.cpp
+$(OBJDIR_IVYDRIVER)/src/DedupeConstantRatioRegulator.o: src/DedupeConstantRatioRegulator.cpp \
+	include/DedupeConstantRatioRegulator.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h \
+	include/DedupeConstantRatioTable.h include/Eyeo.h include/ivytime.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/ivyhelpers.h include/RunningStat.h include/logger.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/DedupeConstantRatioRegulator.cpp -o $(OBJDIR_IVYDRIVER)/src/DedupeConstantRatioRegulator.o
 
-$(OBJDIR_IVYDRIVER)/src/DedupeTargetSpreadRegulator.o: src/DedupeTargetSpreadRegulator.cpp
+$(OBJDIR_IVYDRIVER)/src/DedupeTargetSpreadRegulator.o: src/DedupeTargetSpreadRegulator.cpp \
+	include/DedupeTargetSpreadRegulator.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/ivytime.h \
+	include/ivyhelpers.h include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/DedupeTargetSpreadRegulator.cpp -o $(OBJDIR_IVYDRIVER)/src/DedupeTargetSpreadRegulator.o
 
-$(OBJDIR_IVYDRIVER)/src/Eyeo.o: src/Eyeo.cpp
+$(OBJDIR_IVYDRIVER)/src/Eyeo.o: src/Eyeo.cpp include/Eyeo.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/ivyhelpers.h include/RunningStat.h include/logger.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	src/../../LUN_discovery/include/printableAndHex.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/Eyeo.cpp -o $(OBJDIR_IVYDRIVER)/src/Eyeo.o
 
-$(OBJDIR_IVYDRIVER)/src/Iosequencer.o: src/Iosequencer.cpp
+$(OBJDIR_IVYDRIVER)/src/Iosequencer.o: src/Iosequencer.cpp include/IosequencerInput.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h \
+	include/logger.h include/Iosequencer.h include/Eyeo.h include/Workload.h \
+	include/Subinterval.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/Iosequencer.cpp -o $(OBJDIR_IVYDRIVER)/src/Iosequencer.o
 
-$(OBJDIR_IVYDRIVER)/src/IosequencerInput.o: src/IosequencerInput.cpp
+$(OBJDIR_IVYDRIVER)/src/IosequencerInput.o: src/IosequencerInput.cpp include/IosequencerInput.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h \
+	include/logger.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/IosequencerInput.cpp -o $(OBJDIR_IVYDRIVER)/src/IosequencerInput.o
 
-$(OBJDIR_IVYDRIVER)/src/IosequencerInputRollup.o: src/IosequencerInputRollup.cpp
+$(OBJDIR_IVYDRIVER)/src/IosequencerInputRollup.o: src/IosequencerInputRollup.cpp \
+	include/IosequencerInputRollup.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/ivyhelpers.h include/ivytime.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/IosequencerInputRollup.cpp -o $(OBJDIR_IVYDRIVER)/src/IosequencerInputRollup.o
 
-$(OBJDIR_IVYDRIVER)/src/IosequencerRandom.o: src/IosequencerRandom.cpp
+$(OBJDIR_IVYDRIVER)/src/IosequencerRandom.o: src/IosequencerRandom.cpp \
+	include/IosequencerRandom.h include/Iosequencer.h include/Eyeo.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/RunningStat.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/IosequencerRandom.cpp -o $(OBJDIR_IVYDRIVER)/src/IosequencerRandom.o
 
-$(OBJDIR_IVYDRIVER)/src/IosequencerRandomIndependent.o: src/IosequencerRandomIndependent.cpp
+$(OBJDIR_IVYDRIVER)/src/IosequencerRandomIndependent.o: src/IosequencerRandomIndependent.cpp \
+	include/IosequencerRandomIndependent.h include/IosequencerRandom.h \
+	include/Iosequencer.h include/Eyeo.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/ivyhelpers.h include/RunningStat.h include/logger.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/IosequencerRandomIndependent.cpp -o $(OBJDIR_IVYDRIVER)/src/IosequencerRandomIndependent.o
 
-$(OBJDIR_IVYDRIVER)/src/IosequencerRandomSteady.o: src/IosequencerRandomSteady.cpp
+$(OBJDIR_IVYDRIVER)/src/IosequencerRandomSteady.o: src/IosequencerRandomSteady.cpp \
+	include/IosequencerRandomSteady.h include/IosequencerRandom.h \
+	include/Iosequencer.h include/Eyeo.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/ivyhelpers.h include/RunningStat.h include/logger.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/IosequencerRandomSteady.cpp -o $(OBJDIR_IVYDRIVER)/src/IosequencerRandomSteady.o
 
-$(OBJDIR_IVYDRIVER)/src/LDEVset.o: src/LDEVset.cpp
+$(OBJDIR_IVYDRIVER)/src/LDEVset.o: src/LDEVset.cpp include/LDEVset.h include/logger.h \
+	include/RunningStat.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/LDEVset.cpp -o $(OBJDIR_IVYDRIVER)/src/LDEVset.o
 
-$(OBJDIR_IVYDRIVER)/src/LUN.o: src/LUN.cpp
+$(OBJDIR_IVYDRIVER)/src/LUN.o: src/LUN.cpp include/LUN.h include/logger.h include/RunningStat.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/LUN.cpp -o $(OBJDIR_IVYDRIVER)/src/LUN.o
 
-$(OBJDIR_IVYDRIVER)/src/ListOfWorkloadIDs.o: src/ListOfWorkloadIDs.cpp
+$(OBJDIR_IVYDRIVER)/src/ListOfWorkloadIDs.o: src/ListOfWorkloadIDs.cpp \
+	include/ListOfWorkloadIDs.h include/Workload.h include/Subinterval.h \
+	include/IosequencerInput.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/ListOfWorkloadIDs.cpp -o $(OBJDIR_IVYDRIVER)/src/ListOfWorkloadIDs.o
 
-$(OBJDIR_IVYDRIVER)/src/pattern.o: src/pattern.cpp
+$(OBJDIR_IVYDRIVER)/src/pattern.o: src/pattern.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/pattern.cpp -o $(OBJDIR_IVYDRIVER)/src/pattern.o
 
-$(OBJDIR_IVYDRIVER)/src/pipe_line_reader.o: src/pipe_line_reader.cpp
+$(OBJDIR_IVYDRIVER)/src/pipe_line_reader.o: src/pipe_line_reader.cpp include/pipe_line_reader.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/ivytime.h include/ivyhelpers.h include/RunningStat.h \
+	include/ivydriver.h include/WorkloadID.h include/ListOfWorkloadIDs.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/discover_luns.h include/ivybuilddate.h include/ivylinuxcpubusy.h \
+	include/Eyeo.h include/Iosequencer.h include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/pipe_line_reader.cpp -o $(OBJDIR_IVYDRIVER)/src/pipe_line_reader.o
 
-$(OBJDIR_IVYDRIVER)/src/logger.o: src/logger.cpp
+$(OBJDIR_IVYDRIVER)/src/logger.o: src/logger.cpp include/logger.h include/RunningStat.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/logger.cpp -o $(OBJDIR_IVYDRIVER)/src/logger.o
 
-$(OBJDIR_IVYDRIVER)/src/studentsTdistribution.o: src/studentsTdistribution.cpp
+$(OBJDIR_IVYDRIVER)/src/studentsTdistribution.o: src/studentsTdistribution.cpp \
+	include/studentsTdistribution.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/ivyhelpers.h include/ivytime.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/studentsTdistribution.cpp -o $(OBJDIR_IVYDRIVER)/src/studentsTdistribution.o
 
 $(OBJDIR_IVYDRIVER)/src/unique_words.o: src/unique_words.cpp
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/unique_words.cpp -o $(OBJDIR_IVYDRIVER)/src/unique_words.o
 
-$(OBJDIR_IVYDRIVER)/src/dedupe_method.o: src/dedupe_method.cpp
+$(OBJDIR_IVYDRIVER)/src/dedupe_method.o: src/dedupe_method.cpp include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/dedupe_method.cpp -o $(OBJDIR_IVYDRIVER)/src/dedupe_method.o
 
-$(OBJDIR_IVYDRIVER)/src/discover_luns.o: src/discover_luns.cpp
+$(OBJDIR_IVYDRIVER)/src/discover_luns.o: src/discover_luns.cpp include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h include/discover_luns.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/discover_luns.cpp -o $(OBJDIR_IVYDRIVER)/src/discover_luns.o
 
-$(OBJDIR_IVYDRIVER)/src/AttributeNameCombo.o: src/AttributeNameCombo.cpp
+$(OBJDIR_IVYDRIVER)/src/AttributeNameCombo.o: src/AttributeNameCombo.cpp \
+	include/AttributeNameCombo.h include/LUN.h include/logger.h \
+	include/RunningStat.h include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/AttributeNameCombo.cpp -o $(OBJDIR_IVYDRIVER)/src/AttributeNameCombo.o
 
-$(OBJDIR_IVYDRIVER)/src/ivydriver.o: src/ivydriver.cpp
+$(OBJDIR_IVYDRIVER)/src/ivydriver.o: src/ivydriver.cpp include/ivydriver.h include/ivytime.h \
+	include/WorkloadID.h include/ListOfWorkloadIDs.h include/Workload.h \
+	include/Subinterval.h include/IosequencerInput.h include/ivyhelpers.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
+	include/Accumulators_by_io_type.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h \
+	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/discover_luns.h include/ivybuilddate.h include/ivylinuxcpubusy.h \
+	include/Eyeo.h include/Iosequencer.h include/WorkloadThread.h \
+	include/pipe_line_reader.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/ivydriver.cpp -o $(OBJDIR_IVYDRIVER)/src/ivydriver.o
 
-$(OBJDIR_IVYDRIVER)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_IVYDRIVER)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/ivyhelpers.cpp -o $(OBJDIR_IVYDRIVER)/src/ivyhelpers.o
 
-$(OBJDIR_IVYDRIVER)/src/ivylinuxcpubusy.o: src/ivylinuxcpubusy.cpp
+$(OBJDIR_IVYDRIVER)/src/ivylinuxcpubusy.o: src/ivylinuxcpubusy.cpp include/ivylinuxcpubusy.h \
+	include/ivytime.h include/RunningStat.h include/logger.h \
+	include/ivyhelpers.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/ivylinuxcpubusy.cpp -o $(OBJDIR_IVYDRIVER)/src/ivylinuxcpubusy.o
 
-$(OBJDIR_IVYDRIVER)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_IVYDRIVER)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/ivytime.cpp -o $(OBJDIR_IVYDRIVER)/src/ivytime.o
 
-$(OBJDIR_IVYDRIVER)/__/LUN_discovery/src/printableAndHex.o: ../LUN_discovery/src/printableAndHex.cpp
+$(OBJDIR_IVYDRIVER)/__/LUN_discovery/src/printableAndHex.o: ../LUN_discovery/src/printableAndHex.cpp \
+	../LUN_discovery/src/../include/printableAndHex.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c ../LUN_discovery/src/printableAndHex.cpp -o $(OBJDIR_IVYDRIVER)/__/LUN_discovery/src/printableAndHex.o
 
-$(OBJDIR_IVYDRIVER)/src/Accumulators_by_io_type.o: src/Accumulators_by_io_type.cpp
+$(OBJDIR_IVYDRIVER)/src/Accumulators_by_io_type.o: src/Accumulators_by_io_type.cpp \
+	include/Accumulators_by_io_type.h include/RunningStat.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/Accumulators_by_io_type.cpp -o $(OBJDIR_IVYDRIVER)/src/Accumulators_by_io_type.o
 
 clean_ivydriver: 
@@ -747,13 +1889,17 @@ clear_hung_ivy_threads: before_clear_hung_ivy_threads out_clear_hung_ivy_threads
 out_clear_hung_ivy_threads: before_clear_hung_ivy_threads $(OBJ_CLEAR_HUNG_IVY_THREADS) $(DEP_CLEAR_HUNG_IVY_THREADS)
 	$(LD) $(LIBDIR_CLEAR_HUNG_IVY_THREADS) -o $(OUT_CLEAR_HUNG_IVY_THREADS) $(OBJ_CLEAR_HUNG_IVY_THREADS)  $(LDFLAGS_CLEAR_HUNG_IVY_THREADS) $(LIB_CLEAR_HUNG_IVY_THREADS)
 
-$(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/clear_hung_ivy_threads.o: src/clear_hung_ivy_threads.cpp
+$(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/clear_hung_ivy_threads.o: src/clear_hung_ivy_threads.cpp \
+	include/ivytime.h include/ivyhelpers.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CLEAR_HUNG_IVY_THREADS) $(INC_CLEAR_HUNG_IVY_THREADS) -c src/clear_hung_ivy_threads.cpp -o $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/clear_hung_ivy_threads.o
 
-$(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_CLEAR_HUNG_IVY_THREADS) $(INC_CLEAR_HUNG_IVY_THREADS) -c src/ivyhelpers.cpp -o $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/ivyhelpers.o
 
-$(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_CLEAR_HUNG_IVY_THREADS) $(INC_CLEAR_HUNG_IVY_THREADS) -c src/ivytime.cpp -o $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/ivytime.o
 
 clean_clear_hung_ivy_threads: 
@@ -773,7 +1919,8 @@ makedict: before_makedict out_makedict after_makedict
 out_makedict: before_makedict $(OBJ_MAKEDICT) $(DEP_MAKEDICT)
 	$(LD) $(LIBDIR_MAKEDICT) -o $(OUT_MAKEDICT) $(OBJ_MAKEDICT)  $(LDFLAGS_MAKEDICT) $(LIB_MAKEDICT)
 
-$(OBJDIR_MAKEDICT)/src/makedict.o: src/makedict.cpp
+$(OBJDIR_MAKEDICT)/src/makedict.o: src/makedict.cpp include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h
 	$(CXX) $(CFLAGS_MAKEDICT) $(INC_MAKEDICT) -c src/makedict.cpp -o $(OBJDIR_MAKEDICT)/src/makedict.o
 
 clean_makedict: 
@@ -793,19 +1940,25 @@ csv_rows: before_csv_rows out_csv_rows after_csv_rows
 out_csv_rows: before_csv_rows $(OBJ_CSV_ROWS) $(DEP_CSV_ROWS)
 	$(LD) $(LIBDIR_CSV_ROWS) -o $(OUT_CSV_ROWS) $(OBJ_CSV_ROWS)  $(LDFLAGS_CSV_ROWS) $(LIB_CSV_ROWS)
 
-$(OBJDIR_CSV_ROWS)/src/csv_rows.o: src/csv_rows.cpp
+$(OBJDIR_CSV_ROWS)/src/csv_rows.o: src/csv_rows.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_ROWS) $(INC_CSV_ROWS) -c src/csv_rows.cpp -o $(OBJDIR_CSV_ROWS)/src/csv_rows.o
 
 $(OBJDIR_CSV_ROWS)/src/csv_usage.o: src/csv_usage.cpp
 	$(CXX) $(CFLAGS_CSV_ROWS) $(INC_CSV_ROWS) -c src/csv_usage.cpp -o $(OBJDIR_CSV_ROWS)/src/csv_usage.o
 
-$(OBJDIR_CSV_ROWS)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_CSV_ROWS)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_ROWS) $(INC_CSV_ROWS) -c src/csvfile.cpp -o $(OBJDIR_CSV_ROWS)/src/csvfile.o
 
-$(OBJDIR_CSV_ROWS)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_CSV_ROWS)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_ROWS) $(INC_CSV_ROWS) -c src/ivyhelpers.cpp -o $(OBJDIR_CSV_ROWS)/src/ivyhelpers.o
 
-$(OBJDIR_CSV_ROWS)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_CSV_ROWS)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_CSV_ROWS) $(INC_CSV_ROWS) -c src/ivytime.cpp -o $(OBJDIR_CSV_ROWS)/src/ivytime.o
 
 clean_csv_rows: 
@@ -825,19 +1978,25 @@ csv_header_columns: before_csv_header_columns out_csv_header_columns after_csv_h
 out_csv_header_columns: before_csv_header_columns $(OBJ_CSV_HEADER_COLUMNS) $(DEP_CSV_HEADER_COLUMNS)
 	$(LD) $(LIBDIR_CSV_HEADER_COLUMNS) -o $(OUT_CSV_HEADER_COLUMNS) $(OBJ_CSV_HEADER_COLUMNS)  $(LDFLAGS_CSV_HEADER_COLUMNS) $(LIB_CSV_HEADER_COLUMNS)
 
-$(OBJDIR_CSV_HEADER_COLUMNS)/src/csv_header_columns.o: src/csv_header_columns.cpp
+$(OBJDIR_CSV_HEADER_COLUMNS)/src/csv_header_columns.o: src/csv_header_columns.cpp include/csvfile.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_HEADER_COLUMNS) $(INC_CSV_HEADER_COLUMNS) -c src/csv_header_columns.cpp -o $(OBJDIR_CSV_HEADER_COLUMNS)/src/csv_header_columns.o
 
 $(OBJDIR_CSV_HEADER_COLUMNS)/src/csv_usage.o: src/csv_usage.cpp
 	$(CXX) $(CFLAGS_CSV_HEADER_COLUMNS) $(INC_CSV_HEADER_COLUMNS) -c src/csv_usage.cpp -o $(OBJDIR_CSV_HEADER_COLUMNS)/src/csv_usage.o
 
-$(OBJDIR_CSV_HEADER_COLUMNS)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_CSV_HEADER_COLUMNS)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_HEADER_COLUMNS) $(INC_CSV_HEADER_COLUMNS) -c src/csvfile.cpp -o $(OBJDIR_CSV_HEADER_COLUMNS)/src/csvfile.o
 
-$(OBJDIR_CSV_HEADER_COLUMNS)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_CSV_HEADER_COLUMNS)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_HEADER_COLUMNS) $(INC_CSV_HEADER_COLUMNS) -c src/ivyhelpers.cpp -o $(OBJDIR_CSV_HEADER_COLUMNS)/src/ivyhelpers.o
 
-$(OBJDIR_CSV_HEADER_COLUMNS)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_CSV_HEADER_COLUMNS)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_CSV_HEADER_COLUMNS) $(INC_CSV_HEADER_COLUMNS) -c src/ivytime.cpp -o $(OBJDIR_CSV_HEADER_COLUMNS)/src/ivytime.o
 
 clean_csv_header_columns: 
@@ -857,19 +2016,25 @@ csv_columns_in_row: before_csv_columns_in_row out_csv_columns_in_row after_csv_c
 out_csv_columns_in_row: before_csv_columns_in_row $(OBJ_CSV_COLUMNS_IN_ROW) $(DEP_CSV_COLUMNS_IN_ROW)
 	$(LD) $(LIBDIR_CSV_COLUMNS_IN_ROW) -o $(OUT_CSV_COLUMNS_IN_ROW) $(OBJ_CSV_COLUMNS_IN_ROW)  $(LDFLAGS_CSV_COLUMNS_IN_ROW) $(LIB_CSV_COLUMNS_IN_ROW)
 
-$(OBJDIR_CSV_COLUMNS_IN_ROW)/src/csv_columns_in_row.o: src/csv_columns_in_row.cpp
+$(OBJDIR_CSV_COLUMNS_IN_ROW)/src/csv_columns_in_row.o: src/csv_columns_in_row.cpp include/csvfile.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_COLUMNS_IN_ROW) $(INC_CSV_COLUMNS_IN_ROW) -c src/csv_columns_in_row.cpp -o $(OBJDIR_CSV_COLUMNS_IN_ROW)/src/csv_columns_in_row.o
 
 $(OBJDIR_CSV_COLUMNS_IN_ROW)/src/csv_usage.o: src/csv_usage.cpp
 	$(CXX) $(CFLAGS_CSV_COLUMNS_IN_ROW) $(INC_CSV_COLUMNS_IN_ROW) -c src/csv_usage.cpp -o $(OBJDIR_CSV_COLUMNS_IN_ROW)/src/csv_usage.o
 
-$(OBJDIR_CSV_COLUMNS_IN_ROW)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_CSV_COLUMNS_IN_ROW)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_COLUMNS_IN_ROW) $(INC_CSV_COLUMNS_IN_ROW) -c src/csvfile.cpp -o $(OBJDIR_CSV_COLUMNS_IN_ROW)/src/csvfile.o
 
-$(OBJDIR_CSV_COLUMNS_IN_ROW)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_CSV_COLUMNS_IN_ROW)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_COLUMNS_IN_ROW) $(INC_CSV_COLUMNS_IN_ROW) -c src/ivyhelpers.cpp -o $(OBJDIR_CSV_COLUMNS_IN_ROW)/src/ivyhelpers.o
 
-$(OBJDIR_CSV_COLUMNS_IN_ROW)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_CSV_COLUMNS_IN_ROW)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_CSV_COLUMNS_IN_ROW) $(INC_CSV_COLUMNS_IN_ROW) -c src/ivytime.cpp -o $(OBJDIR_CSV_COLUMNS_IN_ROW)/src/ivytime.o
 
 clean_csv_columns_in_row: 
@@ -889,19 +2054,25 @@ csv_column_header: before_csv_column_header out_csv_column_header after_csv_colu
 out_csv_column_header: before_csv_column_header $(OBJ_CSV_COLUMN_HEADER) $(DEP_CSV_COLUMN_HEADER)
 	$(LD) $(LIBDIR_CSV_COLUMN_HEADER) -o $(OUT_CSV_COLUMN_HEADER) $(OBJ_CSV_COLUMN_HEADER)  $(LDFLAGS_CSV_COLUMN_HEADER) $(LIB_CSV_COLUMN_HEADER)
 
-$(OBJDIR_CSV_COLUMN_HEADER)/src/csv_column_header.o: src/csv_column_header.cpp
+$(OBJDIR_CSV_COLUMN_HEADER)/src/csv_column_header.o: src/csv_column_header.cpp include/csvfile.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_COLUMN_HEADER) $(INC_CSV_COLUMN_HEADER) -c src/csv_column_header.cpp -o $(OBJDIR_CSV_COLUMN_HEADER)/src/csv_column_header.o
 
 $(OBJDIR_CSV_COLUMN_HEADER)/src/csv_usage.o: src/csv_usage.cpp
 	$(CXX) $(CFLAGS_CSV_COLUMN_HEADER) $(INC_CSV_COLUMN_HEADER) -c src/csv_usage.cpp -o $(OBJDIR_CSV_COLUMN_HEADER)/src/csv_usage.o
 
-$(OBJDIR_CSV_COLUMN_HEADER)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_CSV_COLUMN_HEADER)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_COLUMN_HEADER) $(INC_CSV_COLUMN_HEADER) -c src/csvfile.cpp -o $(OBJDIR_CSV_COLUMN_HEADER)/src/csvfile.o
 
-$(OBJDIR_CSV_COLUMN_HEADER)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_CSV_COLUMN_HEADER)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_COLUMN_HEADER) $(INC_CSV_COLUMN_HEADER) -c src/ivyhelpers.cpp -o $(OBJDIR_CSV_COLUMN_HEADER)/src/ivyhelpers.o
 
-$(OBJDIR_CSV_COLUMN_HEADER)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_CSV_COLUMN_HEADER)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_CSV_COLUMN_HEADER) $(INC_CSV_COLUMN_HEADER) -c src/ivytime.cpp -o $(OBJDIR_CSV_COLUMN_HEADER)/src/ivytime.o
 
 clean_csv_column_header: 
@@ -921,19 +2092,25 @@ csv_raw_cell_value: before_csv_raw_cell_value out_csv_raw_cell_value after_csv_r
 out_csv_raw_cell_value: before_csv_raw_cell_value $(OBJ_CSV_RAW_CELL_VALUE) $(DEP_CSV_RAW_CELL_VALUE)
 	$(LD) $(LIBDIR_CSV_RAW_CELL_VALUE) -o $(OUT_CSV_RAW_CELL_VALUE) $(OBJ_CSV_RAW_CELL_VALUE)  $(LDFLAGS_CSV_RAW_CELL_VALUE) $(LIB_CSV_RAW_CELL_VALUE)
 
-$(OBJDIR_CSV_RAW_CELL_VALUE)/src/csv_raw_cell_value.o: src/csv_raw_cell_value.cpp
+$(OBJDIR_CSV_RAW_CELL_VALUE)/src/csv_raw_cell_value.o: src/csv_raw_cell_value.cpp include/csvfile.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_RAW_CELL_VALUE) $(INC_CSV_RAW_CELL_VALUE) -c src/csv_raw_cell_value.cpp -o $(OBJDIR_CSV_RAW_CELL_VALUE)/src/csv_raw_cell_value.o
 
 $(OBJDIR_CSV_RAW_CELL_VALUE)/src/csv_usage.o: src/csv_usage.cpp
 	$(CXX) $(CFLAGS_CSV_RAW_CELL_VALUE) $(INC_CSV_RAW_CELL_VALUE) -c src/csv_usage.cpp -o $(OBJDIR_CSV_RAW_CELL_VALUE)/src/csv_usage.o
 
-$(OBJDIR_CSV_RAW_CELL_VALUE)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_CSV_RAW_CELL_VALUE)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_RAW_CELL_VALUE) $(INC_CSV_RAW_CELL_VALUE) -c src/csvfile.cpp -o $(OBJDIR_CSV_RAW_CELL_VALUE)/src/csvfile.o
 
-$(OBJDIR_CSV_RAW_CELL_VALUE)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_CSV_RAW_CELL_VALUE)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_RAW_CELL_VALUE) $(INC_CSV_RAW_CELL_VALUE) -c src/ivyhelpers.cpp -o $(OBJDIR_CSV_RAW_CELL_VALUE)/src/ivyhelpers.o
 
-$(OBJDIR_CSV_RAW_CELL_VALUE)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_CSV_RAW_CELL_VALUE)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_CSV_RAW_CELL_VALUE) $(INC_CSV_RAW_CELL_VALUE) -c src/ivytime.cpp -o $(OBJDIR_CSV_RAW_CELL_VALUE)/src/ivytime.o
 
 clean_csv_raw_cell_value: 
@@ -953,19 +2130,25 @@ csv_cell_value: before_csv_cell_value out_csv_cell_value after_csv_cell_value
 out_csv_cell_value: before_csv_cell_value $(OBJ_CSV_CELL_VALUE) $(DEP_CSV_CELL_VALUE)
 	$(LD) $(LIBDIR_CSV_CELL_VALUE) -o $(OUT_CSV_CELL_VALUE) $(OBJ_CSV_CELL_VALUE)  $(LDFLAGS_CSV_CELL_VALUE) $(LIB_CSV_CELL_VALUE)
 
-$(OBJDIR_CSV_CELL_VALUE)/src/csv_cell_value.o: src/csv_cell_value.cpp
+$(OBJDIR_CSV_CELL_VALUE)/src/csv_cell_value.o: src/csv_cell_value.cpp include/csvfile.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_CELL_VALUE) $(INC_CSV_CELL_VALUE) -c src/csv_cell_value.cpp -o $(OBJDIR_CSV_CELL_VALUE)/src/csv_cell_value.o
 
 $(OBJDIR_CSV_CELL_VALUE)/src/csv_usage.o: src/csv_usage.cpp
 	$(CXX) $(CFLAGS_CSV_CELL_VALUE) $(INC_CSV_CELL_VALUE) -c src/csv_usage.cpp -o $(OBJDIR_CSV_CELL_VALUE)/src/csv_usage.o
 
-$(OBJDIR_CSV_CELL_VALUE)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_CSV_CELL_VALUE)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_CELL_VALUE) $(INC_CSV_CELL_VALUE) -c src/csvfile.cpp -o $(OBJDIR_CSV_CELL_VALUE)/src/csvfile.o
 
-$(OBJDIR_CSV_CELL_VALUE)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_CSV_CELL_VALUE)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_CELL_VALUE) $(INC_CSV_CELL_VALUE) -c src/ivyhelpers.cpp -o $(OBJDIR_CSV_CELL_VALUE)/src/ivyhelpers.o
 
-$(OBJDIR_CSV_CELL_VALUE)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_CSV_CELL_VALUE)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_CSV_CELL_VALUE) $(INC_CSV_CELL_VALUE) -c src/ivytime.cpp -o $(OBJDIR_CSV_CELL_VALUE)/src/ivytime.o
 
 clean_csv_cell_value: 
@@ -985,19 +2168,25 @@ csv_lookup_column: before_csv_lookup_column out_csv_lookup_column after_csv_look
 out_csv_lookup_column: before_csv_lookup_column $(OBJ_CSV_LOOKUP_COLUMN) $(DEP_CSV_LOOKUP_COLUMN)
 	$(LD) $(LIBDIR_CSV_LOOKUP_COLUMN) -o $(OUT_CSV_LOOKUP_COLUMN) $(OBJ_CSV_LOOKUP_COLUMN)  $(LDFLAGS_CSV_LOOKUP_COLUMN) $(LIB_CSV_LOOKUP_COLUMN)
 
-$(OBJDIR_CSV_LOOKUP_COLUMN)/src/csv_lookup_column.o: src/csv_lookup_column.cpp
+$(OBJDIR_CSV_LOOKUP_COLUMN)/src/csv_lookup_column.o: src/csv_lookup_column.cpp include/csvfile.h \
+	include/ivyhelpers.h include/ivytime.h include/ivydefines.h \
+	include/pattern.h include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_LOOKUP_COLUMN) $(INC_CSV_LOOKUP_COLUMN) -c src/csv_lookup_column.cpp -o $(OBJDIR_CSV_LOOKUP_COLUMN)/src/csv_lookup_column.o
 
 $(OBJDIR_CSV_LOOKUP_COLUMN)/src/csv_usage.o: src/csv_usage.cpp
 	$(CXX) $(CFLAGS_CSV_LOOKUP_COLUMN) $(INC_CSV_LOOKUP_COLUMN) -c src/csv_usage.cpp -o $(OBJDIR_CSV_LOOKUP_COLUMN)/src/csv_usage.o
 
-$(OBJDIR_CSV_LOOKUP_COLUMN)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_CSV_LOOKUP_COLUMN)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_LOOKUP_COLUMN) $(INC_CSV_LOOKUP_COLUMN) -c src/csvfile.cpp -o $(OBJDIR_CSV_LOOKUP_COLUMN)/src/csvfile.o
 
-$(OBJDIR_CSV_LOOKUP_COLUMN)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_CSV_LOOKUP_COLUMN)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_LOOKUP_COLUMN) $(INC_CSV_LOOKUP_COLUMN) -c src/ivyhelpers.cpp -o $(OBJDIR_CSV_LOOKUP_COLUMN)/src/ivyhelpers.o
 
-$(OBJDIR_CSV_LOOKUP_COLUMN)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_CSV_LOOKUP_COLUMN)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_CSV_LOOKUP_COLUMN) $(INC_CSV_LOOKUP_COLUMN) -c src/ivytime.cpp -o $(OBJDIR_CSV_LOOKUP_COLUMN)/src/ivytime.o
 
 clean_csv_lookup_column: 
@@ -1017,19 +2206,25 @@ csv_row: before_csv_row out_csv_row after_csv_row
 out_csv_row: before_csv_row $(OBJ_CSV_ROW) $(DEP_CSV_ROW)
 	$(LD) $(LIBDIR_CSV_ROW) -o $(OUT_CSV_ROW) $(OBJ_CSV_ROW)  $(LDFLAGS_CSV_ROW) $(LIB_CSV_ROW)
 
-$(OBJDIR_CSV_ROW)/src/csv_row.o: src/csv_row.cpp
+$(OBJDIR_CSV_ROW)/src/csv_row.o: src/csv_row.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_ROW) $(INC_CSV_ROW) -c src/csv_row.cpp -o $(OBJDIR_CSV_ROW)/src/csv_row.o
 
 $(OBJDIR_CSV_ROW)/src/csv_usage.o: src/csv_usage.cpp
 	$(CXX) $(CFLAGS_CSV_ROW) $(INC_CSV_ROW) -c src/csv_usage.cpp -o $(OBJDIR_CSV_ROW)/src/csv_usage.o
 
-$(OBJDIR_CSV_ROW)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_CSV_ROW)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_ROW) $(INC_CSV_ROW) -c src/csvfile.cpp -o $(OBJDIR_CSV_ROW)/src/csvfile.o
 
-$(OBJDIR_CSV_ROW)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_CSV_ROW)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_ROW) $(INC_CSV_ROW) -c src/ivyhelpers.cpp -o $(OBJDIR_CSV_ROW)/src/ivyhelpers.o
 
-$(OBJDIR_CSV_ROW)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_CSV_ROW)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_CSV_ROW) $(INC_CSV_ROW) -c src/ivytime.cpp -o $(OBJDIR_CSV_ROW)/src/ivytime.o
 
 clean_csv_row: 
@@ -1049,19 +2244,25 @@ csv_column: before_csv_column out_csv_column after_csv_column
 out_csv_column: before_csv_column $(OBJ_CSV_COLUMN) $(DEP_CSV_COLUMN)
 	$(LD) $(LIBDIR_CSV_COLUMN) -o $(OUT_CSV_COLUMN) $(OBJ_CSV_COLUMN)  $(LDFLAGS_CSV_COLUMN) $(LIB_CSV_COLUMN)
 
-$(OBJDIR_CSV_COLUMN)/src/csv_column.o: src/csv_column.cpp
+$(OBJDIR_CSV_COLUMN)/src/csv_column.o: src/csv_column.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_COLUMN) $(INC_CSV_COLUMN) -c src/csv_column.cpp -o $(OBJDIR_CSV_COLUMN)/src/csv_column.o
 
 $(OBJDIR_CSV_COLUMN)/src/csv_usage.o: src/csv_usage.cpp
 	$(CXX) $(CFLAGS_CSV_COLUMN) $(INC_CSV_COLUMN) -c src/csv_usage.cpp -o $(OBJDIR_CSV_COLUMN)/src/csv_usage.o
 
-$(OBJDIR_CSV_COLUMN)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_CSV_COLUMN)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_COLUMN) $(INC_CSV_COLUMN) -c src/csvfile.cpp -o $(OBJDIR_CSV_COLUMN)/src/csvfile.o
 
-$(OBJDIR_CSV_COLUMN)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_CSV_COLUMN)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_CSV_COLUMN) $(INC_CSV_COLUMN) -c src/ivyhelpers.cpp -o $(OBJDIR_CSV_COLUMN)/src/ivyhelpers.o
 
-$(OBJDIR_CSV_COLUMN)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_CSV_COLUMN)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_CSV_COLUMN) $(INC_CSV_COLUMN) -c src/ivytime.cpp -o $(OBJDIR_CSV_COLUMN)/src/ivytime.o
 
 clean_csv_column: 
@@ -1081,13 +2282,17 @@ testregex: before_testregex out_testregex after_testregex
 out_testregex: before_testregex $(OBJ_TESTREGEX) $(DEP_TESTREGEX)
 	$(LD) $(LIBDIR_TESTREGEX) -o $(OUT_TESTREGEX) $(OBJ_TESTREGEX)  $(LDFLAGS_TESTREGEX) $(LIB_TESTREGEX)
 
-$(OBJDIR_TESTREGEX)/src/testRegex.o: src/testRegex.cpp
+$(OBJDIR_TESTREGEX)/src/testRegex.o: src/testRegex.cpp include/ivytime.h include/ivyhelpers.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_TESTREGEX) $(INC_TESTREGEX) -c src/testRegex.cpp -o $(OBJDIR_TESTREGEX)/src/testRegex.o
 
-$(OBJDIR_TESTREGEX)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_TESTREGEX)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_TESTREGEX) $(INC_TESTREGEX) -c src/ivyhelpers.cpp -o $(OBJDIR_TESTREGEX)/src/ivyhelpers.o
 
-$(OBJDIR_TESTREGEX)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_TESTREGEX)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_TESTREGEX) $(INC_TESTREGEX) -c src/ivytime.cpp -o $(OBJDIR_TESTREGEX)/src/ivytime.o
 
 clean_testregex: 
@@ -1107,16 +2312,22 @@ clean_testregex:
 #out_test_ldevset: before_test_ldevset $(OBJ_TEST_LDEVSET) $(DEP_TEST_LDEVSET)
 #	$(LD) $(LIBDIR_TEST_LDEVSET) -o $(OUT_TEST_LDEVSET) $(OBJ_TEST_LDEVSET)  $(LDFLAGS_TEST_LDEVSET) $(LIB_TEST_LDEVSET)
 
-#$(OBJDIR_TEST_LDEVSET)/src/LDEVset.o: src/LDEVset.cpp
+#$(OBJDIR_TEST_LDEVSET)/src/LDEVset.o: src/LDEVset.cpp include/LDEVset.h include/logger.h \
+#	include/RunningStat.h include/ivyhelpers.h include/ivytime.h \
+#	include/ivydefines.h include/pattern.h include/dedupe_method.h
 #	$(CXX) $(CFLAGS_TEST_LDEVSET) $(INC_TEST_LDEVSET) -c src/LDEVset.cpp -o $(OBJDIR_TEST_LDEVSET)/src/LDEVset.o
 
-#$(OBJDIR_TEST_LDEVSET)/src/test_LDEVset.o: src/test_LDEVset.cpp
+#$(OBJDIR_TEST_LDEVSET)/src/test_LDEVset.o: src/test_LDEVset.cpp include/LDEVset.h include/logger.h \
+#	include/RunningStat.h include/ivyhelpers.h include/ivytime.h \
+#	include/ivydefines.h include/pattern.h include/dedupe_method.h
 #	$(CXX) $(CFLAGS_TEST_LDEVSET) $(INC_TEST_LDEVSET) -c src/test_LDEVset.cpp -o $(OBJDIR_TEST_LDEVSET)/src/test_LDEVset.o
 
-#$(OBJDIR_TEST_LDEVSET)/src/ivyhelpers.o: src/ivyhelpers.cpp
+#$(OBJDIR_TEST_LDEVSET)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+#	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+#	include/RunningStat.h
 #	$(CXX) $(CFLAGS_TEST_LDEVSET) $(INC_TEST_LDEVSET) -c src/ivyhelpers.cpp -o $(OBJDIR_TEST_LDEVSET)/src/ivyhelpers.o
 
-#$(OBJDIR_TEST_LDEVSET)/src/ivytime.o: src/ivytime.cpp
+#$(OBJDIR_TEST_LDEVSET)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 #	$(CXX) $(CFLAGS_TEST_LDEVSET) $(INC_TEST_LDEVSET) -c src/ivytime.cpp -o $(OBJDIR_TEST_LDEVSET)/src/ivytime.o
 
 #clean_test_ldevset: 
@@ -1136,16 +2347,20 @@ remove_empty_columns: before_remove_empty_columns out_remove_empty_columns after
 out_remove_empty_columns: before_remove_empty_columns $(OBJ_REMOVE_EMPTY_COLUMNS) $(DEP_REMOVE_EMPTY_COLUMNS)
 	$(LD) $(LIBDIR_REMOVE_EMPTY_COLUMNS) -o $(OUT_REMOVE_EMPTY_COLUMNS) $(OBJ_REMOVE_EMPTY_COLUMNS)  $(LDFLAGS_REMOVE_EMPTY_COLUMNS) $(LIB_REMOVE_EMPTY_COLUMNS)
 
-$(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/remove_empty_columns.o: src/remove_empty_columns.cpp
+$(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/remove_empty_columns.o: src/remove_empty_columns.cpp include/csvfile.h
 	$(CXX) $(CFLAGS_REMOVE_EMPTY_COLUMNS) $(INC_REMOVE_EMPTY_COLUMNS) -c src/remove_empty_columns.cpp -o $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/remove_empty_columns.o
 
-$(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/csvfile.o: src/csvfile.cpp
+$(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/csvfile.o: src/csvfile.cpp include/csvfile.h include/ivyhelpers.h \
+	include/ivytime.h include/ivydefines.h include/pattern.h \
+	include/dedupe_method.h include/RunningStat.h
 	$(CXX) $(CFLAGS_REMOVE_EMPTY_COLUMNS) $(INC_REMOVE_EMPTY_COLUMNS) -c src/csvfile.cpp -o $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/csvfile.o
 
-$(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_REMOVE_EMPTY_COLUMNS) $(INC_REMOVE_EMPTY_COLUMNS) -c src/ivyhelpers.cpp -o $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/ivyhelpers.o
 
-$(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_REMOVE_EMPTY_COLUMNS) $(INC_REMOVE_EMPTY_COLUMNS) -c src/ivytime.cpp -o $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/ivytime.o
 
 clean_remove_empty_columns: 
@@ -1166,10 +2381,12 @@ test_hosts_list: before_test_hosts_list out_test_hosts_list after_test_hosts_lis
 out_test_hosts_list: before_test_hosts_list $(OBJ_TEST_HOSTS_LIST) $(DEP_TEST_HOSTS_LIST)
 	$(LD) $(LIBDIR_TEST_HOSTS_LIST) -o $(OUT_TEST_HOSTS_LIST) $(OBJ_TEST_HOSTS_LIST)  $(LDFLAGS_TEST_HOSTS_LIST) $(LIB_TEST_HOSTS_LIST)
 
-$(OBJDIR_TEST_HOSTS_LIST)/src/test_hosts_list.o: src/test_hosts_list.cpp
+$(OBJDIR_TEST_HOSTS_LIST)/src/test_hosts_list.o: src/test_hosts_list.cpp include/hosts_list.h
 	$(CXX) $(CFLAGS_TEST_HOSTS_LIST) $(INC_TEST_HOSTS_LIST) -c src/test_hosts_list.cpp -o $(OBJDIR_TEST_HOSTS_LIST)/src/test_hosts_list.o
 
-$(OBJDIR_TEST_HOSTS_LIST)/src/hosts_list.o: src/hosts_list.cpp
+$(OBJDIR_TEST_HOSTS_LIST)/src/hosts_list.o: src/hosts_list.cpp include/hosts_list.h \
+	src/hosts/hosts.parser.hh src/hosts/stack.hh src/hosts/location.hh \
+	src/hosts/position.hh
 	$(CXX) $(CFLAGS_TEST_HOSTS_LIST) $(INC_TEST_HOSTS_LIST) -c src/hosts_list.cpp -o $(OBJDIR_TEST_HOSTS_LIST)/src/hosts_list.o
 
 src/hosts/hosts.scanner.cc: src/hosts/hosts.l
@@ -1178,10 +2395,14 @@ src/hosts/hosts.scanner.cc: src/hosts/hosts.l
 src/hosts/hosts.parser.cc: src/hosts/hosts.y
 	$(BISON) -t -v -d src/hosts/hosts.y -o src/hosts/hosts.parser.cc
 
-$(OBJDIR_TEST_HOSTS_LIST)/src/hosts/hosts.scanner.o: src/hosts/hosts.scanner.cc src/hosts/hosts.parser.cc
+$(OBJDIR_TEST_HOSTS_LIST)/src/hosts/hosts.scanner.o: src/hosts/hosts.scanner.cc include/hosts_list.h \
+	src/hosts/hosts.parser.hh src/hosts/stack.hh src/hosts/location.hh \
+	src/hosts/position.hh
 	$(CXX) $(CFLAGS_TEST_HOSTS_LIST) $(INC_TEST_HOSTS_LIST) -c src/hosts/hosts.scanner.cc -o $(OBJDIR_TEST_HOSTS_LIST)/src/hosts/hosts.scanner.o
 
-$(OBJDIR_TEST_HOSTS_LIST)/src/hosts/hosts.parser.o: src/hosts/hosts.parser.cc
+$(OBJDIR_TEST_HOSTS_LIST)/src/hosts/hosts.parser.o: src/hosts/hosts.parser.cc include/hosts_list.h \
+	src/hosts/hosts.parser.hh src/hosts/stack.hh src/hosts/location.hh \
+	src/hosts/position.hh
 	$(CXX) $(CFLAGS_TEST_HOSTS_LIST) $(INC_TEST_HOSTS_LIST) -c src/hosts/hosts.parser.cc -o $(OBJDIR_TEST_HOSTS_LIST)/src/hosts/hosts.parser.o
 
 clean_test_hosts_list: 
@@ -1201,10 +2422,11 @@ test_negative_ivytimes: before_test_negative_ivytimes out_test_negative_ivytimes
 out_test_negative_ivytimes: before_test_negative_ivytimes $(OBJ_TEST_NEGATIVE_IVYTIMES) $(DEP_TEST_NEGATIVE_IVYTIMES)
 	$(LD) $(LIBDIR_TEST_NEGATIVE_IVYTIMES) -o $(OUT_TEST_NEGATIVE_IVYTIMES) $(OBJ_TEST_NEGATIVE_IVYTIMES)  $(LDFLAGS_TEST_NEGATIVE_IVYTIMES) $(LIB_TEST_NEGATIVE_IVYTIMES)
 
-$(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src/test_negative_ivytimes.o: src/test_negative_ivytimes.cpp
+$(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src/test_negative_ivytimes.o: src/test_negative_ivytimes.cpp \
+	include/ivytime.h
 	$(CXX) $(CFLAGS_TEST_NEGATIVE_IVYTIMES) $(INC_TEST_NEGATIVE_IVYTIMES) -c src/test_negative_ivytimes.cpp -o $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src/test_negative_ivytimes.o
 
-$(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_TEST_NEGATIVE_IVYTIMES) $(INC_TEST_NEGATIVE_IVYTIMES) -c src/ivytime.cpp -o $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src/ivytime.o
 
 clean_test_negative_ivytimes: 
@@ -1224,13 +2446,17 @@ ivycore: before_ivycore out_ivycore after_ivycore
 out_ivycore: before_ivycore $(OBJ_IVYCORE) $(DEP_IVYCORE)
 	$(LD) $(LIBDIR_IVYCORE) -o $(OUT_IVYCORE) $(OBJ_IVYCORE)  $(LDFLAGS_IVYCORE) $(LIB_IVYCORE)
 
-$(OBJDIR_IVYCORE)/src/ivycore.o: src/ivycore.cpp
+$(OBJDIR_IVYCORE)/src/ivycore.o: src/ivycore.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYCORE) $(INC_IVYCORE) -c src/ivycore.cpp -o $(OBJDIR_IVYCORE)/src/ivycore.o
 
-$(OBJDIR_IVYCORE)/src/ivyhelpers.o: src/ivyhelpers.cpp
+$(OBJDIR_IVYCORE)/src/ivyhelpers.o: src/ivyhelpers.cpp include/ivyhelpers.h include/ivytime.h \
+	include/ivydefines.h include/pattern.h include/dedupe_method.h \
+	include/RunningStat.h
 	$(CXX) $(CFLAGS_IVYCORE) $(INC_IVYCORE) -c src/ivyhelpers.cpp -o $(OBJDIR_IVYCORE)/src/ivyhelpers.o
 
-$(OBJDIR_IVYCORE)/src/ivytime.o: src/ivytime.cpp
+$(OBJDIR_IVYCORE)/src/ivytime.o: src/ivytime.cpp include/ivytime.h
 	$(CXX) $(CFLAGS_IVYCORE) $(INC_IVYCORE) -c src/ivytime.cpp -o $(OBJDIR_IVYCORE)/src/ivytime.o
 
 clean_ivycore: 
@@ -1261,4 +2487,3 @@ clean_dedupeconstantratiotablegenerator:
 virtual_all: ivymaster ivydriver clear_hung_ivy_threads
 
 .PHONY: before_ivymaster after_ivymaster clean_ivymaster before_ivydriver after_ivydriver clean_ivydriver before_clear_hung_ivy_threads after_clear_hung_ivy_threads clean_clear_hung_ivy_threads before_makedict after_makedict clean_makedict before_csv_rows after_csv_rows clean_csv_rows before_csv_header_columns after_csv_header_columns clean_csv_header_columns before_csv_columns_in_row after_csv_columns_in_row clean_csv_columns_in_row before_csv_column_header after_csv_column_header clean_csv_column_header before_csv_raw_cell_value after_csv_raw_cell_value clean_csv_raw_cell_value before_csv_cell_value after_csv_cell_value clean_csv_cell_value before_csv_lookup_column after_csv_lookup_column clean_csv_lookup_column before_csv_row after_csv_row clean_csv_row before_csv_column after_csv_column clean_csv_column before_testregex after_testregex clean_testregex befor_test_ldevset after_test_ldevset clean_test_ldevset before_remove_empty_columns after_remove_empty_columns clean_remove_empty_columns before_test_hosts_list after_test_hosts_list clean_test_hosts_list before_test_negative_ivytimes after_test_negative_ivytimes clean_test_negative_ivytimes before_ivycore after_ivycore clean_ivycore before_dedupeconstantratiotablegenerator after_dedupeconstantratiotablegenerator clean_dedupeconstantratiotablegenerator
-

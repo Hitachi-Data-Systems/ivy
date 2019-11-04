@@ -43,7 +43,7 @@ void log(logger& bunyan, const std::string& s)
 
     (*p_ostream) << now.format_as_datetime_with_ns();
 
-    if (bunyan.last_time != ivytime(0))
+    if (bunyan.last_time != ivytime_zero)
     {
         (*p_ostream) << " +" << ivytime(now-bunyan.last_time).format_as_duration_HMMSSns();
     }

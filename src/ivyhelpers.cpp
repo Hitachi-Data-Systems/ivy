@@ -223,7 +223,7 @@ void fileappend(std::string filename, std::string s) {
 //
 //    (*p_ostream) << now.format_as_datetime_with_ns();
 //
-//    if (pear.first != ivytime(0))
+//    if (pear.first != ivytime_zero)
 //    {
 //        (*p_ostream) << " +" << ivytime(now-pear.first).format_as_duration_HMMSSns();
 //    }
@@ -254,7 +254,7 @@ std::string format_utterance(std::string speaker, std::string utterance, ivytime
 
 	o << delta.format_as_duration_HMMSSns() << ' ';
 
-	if (delta == ivytime(0))
+	if (delta == ivytime_zero)
 	{
 	    std::string same_size_blanks {};
 	    for (unsigned int i = 0; i < o.str().size(); i++)
