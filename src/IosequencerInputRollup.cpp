@@ -278,7 +278,18 @@ std::string IosequencerInputRollup::Total_IOPS_Setting_toString(const ivy_float 
 }
 
 
+bool IosequencerInputRollup::is_only_IOPS_max()
+{
+    auto it = values_seen.find("IOPS"s);
 
+    if (it == values_seen.end()) { return false; }
+
+    if (it->second.size() != 1 /* must be only one value */) { return false; }
+
+    for (auto pear : it->second) { if (stringCaseInsensitiveEquality(pear.first, "max"s)) { return true; } }
+
+    return false;
+}
 
 
 

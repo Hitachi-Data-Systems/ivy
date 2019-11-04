@@ -183,6 +183,7 @@ bool lookupDoubleSidedStudentsTMultiplier(std::string& /*callers_error_message*/
 std::string SubintervalOutput::csvValues
 (
     ivy_float seconds
+    , ivy_float achieved_IOPS_tolerance
     , SubintervalRollup* p_SubintervalRollup
     , ivy_float non_random_sample_correction_factor
     , bool response_time_is_valid
@@ -354,16 +355,20 @@ std::string SubintervalOutput::csvValues
 				else
 				{
 					/* 20 Average Response Time (ms) */
-					o << ','; if(response_time_is_valid) { o << (response_time.avg() * 1000.0); } else { o << "[Achieved IOPS off by more than .1% from Rollup Total IOPS Setting.]"; }
+					o << ','; if(response_time_is_valid) { o << (response_time.avg() * 1000.0); }
+					else { o << "[Achieved IOPS off by more than achieved_IOPS_tolerance = " << std::fixed << std::setprecision(2) << (100.0 * achieved_IOPS_tolerance) << "% from Rollup Total IOPS Setting.]"; }
 
 					/* 21 Min Response Time (ms) */
-					o << ','; if(response_time_is_valid) { o << (response_time.min() * 1000.0); } else { o << "[Achieved IOPS off by more than .1% from Rollup Total IOPS Setting.]"; }
+					o << ','; if(response_time_is_valid) { o << (response_time.min() * 1000.0); }
+					else { o << "[Achieved IOPS off by more than achieved_IOPS_tolerance = " << std::fixed << std::setprecision(2) << (100.0 * achieved_IOPS_tolerance) << "% from Rollup Total IOPS Setting.]"; }
 
 					/* 22 Max Response Time (ms) */
-					o << ','; if(response_time_is_valid) { o << (response_time.max() * 1000.0); } else { o << "[Achieved IOPS off by more than .1% from Rollup Total IOPS Setting.]"; }
+					o << ','; if(response_time_is_valid) { o << (response_time.max() * 1000.0); }
+                    else { o << "[Achieved IOPS off by more than achieved_IOPS_tolerance = " << std::fixed << std::setprecision(2) << (100.0 * achieved_IOPS_tolerance) << "% from Rollup Total IOPS Setting.]"; }
 
 					/* 23 Response Time Standard Deviation (ms) */
-					o << ','; if(response_time_is_valid) { o << (response_time.standardDeviation() * 1000.0); } else { o << "[Achieved IOPS off by more than .1% from Rollup Total IOPS Setting.]"; }
+					o << ','; if(response_time_is_valid) { o << (response_time.standardDeviation() * 1000.0); }
+					else { o << "[Achieved IOPS off by more than achieved_IOPS_tolerance = " << std::fixed << std::setprecision(2) << (100.0 * achieved_IOPS_tolerance) << "% from Rollup Total IOPS Setting.]"; }
 				}
 			}
 		}

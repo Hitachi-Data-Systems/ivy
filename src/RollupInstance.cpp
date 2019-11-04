@@ -1340,7 +1340,7 @@ void RollupInstance::print_subinterval_csv_line(
         }
     }
 
-    csvline << subintervals.sequence[i].outputRollup.csvValues( seconds );
+    csvline << subintervals.sequence[i].outputRollup.csvValues( seconds, m_s.achieved_IOPS_tolerance );
 
     if ( m_s.haveCmdDev )
     {
@@ -1597,7 +1597,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
             bool active_core_busy_error {false};
 
-            if (active_core_average_busy > m_s.max_active_core_busy)
+            if (active_core_average_busy > m_s.max_active_core_busy && mt.measurementRollup.inputRollup.is_only_IOPS_max())
             {
                 active_core_busy_error = true;
 
@@ -1637,7 +1637,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
             if (mt.failed_to_achieve_total_IOPS_setting)
             {
                 std::ostringstream o;
-                o << "[Achieved IOPS off by " << mt.achieved_IOPS_delta << "from Rollup Total IOPS Setting - which is more than \"achieved_IOPS_tolerance\" = "
+                o << "[Achieved IOPS off by " << mt.achieved_IOPS_delta << " from Rollup Total IOPS Setting - which is more than \"achieved_IOPS_tolerance\" = "
                     << (100.0 * m_s.achieved_IOPS_tolerance) << "% .]";
                 validation_errors += o.str();
             }
@@ -1768,7 +1768,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
                 csvline << "," << mt.achieved_IOPS_as_percent_of_Total_IOPS_setting;
 
-                csvline << mro.csvValues(seconds,&(mr),m_s.non_random_sample_correction_factor, (!mt.failed_to_achieve_total_IOPS_setting));
+                csvline << mro.csvValues(seconds,m_s.achieved_IOPS_tolerance,&(mr),m_s.non_random_sample_correction_factor, (!mt.failed_to_achieve_total_IOPS_setting));
 
                 if (m_s.haveCmdDev)
                 {

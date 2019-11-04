@@ -34,7 +34,7 @@ class IosequencerInputRollup {
 // The 2nd level map is by string form of parameter value,
 // and this maps to a count of how many times that value was seen.
 
-	std::map<std::string /* metric name */, std::map<std::string /* metric value */, long int /* count */>> values_seen;
+	std::map<std::string /* metric name in upper case */, std::map<std::string /* metric value */, long int /* count */>> values_seen;
 		// there's a count for each value of each parameter
 	long int count{0};
 
@@ -49,6 +49,7 @@ public:
 	void                        clear                      () { values_seen.clear(); count=0; }
 	ivy_float                   get_Total_IOPS_Setting     (const unsigned int subinterval_count = 1); // returns -1 if there was an IOPS=max.
 	static std::string          Total_IOPS_Setting_toString (const ivy_float); // returns a number or "max".
+	bool                        is_only_IOPS_max           ();
 };
 
 

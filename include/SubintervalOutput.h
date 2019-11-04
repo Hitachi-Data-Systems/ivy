@@ -79,6 +79,7 @@ public:
 	static std::string csvTitles(bool measurement_columns = false);
 	std::string csvValues(
 	    ivy_float seconds
+	    , ivy_float achieved_IOPS_tolerance
 	    ,SubintervalRollup* = nullptr
 	    , ivy_float non_random_sample_correction_factor = non_random_sample_correction_factor_default
 	    , bool response_time_is_valid = true);
