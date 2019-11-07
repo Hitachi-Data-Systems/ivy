@@ -294,7 +294,7 @@ unsigned int /* number of I/Os popped and processed.  */
 
 	bool have_response_time;
 
-	if (ivytime_zero == p_dun->scheduled_time)
+	if (p_dun->scheduled_time.isZero())
 	{  // to avoid confusion, we do not post "application level" response time statistics if iorate==max.
 		have_response_time = false;
 		response_time_seconds = -1.0;
@@ -305,9 +305,9 @@ unsigned int /* number of I/Os popped and processed.  */
 		response_time_seconds = (ivytime(p_dun->end_time - p_dun->scheduled_time).getlongdoubleseconds());
 	}
 
-	if ( ivytime_zero == p_dun->start_time
-	  || ivytime_zero == p_dun->running_time
-	  || ivytime_zero == p_dun->end_time
+	if ( p_dun->start_time.isZero()
+	  || p_dun->running_time.isZero()
+	  || p_dun->end_time.isZero()
 	  || p_dun->scheduled_time > p_dun->start_time
 	  || p_dun->start_time     > p_dun->running_time
 	  || p_dun->running_time   > p_dun->end_time

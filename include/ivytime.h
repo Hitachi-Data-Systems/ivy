@@ -86,6 +86,7 @@ public:
 	bool durationFromString(std::string);
 	//bool fromString(std::string);
 	bool isValid() const;
+	bool isZero() const;
 	void normalize(); // fix what may be an invalid representation after an operation such as plus or minus.
     void normalize_round(); // you just keep calling this until isValid()
 
