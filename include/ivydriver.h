@@ -154,7 +154,7 @@ struct IvyDriver
 
     logger slavelogfile {"/var/ivydriver_initial_log.txt"};
 
-    ivytime last_message_time = ivytime(0);
+    ivytime last_message_time = ivytime_zero;
 
     	std::vector<std::string> luns;
 

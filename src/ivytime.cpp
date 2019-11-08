@@ -72,6 +72,11 @@ bool ivytime::isValid() const
     return true;
 }
 
+bool ivytime::isZero() const
+{
+	return t.tv_sec == 0 && t.tv_nsec == 0;
+}
+
 void ivytime::normalize()
 {
     while (!isValid()) { normalize_round(); }

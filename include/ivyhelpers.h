@@ -65,7 +65,7 @@ void fileappend(std::string filename, std::string s);
 
 //std::string print_logfile_stats();
 
-std::string format_utterance(std::string speaker, std::string utterance, ivytime delta = ivytime(0));
+std::string format_utterance(std::string speaker, std::string utterance, ivytime delta = ivytime_zero);
 
 // For these functions I was having trouble with c++11 regexs, // at the time - later code uses regexes.
 // so some of these do things the old fashioned way.

@@ -70,7 +70,7 @@ bool IosequencerRandomIndependent::generate(Eyeo& slang)
 	}
 	else
 	{
-		if (ivytime_zero == previous_scheduled_time)
+		if (previous_scheduled_time.isZero())
 		{
 			slang.scheduled_time.setToNow();
 		}

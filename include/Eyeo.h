@@ -67,10 +67,10 @@ public:
 		// folder pointing to /usr/include/linux/aio_abi.h to make easy to reference when coding.
 		// Browsing the web indicates there's other locations and forms of aio header file on different systems.  Hope the code is portable, resigned if not.
 
-	ivytime scheduled_time {ivytime(0)};  // if we have iorate=max, this is indicated by setting scheduled_time=ivytime(0).
-	ivytime start_time     {ivytime(0)};
-	ivytime running_time   {ivytime(0)};
-	ivytime end_time       {ivytime(0)};
+	ivytime scheduled_time {ivytime_zero};  // if we have iorate=max, this is indicated by setting scheduled_time=ivytime(0).
+	ivytime start_time     {ivytime_zero};
+	ivytime running_time   {ivytime_zero};
+	ivytime end_time       {ivytime_zero};
 	int return_value {-1};
 	int errno_value  {-1};
 

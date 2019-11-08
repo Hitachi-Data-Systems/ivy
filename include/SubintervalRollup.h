@@ -35,7 +35,7 @@ public:
 
 //methods
 	SubintervalRollup(ivytime subinterval_start, ivytime subinterval_end) : startIvytime(subinterval_start), endIvytime(subinterval_end) {}
-	SubintervalRollup() {startIvytime = ivytime(0); endIvytime = ivytime(0);}
+	SubintervalRollup() {startIvytime = ivytime_zero; endIvytime = ivytime_zero;}
 	void clear();
 	void addIn(const SubintervalRollup& other);
 	ivy_float durationSeconds() { ivytime dur = endIvytime - startIvytime; return dur.getlongdoubleseconds();}

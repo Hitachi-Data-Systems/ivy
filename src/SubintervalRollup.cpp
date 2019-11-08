@@ -34,11 +34,11 @@ void SubintervalRollup::clear()
 
 void SubintervalRollup::addIn(const SubintervalRollup& other)
 {
-	if (ivytime_zero == startIvytime) startIvytime=other.startIvytime;
-	else if ( (!(ivytime_zero == other.startIvytime)) && other.startIvytime < startIvytime) startIvytime = other.startIvytime;
+	if (startIvytime.isZero()) startIvytime=other.startIvytime;
+	else if ( (!(other.startIvytime.isZero())) && other.startIvytime < startIvytime) startIvytime = other.startIvytime;
 
-	if (ivytime_zero == endIvytime) endIvytime=other.endIvytime;
-	else if ( (!(ivytime_zero == other.endIvytime)) && other.endIvytime > endIvytime) endIvytime = other.endIvytime;
+	if (endIvytime.isZero()) endIvytime=other.endIvytime;
+	else if ( (!(other.endIvytime.isZero())) && other.endIvytime > endIvytime) endIvytime = other.endIvytime;
 
 	inputRollup.merge(other.inputRollup);
 	outputRollup.add(other.outputRollup);

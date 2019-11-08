@@ -18,7 +18,7 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-
+#include <algorithm>
 #include "Accumulators_by_io_type.h"
 
 /*static*/ std::string Accumulators_by_io_type::getCategories()
@@ -124,7 +124,6 @@ ivy_float histogram_bucket_scale_factor(unsigned int i)
     else                                return -1.;
 }
 
-
 /*static*/ int Accumulators_by_io_type::get_bucket_index(ivy_float io_time)
 {
 	if (io_time < 0.)
@@ -135,11 +134,47 @@ ivy_float histogram_bucket_scale_factor(unsigned int i)
 
 	ivy_float io_time_ms = io_time * 1000.;
 
-	for (int i=0; i<(io_time_buckets - 1); i++)
-		if (io_time_ms < std::get<1>(io_time_clip_levels[i]))
-			return i;
+	// Original code:
+	//
+	//for (int i=0; i<(io_time_buckets - 1); i++)
+	//	if (io_time_ms < std::get<1>(io_time_clip_levels[i]))
+	//		return i;
+	//
+	// return io_time_buckets -1;
 
-	return io_time_buckets -1;
+	// Alternative 1: Simple binary search:
+	//
+	//int first, middle, last;
+	//
+	//first = 0;
+	//last  = io_time_buckets - 1;
+	//middle = (first + last) / 2;
+	//
+	//while (first <= last) {
+	//	ivy_float middle_value = std::get<1>(io_time_clip_levels[middle]);
+	//	if (middle_value < io_time_ms) {
+	//		first = middle + 1;
+	//	} else if (middle_value * 1.01 >= io_time_ms) { // Within 1%?
+	//		break;
+	//	} else {
+	//		last = middle - 1;
+	//	}
+	//
+	//	middle = (first + last) / 2;
+	//}
+	//
+	//return middle;
+
+	// Alternative 2: Binary search using std::lower_bound and compare (lambda):
+	//
+	using Tuple = std::tuple<std::string, ivy_float, ivy_float>; // tuple portion of io_time_clip_levels vector.
+
+	auto compare = [](const Tuple &lhs, const Tuple &rhs)->bool
+		{ return std::get<1>(lhs) < std::get<1>(rhs); };
+
+	auto low = std::lower_bound(io_time_clip_levels.begin(), io_time_clip_levels.end(), Tuple("", io_time_ms, 0.0), compare);
+
+	return low - io_time_clip_levels.begin();
 }
 
 /*static*/ std::string Accumulators_by_io_type::getRunningStatTitleByCategory(int category_index)

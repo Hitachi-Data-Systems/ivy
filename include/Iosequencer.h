@@ -61,7 +61,7 @@ public:
 
 	std::string threadKey;
 
-	ivytime previous_scheduled_time = ivytime(0);
+	ivytime previous_scheduled_time = ivytime_zero;
 
 	long long int coverageStartLBA, coverageEndLBA, numberOfCoverageLBAs;
 		// These are calculated from the LUN's maxLBA attribute,

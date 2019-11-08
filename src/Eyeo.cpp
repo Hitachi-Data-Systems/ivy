@@ -152,7 +152,7 @@ std::string Eyeo::thumbnail()
 
 	o << "Eyeo " << pWorkload->workloadID << "#" << io_sequence_number;
 
-	if (ivytime_zero == scheduled_time)
+	if (scheduled_time.isZero())
 	{
 	    o << " IOPS=max";
 	}
@@ -184,28 +184,28 @@ std::string Eyeo::thumbnail()
 
 ivy_float Eyeo::service_time_seconds()
 {
-	if (ivytime_zero == end_time || ivytime_zero == start_time) return -1.0;
+	if (end_time.isZero() || start_time.isZero()) return -1.0;
 	ivytime service_time = end_time - start_time;
 	return (ivy_float) service_time;
 }
 
 ivy_float Eyeo::response_time_seconds()
 {
-	if (ivytime_zero == end_time || ivytime_zero == scheduled_time) return -1.0;
+	if (end_time.isZero() || scheduled_time.isZero()) return -1.0;
 	ivytime response_time = end_time - scheduled_time;
 	return (ivy_float) response_time;
 }
 
 ivy_float Eyeo::submit_time_seconds()
 {
-	if (ivytime_zero == start_time || ivytime_zero == running_time) return -1.0;
+	if (start_time.isZero() || running_time.isZero()) return -1.0;
 	ivytime submit_time = running_time - start_time;
 	return (ivy_float) submit_time;
 }
 
 ivy_float Eyeo::running_time_seconds()
 {
-	if (ivytime_zero == end_time || ivytime_zero == running_time) return -1.0;
+	if (end_time.isZero() || running_time.isZero()) return -1.0;
 	ivytime run_time = end_time - running_time;
 	return (ivy_float) run_time;
 }
