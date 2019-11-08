@@ -29,7 +29,7 @@ using namespace std;
 
 ivytime ivytime_reference_delta (0);
 
-ivytime ivytime_zero (0);
+const ivytime ivytime_zero (0);
 
 // NOTE:
 //

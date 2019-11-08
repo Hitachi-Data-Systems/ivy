@@ -119,11 +119,11 @@ public:
     std::vector<TestLUN*>::iterator pTestLUN_generate_bookmark;
     std::vector<TestLUN*>::iterator pTestLUN_start_IOs_bookmark;
 
-    int event_fd {-1};
     int epoll_fd {-1};
+
     epoll_event* p_epoll_events {nullptr};
+    unsigned int max_epoll_event_retrieval_count {0};
     epoll_event timerfd_epoll_event;
-    struct epoll_event epoll_ev;
 
     int timer_fd {-1};
     struct itimerspec timerfd_setting;
@@ -162,7 +162,7 @@ public:
 
     void cancel_stalled_IOs();
 
-    unsigned int /* # of I/Os */ reap_IOs();
+    void reap_IOs();
     unsigned int /* # of I/Os */ start_IOs();
     unsigned int /* # of I/Os */ post_process_an_IO();
     unsigned int /* # of I/Os */ generate_an_IO();

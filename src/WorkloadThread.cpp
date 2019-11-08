@@ -358,32 +358,36 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
         set_all_queue_depths_to_zero();
 
-        if (event_fd != -1)
+
+        for (auto& pTestLUN : pTestLUNs)
         {
-            std::ostringstream o;
-            o << "when going to set \"event_fd\", it already had the value " << event_fd << ". It was supposed to be -1."
-                << "  Going to try closing the previous value ... ";
-            if (0 != close(event_fd))
+            if (pTestLUN->event_fd != -1)
             {
-                o << "failed - errno = " << errno << " (" << std::strerror(errno) << ").";
+                std::ostringstream o;
+                o << "when going to set \"event_fd\" in TestLUN " << pTestLUN->host_plus_lun << ", it already had the value " << pTestLUN->event_fd << ". It was supposed to be -1."
+                    << "  Going to try closing the previous value ... ";
+                if (0 != close(pTestLUN->event_fd))
+                {
+                    o << "failed - errno = " << errno << " (" << std::strerror(errno) << ").";
+                    post_error(o.str());
+                    goto wait_for_command;
+                }
+                else
+                {
+                    o << "successful.";
+                    post_warning(o.str());
+                }
+            }
+
+            pTestLUN->event_fd = eventfd(0, 0);  // it's blocking because we are going to use epoll_wait() to detect if it's readable.
+
+            if (pTestLUN->event_fd < 0)
+            {
+                std::ostringstream o;
+                o << "failed trying to create eventfd for TestLUN " << pTestLUN->host_plus_lun << " - errno = " << errno << " " << strerror(errno) << std::endl;
                 post_error(o.str());
                 goto wait_for_command;
             }
-            else
-            {
-                o << "successful.";
-                post_warning(o.str());
-            }
-        }
-
-        event_fd = eventfd(0, EFD_NONBLOCK );
-
-        if (event_fd < 0)
-        {
-            std::ostringstream o;
-            o << "failed trying to create eventfd" << " - errno = " << errno << " " << strerror(errno) << std::endl;
-            post_error(o.str());
-            goto wait_for_command;
         }
 
         if (epoll_fd != -1)
@@ -443,24 +447,11 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
         memset(&timerfd_setting,0,sizeof(timerfd_setting));
 
-        memset(&(epoll_ev),0,sizeof(epoll_ev));
-        epoll_ev.data.ptr = (void*) this;
-        epoll_ev.events = EPOLLIN | EPOLLET | EPOLLOUT;
-
-        int rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, event_fd, &epoll_ev);
-        if (rc == -1)
-        {
-            std::ostringstream o;
-            o << "epoll_ctl failed trying to add an event - errno " << errno << std::strerror(errno) << std::endl;
-            post_error(o.str());
-            goto wait_for_command;
-        }
-
         memset(&(timerfd_epoll_event),0,sizeof(timerfd_epoll_event));
-        timerfd_epoll_event.data.ptr = (void*) this;
+        timerfd_epoll_event.data.ptr = (void*) this;  // This epoll_event points to WorkloadThread.  The others below point to a TestLUN.
         timerfd_epoll_event.events = EPOLLIN; // | EPOLLET | EPOLLOUT;
 
-        rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, timer_fd, &timerfd_epoll_event);
+        int rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, timer_fd, &timerfd_epoll_event);
         if (rc < 0)
         {
             std::ostringstream o;
@@ -469,10 +460,27 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             goto wait_for_command;
         }
 
+        for (auto& pTestLUN : pTestLUNs)
+        {
+            memset(&(pTestLUN->epoll_ev),0,sizeof(pTestLUN->epoll_ev));
+            pTestLUN->epoll_ev.data.ptr = (void*) pTestLUN;
+            pTestLUN->epoll_ev.events = EPOLLIN;
+
+            int rc = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pTestLUN->event_fd, &pTestLUN->epoll_ev);
+            if (rc == -1)
+            {
+                std::ostringstream o;
+                o << "epoll_ctl failed trying to add event_fd for TestLUN " << pTestLUN->host_plus_lun << " - errno " << errno << std::strerror(errno) << std::endl;
+                post_error(o.str());
+                goto wait_for_command;
+            }
+        }
+
+
         if (routine_logging)
         {
             std::ostringstream o;
-            o << "Thread for physical core " << physical_core << " hyperthread " << hyperthread << " - event_fd = " << event_fd << ", epoll_fd is " << epoll_fd << ", and timer_fd is " << timer_fd << std::endl;
+            o << "Thread for physical core " << physical_core << " hyperthread " << hyperthread << ", epoll_fd is " << epoll_fd << ", and timer_fd is " << timer_fd << std::endl;
             log(slavethreadlogfile,o.str());
         }
 
@@ -491,7 +499,13 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
         if (p_epoll_events != nullptr) delete[] p_epoll_events;
 
-        p_epoll_events = new epoll_event[1]; // throws on failure.
+        max_epoll_event_retrieval_count = 1 /* for timerfd */ + pTestLUNs.size();
+
+        p_epoll_events = new epoll_event[max_epoll_event_retrieval_count]; // throws on failure.
+            // Apparently if we make this array smaller than the number of LUNs + 1, the number o things added into the epollm
+            // when we do an epoll_wait successively it is smart enough to page through the available fds round-robin.
+
+            // But on this first try, we'll see if it's OK to try to get them all in one go.
 
 		state=ThreadState::running;
 
@@ -697,13 +711,28 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                             o << "workload_thread_max_queue_depth = " << workload_thread_max_queue_depth << std::endl;
 
+
+                            unsigned int overall_max_IOs_tried_to_launch_at_once = 0;
+                            int overall_max_IOs_launched_at_once = 0;
+                            int overall_max_IOs_reaped_at_once = 0;
+                            unsigned int overall_max_consecutive_count_event_fd_writeback = 0;
+                            unsigned int overall_max_consecutive_count_event_fd_behind = 0;
+
                             for (auto& pTestLUN : pTestLUNs)
                             {
+                                if (pTestLUN->max_IOs_tried_to_launch_at_once          > overall_max_IOs_tried_to_launch_at_once)          { overall_max_IOs_tried_to_launch_at_once          = pTestLUN->max_IOs_tried_to_launch_at_once; }
+                                if (pTestLUN->max_IOs_launched_at_once                 > overall_max_IOs_launched_at_once)                 { overall_max_IOs_launched_at_once                 = pTestLUN->max_IOs_launched_at_once; }
+                                if (pTestLUN->max_IOs_reaped_at_once                   > overall_max_IOs_reaped_at_once)                   { overall_max_IOs_reaped_at_once                   = pTestLUN->max_IOs_reaped_at_once; }
+                                if (pTestLUN->max_consecutive_count_event_fd_writeback > overall_max_consecutive_count_event_fd_writeback) { overall_max_consecutive_count_event_fd_writeback = pTestLUN->max_consecutive_count_event_fd_writeback; }
+                                if (pTestLUN->max_consecutive_count_event_fd_behind    > overall_max_consecutive_count_event_fd_behind)    { overall_max_consecutive_count_event_fd_behind    = pTestLUN->max_consecutive_count_event_fd_behind; }
+
                                 o << "For TestLUN"                            << pTestLUN->host_plus_lun << " : "
                                     << "testLUN_max_queue_depth = "           << pTestLUN->testLUN_max_queue_depth
                                     << ", max_IOs_tried_to_launch_at_once = " << pTestLUN->max_IOs_tried_to_launch_at_once
                                     << ", max_IOs_launched_at_once = "        << pTestLUN->max_IOs_launched_at_once
                                     << ", max_IOs_reaped_at_once = "          << pTestLUN->max_IOs_reaped_at_once
+                                    << ", max_consecutive_count_event_fd_writeback = " << pTestLUN->max_consecutive_count_event_fd_writeback
+                                    << ", max_consecutive_count_event_fd_behind = "    << pTestLUN->max_consecutive_count_event_fd_behind
                                     << std::endl;
 
                                 for (auto& pear : pTestLUN->workloads)
@@ -713,6 +742,13 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                                 }
                             }
+                            o << "Over all TestLUNs "
+                                << ", max_IOs_tried_to_launch_at_once = " << overall_max_IOs_tried_to_launch_at_once
+                                << ", max_IOs_launched_at_once = "        << overall_max_IOs_launched_at_once
+                                << ", max_IOs_reaped_at_once = "          << overall_max_IOs_reaped_at_once
+                                << ", max_consecutive_count_event_fd_writeback = " << overall_max_consecutive_count_event_fd_writeback
+                                << ", max_consecutive_count_event_fd_behind = "    << overall_max_consecutive_count_event_fd_behind
+                                << std::endl;
 
                             log(slavethreadlogfile,o.str());
                         }
@@ -808,9 +844,9 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
 		if (now >= thread_view_subinterval_end) break;
 
-        unsigned int n;
+        unsigned int n = 0;
 
-        n =  reap_IOs();                if ( n > 0 ) { goto top_of_loop; }
+        reap_IOs();
 
         n += start_IOs();               if ( n > 0 ) { goto top_of_loop; }
 
@@ -879,7 +915,7 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
         }
         else
         {
-            epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, -1);
+            epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, -1);  // -1 means wait indefinitely (one of the fds being waited on is a timerfd instead.
         }
 
         if (epoll_rc < 0)
@@ -991,7 +1027,7 @@ unsigned int WorkloadThread::start_IOs()
     return n;
 }
 
-unsigned int WorkloadThread::reap_IOs()
+void WorkloadThread::reap_IOs()
 {
 #if defined(IVYDRIVER_TRACE)
     { wt_callcount_reap_IOs++; if (wt_callcount_reap_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
@@ -999,17 +1035,13 @@ unsigned int WorkloadThread::reap_IOs()
     o << "Entering WorkloadThread::reap_IOs()."; log(slavethreadlogfile,o.str()); } }
 #endif
 
-    if (pTestLUNs.size() == 0) return 0;
-
-    std::vector<TestLUN*>::iterator itr = pTestLUN_reap_IOs_bookmark;
+    if (pTestLUNs.size() == 0) return;
 
 #ifdef IVYDRIVER_TRACE
     (*itr)->reap_IOs_bookmark_count++;
 #endif
 
-    unsigned int n {0};
-
-    uint64_t eventfd_counter_value {0};
+    // more to TestLUN ...    uint64_t eventfd_counter_value {0};
 
     // The way the eventfd / epoll thing works is that
     // an eventfd is a file descriptor connected to an
@@ -1035,88 +1067,56 @@ unsigned int WorkloadThread::reap_IOs()
     // which also atomically then sets the underlying
     // counter to zero.
 
-    // We throw away the counter value that we read
-    // using the eventfd, because all we want to do
-    // is to reset the counter to zero before doing
-    // the AIO getevents calls for each TestLUN,
-    // so that we won't lose track of any new
-    // pending I/O completion events that arrive
-    // after we reset the counter.
+    // There's an event fd for each TestLUN, and the event_fds
+    // for the various TestLUNs have been added into the epoll
+    // for the WorkloadThread.
 
+    // So the way we reap I/Os is first do an epoll_wait at the
+    // WorkloadThread level.  This gives us a set of epoll_events,
+    // which each either have a pointer to WorkoadThread (the timerfd's event)
+    // or a pointer to a TestLUN that has pending I/O events.
 
-    // This next bit writing the number 1 (one) to the eventfd's "file" was put in before reading from the eventfd to reset it,
-    // because without writing to the eventfd first, reading from an eventfd failed saying 11 - resource temporarily unavailable.
-//
-//    bool written_to_eventfd {false};
-//
-//    if (! written_to_eventfd)
-//    {
-//        written_to_eventfd = true;
-//
-//        uint64_t one64bit {1};
-//        int eventfd_write_rc = write(event_fd, &one64bit, 8);
-//        if (eventfd_write_rc != 8)
-//        {
-//            std::ostringstream o;
-//            o << "<Error> Internal programming error - in WorkloadThread, failed trying to write to the 64 bit unsigned counter value underlying my eventfd which is " << event_fd << "." << std::endl
-//                << "Return value from writing 8 byte counter should have been 8.  Instead, it was " << eventfd_write_rc << ", with errno = " << errno << " (" << strerror(errno) << ")." << std::endl;
-//
-//            int flags = fcntl(event_fd, F_GETFD, 0);
-//
-//            o << "Return value from fcntl(event_fd = " << event_fd << ", F_GETFD, 0) was " << flags;
-//
-//            if (flags != 0) o << " with errno " << errno << " - " << strerror(errno);
-//
-//            o << std::endl << "Occurred at " << __FILE__ << " line " << __LINE__ << "\n";
-//            die_saying(o.str());
-//        }
-//    }
+    // So calling epoll_wait tells us which TestLUNs have pending
+    // events.  Then in each corresponding TestLUN, we read from
+    // the event fd to find out how many pending I/O completions
+    // there are.  Then in TestLUN, we keep calling getevents()
+    // until we've harvested them all.
 
-    int eventfd_read_rc = read(event_fd, &eventfd_counter_value, 8);
+    // Now - does this favour harvesting events from "earlier" TestLUNs?   <===================================== !
+    // How do we round-robin around the TestLUNs with events???
 
-    if ((eventfd_read_rc != 8) && (!(eventfd_read_rc == -1 && errno == 11))) // eventfd is non-blocking, and if the counter is zero, it's not readable, and you get return code -1 with errno 11
-    {
-        std::ostringstream o;
-        o << "in WorkloadThread, failed trying to read the 64 bit unsigned counter value underlying my eventfd which is " << event_fd << "." << std::endl
-            << "Return value from reading 8 byte counter should have been 8.  Instead, it was " << eventfd_read_rc << ", with errno = " << errno << " (" << strerror(errno) << ")." << std::endl;
-
-        int flags = fcntl(event_fd, F_GETFD, 0);
-
-        o << "Return value from fcntl(event_fd = " << event_fd << ", F_GETFD, 0) was " << flags;
-
-        if (flags != 0) o << " with errno " << errno << " - " << strerror(errno);
-
-        throw std::runtime_error(o.str());
-    }
+    int epoll_event_count {-1};
 
     while (true)
     {
-        TestLUN* pTestLUN = *itr;
+        epoll_event_count = epoll_wait(epoll_fd, p_epoll_events, max_epoll_event_retrieval_count, 0);
 
-#ifdef IVYDRIVER_TRACE
-        pTestLUN->reap_IOs_body_count++;
-#endif
-
-        n += pTestLUN->reap_IOs();
-
-        itr++;
-
-        if (itr == pTestLUNs.end())
-        {
-            itr = pTestLUNs.begin();
-        }
-
-        if (itr == pTestLUN_reap_IOs_bookmark) break;
+        if (epoll_event_count != -1 || errno != EINTR) break;
     }
 
-    pTestLUN_reap_IOs_bookmark++;
-
-    if (pTestLUN_reap_IOs_bookmark == pTestLUNs.end())
+    if (epoll_event_count == -1)
     {
-        pTestLUN_reap_IOs_bookmark = pTestLUNs.begin();
+        std::ostringstream o;
+        o << "internal programming error - epoll_wait() in WorkloadThread::reap_IOs() for physical core " << physical_core << " hyperthread " << hyperthread
+            << "failed with errno " << errno << " - " << std::strerror(errno) << std::endl;
+        post_error(o.str());
+        return;
     }
 
-    return n;
+    if (epoll_event_count == 0) return;
+
+    for (unsigned int i = 0; i < (unsigned int) epoll_event_count; i++)
+    {
+        void* p = (p_epoll_events+i)->data.ptr;
+
+        if ( ((WorkloadThread*)p) == this ) continue; // the timer fd popped.
+
+        TestLUN* pTestLUN = (TestLUN*) p;
+
+        pTestLUN->reap_IOs();
+    }
+
+    return;
 }
 
 unsigned int WorkloadThread::pop_and_process_an_Eyeo()
@@ -1391,6 +1391,28 @@ bool WorkloadThread::close_all_fds()
                 pTestLUN->fd = -1;
             }
         }
+
+        if (pTestLUN->event_fd != -1)
+        {
+            if (0 != (rc = close(pTestLUN->event_fd)))
+            {
+                std::ostringstream o;
+                o << "in WorkloadThread::close_all_fds() - close for event_fd = " << pTestLUN->event_fd << " failed return code "
+                    << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
+                post_error(o.str());
+                success = false;
+            }
+            else
+            {
+    ///*debug*/{
+    //            std::ostringstream o;
+    //            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
+    //                << " in WorkloadThread::close_all_fds() - close for event_fd = " << pTestLUN->event_fd << " successful." << std::endl;
+    //            log(slavethreadlogfile,o.str());
+    //        } // end of debug
+                pTestLUN->event_fd = -1;
+            }
+        }
     }
 
     if (epoll_fd != -1)
@@ -1412,28 +1434,6 @@ bool WorkloadThread::close_all_fds()
 //            log(slavethreadlogfile,o.str());
 //        } // end of debug
             epoll_fd = -1;
-        }
-    }
-
-    if (event_fd != -1)
-    {
-        if (0 != (rc = close(event_fd)))
-        {
-            std::ostringstream o;
-            o << "in WorkloadThread::close_all_fds() - close for event_fd = " << event_fd << " failed return code "
-                << rc << ", errno " << errno << " (" << std::strerror(errno) << ")." << std::endl;
-            post_error(o.str());
-            success = false;
-        }
-        else
-        {
-///*debug*/{
-//            std::ostringstream o;
-//            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-//                << " in WorkloadThread::close_all_fds() - close for event_fd = " << event_fd << " successful." << std::endl;
-//            log(slavethreadlogfile,o.str());
-//        } // end of debug
-            event_fd = -1;
         }
     }
 

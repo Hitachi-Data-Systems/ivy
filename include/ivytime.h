@@ -95,5 +95,5 @@ private:
 
 extern ivytime ivytime_reference_delta; // DO NOT refer to this yourself.  See notes at top of ivytime.cpp.
 
-extern ivytime ivytime_zero; // Feel free to reference this. It is set to "ivytime(0)" at startup.
+extern const ivytime ivytime_zero; // Feel free to reference this. It is set to "ivytime(0)" at startup.
 

@@ -119,6 +119,9 @@ public:
 
 	int fd {-1};
 
+	int event_fd {-1};
+    struct epoll_event epoll_ev;
+
 	struct io_event ReapHeap[MAX_IOEVENTS_REAP_AT_ONCE];
 
 	Eyeo* LaunchPad[MAX_IOS_LAUNCH_AT_ONCE];
@@ -130,6 +133,13 @@ public:
 	unsigned int max_IOs_tried_to_launch_at_once {0};
 	int max_IOs_launched_at_once {0};
 	int max_IOs_reaped_at_once {0};
+	uint64_t extra_reaped_after_read_from_eventfd {0};
+	uint64_t event_fd_writeback_value;
+	unsigned int consecutive_count_event_fd_writeback {0};
+	unsigned int consecutive_count_event_fd_behind {0};
+	unsigned int max_consecutive_count_event_fd_writeback {0};
+	unsigned int max_consecutive_count_event_fd_behind {0};
+
 
 	unsigned int launch_count {0};
 
@@ -178,6 +188,7 @@ public:
     unsigned int total_generate_one_body_count = 0;
 #endif
 
+
 //methods
     TestLUN(){}
     ~TestLUN(){}
@@ -186,7 +197,7 @@ public:
 
     void open_fd();
 
-    unsigned int /* # of I/Os */ reap_IOs();
+    void reap_IOs();
     unsigned int /* # of I/Os */ start_IOs();
     unsigned int /* # of I/Os */ pop_and_process_an_Eyeo();
     unsigned int /* # of I/Os */ generate_an_IO();

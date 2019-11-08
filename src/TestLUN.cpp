@@ -164,6 +164,13 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 	max_IOs_reaped_at_once = 0;
 	max_IOs_tried_to_launch_at_once = 0;
 
+    extra_reaped_after_read_from_eventfd = 0;
+	consecutive_count_event_fd_writeback = 0;
+	consecutive_count_event_fd_behind = 0;
+	max_consecutive_count_event_fd_writeback = 0;
+	max_consecutive_count_event_fd_behind = 0;
+
+
 	open_fd();
 
     // Now we create the eventfd that all I/Os into the LUN's aio context will use.
@@ -195,7 +202,7 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 	{
         std::ostringstream o;
         o << "TestLUN::prepare_linux_AIO_driver_to_start() done - LUN opened with fd = " << fd
-            << ", aio context successfully constructed, sharing eventfd = " << pWorkloadThread->event_fd
+            << ", aio context successfully constructed, with eventfd = " << event_fd
             << ", epoll fd " << pWorkloadThread->epoll_fd
             << " and timerfd " << pWorkloadThread->timer_fd << "." << std::endl;
         log(pWorkloadThread->slavethreadlogfile,o.str());
@@ -205,7 +212,7 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 }
 
 
-unsigned int /* number of I/Os reaped */ TestLUN::reap_IOs()
+void TestLUN::reap_IOs()
 {
 #if defined(IVYDRIVER_TRACE)
     { reap_IOs_callcount++; if (reap_IOs_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
@@ -214,82 +221,228 @@ unsigned int /* number of I/Os reaped */ TestLUN::reap_IOs()
     abort_if_queue_depths_corrupted("TestLUN::reap_IOs()", reap_IOs_callcount); } }
 #endif
 
-    if (testLUN_queue_depth == 0) return 0;
+    // The eventfd does not have the EFD_NONBLOCK flag turned on, meaning it should block on reads
+    // if the underlying kernel counter is zero.  But we only call reap_IOs() when epoll_wait() says the eventfd is readable.
 
-    ivytime wait_duration(0);
+    uint64_t pending_event_count {0};
 
-    // inline int io_getevents(aio_context_t ctx, long min_nr, long max_nr, struct io_event *events, struct timespec *timeout)
-    // 	{ return syscall(__NR_io_getevents, ctx, min_nr, max_nr, events, timeout); }
+    int rc = read(event_fd, &pending_event_count, 8);
 
-    int reaped = io_getevents(
-                            act,
-                            0, // zero events_needed, meaning non-blocking
-                            MAX_IOEVENTS_REAP_AT_ONCE,
-                            &(ReapHeap[0]),
-                            &(wait_duration.t)
-                            );
-    if (reaped < 0)
+    if (rc != 8)
     {
         std::ostringstream o;
-        o << "call to Linux AIO context io_getevents() failed errno " << errno << " (" << strerror(errno) << ")." << std::endl;
+        o << "internal programming error -  in TestLUN::reap_IOs() for " << host_plus_lun << ", failed trying to read the 64 bit unsigned counter value underlying my eventfd which is " << event_fd << "." << std::endl
+            << "Return value from reading 8 byte counter should have been 8.  Instead, it was " << rc << ", with errno = " << errno << " (" << strerror(errno) << ")." << std::endl;
+
+        int flags = fcntl(event_fd, F_GETFD, 0);
+
+        o << "Return value from fcntl(event_fd = " << event_fd << ", F_GETFD, 0) was " << flags;
+
+        if (flags != 0) o << " with errno " << errno << " - " << strerror(errno);
+
         throw std::runtime_error(o.str());
     }
 
-    if (reaped == 0) return 0;
-
-    ivytime now; now.setToNow();
-
-    if (reaped > max_IOs_reaped_at_once) max_IOs_reaped_at_once = reaped;
-
-    unsigned int n {0};
-
-    for (int i=0; i < reaped; i++)
+    if (pending_event_count == 0)
     {
-        struct io_event* p_event;
-        Eyeo* p_Eyeo;
-        struct iocb* p_iocb;
-
-        p_event=&(ReapHeap[i]);
-        p_Eyeo = (Eyeo*) p_event->data;
-        p_iocb = (iocb*) p_event->obj;
-        p_Eyeo->end_time = now;
-        p_Eyeo->return_value = p_event->res;
-        p_Eyeo->errno_value = p_event->res2;
-
-        Workload* pWorkload = p_Eyeo->pWorkload;
-
-        auto running_IOs_iter = pWorkload->running_IOs.find(p_iocb);
-        if (running_IOs_iter == pWorkload->running_IOs.end())
-        {
-            std::ostringstream o;
-            o << "an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
-                << "that was not found in the ivy workload\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
-                << "  The ivy Eyeo object associated with the completion event describes itself as "
-                << p_Eyeo->toString() << std::endl;
-            throw std::runtime_error(o.str());
-        }
-        pWorkload->running_IOs.erase(running_IOs_iter);
-
-                     pWorkload->workload_queue_depth--;
-                                 testLUN_queue_depth--;
-        pWorkloadThread->workload_thread_queue_depth--;
-
-        pWorkload->postprocessQ.push(p_Eyeo);
-
-        n++;
-
-#ifdef IVYDRIVER_TRACE
-        if (reap_IOs_callcount <= FIRST_FEW_CALLS)
-        {
-            std::ostringstream o;
-            o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ") =|= reaped " << p_Eyeo->thumbnail();
-            log(pWorkloadThread->slavethreadlogfile,o.str());
-        }
-#endif
-
+        std::ostringstream o;
+        o << "internal programming error - in TestLUN::reap_IOs() for " << host_plus_lun
+            << ", epoll_wait() said the eventfd for this LUN had pending events, but when we read from the eventfd there were zero pending events." << std::endl;
+        o << "Not only that, but the eventfd did not have the EFD_NONBLOCK flag set, so it should have blocked rather than read the zero value.";
+        throw std::runtime_error(o.str());
     }
 
-    return n;
+    if (extra_reaped_after_read_from_eventfd > 0)
+    {
+        consecutive_count_event_fd_writeback = 0;
+
+        if (extra_reaped_after_read_from_eventfd > pending_event_count)
+        {
+            consecutive_count_event_fd_behind++;
+
+            if (consecutive_count_event_fd_behind > max_consecutive_count_event_fd_behind) { max_consecutive_count_event_fd_behind = consecutive_count_event_fd_behind; }
+
+            if (consecutive_count_event_fd_behind > 10)
+            {
+                std::ostringstream o;
+                o << "internal programming error - in TestLUN::reap_IOs() for " << host_plus_lun
+                    << ", for over 10 passes through reap_IOs(), the eventfd pending I/O completion event count hasn\'t caught up to number of events we have harvested using io_getevents().";
+                throw std::runtime_error(o.str());
+            }
+
+            extra_reaped_after_read_from_eventfd -= pending_event_count;
+
+            return;
+        }
+        else
+        {
+            pending_event_count -= extra_reaped_after_read_from_eventfd;
+            extra_reaped_after_read_from_eventfd = 0;
+
+            consecutive_count_event_fd_behind = 0;
+
+            if (pending_event_count == 0) // we just caught up by reading the eventfd counts for the extra I/Os we harvested last time, but there were no new I/O events.
+            {
+                return;
+            }
+        }
+    }
+    else
+    {
+        consecutive_count_event_fd_behind = 0;
+    }
+
+    static ivytime zero_wait_duration(0);
+
+
+    int total_reaped = 0;
+
+    while (true)
+    {
+        ivytime now; now.setToNow();
+
+        int reaped = io_getevents(
+                                act,
+                                0, // zero events_needed, meaning non-blocking
+                                MAX_IOEVENTS_REAP_AT_ONCE,
+                                &(ReapHeap[0]),
+                                &(zero_wait_duration.t)
+                                );
+        if (reaped < 0)
+        {
+            std::ostringstream o;
+            o << "call to Linux AIO context io_getevents() failed errno " << errno << " (" << strerror(errno) << ")." << std::endl;
+            throw std::runtime_error(o.str());
+        }
+
+        if (reaped > max_IOs_reaped_at_once) max_IOs_reaped_at_once = reaped;
+
+        for (int i=0; i < reaped; i++)
+        {
+            struct io_event* p_event;
+            Eyeo* p_Eyeo;
+            struct iocb* p_iocb;
+
+            p_event=&(ReapHeap[i]);
+            p_Eyeo = (Eyeo*) p_event->data;
+            p_iocb = (iocb*) p_event->obj;
+            p_Eyeo->end_time = now;
+            p_Eyeo->return_value = p_event->res;
+            p_Eyeo->errno_value = p_event->res2;
+
+            Workload* pWorkload = p_Eyeo->pWorkload;
+
+            auto running_IOs_iter = pWorkload->running_IOs.find(p_iocb);
+            if (running_IOs_iter == pWorkload->running_IOs.end())
+            {
+                std::ostringstream o;
+                o << "an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
+                    << "that was not found in the ivy workload\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
+                    << "  The ivy Eyeo object associated with the completion event describes itself as "
+                    << p_Eyeo->toString() << std::endl;
+                throw std::runtime_error(o.str());
+            }
+            pWorkload->running_IOs.erase(running_IOs_iter);
+
+                         pWorkload->workload_queue_depth--;
+                                     testLUN_queue_depth--;
+            pWorkloadThread->workload_thread_queue_depth--;
+
+            pWorkload->postprocessQ.push(p_Eyeo);
+
+    #ifdef IVYDRIVER_TRACE
+            if (reap_IOs_callcount <= FIRST_FEW_CALLS)
+            {
+                std::ostringstream o;
+                o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ") =|= reaped " << p_Eyeo->thumbnail();
+                log(pWorkloadThread->slavethreadlogfile,o.str());
+            }
+    #endif
+
+        }
+
+        uint64_t reaped64 = (uint64_t) reaped;
+
+        if ( reaped64 > pending_event_count )
+        {
+            extra_reaped_after_read_from_eventfd = reaped64 - pending_event_count;
+            consecutive_count_event_fd_writeback = 0;
+
+            return;
+        }
+
+        if (reaped64 == pending_event_count)
+        {
+            consecutive_count_event_fd_writeback = 0;
+
+            return;
+        }
+
+        if (reaped64 == MAX_IOEVENTS_REAP_AT_ONCE)
+        {
+            pending_event_count -= reaped64;
+
+            if (pending_event_count == 0)
+            {
+                consecutive_count_event_fd_writeback = 0;
+
+                return;
+            }
+            else
+            {
+                continue;
+            }
+        }
+
+        // reaped64 < pending_event_count && reaped64 < MAX_IOEVENTS_REAP_AT_ONCE
+
+        // Some I/Os that had incremented the eventfd had not yet shown up to io_getevents.
+        // We write the excess number back into the eventfd so that next time around we can try again to see if the missing events have showed up.
+
+        consecutive_count_event_fd_writeback++;
+
+        if (consecutive_count_event_fd_writeback > max_consecutive_count_event_fd_writeback) { max_consecutive_count_event_fd_writeback = consecutive_count_event_fd_writeback; }
+
+        if (consecutive_count_event_fd_writeback == 10)
+        {
+            std::ostringstream o;
+            o << "internal programming warning - in TestLUN::reap_IOs() for " << host_plus_lun
+                << ", we went for " << consecutive_count_event_fd_writeback << " consecutive passes through reap_IOs() with I/Os that were counted in an eventfd but hadn\'t yet appeared to io_getevents()." << std::endl;
+            pWorkloadThread->post_warning(o.str());
+
+        }
+        else if (consecutive_count_event_fd_writeback >= 20)
+        {
+            std::ostringstream o;
+            o << "internal programming warning - in TestLUN::reap_IOs() for " << host_plus_lun
+                << ", we went for " << consecutive_count_event_fd_writeback << " consecutive passes through reap_IOs() with I/Os that were counted in an eventfd but hadn\'t yet appeared to io_getevents()." << std::endl;
+            throw std::runtime_error(o.str());
+        }
+
+        event_fd_writeback_value = pending_event_count - reaped64;
+
+        rc = write(event_fd, &event_fd_writeback_value, 8);
+
+        if (rc != 8)
+        {
+            std::ostringstream o;
+            o << "internal programming error -  in TestLUN::reap_IOs() for " << host_plus_lun
+                << ", failed trying to write back into the eventfd the 64 bit unsigned counter value " << event_fd_writeback_value
+                << " representing the number of pending events that didn't show up in io_getevents() this pass." << std::endl
+                << "  Return value from writing 8 byte counter should have been 8.  Instead, it was " << rc << ", with errno = " << errno << " (" << strerror(errno) << ")." << std::endl;
+
+            int flags = fcntl(event_fd, F_GETFD, 0);
+
+            o << "Return value from fcntl(event_fd = " << event_fd << ", F_GETFD, 0) was " << flags;
+
+            if (flags != 0) o << " with errno " << errno << " - " << strerror(errno);
+
+            throw std::runtime_error(o.str());
+        }
+
+        return;
+    }
+    // don't need a return here because we never break from the loop, rather, we return from inside the loop.
 }
 
 void TestLUN::pop_front_to_LaunchPad(Workload* pWorkload)
@@ -333,7 +486,7 @@ void TestLUN::pop_front_to_LaunchPad(Workload* pWorkload)
 
     pEyeo->start_time=now;
 
-    pEyeo->eyeocb.aio_resfd = pWorkloadThread->event_fd;
+    pEyeo->eyeocb.aio_resfd = event_fd;
     pEyeo->eyeocb.aio_flags = pEyeo->eyeocb.aio_flags | IOCB_FLAG_RESFD;
 
 #ifdef IVYDRIVER_TRACE
