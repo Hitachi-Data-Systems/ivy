@@ -188,7 +188,7 @@ int IvyDriver::main(int argc, char* argv[])
         if (item == "-error_on_critical_temp") { warn_on_critical_temp     = false; continue;}
         if (item == "-log")                    { routine_logging           = true;  continue;}
         if (item == "-one_thread_per_core")    { subthread_per_hyperthread = false; continue;}
-
+        if (item == "-measure_submit_time")    { measure_submit_time       = true;  continue;}
 
         if (arg_index != (argc-1))
         {

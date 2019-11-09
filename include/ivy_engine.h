@@ -523,6 +523,7 @@ public:
 
     double max_active_core_busy { 0.97 };
 
+    bool measure_submit_time {false};
 
 // methods
 

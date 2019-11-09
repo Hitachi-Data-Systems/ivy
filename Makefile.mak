@@ -1604,7 +1604,7 @@ $(OBJDIR_IVYDRIVER)/src/TestLUN.o: src/TestLUN.cpp include/TestLUN.h include/ivy
 	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
 	include/WorkloadID.h include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
-	include/LUN.h include/Eyeo.h
+	include/LUN.h include/Eyeo.h include/ivydriver.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/TestLUN.cpp -o $(OBJDIR_IVYDRIVER)/src/TestLUN.o
 
 $(OBJDIR_IVYDRIVER)/src/Workload.o: src/Workload.cpp include/Workload.h include/Subinterval.h \

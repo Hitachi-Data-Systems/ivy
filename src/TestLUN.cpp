@@ -26,6 +26,7 @@
 #include "WorkloadThread.h"
 #include "LUN.h"
 #include "Eyeo.h"
+#include "ivydriver.h"
 
 //#define IVYDRIVER_TRACE
 // IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
@@ -294,20 +295,20 @@ void TestLUN::reap_IOs()
 
     static ivytime zero_wait_duration(0);
 
-
-    int total_reaped = 0;
-
     while (true)
     {
         ivytime now; now.setToNow();
 
-        int reaped = io_getevents(
-                                act,
-                                0, // zero events_needed, meaning non-blocking
-                                MAX_IOEVENTS_REAP_AT_ONCE,
-                                &(ReapHeap[0]),
-                                &(zero_wait_duration.t)
-                                );
+        int reaped;
+		do {
+        	reaped = io_getevents(
+                                  act,
+                                  0, // zero events_needed, meaning non-blocking
+                                  MAX_IOEVENTS_REAP_AT_ONCE,
+                                  &(ReapHeap[0]),
+                                  &(zero_wait_duration.t)
+                                  );
+		} while ((reaped < 0) && (errno == EINTR));
         if (reaped < 0)
         {
             std::ostringstream o;
@@ -584,7 +585,12 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
     // return code is number of I/Os succesfully launched.
 
     ivytime running_timestamp;
-    running_timestamp.setToNow();
+
+    if (ivydriver.measure_submit_time) {
+    	running_timestamp.setToNow();
+    } else {
+    	running_timestamp = ivytime_zero;
+    }
 
     if (rc > max_IOs_launched_at_once) max_IOs_launched_at_once = rc;
 
@@ -823,6 +829,7 @@ void TestLUN::catch_in_flight_IOs()
                                       ) != 0
           )
 	{
+		if ((reaped < 0) && (errno == EINTR)) continue;
 	    if (reaped < 0)
 		{
             std::ostringstream o;

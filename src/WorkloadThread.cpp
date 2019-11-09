@@ -911,11 +911,15 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
         if (wait_duration == ivytime_zero)
         {
-            epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, 0);
+        	do {
+                epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, 0);
+        	} while ((epoll_rc < 0) && (errno == EINTR));
         }
         else
         {
-            epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, -1);  // -1 means wait indefinitely (one of the fds being waited on is a timerfd instead.
+        	do {
+                epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, -1);
+        	} while ((epoll_rc < 0) && (errno == EINTR));
         }
 
         if (epoll_rc < 0)

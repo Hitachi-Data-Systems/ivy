@@ -243,6 +243,28 @@ ivy_engine::set(const std::string& thingee,
     }
 
 
+    if (0 == t.compare(normalize_identifier("measure_submit_time")))
+    {
+        if (stringCaseInsensitiveEquality(value,"true") || stringCaseInsensitiveEquality(value,"on"))
+        {
+            measure_submit_time = true;
+            return std::make_pair(true,"");
+        }
+        else if (stringCaseInsensitiveEquality(value,"false") || stringCaseInsensitiveEquality(value,"off"))
+        {
+            measure_submit_time = false;
+            return std::make_pair(true,"");
+        }
+        else
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"measure_submit_time\", \"" << value << "\") - may only be set to \"true\" or \"false\"."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+    }
+
+
     if (0 == t.compare(normalize_identifier("provisional_csv_lines")))
     {
         try

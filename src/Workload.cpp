@@ -306,21 +306,25 @@ unsigned int /* number of I/Os popped and processed.  */
 	}
 
 	if ( p_dun->start_time.isZero()
-	  || p_dun->running_time.isZero()
 	  || p_dun->end_time.isZero()
 	  || p_dun->scheduled_time > p_dun->start_time
-	  || p_dun->start_time     > p_dun->running_time
-	  || p_dun->running_time   > p_dun->end_time
-	  )
+	  || p_dun->start_time     > p_dun->end_time
+	  || (ivydriver.measure_submit_time &&
+			   ( p_dun->running_time.isZero()
+			  || p_dun->start_time   > p_dun->running_time
+			  || p_dun->running_time > p_dun->end_time
+			   )
+		 )
+	   )
     {
         std::ostringstream o;
         o << "When harvesting an I/O completion event and posting its measurements" << std::endl
             << "One of the following timestamps was missing or they were out of order." << std::endl
-            << "I/O scheduled time = " << p_dun->scheduled_time.format_as_datetime_with_ns()
+            << "I/O scheduled time = " << p_dun->scheduled_time.format_as_datetime_with_ns() << std::endl
             << "start time         = " << p_dun->start_time.format_as_duration_HMMSSns() << std::endl
             << "running time       = " << p_dun->running_time.format_as_duration_HMMSSns() << std::endl
             << "end time           = " << p_dun->end_time.format_as_duration_HMMSSns() << std::endl
-
+            << ", measure_submit_time = " << ((ivydriver.measure_submit_time) ? "true" : "false") << std::endl
             << ", have_response_time = ";
         if (have_response_time)
         {
@@ -334,9 +338,13 @@ unsigned int /* number of I/Os popped and processed.  */
         throw std::runtime_error(o.str());
     }
 
-	service_time_seconds = (ivytime(p_dun->end_time     - p_dun->start_time).getlongdoubleseconds());
-	submit_time_seconds  = (ivytime(p_dun->running_time - p_dun->start_time).getlongdoubleseconds());
-	running_time_seconds = (ivytime(p_dun->end_time     - p_dun->running_time).getlongdoubleseconds());
+	service_time_seconds = (ivytime(p_dun->end_time - p_dun->start_time).getlongdoubleseconds());
+	if (ivydriver.measure_submit_time) {
+		submit_time_seconds = (ivytime(p_dun->running_time - p_dun->start_time).getlongdoubleseconds());
+	} else {
+		submit_time_seconds = 0.0;
+	}
+	running_time_seconds = (ivytime(p_dun->end_time - p_dun->running_time).getlongdoubleseconds());
 
 	// NOTE:  The breakdown of bytes_transferred (MB/s) follows service time.
 
@@ -368,8 +376,10 @@ unsigned int /* number of I/Os popped and processed.  */
 		p_current_SubintervalOutput->u.a.service_time.rs_array[rs][rw][bucket].push(service_time_seconds);
 		p_current_SubintervalOutput->u.a.bytes_transferred.rs_array[rs][rw][bucket].push(p_current_IosequencerInput->blocksize_bytes);
 
-		bucket = Accumulators_by_io_type::get_bucket_index( submit_time_seconds );
-		p_current_SubintervalOutput->u.a.submit_time.rs_array[rs][rw][bucket].push(submit_time_seconds);
+		if (ivydriver.measure_submit_time) {
+			bucket = Accumulators_by_io_type::get_bucket_index( submit_time_seconds );
+			p_current_SubintervalOutput->u.a.submit_time.rs_array[rs][rw][bucket].push(submit_time_seconds);
+		}
 
 		bucket = Accumulators_by_io_type::get_bucket_index( running_time_seconds );
 		p_current_SubintervalOutput->u.a.running_time.rs_array[rs][rw][bucket].push(running_time_seconds);

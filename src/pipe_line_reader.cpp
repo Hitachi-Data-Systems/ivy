@@ -54,7 +54,9 @@ bool pipe_line_reader::read_from_pipe(ivytime timeout)
 
         FD_ZERO(&read_fd_set);
         FD_SET(fd,&read_fd_set);
-        rc=pselect(1+fd,&read_fd_set,NULL,NULL,&(waitthistime.t),NULL);
+        do {
+        	rc=pselect(1+fd,&read_fd_set,NULL,NULL,&(waitthistime.t),NULL);
+        } while (rc == -1 && errno == EINTR);
         if (-1==rc)
         {
             std::ostringstream logmsg;

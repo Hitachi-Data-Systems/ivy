@@ -186,6 +186,7 @@ struct IvyDriver
 
     bool warn_on_critical_temp {false};
 
+    bool measure_submit_time {false};
 
 // methods
 

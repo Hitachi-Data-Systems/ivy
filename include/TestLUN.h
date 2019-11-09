@@ -34,6 +34,7 @@
 //#define IVYDRIVER_TRACE
 
 extern bool routine_logging;
+extern bool measure_submit_time;
 
 // for some strange reason, there's no header file for these system call wrapper functions
 inline int io_setup(unsigned nr, aio_context_t *ctxp)                   { return syscall(__NR_io_setup, nr, ctxp); }
