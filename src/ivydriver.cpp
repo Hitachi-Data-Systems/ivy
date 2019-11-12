@@ -188,7 +188,7 @@ int IvyDriver::main(int argc, char* argv[])
         if (item == "-error_on_critical_temp") { warn_on_critical_temp     = false; continue;}
         if (item == "-log")                    { routine_logging           = true;  continue;}
         if (item == "-one_thread_per_core")    { subthread_per_hyperthread = false; continue;}
-
+        if (item == "-measure_submit_time")    { measure_submit_time       = true;  continue;}
 
         if (arg_index != (argc-1))
         {
@@ -385,14 +385,21 @@ int IvyDriver::main(int argc, char* argv[])
         log(slavelogfile,o.str());
     }
 
+    unsigned int physical_core_zero_hyperthreads {0};
+
     if (subthread_per_hyperthread)
     {
         for (auto& pear : hyperthreads_per_core)
         {
             if (pear.first == 0)
             {
-                continue;  // leave this open for ivydriver master thread, or even the ivy central host subthreads.
-                // Come back here and maybe leave another core free in case this test host is also the master host ..... XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                physical_core_zero_hyperthreads++;
+
+                if (physical_core_zero_hyperthreads <= 2)
+                {
+                    continue;  // leave the the first two hyperthreads on core 0 open for ivydriver master thread, or even the ivy central host subthreads.
+                    // Come back here and maybe leave another core free in case this test host is also the master host ..... XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                }
             }
 
             for (unsigned int& processor : pear.second)

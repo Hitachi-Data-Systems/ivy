@@ -211,7 +211,7 @@ std::string SubintervalOutput::csvValues
 		bytes_transferred += u.a.bytes_transferred.getRunningStatByCategory(i);  // not a reference because some categories are generated upon demand by summing more detailed categories.
 		service_time      += u.a.service_time     .getRunningStatByCategory(i);
 		response_time     += u.a.response_time    .getRunningStatByCategory(i);
-		submit_time         += u.a.submit_time        .getRunningStatByCategory(i);
+		submit_time       += u.a.submit_time      .getRunningStatByCategory(i);
 		running_time      += u.a.running_time     .getRunningStatByCategory(i);
 
 		if (0 == bytes_transferred.count())
@@ -324,17 +324,41 @@ std::string SubintervalOutput::csvValues
 				/* 11 Service Time Standard Deviation (ms) */
 				o << ',' << (service_time.standardDeviation() * 1000.0);
 
-				/* 12 Average Submit Time (ms) */
-                o << ',' << (submit_time.avg() * 1000.0);
+				{
+					// SPM: Would like to use (ivydriver.measure_submit_time) or (m_s.measure_submit_time) for these conditionals
+					//		instead of (submit_time_max != 0.0), but the first is only defined for ivydriver and the second is only
+					//		defined for ivymaster compilation units... This is obviously cheating.
 
-				/* 13 Min Submit Time (ms) */
-                o << ',' << (submit_time.min() * 1000.0);
+					ivy_float submit_time_max = submit_time.max();
 
-				/* 14 Max Submit Time (ms) */
-                o << ',' << (submit_time.max() * 1000.0);
+					/* 12 Average Submit Time (ms) */
+					if (submit_time_max != 0.0) {
+						o << ',' << (submit_time.avg() * 1000.0);
+					} else {
+						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
+					}
 
-				/* 15 Submit Time Standard Deviation (ms) */
-                o << ',' << (submit_time.standardDeviation() * 1000.0);
+					/* 13 Min Submit Time (ms) */
+					if (submit_time_max != 0.0) {
+						o << ',' << (submit_time.min() * 1000.0);
+					} else {
+						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
+					}
+
+					/* 14 Max Submit Time (ms) */
+					if (submit_time_max != 0.0) {
+						o << ',' << (submit_time.max() * 1000.0);
+					} else {
+						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
+					}
+
+					/* 15 Submit Time Standard Deviation (ms) */
+					if (submit_time_max != 0.0) {
+						o << ',' << (submit_time.standardDeviation() * 1000.0);
+					} else {
+						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
+					}
+				}
 
 //				/* 16 Average Running Time (ms) */
 //                o << ',' << (running_time.avg() * 1000.0);
@@ -411,7 +435,7 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 
 	RunningStat<ivy_float, ivy_int>	bytes_transferred       {u.a.bytes_transferred.getRunningStatByCategory(0)};
 	RunningStat<ivy_float, ivy_int>	service_time            {u.a.service_time.getRunningStatByCategory(0)};
-	RunningStat<ivy_float, ivy_int> submit_time               {u.a.submit_time.getRunningStatByCategory(0)};
+	RunningStat<ivy_float, ivy_int> submit_time             {u.a.submit_time.getRunningStatByCategory(0)};
 	RunningStat<ivy_float, ivy_int> running_time            {u.a.running_time.getRunningStatByCategory(0)};
 	RunningStat<ivy_float, ivy_int>	read_service_time       {u.a.service_time.getRunningStatByCategory(3)};
 	RunningStat<ivy_float, ivy_int>	write_service_time      {u.a.service_time.getRunningStatByCategory(4)};

@@ -26,6 +26,7 @@
 #include "WorkloadThread.h"
 #include "LUN.h"
 #include "Eyeo.h"
+#include "ivydriver.h"
 
 //#define IVYDRIVER_TRACE
 // IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
@@ -310,18 +311,20 @@ void TestLUN::reap_IOs()
 
     static ivytime zero_wait_duration(0);
 
-
     while (true)
     {
         ivytime now; now.setToNow();
 
-        int reaped = io_getevents(
-                                act,
-                                0, // zero events_needed, meaning non-blocking
-                                MAX_IOEVENTS_REAP_AT_ONCE,
-                                &(ReapHeap[0]),
-                                &(zero_wait_duration.t)
-                                );
+        int reaped;
+		do {
+        	reaped = io_getevents(
+                                  act,
+                                  0, // zero events_needed, meaning non-blocking
+                                  MAX_IOEVENTS_REAP_AT_ONCE,
+                                  &(ReapHeap[0]),
+                                  &(zero_wait_duration.t)
+                                  );
+		} while ((reaped < 0) && (errno == EINTR));
         if (reaped < 0)
         {
             std::ostringstream o;
@@ -598,7 +601,12 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
     // return code is number of I/Os succesfully launched.
 
     ivytime running_timestamp;
-    running_timestamp.setToNow();
+
+    if (ivydriver.measure_submit_time) {
+    	running_timestamp.setToNow();
+    } else {
+    	running_timestamp = ivytime_zero;
+    }
 
     if (rc > max_IOs_launched_at_once) max_IOs_launched_at_once = rc;
 
@@ -804,47 +812,6 @@ unsigned int /* number of I/Os generated - 0 or 1  */  TestLUN::generate_an_IO()
 }
 
 
-//ivytime TestLUN::next_scheduled_io()
-//        // ivytime(0) is returned if this TestLUN has no scheduled I/Os in Workload precompute queues, only possibly IOPS=max I/Os.
-//{
-//#if defined(IVYDRIVER_TRACE)
-//    { next_scheduled_io_callcount++; if (next_scheduled_io_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-//    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << next_scheduled_io_callcount << ") ";
-//    o << "      Entering TestLUN::next_scheduled_io()."; log(pWorkloadThread->slavethreadlogfile,o.str()); }
-//    abort_if_queue_depths_corrupted("TestLUN::next_scheduled_io", next_scheduled_io_callcount); }
-//#endif
-//
-//    ivytime tijd {0};
-//
-//    for (auto& pear : workloads)
-//    {
-//        Workload* pWorkload = &(pear.second);
-//
-//        if (pWorkload->precomputeQ.size() == 0) continue;
-//
-//        auto pEyeo = pWorkload->precomputeQ.front();
-//
-//        if (tijd == ivytime_zero)
-//        {
-//            tijd = pEyeo->scheduled_time;
-//        }
-//        else
-//        {
-//            // we know we have a previous non-zero time to compare to
-//            if ( pEyeo->scheduled_time != ivytime_zero )
-//            {
-//                // This one is non-zero as well, so select the earlier
-//                if (tijd > pEyeo->scheduled_time)
-//                {
-//                    tijd = pEyeo->scheduled_time;
-//                }
-//            }
-//        }
-//    }
-//
-//    return tijd;
-//}
-
 void TestLUN::catch_in_flight_IOs()
 {
 #if defined(IVYDRIVER_TRACE)
@@ -867,6 +834,7 @@ void TestLUN::catch_in_flight_IOs()
                                       ) != 0
           )
 	{
+		if ((reaped < 0) && (errno == EINTR)) continue;
 	    if (reaped < 0)
 		{
             std::ostringstream o;

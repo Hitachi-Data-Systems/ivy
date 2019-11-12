@@ -476,7 +476,6 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             }
         }
 
-
         if (routine_logging)
         {
             std::ostringstream o;
@@ -510,8 +509,6 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 		state=ThreadState::running;
 
         if (routine_logging) log(slavethreadlogfile,"Finished initialization and now about to start running subintervals.");
-
-//*debug*/debug_epoll_count = 0;
 
         // indent level in loop waiting for run commands
 
@@ -1329,14 +1326,6 @@ bool WorkloadThread::close_all_fds()
             post_error(o.str());
             success = false;
         }
-///*debug*/else
-//        {
-//            std::ostringstream o;
-//            o << "debug: WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-//                << " TestLUN " << pTestLUN->host_plus_lun
-//                << " in WorkloadThread::close_all_fds() - io_destroy for AIO context successful." << std::endl;
-//            log(slavethreadlogfile,o.str());
-//        }
 
         if(pTestLUN->fd != -1)
         {
@@ -1350,13 +1339,6 @@ bool WorkloadThread::close_all_fds()
             }
             else
             {
-///*debug*/   {
-//                std::ostringstream o;
-//                o << "debug: WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-//                    << " TestLUN " << pTestLUN->host_plus_lun
-//                    << " in WorkloadThread::close_all_fds() - close for pTestLUN->fd = " << pTestLUN->fd << " successful." << std::endl;
-//                log(slavethreadlogfile,o.str());
-//            } // end of debug
                 pTestLUN->fd = -1;
             }
         }
@@ -1373,12 +1355,6 @@ bool WorkloadThread::close_all_fds()
             }
             else
             {
-    ///*debug*/{
-    //            std::ostringstream o;
-    //            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-    //                << " in WorkloadThread::close_all_fds() - close for event_fd = " << pTestLUN->event_fd << " successful." << std::endl;
-    //            log(slavethreadlogfile,o.str());
-    //        } // end of debug
                 pTestLUN->event_fd = -1;
             }
         }
@@ -1396,12 +1372,6 @@ bool WorkloadThread::close_all_fds()
         }
         else
         {
-///*debug*/{
-//            std::ostringstream o;
-//            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-//                << " in WorkloadThread::close_all_fds() - close for epoll_fd = " << epoll_fd << " successful." << std::endl;
-//            log(slavethreadlogfile,o.str());
-//        } // end of debug
             epoll_fd = -1;
         }
     }
@@ -1418,12 +1388,6 @@ bool WorkloadThread::close_all_fds()
         }
         else
         {
-///*debug*/{
-//            std::ostringstream o;
-//            o << "WorkloadThread physical core " << physical_core << " hyperthread " << hyperthread
-//                << " in WorkloadThread::close_all_fds() - close for timer_fd = " << timer_fd << " successful." << std::endl;
-//            log(slavethreadlogfile,o.str());
-//        } // end of debug
             timer_fd = -1;
         }
     }

@@ -770,25 +770,48 @@ void pipe_driver_subthread::threadRun()
                 fn << "/var/ivydriver_logs/log.ivydriver." << ivyscript_hostname << ".ivy_cmddev." << p_Hitachi_RAID_subsystem->serial_number << ".txt";
                 remote_logfilename = fn.str();
             }
-            if (routine_logging)
-            {
-// SPM: Commented out next four lines because they are not async-signal-safe and cause hangs...
-//                std::ostringstream o;
-//                o << "execl(\"usr/bin/ssh\", \"ssh\", \"-t\", \"-t\", \"" << login << "\", \"" << cmd << "\", \"-log\", \"" << arg << "\", \""
-//                    << hitachi_product << "\", \""<< serial << "\", \"" << remote_logfilename << "\")" << std::endl;
-//                log(logfilename,o.str());
-                execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(), "-log", arg.c_str(), hitachi_product.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
-            }
-            else
-            {
-                execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(), arg.c_str(), hitachi_product.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
-            }
+
+// SPM: Converted call to execl() to call to execv().
+//
+//            if (routine_logging)
+//            {
+//// SPM: Commented out next four lines because they are not async-signal-safe and cause hangs...
+////                std::ostringstream o;
+////                o << "execl(\"usr/bin/ssh\", \"ssh\", \"-t\", \"-t\", \"" << login << "\", \"" << cmd << "\", \"-log\", \"" << arg << "\", \""
+////                    << hitachi_product << "\", \""<< serial << "\", \"" << remote_logfilename << "\")" << std::endl;
+////                log(logfilename,o.str());
+//                execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(), "-log", arg.c_str(), hitachi_product.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
+//            }
+//            else
+//            {
+//                execl("/usr/bin/ssh","ssh","-t","-t", login.c_str(), cmd.c_str(), arg.c_str(), hitachi_product.c_str(), serial.c_str(), remote_logfilename.c_str(), (char*)NULL);
+//            }
+
+            char *args[128]; // Can use any number larger than argument count.
+        	int i = 0;
+
+        	args[i++] = (char *) "ssh";
+        	args[i++] = (char *) "-t";
+        	args[i++] = (char *) "-t";
+        	args[i++] = (char *) login.c_str();
+        	args[i++] = (char *) cmd.c_str();
+        	if (routine_logging) {
+        		args[i++] = (char *) "-log";
+        	}
+        	args[i++] = (char *) arg.c_str();
+        	args[i++] = (char *) hitachi_product.c_str();
+        	args[i++] = (char *) serial.c_str();
+        	args[i++] = (char *) remote_logfilename.c_str();
+        	args[i++] = (char *) NULL;
+
+        	execv((char *) "/usr/bin/ssh", args);
         }
         else
         {
             cmd = m_s.path_to_ivy_executable + IVYDRIVER_EXECUTABLE;
             arg = ivyscript_hostname;
-// SPM: Commented out next seven lines because logging is not async-thread-safe and causes hangs...
+
+// SPM: Commented out next seven lines because logging is not async-signal-safe and causes hangs...
 //            {
 //                ostringstream execl_cmd;
 //                execl_cmd << "/usr/bin/ssh ssh -t -t " << login << ' ' << cmd << ' ';
@@ -796,29 +819,55 @@ void pipe_driver_subthread::threadRun()
 //                execl_cmd << arg << std::endl;
 //                if (routine_logging) { log(logfilename, execl_cmd.str()); }
 //            }
-            if (routine_logging)
-            {
-                if (one_thread_per_core)
-                {
-                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),"-log","-one_thread_per_core",arg.c_str(),(char*)NULL);
-                }
-                else
-                {
-                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),"-log", arg.c_str(),(char*)NULL);
-                }
 
-            }
-            else
-            {
-                if (one_thread_per_core)
-                {
-                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),"-one_thread_per_core",arg.c_str(),(char*)NULL);
-                }
-                else
-                {
-                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),arg.c_str(),(char*)NULL);
-                }
-            }
+// SPM: Converted call to execl() to call to execv().
+//
+//            if (routine_logging)
+//            {
+//                if (one_thread_per_core)
+//                {
+//                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),"-log","-one_thread_per_core",arg.c_str(),(char*)NULL);
+//                }
+//                else
+//                {
+//                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),"-log", arg.c_str(),(char*)NULL);
+//                }
+//
+//            }
+//            else
+//            {
+//                if (one_thread_per_core)
+//                {
+//                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),"-one_thread_per_core",arg.c_str(),(char*)NULL);
+//                }
+//                else
+//                {
+//                    execl("/usr/bin/ssh","ssh","-t","-t",login.c_str(),cmd.c_str(), critical_temp_parameter.c_str(),arg.c_str(),(char*)NULL);
+//                }
+//            }
+
+            char *args[128]; // Can use any number larger than argument count.
+        	int i = 0;
+
+        	args[i++] = (char *) "ssh";
+        	args[i++] = (char *) "-t";
+        	args[i++] = (char *) "-t";
+        	args[i++] = (char *) login.c_str();
+        	args[i++] = (char *) cmd.c_str();
+        	args[i++] = (char *) critical_temp_parameter.c_str();
+        	if (routine_logging) {
+        		args[i++] = (char *) "-log";
+        	}
+        	if (one_thread_per_core) {
+        		args[i++] = (char *) "-one_thread_per_core";
+        	}
+        	if (m_s.measure_submit_time) {
+        		args[i++] = (char *) "-measure_submit_time";
+        	}
+        	args[i++] = (char *) arg.c_str();
+        	args[i++] = (char *) NULL;
+
+        	execv((char *) "/usr/bin/ssh", args);
         }
 
 // SPM: Commented out next two lines because they are not async-signal-safe and cause hangs...
