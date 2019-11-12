@@ -836,6 +836,21 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
         log(slavethreadlogfile,o.str());
     }
 
+    earliest_scheduled_IO_with_available_AIO_slot.setToZero();
+
+        // reap_IOs() waits until an I/O completion event occurs or
+        // until this time when the next I/O needs to be started.
+
+        // earliest_scheduled_IO_with_available_AIO_slot is set by start_IOs().
+
+        // In start_IOs(), if there are no I/Os scheduled for the future
+        // which already now have an available AIO slot,
+        // earliest_scheduled_IO_with_available_AIO_slot is set to the
+        // end of the subinterval.
+
+        // Zero means don't wait in reap_IOs(), because we may have work to do
+        // in start_IOs(), pop_and_process_an_Eyeo() or generate_an_IO().
+
 	while (true)
 	{
         top_of_loop:
@@ -846,84 +861,15 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
         unsigned int n = 0;
 
-        reap_IOs();
+        reap_IOs(now);
 
-        n += start_IOs();               if ( n > 0 ) { goto top_of_loop; }
+        n += start_IOs();               if ( n > 0 ) { earliest_scheduled_IO_with_available_AIO_slot.setToZero(); goto top_of_loop; }
 
-        n += pop_and_process_an_Eyeo(); if ( n > 0 ) { goto top_of_loop; }
+        n += pop_and_process_an_Eyeo(); if ( n > 0 ) { earliest_scheduled_IO_with_available_AIO_slot.setToZero(); goto top_of_loop; }
 
-        n += generate_an_IO();          if ( n > 0 ) { goto top_of_loop; }
+        n += generate_an_IO();          if ( n > 0 ) { earliest_scheduled_IO_with_available_AIO_slot.setToZero(); goto top_of_loop; }
 
-        if (ivydriver.spinloop) goto top_of_loop;
-
-        // We wait for the soonest of
-        //   - end of subinterval
-        //   - time to start next scheduled I/O over my TestLUNs, if there is a scheduled (not IOPS=max) I/O.
-
-        ivytime next_overall_io = ivytime_zero;
-
-        for (auto& pTestLUN : pTestLUNs)
-        {
-            ivytime next_this_LUN = pTestLUN->next_scheduled_io();
-
-            if (next_overall_io == ivytime_zero)
-            {
-                next_overall_io = next_this_LUN;
-            }
-            else if (next_this_LUN   != ivytime_zero && next_overall_io != ivytime_zero && next_this_LUN < next_overall_io)
-            {
-                next_overall_io = next_this_LUN;
-            }
-        }
-
-        ivytime wait_until_this_time = thread_view_subinterval_end;
-
-        if (next_overall_io != ivytime_zero && next_overall_io < thread_view_subinterval_end)
-        {
-            wait_until_this_time = next_overall_io;
-        }
-
-        ivytime wait_duration;
-
-        if (wait_until_this_time <= now)
-        {
-            wait_duration = ivytime_zero;
-        }
-        else
-        {
-            wait_duration = wait_until_this_time - now;
-        }
-
-        timerfd_setting.it_value.tv_sec = wait_duration.t.tv_sec;
-        timerfd_setting.it_value.tv_nsec = wait_duration.t.tv_nsec;
-
-        int rc_ts = timerfd_settime(timer_fd, 0, &timerfd_setting,0);
-        if (rc_ts < 0)
-        {
-            std::ostringstream o;
-            o << "failed setting timerfd - errno " << errno << " (" << strerror(errno) << ")." << std::endl;
-            throw std::runtime_error(o.str());
-        }
-
-        int epoll_rc;
-
-        // timerfd is used because epoll_wait() is an integer number of milliseconds and we need finer resolution.
-
-        if (wait_duration == ivytime_zero)
-        {
-            epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, 0);
-        }
-        else
-        {
-            epoll_rc = epoll_wait(epoll_fd, p_epoll_events, 1, -1);  // -1 means wait indefinitely (one of the fds being waited on is a timerfd instead.
-        }
-
-        if (epoll_rc < 0)
-        {
-            std::ostringstream o;
-            o << "epoll_wait() failed - errno " << errno << " (" << strerror(errno) << ")." << std::endl;
-            throw std::runtime_error(o.str());
-        }
+        if (ivydriver.spinloop) earliest_scheduled_IO_with_available_AIO_slot.setToZero();
 
         goto top_of_loop;
     }
@@ -983,7 +929,10 @@ unsigned int WorkloadThread::start_IOs()
     o << "Entering WorkloadThread::start_IOs().";log(slavethreadlogfile,o.str()); } }
 #endif
 
+
     if (pTestLUNs.size() == 0) return 0;
+
+    earliest_scheduled_IO_with_available_AIO_slot = thread_view_subinterval_end;
 
     std::vector<TestLUN*>::iterator it = pTestLUN_start_IOs_bookmark;
 
@@ -1003,15 +952,6 @@ unsigned int WorkloadThread::start_IOs()
 
         n += pTestLUN->start_IOs();
 
-        if ( n > 0 )
-        {
-            break; // This could have started I/Os for multiple Workloads within the LUN,
-                   // but after this amount of work, we will go back to check for
-                   // I/O completions before processing the next TestLUN.
-                   // A round robbin iterator bookmark gives each TestLUN the same
-                   // priority overall.
-        }
-
         it++; if (it == pTestLUNs.end()) { it = pTestLUNs.begin(); }
 
         if (it == pTestLUN_start_IOs_bookmark) break;
@@ -1027,7 +967,7 @@ unsigned int WorkloadThread::start_IOs()
     return n;
 }
 
-void WorkloadThread::reap_IOs()
+void WorkloadThread::reap_IOs(const ivytime& now)
 {
 #if defined(IVYDRIVER_TRACE)
     { wt_callcount_reap_IOs++; if (wt_callcount_reap_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
@@ -1041,14 +981,12 @@ void WorkloadThread::reap_IOs()
     (*itr)->reap_IOs_bookmark_count++;
 #endif
 
-    // more to TestLUN ...    uint64_t eventfd_counter_value {0};
-
     // The way the eventfd / epoll thing works is that
     // an eventfd is a file descriptor connected to an
-    // underlying unsigned 64 bit counter.
+    // underlying unsigned 64 bit counter in the kernel.
 
     // We "tag" each I/O with the eventfd, so that when the I/O
-    // completes, this causes the uint64_t number 1 will be written
+    // completes, this causes the uint64_t number 1 to be written
     // to the eventfd's "file", which increments the 64 bit counter
     // by that number 1.
 
@@ -1056,16 +994,15 @@ void WorkloadThread::reap_IOs()
     // the number of I/Os that have completed since the counter
     // was last reset to zero.
 
+    // Reading the 8 bytes uint64_t value from the eventfd's "file"
+    // atomically then resets the value in the counter to zero.
+
     // The eventfd file descriptor is readable if the underlying
     // counter is non-zero.
 
     // Then we use epoll to wait until the eventfd becomes
     // readable, meaning that a new I/O completion event
     // is ready to be harvested.
-
-    // Here we read the 8-byte value from the counter,
-    // which also atomically then sets the underlying
-    // counter to zero.
 
     // There's an event fd for each TestLUN, and the event_fds
     // for the various TestLUNs have been added into the epoll
@@ -1082,14 +1019,46 @@ void WorkloadThread::reap_IOs()
     // there are.  Then in TestLUN, we keep calling getevents()
     // until we've harvested them all.
 
-    // Now - does this favour harvesting events from "earlier" TestLUNs?   <===================================== !
-    // How do we round-robin around the TestLUNs with events???
+    if (now >= thread_view_subinterval_end) return;
+
+    ivytime wait_duration;
+
+    if (earliest_scheduled_IO_with_available_AIO_slot <= now) // including earliest_scheduled_IO_with_available_AIO_slot == ivytime(0)
+    {
+        wait_duration.setToZero();
+    }
+    else if (thread_view_subinterval_end < earliest_scheduled_IO_with_available_AIO_slot)
+    {
+        wait_duration = thread_view_subinterval_end - now;
+    }
+    else
+    {
+        wait_duration = earliest_scheduled_IO_with_available_AIO_slot - now;
+    }
+
+    timerfd_setting.it_value.tv_sec = wait_duration.t.tv_sec;
+    timerfd_setting.it_value.tv_nsec = wait_duration.t.tv_nsec;
+
+    int rc_ts = timerfd_settime(timer_fd, 0, &timerfd_setting,0);
+    if (rc_ts < 0)
+    {
+        std::ostringstream o;
+        o << "failed setting timerfd - errno " << errno << " (" << strerror(errno) << ")." << std::endl;
+        throw std::runtime_error(o.str());
+    }
 
     int epoll_event_count {-1};
 
     while (true)
     {
-        epoll_event_count = epoll_wait(epoll_fd, p_epoll_events, max_epoll_event_retrieval_count, 0);
+        if (wait_duration.isZero())
+        {
+            epoll_event_count = epoll_wait(epoll_fd, p_epoll_events, max_epoll_event_retrieval_count, 0); // 0 means don't wait, just test the fds for readability.
+        }
+        else
+        {
+            epoll_event_count = epoll_wait(epoll_fd, p_epoll_events, max_epoll_event_retrieval_count, -1); // -1 means wait indefinitely, but instead the timerfd will pop ending the wait
+        }
 
         if (epoll_event_count != -1 || errno != EINTR) break;
     }

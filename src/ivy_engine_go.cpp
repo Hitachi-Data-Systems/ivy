@@ -143,6 +143,11 @@ R"("measure" may be set to "on" or "off", or to one of the following shorthand s
     {
         std::string controllerName = go_parameters.retrieve("dfc");
 
+        // NOTE:
+        // In ivydriver, in TestLUN::start_IOs(), we assume that IOPS will never switch between IOPS=max and a specific IOPS number.
+        // See TestLUN::all_workloads_are_IOPS_max.  This makes it run a bit faster at IOPS=max.
+        // If you put a new DFC in that switches between IOPS=max and a specific IOPS value, make appropriate changes to handling all_workloads_are_IOPS_max.
+
         if (stringCaseInsensitiveEquality("pid", controllerName))
         {
             have_pid = true;

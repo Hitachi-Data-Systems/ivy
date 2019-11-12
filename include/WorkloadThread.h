@@ -147,6 +147,8 @@ public:
 
     size_t number_of_IOs_running_at_end_of_subinterval {0};
 
+    ivytime earliest_scheduled_IO_with_available_AIO_slot {0};
+
 //methods
 	WorkloadThread(std::mutex*,unsigned int /*physical_core*/, unsigned int /*hyperthread*/);
 
@@ -162,7 +164,7 @@ public:
 
     void cancel_stalled_IOs();
 
-    void reap_IOs();
+    void reap_IOs(const ivytime& now);
     unsigned int /* # of I/Os */ start_IOs();
     unsigned int /* # of I/Os */ post_process_an_IO();
     unsigned int /* # of I/Os */ generate_an_IO();

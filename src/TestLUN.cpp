@@ -208,6 +208,22 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
         log(pWorkloadThread->slavethreadlogfile,o.str());
 	}
 
+	all_workloads_are_IOPS_max = true;
+
+	for(auto& pear: workloads)
+	{
+	    {
+	        Workload& w = pear.second;
+	        Subinterval& s = w.subinterval_array[0];
+	        IosequencerInput& ii = s.input;
+            if (ii.IOPS != -1)
+            {
+                all_workloads_are_IOPS_max = false;
+                break;
+            }
+	    }
+	}
+
 	return;
 }
 
@@ -294,8 +310,6 @@ void TestLUN::reap_IOs()
 
     static ivytime zero_wait_duration(0);
 
-
-    int total_reaped = 0;
 
     while (true)
     {
@@ -672,6 +686,36 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
         number_to_put_back--;
     }
 
+    ivytime now; now.setToNow();
+
+    if (!all_workloads_are_IOPS_max)
+    {
+        for (auto& pear : workloads)
+        {
+            {
+                Workload& w = pear.second;
+
+                if (w.running_IOs.size() < w.p_current_IosequencerInput->maxTags)
+                {
+                    if (w.precomputeQ.size() > 0)
+                    {
+                        Eyeo* pEyeo = w.precomputeQ.front();
+
+                        if (pEyeo->scheduled_time > now)  // with IOPS=max, scheduled_time is zero.
+                        {
+                            // The Eyeo has an empty AIO context slot and is just waiting for the scheduled launch time.
+
+                            if (pWorkloadThread->earliest_scheduled_IO_with_available_AIO_slot > pEyeo->scheduled_time)
+                            {
+                                pWorkloadThread->earliest_scheduled_IO_with_available_AIO_slot = pEyeo->scheduled_time;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     return launch_count;
 }
 
@@ -760,46 +804,46 @@ unsigned int /* number of I/Os generated - 0 or 1  */  TestLUN::generate_an_IO()
 }
 
 
-ivytime TestLUN::next_scheduled_io()
-        // ivytime(0) is returned if this TestLUN has no scheduled I/Os in Workload precompute queues, only possibly IOPS=max I/Os.
-{
-#if defined(IVYDRIVER_TRACE)
-    { next_scheduled_io_callcount++; if (next_scheduled_io_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << next_scheduled_io_callcount << ") ";
-    o << "      Entering TestLUN::next_scheduled_io()."; log(pWorkloadThread->slavethreadlogfile,o.str()); }
-    abort_if_queue_depths_corrupted("TestLUN::next_scheduled_io", next_scheduled_io_callcount); }
-#endif
-
-    ivytime tijd {0};
-
-    for (auto& pear : workloads)
-    {
-        Workload* pWorkload = &(pear.second);
-
-        if (pWorkload->precomputeQ.size() == 0) continue;
-
-        auto pEyeo = pWorkload->precomputeQ.front();
-
-        if (tijd == ivytime_zero)
-        {
-            tijd = pEyeo->scheduled_time;
-        }
-        else
-        {
-            // we know we have a previous non-zero time to compare to
-            if ( pEyeo->scheduled_time != ivytime_zero )
-            {
-                // This one is non-zero as well, so select the earlier
-                if (tijd > pEyeo->scheduled_time)
-                {
-                    tijd = pEyeo->scheduled_time;
-                }
-            }
-        }
-    }
-
-    return tijd;
-}
+//ivytime TestLUN::next_scheduled_io()
+//        // ivytime(0) is returned if this TestLUN has no scheduled I/Os in Workload precompute queues, only possibly IOPS=max I/Os.
+//{
+//#if defined(IVYDRIVER_TRACE)
+//    { next_scheduled_io_callcount++; if (next_scheduled_io_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
+//    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << next_scheduled_io_callcount << ") ";
+//    o << "      Entering TestLUN::next_scheduled_io()."; log(pWorkloadThread->slavethreadlogfile,o.str()); }
+//    abort_if_queue_depths_corrupted("TestLUN::next_scheduled_io", next_scheduled_io_callcount); }
+//#endif
+//
+//    ivytime tijd {0};
+//
+//    for (auto& pear : workloads)
+//    {
+//        Workload* pWorkload = &(pear.second);
+//
+//        if (pWorkload->precomputeQ.size() == 0) continue;
+//
+//        auto pEyeo = pWorkload->precomputeQ.front();
+//
+//        if (tijd == ivytime_zero)
+//        {
+//            tijd = pEyeo->scheduled_time;
+//        }
+//        else
+//        {
+//            // we know we have a previous non-zero time to compare to
+//            if ( pEyeo->scheduled_time != ivytime_zero )
+//            {
+//                // This one is non-zero as well, so select the earlier
+//                if (tijd > pEyeo->scheduled_time)
+//                {
+//                    tijd = pEyeo->scheduled_time;
+//                }
+//            }
+//        }
+//    }
+//
+//    return tijd;
+//}
 
 void TestLUN::catch_in_flight_IOs()
 {

@@ -140,23 +140,11 @@ public:
 	unsigned int max_consecutive_count_event_fd_writeback {0};
 	unsigned int max_consecutive_count_event_fd_behind {0};
 
-
 	unsigned int launch_count {0};
 
     ivy_float testLUN_furthest_behind_weighted_IOPS_max_skew_progress {0.0};
 
-    //    typedef union epoll_data
-    //    {
-    //      void *ptr;
-    //      int fd;
-    //      uint32_t u32;
-    //      uint64_t u64;
-    //    } epoll_data_t;
-
-    //   struct epoll_event {
-    //       uint32_t     events;      /* Epoll events */
-    //       epoll_data_t data;        /* User data variable */
-    //   };
+    bool all_workloads_are_IOPS_max {false};
 
 #ifdef IVYDRIVER_TRACE
     unsigned int sum_of_maxTags_callcount {0};
@@ -204,7 +192,7 @@ public:
 
     void catch_in_flight_IOs();
     void ivy_cancel_IO(struct iocb*); // writes to log file indicating success or failure.
-    ivytime next_scheduled_io();
+    //ivytime next_scheduled_io();
         // ivytime(0) means this TestLUN has no workloads at all or it has only IOPS=max workloads
     void pop_front_to_LaunchPad(Workload*);
 

@@ -69,6 +69,7 @@ public:
 	std::string format_as_hex_dot_hex() const;
 
 	void setToNow();
+	inline void setToZero() { t.tv_sec = 0; t.tv_nsec = 0; }
 	void waitUntilThisTime() const;
 	void wait_for_this_long() const;
 	uint64_t Milliseconds() const;
