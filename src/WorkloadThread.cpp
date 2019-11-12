@@ -538,33 +538,33 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                     log(slavethreadlogfile,o.str());
             }
 
-            // This nested loop to set hot zone parameters.
-            for (auto& pTestLUN : pTestLUNs)
-            {
-                for (auto& peach : pTestLUN->workloads)
-                {
-                    {
-                        Workload& wrkld = peach.second;
-
-                        if (wrkld.p_current_IosequencerInput->hot_zone_size_bytes > 0)
-                        {
-                            if (wrkld.p_my_iosequencer->instanceType() == "random_steady"
-                             || wrkld.p_my_iosequencer->instanceType() == "random_independent")
-                            {
-                                IosequencerRandom* p = (IosequencerRandom*) wrkld.p_my_iosequencer;
-                                if (!p->set_hot_zone_parameters(wrkld.p_current_IosequencerInput))
-                                {
-                                    std::ostringstream o;
-                                    o << " - working on WorkloadID " << wrkld.workloadID.workloadID
-                                        << " - call to IosequencerRandom::set_hot_zone_parameters(() failed.\n";
-                                    post_error(o.str());
-                                    goto wait_for_command;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+//            // This nested loop to set hot zone parameters.
+//            for (auto& pTestLUN : pTestLUNs)
+//            {
+//                for (auto& peach : pTestLUN->workloads)
+//                {
+//                    {
+//                        Workload& wrkld = peach.second;
+//
+//                        if (wrkld.p_current_IosequencerInput->hot_zone_size_bytes > 0)
+//                        {
+//                            if (wrkld.p_my_iosequencer->instanceType() == "random_steady"
+//                             || wrkld.p_my_iosequencer->instanceType() == "random_independent")
+//                            {
+//                                IosequencerRandom* p = (IosequencerRandom*) wrkld.p_my_iosequencer;
+//                                if (!p->set_hot_zone_parameters(wrkld.p_current_IosequencerInput))
+//                                {
+//                                    std::ostringstream o;
+//                                    o << " - working on WorkloadID " << wrkld.workloadID.workloadID
+//                                        << " - call to IosequencerRandom::set_hot_zone_parameters(() failed.\n";
+//                                    post_error(o.str());
+//                                    goto wait_for_command;
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
 
             try
             {

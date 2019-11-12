@@ -25,28 +25,23 @@ using namespace std;
 //#define IVYDRIVER_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
                            // and so you can turn it off and on for each source file.
 
-bool IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
+void IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
 //*debug*/ log(logfilename,std::string("IosequencerRandom::setFrom_IosequencerInput() - entry.\n"));
 #if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::setFrom_IosequencerInput() for " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
-	if (!Iosequencer::setFrom_IosequencerInput(p_i_i))
-		return false;
+	Iosequencer::setFrom_IosequencerInput(p_i_i);
 
-	return set_hot_zone_parameters(p_i_i);
-}
+	ivytime semence;
+	semence.setToNow();
 
-bool IosequencerRandom::set_hot_zone_parameters (IosequencerInput *p_ii)
-{
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::set_hot_zone_parameters() for " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
+    deafrangen.seed(string_hash(threadKey + semence.format_as_datetime_with_ns()));
 
-    if ( 0.0 == p_ii->hot_zone_read_fraction && 0.0 == p_ii->hot_zone_write_fraction )
+    if ( 0.0 == p_i_i->hot_zone_read_fraction && 0.0 == p_i_i->hot_zone_write_fraction )
     {
-        hot_zone_coverageStartBlock = hot_zone_coverageEndBlock =   hot_zone_numberOfCoverageBlocks = (uint64_t) 0;
+        hot_zone_coverageStartBlock = hot_zone_coverageEndBlock = hot_zone_numberOfCoverageBlocks = (uint64_t) 0;
 
         other_zone_coverageStartBlock     = coverageStartBlock;
         other_zone_coverageEndBlock       = coverageEndBlock;
@@ -54,20 +49,20 @@ bool IosequencerRandom::set_hot_zone_parameters (IosequencerInput *p_ii)
 
         have_hot_zone = false;
 
-        return true;
+        return;
     }
 
     have_hot_zone = true;
 
-    hot_zone_numberOfCoverageBlocks = ( (p_ii->hot_zone_size_bytes) + (((uint64_t)p_ii->blocksize_bytes)-1) ) / ((uint64_t)p_ii->blocksize_bytes); // rounding up
+    hot_zone_numberOfCoverageBlocks = ( (p_i_i->hot_zone_size_bytes) + (((uint64_t)p_i_i->blocksize_bytes)-1) ) / ((uint64_t)p_i_i->blocksize_bytes); // rounding up
 
     if (hot_zone_numberOfCoverageBlocks >= numberOfCoverageBlocks)
     {
         std::ostringstream o;
-        o << "<Error> hot_zone_size_bytes " << put_on_KiB_etc_suffix(p_ii->hot_zone_size_bytes)
-            << " must be smaller than rangeStart to rangeEnd LUN coverage area " << put_on_KiB_etc_suffix(((uint64_t)p_ii->blocksize_bytes)*numberOfCoverageBlocks);
+        o << "<Error> hot_zone_size_bytes " << put_on_KiB_etc_suffix(p_i_i->hot_zone_size_bytes)
+            << " must be smaller than rangeStart to rangeEnd LUN coverage area " << put_on_KiB_etc_suffix(((uint64_t)p_i_i->blocksize_bytes)*numberOfCoverageBlocks);
         log(logfilename, o.str());
-        return false;
+        throw std::runtime_error(o.str());
     }
 
     hot_zone_coverageStartBlock = coverageStartBlock;
@@ -78,8 +73,16 @@ bool IosequencerRandom::set_hot_zone_parameters (IosequencerInput *p_ii)
     other_zone_coverageStartBlock = hot_zone_coverageEndBlock + 1;
     other_zone_coverageEndBlock   = coverageEndBlock;
 
-    return true;
+	if (nullptr != p_other_area_block_distribution) delete p_other_area_block_distribution;
+	p_other_area_block_distribution = new std::uniform_int_distribution<uint64_t> (other_zone_coverageStartBlock,other_zone_coverageEndBlock);
+
+	if (nullptr != p_hot_zone_block_distribution) delete p_hot_zone_block_distribution;
+	if (hot_zone_numberOfCoverageBlocks > 0) {p_hot_zone_block_distribution = new std::uniform_int_distribution<uint64_t> (hot_zone_coverageStartBlock,hot_zone_coverageEndBlock);}
+
+	if (nullptr != p_uniform_real_distribution_0_to_1) delete p_uniform_real_distribution_0_to_1;
+	p_uniform_real_distribution_0_to_1 = new std::uniform_real_distribution<ivy_float>(0.0,1.0);  // for % reads and for random_independent, for inter-I/O arrival times.
 }
+
 
 
 bool IosequencerRandom::generate(Eyeo& slang)
@@ -99,6 +102,10 @@ bool IosequencerRandom::generate(Eyeo& slang)
 	// we assume that eyeocb.data already points to the Eyeo object
 	// and that eyeocb.aio_buf already points to a page-aligned I/O buffer
 
+    if (nullptr == p_uniform_real_distribution_0_to_1) {throw std::runtime_error("<Error> internal programming error - null pointer to uniform_real_distribution_0_to_1");}
+    if (nullptr == p_other_area_block_distribution) {throw std::runtime_error("<Error> internal programming error - null pointer to other zone block distribution generator");}
+    if (have_hot_zone && nullptr == p_hot_zone_block_distribution) {throw std::runtime_error("<Error> internal programming error - null pointer to hot zone block distribution generator");}
+
 	slang.eyeocb.aio_fildes = pTestLUN->fd;
 
 	if (0.0 == p_IosequencerInput->fractionRead)
@@ -111,8 +118,7 @@ bool IosequencerRandom::generate(Eyeo& slang)
 	}
 	else
 	{
-		long double random_0_to_1 = generate_float_between_0_and_1();
-		if ( random_0_to_1 <= p_IosequencerInput->fractionRead )
+		if ( (*p_uniform_real_distribution_0_to_1)(deafrangen) <= p_IosequencerInput->fractionRead )
 			slang.eyeocb.aio_lio_opcode=IOCB_CMD_PREAD;
 		else
 			slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;
@@ -129,21 +135,21 @@ bool IosequencerRandom::generate(Eyeo& slang)
 	    {
 	        if (p_IosequencerInput->hot_zone_read_fraction >= 1.0)
 	        {
-	            block_number = generate_hot_zone_block_number();
+	            block_number = (*p_hot_zone_block_distribution)(deafrangen);
 	        }
 	        else if (p_IosequencerInput->hot_zone_read_fraction <= 0.0)
 	        {
-	            block_number = generate_other_zone_block_number();
+	            block_number = (*p_other_area_block_distribution)(deafrangen);
 	        }
 	        else
 	        {
-	            if (generate_float_between_0_and_1() <= p_IosequencerInput->hot_zone_read_fraction)
+	            if ((*p_uniform_real_distribution_0_to_1)(deafrangen) <= p_IosequencerInput->hot_zone_read_fraction)
 	            {
-	                block_number =  generate_hot_zone_block_number();
+	                block_number = (*p_hot_zone_block_distribution)(deafrangen);
 	            }
 	            else
 	            {
-	                block_number = generate_other_zone_block_number();
+	                block_number = (*p_other_area_block_distribution)(deafrangen);
 	            }
 	        }
 	    }
@@ -151,28 +157,28 @@ bool IosequencerRandom::generate(Eyeo& slang)
 	    {
 	        if (p_IosequencerInput->hot_zone_write_fraction >= 1.0)
 	        {
-	            block_number = generate_hot_zone_block_number();
+	            block_number = (*p_hot_zone_block_distribution)(deafrangen);
 	        }
 	        else if (p_IosequencerInput->hot_zone_write_fraction <= 0.0)
 	        {
-	            block_number = generate_other_zone_block_number();
+	            block_number = (*p_other_area_block_distribution)(deafrangen);
 	        }
 	        else
 	        {
-	            if (generate_float_between_0_and_1() <= p_IosequencerInput->hot_zone_write_fraction)
+	            if ((*p_uniform_real_distribution_0_to_1)(deafrangen) <= p_IosequencerInput->hot_zone_write_fraction)
 	            {
-	                block_number =  generate_hot_zone_block_number();
+	               block_number = (*p_hot_zone_block_distribution)(deafrangen);
 	            }
 	            else
 	            {
-	                block_number = generate_other_zone_block_number();
+	                block_number = (*p_other_area_block_distribution)(deafrangen);
 	            }
 	        }
 	    }
 	}
 	else
 	{
-	    block_number = generate_other_zone_block_number();
+	    block_number = (*p_other_area_block_distribution)(deafrangen);
 	}
 
 	slang.eyeocb.aio_offset = (p_IosequencerInput->blocksize_bytes) * block_number;

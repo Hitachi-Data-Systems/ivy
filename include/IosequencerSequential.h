@@ -27,7 +27,7 @@ public:
 	    : Iosequencer(pL, lf, wID, pWT, p_tl, p_w) {}
     ~IosequencerSequential(){}
 	bool generate(Eyeo&) override;
-	bool setFrom_IosequencerInput(IosequencerInput*);
+	void setFrom_IosequencerInput(IosequencerInput*) override;
 	bool isRandom() { return false; }
 	std::string instanceType() { return std::string("sequential"); }
 	long long int lastIOblockNumber=0;  // default of zero means block 1 will be the first one read or written.

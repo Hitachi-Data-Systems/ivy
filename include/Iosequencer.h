@@ -33,11 +33,11 @@ class WorkloadThread;
 class Workload;
 class Eyeo;
 
-struct xorshift64s_state {  // from https://en.wikipedia.org/wiki/Xorshift
-  uint64_t a;
-};
-
-uint64_t xorshift64s(struct xorshift64s_state *stat);
+//struct xorshift64s_state {  // from https://en.wikipedia.org/wiki/Xorshift
+//  uint64_t a;
+//};
+//
+//uint64_t xorshift64s(struct xorshift64s_state *stat);
 
 class Iosequencer
 {
@@ -51,7 +51,7 @@ public:
 	TestLUN* pTestLUN;
 	Workload* pWorkload;
 
-	xorshift64s_state xors;
+	//xorshift64s_state xors;
 
 	bool parameters_are_valid=false;  // this will be set by setFrom_IosequencerInput()
 
@@ -102,7 +102,7 @@ public:
 
 	virtual bool isRandom()=0;  // This is used to plug the I/O statistics into "random" and "sequential" categories.
 
-	virtual bool setFrom_IosequencerInput(IosequencerInput*);  // This base class function should be called first
+	virtual void setFrom_IosequencerInput(IosequencerInput*);  // This base class function should be called first
 		// by every eponymous derived class function.
 
 	virtual std::string instanceType()=0;

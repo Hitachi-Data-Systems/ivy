@@ -27,14 +27,14 @@ extern bool ivydriver_wrapping;
 //#define IVYDRIVER_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
                            // and so you can turn it off and on for each source file.
 
-bool IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
+void IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
 #if defined(IVYDRIVER_TRACE)
     { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
     o << "Entering IosequencerSequential::setFrom_IosequencerInput() for " << workloadID; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
 #endif
 
-	if (!Iosequencer::setFrom_IosequencerInput(p_i_i)) return false;
+	Iosequencer::setFrom_IosequencerInput(p_i_i);
 
 	lastIOblockNumber = -1 + coverageStartBlock + (long long int) (p_IosequencerInput->seqStartPoint * (ivy_float) numberOfCoverageBlocks);
         // The reason we are subtracting one is that this will be incremented before the first use.
@@ -53,7 +53,7 @@ bool IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
         pWorkload->sequential_fill_fraction = 1.0;
         wrapping = false;
     }
-	return true;
+	return;
 }
 
 

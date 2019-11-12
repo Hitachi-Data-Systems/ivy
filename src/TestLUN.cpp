@@ -544,25 +544,29 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
 
     bool first_pass {true};
 
-    for (auto& pear : workloads) // Here we are finding the furthest behind of the IOPS=max workloads with positive skew.
+    for (auto& pear : workloads)
     {
-        if (pear.second.is_IOPS_max_with_positive_skew())
         {
-            ivy_float x =
-            pear.second.workload_weighted_IOPS_max_skew_progress =
-                ( (ivy_float) pear.second.workload_cumulative_launch_count ) / pear.second.p_current_IosequencerInput->skew_weight;
+            Workload& w = pear.second;
 
-            if (first_pass)
+            if (w.is_IOPS_max_with_positive_skew()) // Here we are finding the furthest behind of the IOPS=max workloads with positive skew.
             {
-                first_pass = false;
+                ivy_float x =
+                w.workload_weighted_IOPS_max_skew_progress =
+                    ( (ivy_float) w.workload_cumulative_launch_count ) / w.p_current_IosequencerInput->skew_weight;
 
-                testLUN_furthest_behind_weighted_IOPS_max_skew_progress = x;
-            }
-            else
-            {
-                if (x < testLUN_furthest_behind_weighted_IOPS_max_skew_progress)
+                if (first_pass)
                 {
+                    first_pass = false;
+
                     testLUN_furthest_behind_weighted_IOPS_max_skew_progress = x;
+                }
+                else
+                {
+                    if (x < testLUN_furthest_behind_weighted_IOPS_max_skew_progress)
+                    {
+                        testLUN_furthest_behind_weighted_IOPS_max_skew_progress = x;
+                    }
                 }
             }
         }

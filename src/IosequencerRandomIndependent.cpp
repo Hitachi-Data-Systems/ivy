@@ -77,7 +77,7 @@ bool IosequencerRandomIndependent::generate(Eyeo& slang)
 		else
 		{
 			long double R=0.0, inter_IO_arrival_time;
-			while (R == 0.0 || R == 1.0) R = generate_float_between_0_and_1();  // The "while" was just in case we actually got 0.0 or 1.0
+			while (R == 0.0 || R == 1.0) R = (*p_uniform_real_distribution_0_to_1)(deafrangen);  // The "while" was just in case we actually got 0.0 or 1.0
 
 			inter_IO_arrival_time = - log(1.0-R) / (p_IosequencerInput->IOPS);
 
