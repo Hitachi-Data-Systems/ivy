@@ -302,7 +302,7 @@ unsigned int /* number of I/Os popped and processed.  */
 	else
 	{
 		have_response_time = true;
-		response_time_seconds = (ivytime(p_dun->end_time - p_dun->scheduled_time).getlongdoubleseconds());
+		response_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->scheduled_time.getlongdoubleseconds();
 	}
 
 	if ( p_dun->start_time.isZero()
@@ -338,13 +338,13 @@ unsigned int /* number of I/Os popped and processed.  */
         throw std::runtime_error(o.str());
     }
 
-	service_time_seconds = (ivytime(p_dun->end_time - p_dun->start_time).getlongdoubleseconds());
+	service_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->start_time.getlongdoubleseconds();
 	if (ivydriver.measure_submit_time) {
-		submit_time_seconds = (ivytime(p_dun->running_time - p_dun->start_time).getlongdoubleseconds());
+		submit_time_seconds = p_dun->running_time.getlongdoubleseconds() - p_dun->start_time.getlongdoubleseconds();
 	} else {
 		submit_time_seconds = 0.0;
 	}
-	running_time_seconds = (ivytime(p_dun->end_time - p_dun->running_time).getlongdoubleseconds());
+	running_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->running_time.getlongdoubleseconds();
 
 	// NOTE:  The breakdown of bytes_transferred (MB/s) follows service time.
 
