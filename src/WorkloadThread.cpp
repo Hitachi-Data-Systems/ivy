@@ -833,16 +833,16 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
         log(slavethreadlogfile,o.str());
     }
 
-    earliest_scheduled_IO_with_available_AIO_slot.setToZero();
+    epoll_wait_until_time.setToZero();
 
         // reap_IOs() waits until an I/O completion event occurs or
         // until this time when the next I/O needs to be started.
 
-        // earliest_scheduled_IO_with_available_AIO_slot is set by start_IOs().
+        // epoll_wait_until_time is set by start_IOs().
 
         // In start_IOs(), if there are no I/Os scheduled for the future
         // which already now have an available AIO slot,
-        // earliest_scheduled_IO_with_available_AIO_slot is set to the
+        // epoll_wait_until_time is set to the
         // end of the subinterval.
 
         // Zero means don't wait in reap_IOs(), because we may have work to do
@@ -850,8 +850,6 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
 	while (true)
 	{
-        top_of_loop:
-
 		now.setToNow();
 
 		if (now >= thread_view_subinterval_end) break;
@@ -860,15 +858,13 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
         reap_IOs(now);
 
-        n += start_IOs();               if ( n > 0 ) { earliest_scheduled_IO_with_available_AIO_slot.setToZero(); goto top_of_loop; }
+        n += start_IOs();               if ( n > 0 ) { epoll_wait_until_time.setToZero(); continue; }
 
-        n += pop_and_process_an_Eyeo(); if ( n > 0 ) { earliest_scheduled_IO_with_available_AIO_slot.setToZero(); goto top_of_loop; }
+        n += pop_and_process_an_Eyeo(); if ( n > 0 ) { epoll_wait_until_time.setToZero(); continue; }
 
-        n += generate_an_IO();          if ( n > 0 ) { earliest_scheduled_IO_with_available_AIO_slot.setToZero(); goto top_of_loop; }
+        n += generate_an_IO();          if ( n > 0 ) { epoll_wait_until_time.setToZero(); continue; }
 
-        if (ivydriver.spinloop) earliest_scheduled_IO_with_available_AIO_slot.setToZero();
-
-        goto top_of_loop;
+        if (ivydriver.spinloop) epoll_wait_until_time.setToZero();
     }
 
 #ifdef IVYDRIVER_TRACE
@@ -929,7 +925,7 @@ unsigned int WorkloadThread::start_IOs()
 
     if (pTestLUNs.size() == 0) return 0;
 
-    earliest_scheduled_IO_with_available_AIO_slot = thread_view_subinterval_end;
+    epoll_wait_until_time = thread_view_subinterval_end;
 
     std::vector<TestLUN*>::iterator it = pTestLUN_start_IOs_bookmark;
 
@@ -1020,17 +1016,17 @@ void WorkloadThread::reap_IOs(const ivytime& now)
 
     ivytime wait_duration;
 
-    if (earliest_scheduled_IO_with_available_AIO_slot <= now) // including earliest_scheduled_IO_with_available_AIO_slot == ivytime(0)
+    if (epoll_wait_until_time <= now) // including epoll_wait_until_time == ivytime(0)
     {
         wait_duration.setToZero();
     }
-    else if (thread_view_subinterval_end < earliest_scheduled_IO_with_available_AIO_slot)
+    else if (thread_view_subinterval_end < epoll_wait_until_time) // I think this can't happen, because start_IOs() initializes to end of subinterval
     {
         wait_duration = thread_view_subinterval_end - now;
     }
     else
     {
-        wait_duration = earliest_scheduled_IO_with_available_AIO_slot - now;
+        wait_duration = epoll_wait_until_time - now;
     }
 
     timerfd_setting.it_value.tv_sec = wait_duration.t.tv_sec;

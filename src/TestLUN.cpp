@@ -700,8 +700,8 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
 
     ivytime now; now.setToNow();
 
-    if (!all_workloads_are_IOPS_max)
-    {
+    //if (!all_workloads_are_IOPS_max)  // commented thinking about the case where with IOPS=max, we didn't start all the I/Os that were ready.
+    //{
         for (auto& pear : workloads)
         {
             {
@@ -717,16 +717,20 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
                         {
                             // The Eyeo has an empty AIO context slot and is just waiting for the scheduled launch time.
 
-                            if (pWorkloadThread->earliest_scheduled_IO_with_available_AIO_slot > pEyeo->scheduled_time)
+                            if (pWorkloadThread->epoll_wait_until_time > pEyeo->scheduled_time)
                             {
-                                pWorkloadThread->earliest_scheduled_IO_with_available_AIO_slot = pEyeo->scheduled_time;
+                                pWorkloadThread->epoll_wait_until_time = pEyeo->scheduled_time;
                             }
+                        }
+                        else // we have an open AIO slot and an I/O ready to launch, don't wait in reap_IOs().
+                        {
+                            pWorkloadThread->epoll_wait_until_time.setToZero();
                         }
                     }
                 }
             }
         }
-    }
+    //}
 
     return launch_count;
 }
