@@ -81,14 +81,15 @@ bool endsIn(std::string s, std::string ending);
 std::string rewrite_HHMMSS_to_seconds(std::string);
 
 std::string safe_string(const unsigned char* p, unsigned int l); // stops at nulls, unprintables changed to '.'
-std::string remove_non_alphameric(std::string s);
-std::string convert_non_alphameric_to_underscore(std::string s);
-std::string convert_non_alphameric_or_hyphen_or_period_to_underscore(std::string s);
-std::string convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(std::string s);
-std::string convert_non_alphameric_or_hyphen_or_equals_to_underscore(std::string s);
-std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(std::string);
-std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_or_plus_to_underscore(std::string);
-std::string convert_commas_to_semicolons(const std::string);
+std::string remove_non_alphameric(const std::string& s);
+
+std::string convert_invalid_characters_to_underscore(const std::string& s, const std::string& valid_characters);
+std::string convert_non_alphameric_to_underscore(const std::string& s);
+std::string convert_non_alphameric_or_hyphen_or_period_to_underscore(const std::string s);
+std::string convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(const std::string& s);
+std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(const std::string&);
+std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_or_plus_to_underscore(const std::string&);
+std::string convert_commas_to_semicolons(const std::string&);
 bool stringCaseInsensitiveEquality(std::string s1, std::string s2);
 
 bool looksLikeHostname(std::string s);

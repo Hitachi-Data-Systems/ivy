@@ -124,7 +124,6 @@ struct IvyDriver
 
     int step_number {-1};
 
-
     ivytime
         test_start_time,
         subinterval_duration,

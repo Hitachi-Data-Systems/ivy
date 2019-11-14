@@ -428,7 +428,6 @@ unsigned int /* number of I/Os popped and processed.  */
 	    log(pWorkloadThread->slavethreadlogfile,p_dun->toString(true));
 	}
 
-
 	freeStack.push(p_dun);
 
 #ifdef IVYDRIVER_TRACE

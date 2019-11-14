@@ -32,7 +32,7 @@ struct logger
     std::mutex now_speaks;
     RunningStat<long double, long> durations;
     ivytime last_time {0};
-    std::string logfilename {};
+    std::string logfilename {"<none>"};
 
 // methods
     logger() {};

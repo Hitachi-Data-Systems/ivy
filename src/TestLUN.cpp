@@ -229,7 +229,7 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 }
 
 
-void TestLUN::reap_IOs()
+unsigned int /* number of I/Os */ TestLUN::reap_IOs()
 {
 #if defined(IVYDRIVER_TRACE)
     { reap_IOs_callcount++; if (reap_IOs_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
@@ -240,6 +240,8 @@ void TestLUN::reap_IOs()
 
     // The eventfd does not have the EFD_NONBLOCK flag turned on, meaning it should block on reads
     // if the underlying kernel counter is zero.  But we only call reap_IOs() when epoll_wait() says the eventfd is readable.
+
+    unsigned int number_of_IOs_harvested {0};
 
     uint64_t pending_event_count {0};
 
@@ -289,7 +291,7 @@ void TestLUN::reap_IOs()
 
             extra_reaped_after_read_from_eventfd -= pending_event_count;
 
-            return;
+            return number_of_IOs_harvested;
         }
         else
         {
@@ -300,7 +302,7 @@ void TestLUN::reap_IOs()
 
             if (pending_event_count == 0) // we just caught up by reading the eventfd counts for the extra I/Os we harvested last time, but there were no new I/O events.
             {
-                return;
+                return number_of_IOs_harvested;
             }
         }
     }
@@ -333,6 +335,8 @@ void TestLUN::reap_IOs()
         }
 
         if (reaped > max_IOs_reaped_at_once) max_IOs_reaped_at_once = reaped;
+
+        number_of_IOs_harvested += reaped;
 
         for (int i=0; i < reaped; i++)
         {
@@ -385,14 +389,14 @@ void TestLUN::reap_IOs()
             extra_reaped_after_read_from_eventfd = reaped64 - pending_event_count;
             consecutive_count_event_fd_writeback = 0;
 
-            return;
+            return number_of_IOs_harvested;
         }
 
         if (reaped64 == pending_event_count)
         {
             consecutive_count_event_fd_writeback = 0;
 
-            return;
+            return number_of_IOs_harvested;
         }
 
         if (reaped64 == MAX_IOEVENTS_REAP_AT_ONCE)
@@ -403,7 +407,7 @@ void TestLUN::reap_IOs()
             {
                 consecutive_count_event_fd_writeback = 0;
 
-                return;
+                return number_of_IOs_harvested;
             }
             else
             {
@@ -457,7 +461,7 @@ void TestLUN::reap_IOs()
             throw std::runtime_error(o.str());
         }
 
-        return;
+        return number_of_IOs_harvested;
     }
     // don't need a return here because we never break from the loop, rather, we return from inside the loop.
 }
@@ -697,40 +701,6 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
         launch_count--;
         number_to_put_back--;
     }
-
-    ivytime now; now.setToNow();
-
-    //if (!all_workloads_are_IOPS_max)  // commented thinking about the case where with IOPS=max, we didn't start all the I/Os that were ready.
-    //{
-        for (auto& pear : workloads)
-        {
-            {
-                Workload& w = pear.second;
-
-                if (w.running_IOs.size() < w.p_current_IosequencerInput->maxTags)
-                {
-                    if (w.precomputeQ.size() > 0)
-                    {
-                        Eyeo* pEyeo = w.precomputeQ.front();
-
-                        if (pEyeo->scheduled_time > now)  // with IOPS=max, scheduled_time is zero.
-                        {
-                            // The Eyeo has an empty AIO context slot and is just waiting for the scheduled launch time.
-
-                            if (pWorkloadThread->epoll_wait_until_time > pEyeo->scheduled_time)
-                            {
-                                pWorkloadThread->epoll_wait_until_time = pEyeo->scheduled_time;
-                            }
-                        }
-                        else // we have an open AIO slot and an I/O ready to launch, don't wait in reap_IOs().
-                        {
-                            pWorkloadThread->epoll_wait_until_time.setToZero();
-                        }
-                    }
-                }
-            }
-        }
-    //}
 
     return launch_count;
 }

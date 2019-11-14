@@ -134,7 +134,6 @@ std::pair<bool,std::string> csvfile::load(const std::string& filename)
         }
         p_istream = &input_stream;
     }
-
     std::string csvline;
     std::string token;
 
@@ -151,12 +150,15 @@ std::pair<bool,std::string> csvfile::load(const std::string& filename)
         }
     }
 
+
     // p_istream->close();
 
     if (raw_values.size() > 0) for ( auto& s: raw_values[0] )
     {
         std::string key = column_header_to_identifier(s);
+
         int col = column_by_header_identifier_value.size();
+
         column_by_header_identifier_value[key] = col;
     }
 

@@ -30,6 +30,7 @@
 
 #include "ivydefines.h"
 #include "ivytime.h"
+#include "logger.h"
 
 //#define IVYDRIVER_TRACE
 
@@ -186,7 +187,7 @@ public:
 
     void open_fd();
 
-    void reap_IOs();
+    unsigned int /* # of I/Os */ reap_IOs();
     unsigned int /* # of I/Os */ start_IOs();
     unsigned int /* # of I/Os */ pop_and_process_an_Eyeo();
     unsigned int /* # of I/Os */ generate_an_IO();

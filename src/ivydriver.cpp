@@ -79,20 +79,21 @@ void IvyDriver::say(std::string s)
 
  	if (s.length()==0 || s[s.length()-1] != '\n') s.push_back('\n');
 
+    ivytime delta;
+
     if (ivydriver.last_message_time == ivytime_zero)
     {
         ivydriver.last_message_time.setToNow();
+        delta.setToZero();
     }
     else
     {
-        ivytime now, delta;
-
-        now.setToNow();
+        ivytime now; now.setToNow();
         delta = now - ivydriver.last_message_time;
         ivydriver.last_message_time = now;
-
-    	if (routine_logging) log(ivydriver.slavelogfile,format_utterance("Slave", s, delta));
     }
+
+    if (routine_logging) log(ivydriver.slavelogfile,format_utterance("Slave", s, delta));
 
 	std::cout << s << std::flush;
 	return;
@@ -385,26 +386,20 @@ int IvyDriver::main(int argc, char* argv[])
         log(slavelogfile,o.str());
     }
 
-    unsigned int physical_core_zero_hyperthreads {0};
-
     if (subthread_per_hyperthread)
     {
         for (auto& pear : hyperthreads_per_core)
         {
-            if (pear.first == 0)
-            {
-                physical_core_zero_hyperthreads++;
-
-                if (physical_core_zero_hyperthreads <= 2)
-                {
-                    continue;  // leave the the first two hyperthreads on core 0 open for ivydriver master thread, or even the ivy central host subthreads.
-                    // Come back here and maybe leave another core free in case this test host is also the master host ..... XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-                }
-            }
+            unsigned int hyperthread_count = 0;
 
             for (unsigned int& processor : pear.second)
             {
-                hyperthreads_to_start_subthreads_on.push_back(std::make_pair(pear.first, processor));
+                hyperthread_count ++;
+
+                if (pear.first != 0 || hyperthread_count > 2)
+                {
+                    hyperthreads_to_start_subthreads_on.push_back(std::make_pair(pear.first, processor));
+                }
             }
         }
     }
@@ -493,7 +488,6 @@ int IvyDriver::main(int argc, char* argv[])
 	ivytime one_hour = ivytime(60*60);
         // one hour so that if ivydriver somehow would wait forever, this makes it explode after an hour.
         // Ivydriver gets a command every subinterval, so this would limit subinterval_seconds to one hour.
-
 
 	while(!std::cin.eof())
 	{

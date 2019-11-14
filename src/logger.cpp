@@ -20,6 +20,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <stdexcept>
 
 #include "logger.h"
 
@@ -38,6 +40,13 @@ void log(logger& bunyan, const std::string& s)
     if (is_ofstream)
     {
         o.open(bunyan.logfilename, ios::out | ios::app );
+
+        if (o.fail())
+        {
+            std::ostringstream o;
+            o << "<Error> internal programming error - logger::log() failed trying to open \"" << bunyan.logfilename << "\" for output+append to say \"" << s << "\".";
+            throw std::runtime_error(o.str());
+        }
         p_ostream = &o;
     }
 
@@ -46,6 +55,10 @@ void log(logger& bunyan, const std::string& s)
     if (bunyan.last_time != ivytime_zero)
     {
         (*p_ostream) << " +" << ivytime(now-bunyan.last_time).format_as_duration_HMMSSns();
+    }
+    else
+    {
+        (*p_ostream) << " +" << ivytime_zero.format_as_duration_HMMSSns();
     }
 
     (*p_ostream) << " "<< s;

@@ -1234,7 +1234,6 @@ ivy_engine::shutdown_subthreads()
 
             }
             std::cout << o.str();
-            log(m_s.masterlogfile, o.str());
         }
     }
 

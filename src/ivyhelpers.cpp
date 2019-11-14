@@ -536,7 +536,7 @@ bool startsWith(std::string starter, std::string line, std::string& remainder){
 	return true;
 }
 
-std::string remove_non_alphameric(std::string s)
+std::string remove_non_alphameric(const std::string& s)
 {
 	std::string result;
 	if (s.length()>0)  // yes, not necessary
@@ -552,7 +552,7 @@ std::string remove_non_alphameric(std::string s)
 	return result;
 }
 
-std::string convert_non_alphameric_to_underscore(std::string s){
+std::string convert_non_alphameric_to_underscore(const std::string& s){
 	std::string result=s;
 	if (s.length()>0) {
 		for (unsigned int i=0; i<s.length(); i++) {
@@ -564,7 +564,7 @@ std::string convert_non_alphameric_to_underscore(std::string s){
 	return result;
 }
 
-std::string convert_non_alphameric_or_hyphen_or_period_to_underscore(std::string s){
+std::string convert_non_alphameric_or_hyphen_or_period_to_underscore(const std::string& s){
 	std::string result=s;
 	if (s.length()>0) {
 		for (unsigned int i=0; i<s.length(); i++) {
@@ -576,8 +576,10 @@ std::string convert_non_alphameric_or_hyphen_or_period_to_underscore(std::string
 	return result;
 }
 
-std::string convert_invalid_characters_to_underscore(std::string s, std::string valid_characters)
+std::string convert_invalid_characters_to_underscore(const std::string& s, const std::string& valid_characters)
 {
+    std::string result = s;
+
     std::regex find_a_char_to_convert_to_underscore
     (
         std::string( R"ivy(([)ivy" )
@@ -590,27 +592,27 @@ std::string convert_invalid_characters_to_underscore(std::string s, std::string 
     std::smatch entire_match;
     std::ssub_match part1, part3;
 
-    while (std::regex_match(s, entire_match, find_a_char_to_convert_to_underscore))
+    while (std::regex_match(result, entire_match, find_a_char_to_convert_to_underscore))
     {
         part1 = entire_match[1];
         part3 = entire_match[3];
-        s = part1.str() + std::string("_") + part3.str();
+        result = part1.str() + std::string("_") + part3.str();
     }
 
-	return s;
+	return result;
 }
 
-std::string convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(std::string s)
+std::string convert_non_alphameric_or_hyphen_or_period_or_equals_to_underscore(const std::string& s)
 {
     return convert_invalid_characters_to_underscore(s, std::string( R"(一-龯ぁ-んァ-ン[:alnum:]_\.=)"));
 }
 
-std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(std::string s)
+std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_to_underscore(const std::string& s)
 {
     return convert_invalid_characters_to_underscore(s, std::string( R"(-一-龯ぁ-んァ-ン[:alnum:]_=)"));
 }
 
-std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_or_plus_to_underscore(std::string s)
+std::string edit_out_colons_and_convert_non_alphameric_or_hyphen_or_equals_or_plus_to_underscore(const std::string& s)
 {
     return convert_invalid_characters_to_underscore(s, std::string( R"(-一-龯ぁ-んァ-ン[:alnum:]_=+)"));
 }
@@ -1448,7 +1450,7 @@ std::pair<bool /*false means attempt to read past the end*/, std::string /*field
     }
 }
 
-std::string convert_commas_to_semicolons(const std::string s)
+std::string convert_commas_to_semicolons(const std::string& s)
 {
     std::string r {};
 

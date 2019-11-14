@@ -821,6 +821,7 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
     o << "(physical core" << physical_core << " hyperthread " << hyperthread << ':' << wt_callcount_linux_AIO_driver_run_subinterval << ") ";
     o << "Entering WorkloadThread::linux_AIO_driver_run_subinterval()."; log(slavethreadlogfile,o.str()); } }
 #endif
+    main_loop_passes = IOs_generated = IOs_launched = IOs_harvested = IOs_popped = fruitless_passes = 0;
 
     if (routine_logging)
     {
@@ -850,21 +851,72 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
 	while (true)
 	{
+	    main_loop_passes++;
+
 		now.setToNow();
 
 		if (now >= thread_view_subinterval_end) break;
 
-        unsigned int n = 0;
+        unsigned int reaped = reap_IOs(now); IOs_harvested += reaped;
 
-        reap_IOs(now);
+        unsigned int started = start_IOs(); IOs_launched += started;
 
-        n += start_IOs();               if ( n > 0 ) { epoll_wait_until_time.setToZero(); continue; }
+        if ( started > 0 ) { epoll_wait_until_time.setToZero(); continue; }
 
-        n += pop_and_process_an_Eyeo(); if ( n > 0 ) { epoll_wait_until_time.setToZero(); continue; }
+        unsigned int popped = pop_and_process_an_Eyeo();  IOs_popped += popped;
 
-        n += generate_an_IO();          if ( n > 0 ) { epoll_wait_until_time.setToZero(); continue; }
+        if ( popped > 0 ) { epoll_wait_until_time.setToZero(); continue; }
 
-        if (ivydriver.spinloop) epoll_wait_until_time.setToZero();
+        unsigned int generated = generate_an_IO(); IOs_generated += generated;
+
+        if ( generated > 0 ) { epoll_wait_until_time.setToZero(); continue; }
+
+        if (reaped == 0) { fruitless_passes++; }
+
+        if (ivydriver.spinloop)
+        {
+            epoll_wait_until_time.setToZero();
+        }
+        else
+        {
+            // We did not start any I/Os, post-process any I/Os, or generate any I/Os, so we should wait in epoll_wait.
+
+            epoll_wait_until_time = thread_view_subinterval_end;
+
+            now.setToNow();
+
+            for (TestLUN* pTestLUN : pTestLUNs)
+            {
+                for (auto& pear : pTestLUN->workloads)
+                {
+                    {
+                        Workload& w = pear.second;
+
+                        if (w.running_IOs.size() < w.p_current_IosequencerInput->maxTags)
+                        {
+                            if (w.precomputeQ.size() > 0)
+                            {
+                                Eyeo* pEyeo = w.precomputeQ.front();
+
+                                if (pEyeo->scheduled_time > now)  // with IOPS=max, scheduled_time is zero.
+                                {
+                                    // The Eyeo has an empty AIO context slot and is just waiting for the scheduled launch time.
+
+                                    if (epoll_wait_until_time > pEyeo->scheduled_time)
+                                    {
+                                        epoll_wait_until_time = pEyeo->scheduled_time;
+                                    }
+                                }
+                                else // we have an open AIO slot and an I/O ready to launch, don't wait in reap_IOs().
+                                {
+                                    epoll_wait_until_time.setToZero();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
 #ifdef IVYDRIVER_TRACE
@@ -880,6 +932,22 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
             number_of_IOs_running_at_end_of_subinterval += pear.second.running_IOs.size();
         }
     }
+
+    if (routine_logging)
+    {
+        std::ostringstream o;
+        o << "For step number " << ivydriver.step_number << " subinterval number " << thread_view_subinterval_number << " LUNs = " << pTestLUNs.size() << " - ";
+        o << "main_loop_passes = " << main_loop_passes
+            << ", IOs_generated = " << IOs_generated
+            << ", IOs_launched = " << IOs_launched
+            << ", IOs_harvested = " << IOs_harvested
+            << ", IOs_popped = " << IOs_popped
+            << ", fruitless_passes = " << fruitless_passes;
+        if (main_loop_passes > 0) { o << ", fruitless passes as % of total passes = " << (100.0 * ((long double) fruitless_passes) / ((long double) main_loop_passes)) << "%"; }
+        if (IOs_launched > 0)     { o << ", passes per I/O launched = " << ((long double) main_loop_passes) / ((long double) IOs_launched); }
+        log(slavethreadlogfile,o.str());
+    }
+
 
 	return;
 }
@@ -925,8 +993,6 @@ unsigned int WorkloadThread::start_IOs()
 
     if (pTestLUNs.size() == 0) return 0;
 
-    epoll_wait_until_time = thread_view_subinterval_end;
-
     std::vector<TestLUN*>::iterator it = pTestLUN_start_IOs_bookmark;
 
 #ifdef IVYDRIVER_TRACE
@@ -960,7 +1026,7 @@ unsigned int WorkloadThread::start_IOs()
     return n;
 }
 
-void WorkloadThread::reap_IOs(const ivytime& now)
+unsigned int /* # of I/Os */ WorkloadThread::reap_IOs(const ivytime& now)
 {
 #if defined(IVYDRIVER_TRACE)
     { wt_callcount_reap_IOs++; if (wt_callcount_reap_IOs <= FIRST_FEW_CALLS) { std::ostringstream o;
@@ -968,7 +1034,9 @@ void WorkloadThread::reap_IOs(const ivytime& now)
     o << "Entering WorkloadThread::reap_IOs()."; log(slavethreadlogfile,o.str()); } }
 #endif
 
-    if (pTestLUNs.size() == 0) return;
+    unsigned int number_of_IOs_harvested {0};
+
+    if (pTestLUNs.size() == 0) return number_of_IOs_harvested;
 
 #ifdef IVYDRIVER_TRACE
     (*itr)->reap_IOs_bookmark_count++;
@@ -1012,7 +1080,7 @@ void WorkloadThread::reap_IOs(const ivytime& now)
     // there are.  Then in TestLUN, we keep calling getevents()
     // until we've harvested them all.
 
-    if (now >= thread_view_subinterval_end) return;
+    if (now >= thread_view_subinterval_end) return number_of_IOs_harvested;
 
     ivytime wait_duration;
 
@@ -1062,10 +1130,10 @@ void WorkloadThread::reap_IOs(const ivytime& now)
         o << "internal programming error - epoll_wait() in WorkloadThread::reap_IOs() for physical core " << physical_core << " hyperthread " << hyperthread
             << "failed with errno " << errno << " - " << std::strerror(errno) << std::endl;
         post_error(o.str());
-        return;
+        return number_of_IOs_harvested;
     }
 
-    if (epoll_event_count == 0) return;
+    if (epoll_event_count == 0) return number_of_IOs_harvested;
 
     for (unsigned int i = 0; i < (unsigned int) epoll_event_count; i++)
     {
@@ -1075,10 +1143,10 @@ void WorkloadThread::reap_IOs(const ivytime& now)
 
         TestLUN* pTestLUN = (TestLUN*) p;
 
-        pTestLUN->reap_IOs();
+        number_of_IOs_harvested += pTestLUN->reap_IOs();
     }
 
-    return;
+    return number_of_IOs_harvested;
 }
 
 unsigned int WorkloadThread::pop_and_process_an_Eyeo()

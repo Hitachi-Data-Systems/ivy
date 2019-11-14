@@ -1597,7 +1597,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
             bool active_core_busy_error {false};
 
-            if (active_core_average_busy > m_s.max_active_core_busy && mt.measurementRollup.inputRollup.is_only_IOPS_max())
+            if (active_core_average_busy > m_s.max_active_core_busy)
             {
                 active_core_busy_error = true;
 

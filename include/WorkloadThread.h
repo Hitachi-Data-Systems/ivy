@@ -149,6 +149,8 @@ public:
 
     ivytime epoll_wait_until_time {0};
 
+    uint64_t main_loop_passes {0}, IOs_launched {0}, IOs_harvested {0}, IOs_generated {0}, IOs_popped {0}, fruitless_passes {0};
+
 //methods
 	WorkloadThread(std::mutex*,unsigned int /*physical_core*/, unsigned int /*hyperthread*/);
 
@@ -164,7 +166,7 @@ public:
 
     void cancel_stalled_IOs();
 
-    void reap_IOs(const ivytime& now);
+    unsigned int /* # of I/Os */ reap_IOs (const ivytime& now);
     unsigned int /* # of I/Os */ start_IOs();
     unsigned int /* # of I/Os */ post_process_an_IO();
     unsigned int /* # of I/Os */ generate_an_IO();
