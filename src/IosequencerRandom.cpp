@@ -39,47 +39,48 @@ void IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 
     deafrangen.seed(string_hash(threadKey + semence.format_as_datetime_with_ns()));
 
+	if (nullptr != p_other_area_block_distribution)    delete p_other_area_block_distribution;
+	if (nullptr != p_hot_zone_block_distribution)      delete p_hot_zone_block_distribution;
+	if (nullptr != p_uniform_real_distribution_0_to_1) delete p_uniform_real_distribution_0_to_1;
+
     if ( 0.0 == p_i_i->hot_zone_read_fraction && 0.0 == p_i_i->hot_zone_write_fraction )
     {
+        have_hot_zone = false;
+
         hot_zone_coverageStartBlock = hot_zone_coverageEndBlock = hot_zone_numberOfCoverageBlocks = (uint64_t) 0;
 
         other_zone_coverageStartBlock     = coverageStartBlock;
         other_zone_coverageEndBlock       = coverageEndBlock;
         other_zone_numberOfCoverageBlocks = numberOfCoverageBlocks;
-
-        have_hot_zone = false;
-
-        return;
     }
-
-    have_hot_zone = true;
-
-    hot_zone_numberOfCoverageBlocks = ( (p_i_i->hot_zone_size_bytes) + (((uint64_t)p_i_i->blocksize_bytes)-1) ) / ((uint64_t)p_i_i->blocksize_bytes); // rounding up
-
-    if (hot_zone_numberOfCoverageBlocks >= numberOfCoverageBlocks)
+    else
     {
-        std::ostringstream o;
-        o << "<Error> hot_zone_size_bytes " << put_on_KiB_etc_suffix(p_i_i->hot_zone_size_bytes)
-            << " must be smaller than rangeStart to rangeEnd LUN coverage area " << put_on_KiB_etc_suffix(((uint64_t)p_i_i->blocksize_bytes)*numberOfCoverageBlocks);
-        log(logfilename, o.str());
-        throw std::runtime_error(o.str());
+        have_hot_zone = true;
+
+        hot_zone_numberOfCoverageBlocks = ( (p_i_i->hot_zone_size_bytes) + (((uint64_t)p_i_i->blocksize_bytes)-1) ) / ((uint64_t)p_i_i->blocksize_bytes); // rounding up
+
+        if (hot_zone_numberOfCoverageBlocks >= numberOfCoverageBlocks)
+        {
+            std::ostringstream o;
+            o << "<Error> hot_zone_size_bytes " << put_on_KiB_etc_suffix(p_i_i->hot_zone_size_bytes)
+                << " must be smaller than rangeStart to rangeEnd LUN coverage area " << put_on_KiB_etc_suffix(((uint64_t)p_i_i->blocksize_bytes)*numberOfCoverageBlocks);
+            log(logfilename, o.str());
+            throw std::runtime_error(o.str());
+        }
+
+        hot_zone_coverageStartBlock = coverageStartBlock;
+        hot_zone_coverageEndBlock   = hot_zone_coverageStartBlock + hot_zone_numberOfCoverageBlocks - 1;
+
+        other_zone_numberOfCoverageBlocks = numberOfCoverageBlocks - hot_zone_numberOfCoverageBlocks;
+
+        other_zone_coverageStartBlock = hot_zone_coverageEndBlock + 1;
+        other_zone_coverageEndBlock   = coverageEndBlock;
     }
 
-    hot_zone_coverageStartBlock = coverageStartBlock;
-    hot_zone_coverageEndBlock   = hot_zone_coverageStartBlock + hot_zone_numberOfCoverageBlocks - 1;
+	if (have_hot_zone) { p_hot_zone_block_distribution = new std::uniform_int_distribution<uint64_t> (hot_zone_coverageStartBlock,hot_zone_coverageEndBlock);}
 
-    other_zone_numberOfCoverageBlocks = numberOfCoverageBlocks - hot_zone_numberOfCoverageBlocks;
-
-    other_zone_coverageStartBlock = hot_zone_coverageEndBlock + 1;
-    other_zone_coverageEndBlock   = coverageEndBlock;
-
-	if (nullptr != p_other_area_block_distribution) delete p_other_area_block_distribution;
 	p_other_area_block_distribution = new std::uniform_int_distribution<uint64_t> (other_zone_coverageStartBlock,other_zone_coverageEndBlock);
 
-	if (nullptr != p_hot_zone_block_distribution) delete p_hot_zone_block_distribution;
-	if (hot_zone_numberOfCoverageBlocks > 0) {p_hot_zone_block_distribution = new std::uniform_int_distribution<uint64_t> (hot_zone_coverageStartBlock,hot_zone_coverageEndBlock);}
-
-	if (nullptr != p_uniform_real_distribution_0_to_1) delete p_uniform_real_distribution_0_to_1;
 	p_uniform_real_distribution_0_to_1 = new std::uniform_real_distribution<ivy_float>(0.0,1.0);  // for % reads and for random_independent, for inter-I/O arrival times.
 }
 
