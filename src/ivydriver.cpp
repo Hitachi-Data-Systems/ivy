@@ -385,21 +385,6 @@ int IvyDriver::main(int argc, char* argv[])
         log(slavelogfile,o.str());
     }
 
-    for (ivy_float t : {0., .0000009, .000001, .0001, .00099, .001, .0019, .002, 1., 9., 9.999, 10.0, 100.})
-    {
-        {
-            std::ostringstream o;
-            o << "For " << t << " seconds or " << (1000.*t) << " ms, bucket is " << Accumulators_by_io_type::get_bucket_index(t) << std::endl;
-            log(slavelogfile,o.str());
-        }
-    }
-
-
-
-
-
-
-
     if (subthread_per_hyperthread)
     {
         for (auto& pear : hyperthreads_per_core)

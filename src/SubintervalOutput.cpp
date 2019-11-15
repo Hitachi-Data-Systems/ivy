@@ -229,7 +229,7 @@ std::string SubintervalOutput::csvValues
 			{
 				o << ",SubintervalOutput::csvValues( ivy_float seconds = " << seconds << " ) -	dreaded internal programming error.  "
 					<< "bytes_transferred.count() = " << bytes_transferred.count() << " differs from service_time.count() = " << service_time.count();
-				for (int i=0; i<(columns-1); i++) o << ',';
+				for (unsigned int i=0; i<(columns-1); i++) o << ',';
 			}
 			else
 			{
