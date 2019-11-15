@@ -245,23 +245,56 @@ ivy_engine::set(const std::string& thingee,
 
     if (0 == t.compare(normalize_identifier("measure_submit_time")))
     {
-        if (stringCaseInsensitiveEquality(value,"true") || stringCaseInsensitiveEquality(value,"on"))
+        try
         {
-            measure_submit_time = true;
-            return std::make_pair(true,"");
+            measure_submit_time = parse_boolean(value);
         }
-        else if (stringCaseInsensitiveEquality(value,"false") || stringCaseInsensitiveEquality(value,"off"))
-        {
-            measure_submit_time = false;
-            return std::make_pair(true,"");
-        }
-        else
+        catch (std::exception& e)
         {
             std::ostringstream o;
-            o << "<Error> ivy engine set(\"measure_submit_time\", \"" << value << "\") - may only be set to \"true\" or \"false\"."
+            o << "<Error> ivy engine set(\"measure_submit_time\", \"" << value << "\") - may only be set to true/false, yes/no, or on/off."
                 << std::endl << std::endl;
             return std::make_pair(false,o.str());
         }
+
+        try
+        {
+            issue_set_command_to_ivydriver("measure_submit_time",value);
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"measure_submit_time\", \"" << value << "\") - failed sending set command to ivydriver(s) - " << e.what() << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+        return std::make_pair(true,"");
+    }
+
+    if (0 == t.compare(normalize_identifier("log")))
+    {
+        try
+        {
+            routine_logging = parse_boolean(value);
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"log\", \"" << value << "\") - may only be set to true/false, yes/no, or on/off."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        try
+        {
+            issue_set_command_to_ivydriver("log",value);
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"log\", \"" << value << "\") - failed sending set command to ivydriver(s) - " << e.what() << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+        return std::make_pair(true,"");
     }
 
 
@@ -321,5 +354,59 @@ ivy_engine::set(const std::string& thingee,
         return std::make_pair(false,o.str());
     }
 }
+
+
+void ivy_engine::issue_set_command_to_ivydriver(const std::string& attribute, const std::string& value)
+{
+    std::ostringstream set_command;
+
+    set_command << "set \"" << attribute << "\" to \"" << value << "\"";
+
+    for (auto& pear: host_subthread_pointers)
+    {
+        pipe_driver_subthread* p_host = pear.second;
+		// get lock on talking to pipe_driver_subthread for this remote host
+		{
+			std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
+			// tell slave driver thread to talk to the other end and make the thread
+
+			p_host->commandString=set_command.str();
+
+			p_host->command=true;
+			p_host->commandSuccess=false;
+			p_host->commandComplete=false;
+			p_host->commandErrorMessage.clear();
+		}
+		p_host->master_slave_cv.notify_all();
+    }
+
+    for (auto& pear: host_subthread_pointers)
+    {
+        pipe_driver_subthread* p_host = pear.second;
+		{
+			std::unique_lock<std::mutex> u_lk(p_host->master_slave_lk);
+			while (!p_host->commandComplete) p_host->master_slave_cv.wait(u_lk);
+
+			if (!p_host->commandSuccess)
+			{
+				ostringstream o;
+				o << "Failed sending <" << set_command.str() << "> to \"" << p_host->ivyscript_hostname << " - " << p_host->commandErrorMessage;
+                throw std::runtime_error(o.str());
+			}
+		}
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 

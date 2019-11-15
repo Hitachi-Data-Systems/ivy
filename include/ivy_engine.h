@@ -619,6 +619,8 @@ public:
     set(const std::string& thing,
         const std::string& value);
 
+    void issue_set_command_to_ivydriver(const std::string& attribute, const std::string& value);
+
         std::pair<bool,std::string>
     shutdown_subthreads();
 

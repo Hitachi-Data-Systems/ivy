@@ -156,7 +156,6 @@ int main(int argc, char* argv[])
 void sig_handler(int sig, siginfo_t *p_siginfo, void *context);
 
 
-
 int IvyDriver::main(int argc, char* argv[])
 {
     struct sigaction sigactshun;
@@ -386,6 +385,21 @@ int IvyDriver::main(int argc, char* argv[])
         log(slavelogfile,o.str());
     }
 
+    for (ivy_float t : {0., .0000009, .000001, .0001, .00099, .001, .0019, .002, 1., 9., 9.999, 10.0, 100.})
+    {
+        {
+            std::ostringstream o;
+            o << "For " << t << " seconds or " << (1000.*t) << " ms, bucket is " << Accumulators_by_io_type::get_bucket_index(t) << std::endl;
+            log(slavelogfile,o.str());
+        }
+    }
+
+
+
+
+
+
+
     if (subthread_per_hyperthread)
     {
         for (auto& pear : hyperthreads_per_core)
@@ -488,6 +502,9 @@ int IvyDriver::main(int argc, char* argv[])
 	ivytime one_hour = ivytime(60*60);
         // one hour so that if ivydriver somehow would wait forever, this makes it explode after an hour.
         // Ivydriver gets a command every subinterval, so this would limit subinterval_seconds to one hour.
+
+    std::smatch entire_set_command_match;
+    std::ssub_match set_attribute_name, set_attribute_value;
 
 	while(!std::cin.eof())
 	{
@@ -639,6 +656,15 @@ int IvyDriver::main(int argc, char* argv[])
 			killAllSubthreads();
 			return 0;
 		}
+        else if (std::regex_match(input_line,entire_set_command_match,set_command_regex))
+        {
+            set_attribute_name  = entire_set_command_match[1];
+            set_attribute_value = entire_set_command_match[2];
+
+            set_command( set_attribute_name.str(), set_attribute_value.str() );
+
+            continue;
+        }
 		else
 		{
 		    std::string s = "ivydriver received command from ivymaster \""s + input_line + "\" that was not recognized."s;
@@ -656,6 +682,49 @@ int IvyDriver::main(int argc, char* argv[])
 
 	return 0;
 };
+
+
+void IvyDriver::set_command(const std::string& attribute, const std::string& value)
+{
+    if (attribute == "measure_submit_time"s)
+    {
+        try
+        {
+            measure_submit_time = parse_boolean(value);
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for measure_submit_time.  Only yes/no, on/off, or true/false are accepted." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "log"s)
+    {
+        try
+        {
+            routine_logging = parse_boolean(value);
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for log.  Only yes/no, on/off, or true/false are accepted." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    {
+        std::ostringstream o;
+        o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - \"" << attribute << "\" is not recognized as something that can be set in ivydriver." << std::endl;
+        say(o.str());
+        return;
+    }
+}
 
 
 void IvyDriver::waitForSubintervalEndThenHarvest()

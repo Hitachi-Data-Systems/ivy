@@ -214,10 +214,10 @@ std::string SubintervalOutput::csvValues
 		submit_time       += u.a.submit_time      .getRunningStatByCategory(i);
 		running_time      += u.a.running_time     .getRunningStatByCategory(i);
 
+        unsigned int columns = 17;   //////////////////////////////  <=====  change this if you change the number of columns below  ##################################################
+
 		if (0 == bytes_transferred.count())
 		{
-            unsigned int columns = 17;   //////////////////////////////  <=====  change this if you change the number of columns below  ##################################################
-
             if (nullptr != p_SubintervalRollup) { columns += 2; }
 
 			for (unsigned int i=0; i < columns; i++) o << ',';
@@ -227,9 +227,9 @@ std::string SubintervalOutput::csvValues
 			// should really throw an exception if this happens - but for now print the error message in the csv file.
 			if (bytes_transferred.count() != service_time.count())
 			{
-				o << "SubintervalOutput::csvValues( ivy_float seconds = " << seconds << " ) -	dreaded internal programming error.  "
+				o << ",SubintervalOutput::csvValues( ivy_float seconds = " << seconds << " ) -	dreaded internal programming error.  "
 					<< "bytes_transferred.count() = " << bytes_transferred.count() << " differs from service_time.count() = " << service_time.count();
-				for (int i=0; i<11; i++) o << ',';
+				for (int i=0; i<(columns-1); i++) o << ',';
 			}
 			else
 			{

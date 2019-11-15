@@ -369,7 +369,7 @@ unsigned int /* number of I/Os popped and processed.  */
 
 		bucket = Accumulators_by_io_type::get_bucket_index( service_time_seconds );
 
-		p_current_SubintervalOutput->u.a.service_time.rs_array[rs][rw][bucket].push(service_time_seconds);
+		p_current_SubintervalOutput->u.a.service_time     .rs_array[rs][rw][bucket].push(service_time_seconds);
 		p_current_SubintervalOutput->u.a.bytes_transferred.rs_array[rs][rw][bucket].push(p_current_IosequencerInput->blocksize_bytes);
 
 		if (ivydriver.measure_submit_time) {

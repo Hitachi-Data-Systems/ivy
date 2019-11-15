@@ -44,12 +44,11 @@ extern std::regex dotted_quad_regex;
 extern std::regex MMSS_regex;
 extern std::regex HHMMSS_regex;
 extern std::regex has_trailing_fractional_zeros_regex;
-
 extern std::regex frag_regex;
 extern std::regex last_regex;
-
 extern std::regex LDEV_regex;
 extern std::regex PG_regex;
+extern std::regex set_command_regex;
 
 extern std::string indent_increment;
 

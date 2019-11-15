@@ -63,6 +63,8 @@ std::regex last_regex( R"(last=>(.*)<=[\r\n\t ]*)" );
 std::regex LDEV_regex( R"([[:xdigit:]]{2}:[[:xdigit:]]{2})" );
 std::regex PG_regex  ( R"([[:digit:]]{1,2}-[[:digit:]]{1,2})" );
 
+std::regex set_command_regex( R"ivy(\s*set\s*"(.+)"\s*to\s*"(.+)"\s*)ivy" );
+
 std::mutex log_mutex;
 
 void format_for_log_trailing_slashr_slashn(std::string s)

@@ -220,6 +220,8 @@ struct IvyDriver
     void post_error(const std::string&);
 
     std::string print_logfile_stats();
+
+    void set_command(const std::string& attribute, const std::string& value);
 };
 
 extern struct IvyDriver ivydriver;

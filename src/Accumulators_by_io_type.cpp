@@ -114,7 +114,7 @@ io_time_clip_levels.push_back(std::make_tuple( "7xxx.", 8000., 1e0 ));
 io_time_clip_levels.push_back(std::make_tuple( "8xxx.", 9000., 1e0 ));
 io_time_clip_levels.push_back(std::make_tuple( "9xxx.", 10000., 1e0 )); // 64
 
-io_time_clip_levels.push_back(std::make_tuple( "10000+", -1., 1e0 )); // 65
+io_time_clip_levels.push_back(std::make_tuple( "10000+", 1E100, 1e0 )); // 65
 }
 
 
@@ -134,47 +134,25 @@ ivy_float histogram_bucket_scale_factor(unsigned int i)
 
 	ivy_float io_time_ms = io_time * 1000.;
 
-	// Original code:
-	//
-	//for (int i=0; i<(io_time_buckets - 1); i++)
-	//	if (io_time_ms < std::get<1>(io_time_clip_levels[i]))
-	//		return i;
-	//
-	// return io_time_buckets -1;
+	if (io_time_ms < .001) return 0;
 
-	// Alternative 1: Simple binary search:
-	//
-	//int first, middle, last;
-	//
-	//first = 0;
-	//last  = io_time_buckets - 1;
-	//middle = (first + last) / 2;
-	//
-	//while (first <= last) {
-	//	ivy_float middle_value = std::get<1>(io_time_clip_levels[middle]);
-	//	if (middle_value < io_time_ms) {
-	//		first = middle + 1;
-	//	} else if (middle_value * 1.01 >= io_time_ms) { // Within 1%?
-	//		break;
-	//	} else {
-	//		last = middle - 1;
-	//	}
-	//
-	//	middle = (first + last) / 2;
-	//}
-	//
-	//return middle;
+	unsigned int below_bucket {0};
+	unsigned int above_bucket {io_time_buckets-1};
 
-	// Alternative 2: Binary search using std::lower_bound and compare (lambda):
-	//
-	using Tuple = std::tuple<std::string, ivy_float, ivy_float>; // tuple portion of io_time_clip_levels vector.
+	while ((above_bucket - below_bucket) > 1)
+	{
+	    unsigned int bucket = (below_bucket + above_bucket) / 2;
 
-	auto compare = [](const Tuple &lhs, const Tuple &rhs)->bool
-		{ return std::get<1>(lhs) < std::get<1>(rhs); };
-
-	auto low = std::lower_bound(io_time_clip_levels.begin(), io_time_clip_levels.end(), Tuple("", io_time_ms, 0.0), compare);
-
-	return low - io_time_clip_levels.begin();
+	    if (io_time_ms < std::get<1>(io_time_clip_levels[bucket]))
+	    {
+            above_bucket = bucket;
+	    }
+	    else
+	    {
+	        below_bucket = bucket;
+	    }
+	}
+	return above_bucket;
 }
 
 /*static*/ std::string Accumulators_by_io_type::getRunningStatTitleByCategory(int category_index)

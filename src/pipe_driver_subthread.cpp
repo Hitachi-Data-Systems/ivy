@@ -2012,6 +2012,35 @@ void pipe_driver_subthread::threadRun()
                         commandSuccess=true;
                     }
                     // end of processing Go! command
+                    else if (std::regex_match(commandString,set_command_regex))
+                    {
+                        ivytime before_sending_command;
+                        before_sending_command.setToNow();
+
+                        try
+                        {
+                            send_and_get_OK(commandString);
+                            commandComplete=true;
+                            commandSuccess=true;
+                            commandErrorMessage.clear();
+                        }
+                        catch (std::runtime_error& reex)
+                        {
+                            ivytime now;
+                            now.setToNow();
+                            ivytime latency = now - before_sending_command;
+                            std::ostringstream o;
+                            o << "At "<< latency.format_as_duration_HMMSSns() << " after sending \"" << commandString
+                                << "\" to ivydriver - did not get OK - failed saying \"" << render_string_harmless(reex.what()) << "\"." << std::endl;
+                            log(logfilename,o.str()); log(m_s.masterlogfile,o.str()); std::cout << o.str();
+                            kill_ssh_and_harvest();
+                            commandComplete=true; commandSuccess=false; commandErrorMessage = o.str(); dead=true;
+                            s_lk.unlock();
+                            master_slave_cv.notify_all();
+                            return;
+                        }
+
+                    }
                     else
                     {
                         // if we do not recognize the command
