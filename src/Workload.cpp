@@ -337,10 +337,11 @@ unsigned int /* number of I/Os popped and processed.  */
 	service_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->start_time.getlongdoubleseconds();
 	if (ivydriver.measure_submit_time) {
 		submit_time_seconds = p_dun->running_time.getlongdoubleseconds() - p_dun->start_time.getlongdoubleseconds();
+		running_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->running_time.getlongdoubleseconds();
 	} else {
 		submit_time_seconds = 0.0;
+		running_time_seconds = 0.0;
 	}
-	running_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->running_time.getlongdoubleseconds();
 
 	// NOTE:  The breakdown of bytes_transferred (MB/s) follows service time.
 
@@ -375,10 +376,9 @@ unsigned int /* number of I/Os popped and processed.  */
 		if (ivydriver.measure_submit_time) {
 			bucket = Accumulators_by_io_type::get_bucket_index( submit_time_seconds );
 			p_current_SubintervalOutput->u.a.submit_time.rs_array[rs][rw][bucket].push(submit_time_seconds);
+			bucket = Accumulators_by_io_type::get_bucket_index( running_time_seconds );
+			p_current_SubintervalOutput->u.a.running_time.rs_array[rs][rw][bucket].push(running_time_seconds);
 		}
-
-		bucket = Accumulators_by_io_type::get_bucket_index( running_time_seconds );
-		p_current_SubintervalOutput->u.a.running_time.rs_array[rs][rw][bucket].push(running_time_seconds);
 
 		if (have_response_time)
 		{
