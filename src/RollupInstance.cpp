@@ -1603,9 +1603,10 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
                 std::ostringstream o;
 
-                o << "[Average ivydriver active core % busy is " << std::fixed << std::setprecision(2) << (100.0 * active_core_average_busy) << "%"
-                    << " which is over the limit max_active_core_busy = "<< std::fixed << std::setprecision(2) << (100.0 * m_s.max_active_core_busy) << "%."
-                    << "  This limit is set using ivy_engine_set().]";
+                o << "[Average ivydriver active core % busy " << std::fixed << std::setprecision(2) << (100.0 * active_core_average_busy) << "%"
+                    << " exceeds limit of "<< std::fixed << std::setprecision(2) << (100.0 * m_s.max_active_core_busy) << "%."
+                    << "  IOPS may be limited by test host CPU busy.  Consider using more test hosts."
+                    << "  (Set limit with ivy_engine_set(\"max_active_core_busy\", \"95%\").]";
                 validation_errors += o.str();
             }
 

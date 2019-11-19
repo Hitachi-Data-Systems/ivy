@@ -118,6 +118,9 @@ public:
     RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_lock_acquisition;
     RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_switchover;
 
+    RunningStat<ivy_float,ivy_int> workload_input_print_ms;
+    RunningStat<ivy_float,ivy_int> workload_output_print_ms;
+
 	logger logfilename;
 
 	int

@@ -250,6 +250,9 @@ public:
     RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_lock_acquisition;
     RunningStat<ivy_float,ivy_int> distribution_over_workloads_of_avg_switchover;
 
+    RunningStat<ivy_float,ivy_int> workload_input_print_ms_accumulator;
+    RunningStat<ivy_float,ivy_int> workload_output_print_ms_accumulator;
+
  	RunningStat<ivy_float, ivy_int> protocolTimeSeconds;
 	RunningStat<ivy_float, ivy_int> hostSendupTimeSeconds;
 	RunningStat<ivy_float, ivy_int> sendupTimeSeconds;
@@ -523,7 +526,7 @@ public:
 
     std::string copy_back_ivy_logs_sh_filename {};
 
-    double max_active_core_busy { 0.97 };
+    double max_active_core_busy { 0.95 };
 
 // methods
 

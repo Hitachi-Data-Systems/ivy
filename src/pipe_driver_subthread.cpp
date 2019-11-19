@@ -1483,7 +1483,7 @@ void pipe_driver_subthread::threadRun()
                                 }
                                 else
                                 {
-                                    detail_line_timeout_seconds = m_s.subinterval_seconds * 0.5;
+                                    detail_line_timeout_seconds = m_s.subinterval_seconds * 0.75;
                                 }
 
                                 detail_line = get_line_from_pipe(ivytime(detail_line_timeout_seconds), std::string("get iosequencer detail line"));
@@ -1507,7 +1507,7 @@ void pipe_driver_subthread::threadRun()
                                 std::ostringstream o;
                                 o << "<Error> Subinterval length parameter subinterval_seconds may be too short.  For host " << ivyscript_hostname
                                     << ", ivydriver received a workload thread detail line for the previous subinterval over one subinterval late." << std::endl;
-                                o << "This can also be caused if an ivy command device is on a subsystem port that is saturated with other (ivy) activity, making communication with the command device run very slowly." << std::endl;
+                                o << "If there is a huge number of workloads on a test host, consider running with a longer subinterval_seconds." << std::endl;
 
                                 o << "now: "  << now.format_as_datetime_with_ns() << std::endl;
                                 o << m_s.subintervalStart.format_as_datetime_with_ns()
@@ -1731,12 +1731,12 @@ void pipe_driver_subthread::threadRun()
 //*debug*/std::cout << o.str();
                         }
 
-                        if ( detail_line_sendup_seconds.sum() > (0.3333 * m_s.subinterval_seconds) )
+                        if ( detail_line_sendup_seconds.sum() > (0.75 * m_s.subinterval_seconds) )
                         {
                             std::ostringstream o;
                             o << "<Warning> To receive " << detail_line_sendup_seconds.count() << " workload detail lines from " << ivyscript_hostname
                                 << " took a total of " << std::fixed << std::setprecision(2) << detail_line_sendup_seconds.sum()
-                                << " seconds, which is over 1/3 of a " << m_s.subinterval_seconds << " second subinterval.  Possible network congestion.  Consider longer subinterval." << std::endl;
+                                << " seconds, which is over 3/4 of a " << m_s.subinterval_seconds << " second subinterval.  If there is a huge number of workloads on a test host, consider longer subinterval." << std::endl;
                             m_s.warning_messages.insert(o.str());
                             log (logfilename, o.str());
                             log (m_s.masterlogfile, o.str());
@@ -1852,13 +1852,15 @@ void pipe_driver_subthread::threadRun()
 //                                )
 //The fromIstream() method of parsing is WAY slower, so we will use original C style sscanf()
 //
-                                if ((6*5) != sscanf(remainder.c_str(),"<%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf>",
+                                if ((8*5) != sscanf(remainder.c_str(),"<%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf><%li;%lf;%lf;%lf;%lf>",
                                      &dispatching_latency_seconds_accumulator.n,&dispatching_latency_seconds_accumulator.M1,&dispatching_latency_seconds_accumulator.M2,&dispatching_latency_seconds_accumulator.min_value,&dispatching_latency_seconds_accumulator.max_value
                                     ,&lock_aquisition_latency_seconds_accumulator.n,&lock_aquisition_latency_seconds_accumulator.M1,&lock_aquisition_latency_seconds_accumulator.M2,&lock_aquisition_latency_seconds_accumulator.min_value,&lock_aquisition_latency_seconds_accumulator.max_value
                                     ,&switchover_completion_latency_seconds_accumulator.n,&switchover_completion_latency_seconds_accumulator.M1,&switchover_completion_latency_seconds_accumulator.M2,&switchover_completion_latency_seconds_accumulator.min_value,&switchover_completion_latency_seconds_accumulator.max_value
                                     ,&distribution_over_workloads_of_avg_dispatching_latency.n,&distribution_over_workloads_of_avg_dispatching_latency.M1,&distribution_over_workloads_of_avg_dispatching_latency.M2,&distribution_over_workloads_of_avg_dispatching_latency.min_value,&distribution_over_workloads_of_avg_dispatching_latency.max_value
                                     ,&distribution_over_workloads_of_avg_lock_acquisition.n,&distribution_over_workloads_of_avg_lock_acquisition.M1,&distribution_over_workloads_of_avg_lock_acquisition.M2,&distribution_over_workloads_of_avg_lock_acquisition.min_value,&distribution_over_workloads_of_avg_lock_acquisition.max_value
                                     ,&distribution_over_workloads_of_avg_switchover.n,&distribution_over_workloads_of_avg_switchover.M1,&distribution_over_workloads_of_avg_switchover.M2,&distribution_over_workloads_of_avg_switchover.min_value,&distribution_over_workloads_of_avg_switchover.max_value
+                                    ,&workload_input_print_ms.n,&workload_input_print_ms.M1,&workload_input_print_ms.M2,&workload_input_print_ms.min_value,&workload_input_print_ms.max_value
+                                    ,&workload_output_print_ms.n,&workload_output_print_ms.M1,&workload_output_print_ms.M2,&workload_output_print_ms.min_value,&workload_output_print_ms.max_value
                                 ))
                                 {
                                     std::ostringstream o;

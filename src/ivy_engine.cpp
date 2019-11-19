@@ -1281,6 +1281,9 @@ void ivy_engine::print_latency_csvfiles()
     m_s.distribution_over_workloads_of_avg_lock_acquisition.clear();
     m_s.distribution_over_workloads_of_avg_switchover.clear();
 
+    m_s.workload_input_print_ms_accumulator.clear();
+    m_s.workload_output_print_ms_accumulator.clear();
+
     for (auto& pear : host_subthread_pointers)
     {
         m_s.dispatching_latency_seconds_accumulator           += pear.second->dispatching_latency_seconds_accumulator;
@@ -1290,6 +1293,9 @@ void ivy_engine::print_latency_csvfiles()
         m_s.distribution_over_workloads_of_avg_dispatching_latency += pear.second->distribution_over_workloads_of_avg_dispatching_latency;
         m_s.distribution_over_workloads_of_avg_lock_acquisition    += pear.second->distribution_over_workloads_of_avg_lock_acquisition;
         m_s.distribution_over_workloads_of_avg_switchover          += pear.second->distribution_over_workloads_of_avg_switchover;
+
+        m_s.workload_input_print_ms_accumulator           += pear.second->workload_input_print_ms;
+        m_s.workload_output_print_ms_accumulator          += pear.second->workload_output_print_ms;
     }
 
     std::ostringstream h;
@@ -1313,6 +1319,9 @@ void ivy_engine::print_latency_csvfiles()
                                   "distribution over_workloads of avg dispatching latency",
                                   "distribution over_workloads of avg lock acquisition",
                                   "distribution over_workloads of avg switchover",
+
+                                  "ivydriver workload detail input print ms",
+                                  "ivydriver workload detail output print ms",
 
                                   "make measurement rollup seconds"                })
     {
@@ -1338,6 +1347,9 @@ void ivy_engine::print_latency_csvfiles()
                                   "distribution over_workloads of avg dispatching latency",
                                   "distribution over_workloads of avg lock acquisition",
                                   "distribution over_workloads of avg switchover",
+
+                                  "ivydriver workload detail input print ms",
+                                  "ivydriver workload detail output print ms",
 
                                   "make measurement rollup seconds"                })
     {
@@ -1371,7 +1383,7 @@ void ivy_engine::print_latency_csvfiles()
 
         latency_line << ',' << m_s.continueCooldownStopAckSeconds                        .avg();
         latency_line << ',' << m_s.overallGatherTimeSeconds                              .avg();
-        latency_line << ',' << m_s.cruiseSeconds                                 .avg();
+        latency_line << ',' << m_s.cruiseSeconds                                         .avg();
 
         latency_line << ',' << m_s.dispatching_latency_seconds_accumulator               .avg();
         latency_line << ',' << m_s.lock_aquisition_latency_seconds_accumulator           .avg();
@@ -1380,6 +1392,9 @@ void ivy_engine::print_latency_csvfiles()
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.avg();
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .avg();
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_switchover         .avg();
+
+        latency_line << ',' << m_s.workload_input_print_ms_accumulator              .avg();
+        latency_line << ',' << m_s.workload_output_print_ms_accumulator             .avg();
 
         latency_line << ',' << m_s.makeMeasurementRollup_seconds                         .avg();
 
@@ -1403,6 +1418,9 @@ void ivy_engine::print_latency_csvfiles()
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.avg() << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.min() << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.max() << ',' << m_s.distribution_over_workloads_of_avg_dispatching_latency.count();
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .avg() << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .min() << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .max() << ',' << m_s.distribution_over_workloads_of_avg_lock_acquisition   .count();
         latency_line << ',' << m_s.distribution_over_workloads_of_avg_switchover         .avg() << ',' << m_s.distribution_over_workloads_of_avg_switchover         .min() << ',' << m_s.distribution_over_workloads_of_avg_switchover         .max() << ',' << m_s.distribution_over_workloads_of_avg_switchover         .count();
+
+        latency_line << ',' << m_s.workload_input_print_ms_accumulator              .avg() << ',' << m_s.workload_input_print_ms_accumulator              .min() << ',' << m_s.workload_input_print_ms_accumulator              .max() << ',' << m_s.workload_input_print_ms_accumulator              .count();
+        latency_line << ',' << m_s.workload_output_print_ms_accumulator             .avg() << ',' << m_s.workload_output_print_ms_accumulator             .min() << ',' << m_s.workload_output_print_ms_accumulator             .max() << ',' << m_s.workload_output_print_ms_accumulator             .count();
 
         latency_line << ',' << m_s.makeMeasurementRollup_seconds                         .avg() << ',' << m_s.makeMeasurementRollup_seconds                         .min() << ',' << m_s.makeMeasurementRollup_seconds                         .max() << ',' << m_s.makeMeasurementRollup_seconds                         .count();
 
@@ -1445,6 +1463,9 @@ void ivy_engine::print_latency_csvfiles()
             latency_line << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .avg();
             latency_line << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .avg();
 
+            latency_line << ',' << pear.second->workload_input_print_ms   .avg();
+            latency_line << ',' << pear.second->workload_output_print_ms  .avg();
+
             latency_line << ",N/A";
 
             latency_line << ",details:";
@@ -1469,6 +1490,9 @@ void ivy_engine::print_latency_csvfiles()
             latency_line << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.avg() << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.min() << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.max() << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.count();
             latency_line << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .avg() << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .min() << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .max() << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .count();
             latency_line << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .avg() << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .min() << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .max() << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .count();
+
+            latency_line << ',' << pear.second->workload_input_print_ms   .avg() << ',' << pear.second->workload_input_print_ms .min() << ',' << pear.second->workload_input_print_ms .max() << ',' << pear.second->workload_input_print_ms .count();
+            latency_line << ',' << pear.second->workload_output_print_ms  .avg() << ',' << pear.second->workload_output_print_ms.min() << ',' << pear.second->workload_output_print_ms.max() << ',' << pear.second->workload_output_print_ms.count();
 
             latency_line << ",N/A,N/A,N/A,N/A";
 

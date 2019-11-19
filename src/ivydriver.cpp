@@ -744,9 +744,7 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
     ivytime subinterval_ending_time;
             subinterval_ending_time.setToNow();
 
-    ivytime half_subinterval = ivytime(0.5 * subinterval_duration.getlongdoubleseconds());
-
-    ivytime limit_time = subinterval_ending_time + half_subinterval;
+    ivytime limit_time = subinterval_ending_time + ivytime(0.75 * subinterval_duration.getlongdoubleseconds());
 
 	// harvest CPU counters and send CPU line.
 
@@ -801,14 +799,10 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
     RunningStat<double, long int> distribution_over_workloads_of_avg_lock_acquisition;
     RunningStat<double, long int> distribution_over_workloads_of_avg_switchover;
 
-    std::vector<std::string> detail_lines;
+    RunningStat<double, long int> subinterval_input_print_time_ms {};
+    RunningStat<double, long int> subinterval_output_print_time_ms {};
 
-
-/*debug*/RunningStat<double, long int> subinterval_input_print_time_seconds {};
-/*debug*/RunningStat<double, long int> subinterval_output_print_time_seconds {};
-/*debbug*/ivytime time_a {}, time_b {}; time_a.setToNow();
-/*debbug*/ivytime time_x {}, time_y {}, time_z {};
-
+    ivytime time_x {}, time_y {}, time_z {};
 
     size_t number_of_IOs_running_at_end_of_subinterval {0};
 
@@ -830,8 +824,8 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
         if ( n > thread_limit_time)
         {
             std::ostringstream o;
-            o << "Excessive latency over 1/2 of the way through the next subinterval for workload thread for physical core "
-                << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << " to post results from the previous subinterval.";
+            o << "Excessive latency over 3/4 of the way through the next subinterval when sending up workload detail lines for the previous subinterval."
+                << "  If there is a huge number of workloads, consider running a longer subinterval_seconds." << std::endl;
             throw std::runtime_error(o.str());
         }
 
@@ -845,11 +839,11 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
                 std::unique_lock<std::mutex> slavethread_lk(wlt.slaveThreadMutex);
 
                 if (!wlt.slaveThreadConditionVariable.wait_for(slavethread_lk, time_to_limit,
-                           [&wlt] { return wlt.ivydriver_main_posted_command == false; }))  // WorkloadThread turns this off when switching to a new subingerval
+                           [&wlt] { return wlt.ivydriver_main_posted_command == false; }))  // WorkloadThread turns this off when switching to a new subinterval
                 {
                     std::ostringstream o;
-                    o << "Excessive latency over 1/2 of the way through the next subinterval for workload thread for physical core "
-                        << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << " to post results from the previous subinterval";
+                    o << "Excessive latency over 3/4 of the way through the next subinterval when sending up workload detail lines for the previous subinterval."
+                        << "  If there is a huge number of workloads, consider running a longer subinterval_seconds." << std::endl;
                     throw std::runtime_error(o.str());
                 }
 
@@ -900,7 +894,7 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
                             {
                                 ostringstream o;
 
-/*debug*/time_x.setToNow();
+                                time_x.setToNow();
 
                                 if (!(workload.subinterval_array)[next_to_harvest_subinterval].output.toBuffer(subintervalOutput_buffer, sizeof(subintervalOutput_buffer)))
                                 {
@@ -908,16 +902,16 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
                                 }
                                 else
                                 {
-/*debug*/time_y.setToNow(); subinterval_output_print_time_seconds.push( (time_y-time_x).getlongdoubleseconds() );
+                                    time_y.setToNow(); subinterval_output_print_time_ms.push( 1000. * ((time_y-time_x).getlongdoubleseconds()) );
 
                                     o << '<' << workloadID << '>'
                                         << (workload.subinterval_array)[next_to_harvest_subinterval].input.toString()
                                         << subintervalOutput_buffer
                                         << std::endl;
-/*debug*/time_z.setToNow(); subinterval_input_print_time_seconds.push( (time_z-time_y).getlongdoubleseconds() );
+                                    time_z.setToNow(); subinterval_input_print_time_ms.push( 1000. * ((time_z-time_y).getlongdoubleseconds()) );
                                 }
 
-                                detail_lines.push_back(o.str());
+                                say(o.str());
                             }
 
                             // Copy subinterval object from running subinterval to inactive subinterval.
@@ -945,28 +939,6 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
     }
     // end of loop over workload threads
 
-/*debug*/{time_b.setToNow(); long double total_ms = 1000.*((time_b-time_a).getlongdoubleseconds()); unsigned long int c = subinterval_input_print_time_seconds.count();
-/*debug*/ std::ostringstream o; o << "Total time to print " << c << " detail lines " << total_ms << " ms, average per detail line " << (total_ms/c) << " ms.  "
-/*debug*/  << " average input print time " << (1000.*subinterval_input_print_time_seconds.avg()) << " ms, max " << (1000.*subinterval_input_print_time_seconds.max()) << " ms"
-/*debug*/  << ", average output print time " << (1000.*subinterval_output_print_time_seconds.avg()) << " ms, max " << (1000.*subinterval_output_print_time_seconds.max()) << " ms." << std::endl;
-/*debug*/ log(slavelogfile,o.str()); }
-
-    for (const std::string& s : detail_lines)
-    {
-        ivytime n;
-
-        n.setToNow();
-
-        if ( n > limit_time)
-        {
-            throw std::runtime_error("Excessive latency over 1/2 of the way through the next subinterval sending up the workload detail lines.  Check network congestion.  May need longer \"subinterval_seconds\".");
-        }
-
-        say(s);
-    }
-
-    detail_lines.clear();
-
 	say(std::string("<end>"));  // end of workload detail lines
 
     {
@@ -984,6 +956,8 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
             << distribution_over_workloads_of_avg_dispatching_latency.toString()
             << distribution_over_workloads_of_avg_lock_acquisition.toString()
             << distribution_over_workloads_of_avg_switchover.toString()
+            << subinterval_input_print_time_ms.toString()
+            << subinterval_output_print_time_ms.toString()
             ;
 
         say(o.str());
