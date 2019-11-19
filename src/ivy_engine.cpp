@@ -212,16 +212,6 @@ void ivy_engine::write_clear_script()
     // This writes a script to invoke the "clear_hung_ivy_threads" executable on this ivy master host,
     // as well as once for each distinct IP address for ivydriver hosts.
 
-//    std::string my_IP;
-//
-//    std::map<std::string,std::string> other_ivydriver_hosts; // <IP address, ivyscript hostname>
-//
-//    const unsigned int max_hostnamesize = 100;
-//    char my_hostname[max_hostnamesize];
-//    my_hostname[max_hostnamesize-1] = 0;
-//
-//    const std::string method = "ivy_engine::write_clear_script() - ";
-
     const std::string scriptname = "clear_hung_ivy_threads.sh";
     const std::string executable = "clear_hung_ivy_threads";
 
@@ -238,117 +228,6 @@ void ivy_engine::write_clear_script()
         return;
     }
 
-//    oaf << "#!/bin/bash" << std::endl;
-//
-//    int rc = gethostname(my_hostname,sizeof(my_hostname)-1);
-//    if (0 != rc)
-//    {
-//        std::ostringstream o;
-//        o << method << "Unable to get my own hostname - gethostname() return code = " << rc << " - " << std::endl;
-//        o << "Failed trying to build " << scriptname << std::endl;
-//        std::cout << o.str();
-//        log(masterlogfile, o.str());
-//        oaf.close();
-//        std::remove(scriptname.c_str());
-//        return;
-//    }
-//
-//    hostent* p_hostent = gethostbyname(my_hostname);
-//    if (p_hostent == NULL)
-//    {
-//        std::ostringstream o;
-//        o << method << "Unable to get my own IP address - gethostbyname(\"" << my_hostname << "\" failed." << std::endl;
-//        o << "Failed trying to build " << scriptname << std::endl;
-//        std::cout << o.str();
-//        log(masterlogfile, o.str());
-//        oaf.close();
-//        std::remove(scriptname.c_str());
-//        return;
-//    }
-//
-//    oaf << std::endl << "# my canonical name is " << p_hostent->h_name << std::endl;
-//
-//    if (p_hostent->h_addrtype != AF_INET)
-//    {
-//        std::ostringstream o;
-//        o << method << "My own address is not AF_INET, not an internet IP address." << std::endl;
-//        o << "Failed trying to build " << scriptname << std::endl;
-//        std::cout << o.str();
-//        log(masterlogfile, o.str());
-//        oaf.close();
-//        std::remove(scriptname.c_str());
-//        return;
-//    }
-//
-//    in_addr * p_in_addr = (in_addr * )p_hostent->h_addr;
-//    {
-//        std::ostringstream o;
-//        o << inet_ntoa( *p_in_addr);
-//        my_IP = o.str();
-//    }
-//
-//    oaf << "# my IP address is " << my_IP << std::endl;
-//
-//    oaf << std::endl
-//        << "echo" << std::endl
-//        << "echo -----------------------------" << std::endl
-//        << "echo" << std::endl
-//        << "echo "
-//            << executable << std::endl
-//        << "echo" << std::endl
-//            << executable << std::endl;
-//
-//    for (auto& slavehost : hosts)
-//    {
-//        p_hostent = gethostbyname(slavehost.c_str());
-//        if (p_hostent == NULL)
-//        {
-//            std::ostringstream o;
-//            o << method << "Unable to get IP address for ivydriver host (\"" << slavehost << "\"." << std::endl;
-//            o << "Failed trying to build " << scriptname << std::endl;
-//            std::cout << o.str();
-//            log(masterlogfile, o.str());
-//            oaf.close();
-//            std::remove(scriptname.c_str());
-//            return;
-//        }
-//
-//        if (p_hostent->h_addrtype != AF_INET)
-//        {
-//            std::ostringstream o;
-//            o << method << "For ivydriver host \"" << slavehost << "\", address is not AF_INET, not an internet IP address." << std::endl;
-//            o << "Failed trying to build " << scriptname << std::endl;
-//            std::cout << o.str();
-//            log(masterlogfile, o.str());
-//            oaf.close();
-//            std::remove(scriptname.c_str());
-//            return;
-//        }
-//
-//        in_addr * p_in_addr = (in_addr * )p_hostent->h_addr;
-//        {
-//            std::ostringstream o;
-//            o << inet_ntoa( *p_in_addr);
-//            std::string ivydriver_IP = o.str();
-//            auto it = other_ivydriver_hosts.find(ivydriver_IP);
-//            if ( (0 != my_IP.compare(ivydriver_IP)) && (it == other_ivydriver_hosts.end()) )
-//            {
-//                other_ivydriver_hosts[ivydriver_IP] = slavehost;
-//                oaf << std::endl
-//                    << "echo" << std::endl
-//                    << "echo -----------------------------" << std::endl
-//                    << "echo" << std::endl
-//                    << "echo "
-//                        << "ssh " << slavehost  << " " << executable << std::endl
-//                    << "echo" << std::endl
-//                        << "ssh " << slavehost  << " " << executable << std::endl;
-//            }
-//            else
-//            {
-//                oaf << "# duplicate ivydriver host " << slavehost << " ( " << ivydriver_IP << " )" << std::endl;
-//            }
-//        }
-//    }
 
     for (const std::string& h : unique_ivyscript_hosts)
     {

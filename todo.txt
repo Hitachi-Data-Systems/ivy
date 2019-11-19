@@ -84,4 +84,7 @@ New iogenerator / DynamicFeedbackController that runs some random offset pattern
 - Show IOPS by host HBA or PCI bus.
 - For SSDs, come up with some way to characterise how their responsiveness varies according to recent history.
 
+Write a tool that detects if there are other non-ivy application or system processes running that are consuming resources and thus impacting ivy's ability to be responsive.
+
+
 
