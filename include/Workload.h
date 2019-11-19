@@ -93,7 +93,7 @@ public:
 	unsigned int precomputedepth;  // will be set to be equal to the maxTags spec when we get "Go!"
 	int rc;
 	unsigned int workload_queue_depth{0};
-	unsigned int workload_max_queue_depth{0};
+	unsigned int workload_max_queue_depth{0}; // max actually achieved, not the maxTags value
 	int events_needed;
 	int reaped;
 

@@ -177,6 +177,8 @@ ivy_engine::get(const std::string& thingee)
 ivy_engine::set(const std::string& thingee,
     const std::string& value)
 {
+    std::cout << std::endl << "ivy_engine_set(\"" << thingee << "\", \"" << value << "\");" << std::endl << std::endl;
+
     std::string t {};
 
     try

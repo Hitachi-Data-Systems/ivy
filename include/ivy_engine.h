@@ -60,6 +60,8 @@ std::string accumulator_types();
 void ivymaster_signal_handler(int sig, siginfo_t *p_siginfo, void *context);
 extern struct sigaction ivymaster_sigaction;
 
+extern bool measure_submit_time;
+
 struct measurement
 {
     int first_subinterval {-1};
@@ -522,8 +524,6 @@ public:
     std::string copy_back_ivy_logs_sh_filename {};
 
     double max_active_core_busy { 0.97 };
-
-    bool measure_submit_time {false};
 
 // methods
 

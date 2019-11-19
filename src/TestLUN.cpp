@@ -610,7 +610,7 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
 
     ivytime running_timestamp;
 
-    if (ivydriver.measure_submit_time) {
+    if (measure_submit_time) {
     	running_timestamp.setToNow();
     } else {
     	running_timestamp = ivytime_zero;
@@ -700,6 +700,39 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
 
         launch_count--;
         number_to_put_back--;
+    }
+
+    // recalculate furthest behind IOPS=max with positive skew workload.
+    // This way at the bottom of the loop, we can use Workload::hold_back_this_time().
+
+    first_pass = true;
+
+    for (auto& pear : workloads)
+    {
+        {
+            Workload& w = pear.second;
+
+            if (w.is_IOPS_max_with_positive_skew()) // Here we are finding the furthest behind of the IOPS=max workloads with positive skew.
+            {
+                ivy_float x =
+                w.workload_weighted_IOPS_max_skew_progress =
+                    ( (ivy_float) w.workload_cumulative_launch_count ) / w.p_current_IosequencerInput->skew_weight;
+
+                if (first_pass)
+                {
+                    first_pass = false;
+
+                    testLUN_furthest_behind_weighted_IOPS_max_skew_progress = x;
+                }
+                else
+                {
+                    if (x < testLUN_furthest_behind_weighted_IOPS_max_skew_progress)
+                    {
+                        testLUN_furthest_behind_weighted_IOPS_max_skew_progress = x;
+                    }
+                }
+            }
+        }
     }
 
     return launch_count;

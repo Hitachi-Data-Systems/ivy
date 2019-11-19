@@ -55,5 +55,7 @@ public:
 	static std::string getCategories();
 
 	static int get_bucket_index(ivy_float io_time);
+
+	inline static size_t total_bucket_count() {return 4 * io_time_buckets;}
 };
 

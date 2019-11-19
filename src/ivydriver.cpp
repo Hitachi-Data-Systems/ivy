@@ -47,6 +47,7 @@ IvyDriver ivydriver;
 
 bool routine_logging {false};
 bool subthread_per_hyperthread {true};  // sorry, this is backwards compared to the ivy main host's one_thread_per_core
+bool measure_submit_time {false};
 
 std::string printable_ascii;
 
@@ -802,6 +803,13 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
 
     std::vector<std::string> detail_lines;
 
+
+/*debug*/RunningStat<double, long int> subinterval_input_print_time_seconds {};
+/*debug*/RunningStat<double, long int> subinterval_output_print_time_seconds {};
+/*debbug*/ivytime time_a {}, time_b {}; time_a.setToNow();
+/*debbug*/ivytime time_x {}, time_y {}, time_z {};
+
+
     size_t number_of_IOs_running_at_end_of_subinterval {0};
 
     for (auto& pear : workload_threads)
@@ -892,16 +900,21 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
                             {
                                 ostringstream o;
 
+/*debug*/time_x.setToNow();
+
                                 if (!(workload.subinterval_array)[next_to_harvest_subinterval].output.toBuffer(subintervalOutput_buffer, sizeof(subintervalOutput_buffer)))
                                 {
                                     o << "<Error> Internal programming error - output buffer too small to contain serialized SubintervalOutput object." << std::endl;
                                 }
                                 else
                                 {
+/*debug*/time_y.setToNow(); subinterval_output_print_time_seconds.push( (time_y-time_x).getlongdoubleseconds() );
+
                                     o << '<' << workloadID << '>'
                                         << (workload.subinterval_array)[next_to_harvest_subinterval].input.toString()
                                         << subintervalOutput_buffer
                                         << std::endl;
+/*debug*/time_z.setToNow(); subinterval_input_print_time_seconds.push( (time_z-time_y).getlongdoubleseconds() );
                                 }
 
                                 detail_lines.push_back(o.str());
@@ -931,6 +944,12 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
         // end nested block for fresh WorkloadThread reference
     }
     // end of loop over workload threads
+
+/*debug*/{time_b.setToNow(); long double total_ms = 1000.*((time_b-time_a).getlongdoubleseconds()); unsigned long int c = subinterval_input_print_time_seconds.count();
+/*debug*/ std::ostringstream o; o << "Total time to print " << c << " detail lines " << total_ms << " ms, average per detail line " << (total_ms/c) << " ms.  "
+/*debug*/  << " average input print time " << (1000.*subinterval_input_print_time_seconds.avg()) << " ms, max " << (1000.*subinterval_input_print_time_seconds.max()) << " ms"
+/*debug*/  << ", average output print time " << (1000.*subinterval_output_print_time_seconds.avg()) << " ms, max " << (1000.*subinterval_output_print_time_seconds.max()) << " ms." << std::endl;
+/*debug*/ log(slavelogfile,o.str()); }
 
     for (const std::string& s : detail_lines)
     {

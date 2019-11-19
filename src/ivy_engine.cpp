@@ -24,6 +24,8 @@ using namespace std;
 
 extern bool routine_logging;
 
+bool measure_submit_time {false};
+
 ivy_engine m_s;
 
 std::string outputFolderRoot() {return m_s.outputFolderRoot;}
@@ -1443,6 +1445,8 @@ void ivy_engine::print_latency_csvfiles()
             latency_line << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .avg();
             latency_line << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .avg();
 
+            latency_line << ",N/A";
+
             latency_line << ",details:";
 
 
@@ -1465,6 +1469,9 @@ void ivy_engine::print_latency_csvfiles()
             latency_line << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.avg() << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.min() << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.max() << ',' << pear.second->distribution_over_workloads_of_avg_dispatching_latency.count();
             latency_line << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .avg() << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .min() << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .max() << ',' << pear.second->distribution_over_workloads_of_avg_lock_acquisition   .count();
             latency_line << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .avg() << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .min() << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .max() << ',' << pear.second->distribution_over_workloads_of_avg_switchover         .count();
+
+            latency_line << ",N/A,N/A,N/A,N/A";
+
             latency_line << std::endl;
 
             fileappend(by_host_filename,latency_line.str());

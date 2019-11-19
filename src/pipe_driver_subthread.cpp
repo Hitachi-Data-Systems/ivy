@@ -861,7 +861,7 @@ void pipe_driver_subthread::threadRun()
         	if (one_thread_per_core) {
         		args[i++] = (char *) "-one_thread_per_core";
         	}
-        	if (m_s.measure_submit_time) {
+        	if (measure_submit_time) {
         		args[i++] = (char *) "-measure_submit_time";
         	}
         	args[i++] = (char *) arg.c_str();

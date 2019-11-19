@@ -18,6 +18,8 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include <cstring>
+
 #include "SubintervalOutput.h"
 #include "SubintervalRollup.h"
 
@@ -65,7 +67,30 @@ bool SubintervalOutput::toBuffer(char* buffer, size_t buffer_size) // same as to
 
     *p++ = '<'; bytes_left--; if (bytes_left == 0) return false;
 
-    for (unsigned int i = 0; i < RunningStatCount(); i++)
+    unsigned int number_of_rs_to_format, number_of_rs_to_zero_out;
+
+    extern bool measure_submit_time;
+
+    if (measure_submit_time)
+    {
+        number_of_rs_to_format   = 5 * Accumulators_by_io_type::total_bucket_count();
+        number_of_rs_to_zero_out = 0;
+        //    Accumulators_by_io_type
+        //        bytes_transferred,
+        //        response_time,		// Time from the scheduled time to the end of the I/O.
+        //        service_time,		// Time from just before AIO submit to start the I/O until it ends.
+
+        // not:
+        //        submit_time,		// Time from just before submitting I/O to just after submitting I/O.  This includes "waiting for an underlying tag".
+        //        running_time;		// Time from just after AIO submit to when the I/O ends
+    }
+    else
+    {
+        number_of_rs_to_format   = 3 * Accumulators_by_io_type::total_bucket_count();
+        number_of_rs_to_zero_out = 2 * Accumulators_by_io_type::total_bucket_count();
+    }
+
+    for (unsigned int i = 0; i < number_of_rs_to_format; i++)
     {
         RunningStat_double_long_int* p_rs = (RunningStat_double_long_int*) &((u.accumulator_array)[i]);
 
@@ -75,6 +100,16 @@ bool SubintervalOutput::toBuffer(char* buffer, size_t buffer_size) // same as to
 
         bytes_left -= (size_t) rc;
         p          +=          rc;
+    }
+
+    static const std::string rc_zero { "<0;0.;0.;0.;0.>" };
+
+    if (bytes_left < (number_of_rs_to_zero_out * rc_zero.size())) return false;
+
+    for (unsigned int i = 0; i < number_of_rs_to_zero_out; i++)
+    {
+        std::memcpy((void*) p, (void*) rc_zero.c_str(), rc_zero.size());
+        p += rc_zero.size();
     }
 
     *p++ = '>'; bytes_left--; if (bytes_left == 0) return false;
@@ -325,7 +360,7 @@ std::string SubintervalOutput::csvValues
 				o << ',' << (service_time.standardDeviation() * 1000.0);
 
 				{
-					// SPM: Would like to use (ivydriver.measure_submit_time) or (m_s.measure_submit_time) for these conditionals
+					// SPM: Would like to use (measure_submit_time) or (measure_submit_time) for these conditionals
 					//		instead of (submit_time_max != 0.0), but the first is only defined for ivydriver and the second is only
 					//		defined for ivymaster compilation units... This is obviously cheating.
 

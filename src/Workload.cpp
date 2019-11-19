@@ -301,11 +301,12 @@ unsigned int /* number of I/Os popped and processed.  */
 		response_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->scheduled_time.getlongdoubleseconds();
 	}
 
+#ifdef DEBUG_EYEOS
 	if ( p_dun->start_time.isZero()
 	  || p_dun->end_time.isZero()
 	  || p_dun->scheduled_time > p_dun->start_time
 	  || p_dun->start_time     > p_dun->end_time
-	  || (ivydriver.measure_submit_time &&
+	  || (measure_submit_time &&
 			   ( p_dun->running_time.isZero()
 			  || p_dun->start_time   > p_dun->running_time
 			  || p_dun->running_time > p_dun->end_time
@@ -320,7 +321,7 @@ unsigned int /* number of I/Os popped and processed.  */
             << "start time         = " << p_dun->start_time.format_as_duration_HMMSSns() << std::endl
             << "running time       = " << p_dun->running_time.format_as_duration_HMMSSns() << std::endl
             << "end time           = " << p_dun->end_time.format_as_duration_HMMSSns() << std::endl
-            << ", measure_submit_time = " << ((ivydriver.measure_submit_time) ? "true" : "false") << std::endl
+            << ", measure_submit_time = " << ((measure_submit_time) ? "true" : "false") << std::endl
             << ", have_response_time = ";
         if (have_response_time)
         {
@@ -333,9 +334,10 @@ unsigned int /* number of I/Os popped and processed.  */
         o << std::endl;
         throw std::runtime_error(o.str());
     }
+#endif
 
 	service_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->start_time.getlongdoubleseconds();
-	if (ivydriver.measure_submit_time) {
+	if (measure_submit_time) {
 		submit_time_seconds = p_dun->running_time.getlongdoubleseconds() - p_dun->start_time.getlongdoubleseconds();
 		running_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->running_time.getlongdoubleseconds();
 	} else {
@@ -373,7 +375,7 @@ unsigned int /* number of I/Os popped and processed.  */
 		p_current_SubintervalOutput->u.a.service_time     .rs_array[rs][rw][bucket].push(service_time_seconds);
 		p_current_SubintervalOutput->u.a.bytes_transferred.rs_array[rs][rw][bucket].push(p_current_IosequencerInput->blocksize_bytes);
 
-		if (ivydriver.measure_submit_time) {
+		if (measure_submit_time) {
 			bucket = Accumulators_by_io_type::get_bucket_index( submit_time_seconds );
 			p_current_SubintervalOutput->u.a.submit_time.rs_array[rs][rw][bucket].push(submit_time_seconds);
 			bucket = Accumulators_by_io_type::get_bucket_index( running_time_seconds );

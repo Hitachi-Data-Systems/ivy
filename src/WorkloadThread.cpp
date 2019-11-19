@@ -586,6 +586,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             // to the time that the WorkloadThread code starts running.
 
             ivytime before_getting_lock, dispatch_time;
+            before_getting_lock.setToNow();
 
             if ( pTestLUNs.size() == 0)
             {
@@ -594,8 +595,6 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             else
             {
                 switchover_begin = ivydriver.ivydriver_view_subinterval_end;
-
-                before_getting_lock.setToNow();
 
                 dispatch_time = before_getting_lock - ivydriver.ivydriver_view_subinterval_end;
 
@@ -892,26 +891,26 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
                     {
                         Workload& w = pear.second;
 
-                        if (w.running_IOs.size() < w.p_current_IosequencerInput->maxTags)
+                        if (w.workload_queue_depth >= w.p_current_IosequencerInput->maxTags) continue;
+
+                        if (w.is_IOPS_max_with_positive_skew() && w.hold_back_this_time()) continue;
+
+                        if (w.precomputeQ.size() == 0) continue;
+
+                        Eyeo* pEyeo = w.precomputeQ.front();
+
+                        if (pEyeo->scheduled_time > now)  // with IOPS=max, scheduled_time is zero.
                         {
-                            if (w.precomputeQ.size() > 0)
+                            // The Eyeo has an empty AIO context slot and is just waiting for the scheduled launch time.
+
+                            if (epoll_wait_until_time > pEyeo->scheduled_time)
                             {
-                                Eyeo* pEyeo = w.precomputeQ.front();
-
-                                if (pEyeo->scheduled_time > now)  // with IOPS=max, scheduled_time is zero.
-                                {
-                                    // The Eyeo has an empty AIO context slot and is just waiting for the scheduled launch time.
-
-                                    if (epoll_wait_until_time > pEyeo->scheduled_time)
-                                    {
-                                        epoll_wait_until_time = pEyeo->scheduled_time;
-                                    }
-                                }
-                                else // we have an open AIO slot and an I/O ready to launch, don't wait in reap_IOs().
-                                {
-                                    epoll_wait_until_time.setToZero();
-                                }
+                                epoll_wait_until_time = pEyeo->scheduled_time;
                             }
+                        }
+                        else // we have an open AIO slot and an I/O ready to launch, don't wait in reap_IOs().
+                        {
+                            epoll_wait_until_time.setToZero();
                         }
                     }
                 }
@@ -1118,7 +1117,8 @@ unsigned int /* # of I/Os */ WorkloadThread::reap_IOs(const ivytime& now)
         }
         else
         {
-            epoll_event_count = epoll_wait(epoll_fd, p_epoll_events, max_epoll_event_retrieval_count, -1); // -1 means wait indefinitely, but instead the timerfd will pop ending the wait
+            epoll_event_count = epoll_wait(epoll_fd, p_epoll_events, max_epoll_event_retrieval_count, 125); // 125 ms is an insurance policy in case the timerfd didn't work - this was put in as a precaution after an incident
+            //*debug*/epoll_event_count = epoll_wait(epoll_fd, p_epoll_events, max_epoll_event_retrieval_count, -1); //  -1 wait means waitforever.
         }
 
         if (epoll_event_count != -1 || errno != EINTR) break;
