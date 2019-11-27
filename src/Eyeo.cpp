@@ -219,7 +219,7 @@ ivy_float Eyeo::running_time_seconds()
 // and probabilistically determines a corrected compression ratio. The method returns either
 // a corrected compression ratio (usually higher than the desired one) or zero (0.0) if the
 // given block should not be compressed (probabilistically).
-ivy_float Eyeo::lookup_probabilistic_compressibility(ivy_float desired_compressibility)
+ivy_float Eyeo::lookup_probabilistic_compressibility(ivy_float desired_compressibility, uint64_t address)
 {
     ivy_float requested_compressibility = 0.0;
     ivy_float measured_compressibility = 0.0;
@@ -299,8 +299,10 @@ ivy_float Eyeo::lookup_probabilistic_compressibility(ivy_float desired_compressi
 
     if (probability == 1.0)
         return requested_compressibility;
-    else
-        return (distribution(generator) < probability) ? requested_compressibility : 0.0;
+    else {
+		generator.seed(address); // Always make the same decision, based on LBA: probabilistic, but static.
+		return (distribution(generator) < probability) ? requested_compressibility : 0.0;
+	}
 }
 
 void Eyeo::generate_pattern()
@@ -322,7 +324,7 @@ void Eyeo::generate_pattern()
 
     const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
-    ivy_float probabilistic_compressibility = lookup_probabilistic_compressibility(pWorkload->compressibility);
+    ivy_float probabilistic_compressibility = lookup_probabilistic_compressibility(pWorkload->compressibility, (uint64_t) eyeocb.aio_buf);
 
     pWorkload->write_io_count++;
 

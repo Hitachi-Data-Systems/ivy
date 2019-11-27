@@ -92,7 +92,7 @@ public:
 	ivy_float submit_time_seconds();
 	ivy_float running_time_seconds();
 
-	ivy_float lookup_probabilistic_compressibility(ivy_float compressibility);
+	ivy_float lookup_probabilistic_compressibility(ivy_float compressibility, uint64_t address);
 
 	std::string buffer_first_last_16_hex();
 
