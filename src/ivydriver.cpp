@@ -34,6 +34,8 @@
 #include <gnu/libc-version.h>
 #endif
 
+#include <signal.h>
+
 #include "ivydriver.h"
 #include "pipe_line_reader.h"
 
