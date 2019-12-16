@@ -716,15 +716,14 @@ uint64_t Eyeo::fixed_pattern_sub_block_starting_seed(uint64_t offset_within_this
 
 uint64_t Eyeo::duplicate_set_filtered_sub_block_number(uint64_t unfiltered_sub_block_number)
 {
-    const long double& dedupe_ratio = pWorkload->p_current_IosequencerInput->dedupe;
+    const ivy_float& dedupe_ratio = pWorkload->p_current_IosequencerInput->dedupe;
     const long long int& LUN_size_bytes = pWorkload->pTestLUN->LUN_size_bytes;
     const unsigned int& duplicate_set_size = pWorkload->p_current_IosequencerInput->duplicate_set_size;
     const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
-    long double correction_factor = ((((long double) LUN_size_bytes / dedupe_unit_bytes) / dedupe_ratio) + (long double) duplicate_set_size) /
-    									(((long double) LUN_size_bytes / dedupe_unit_bytes) / dedupe_ratio);
-
-    long double dedupe_percent = (long double) 1.0 - ((long double) 1.0 / (dedupe_ratio * correction_factor));
+    const long double correction_factor = ((((long double) LUN_size_bytes / dedupe_unit_bytes) / dedupe_ratio) + (long double) duplicate_set_size) /
+    										(((long double) LUN_size_bytes / dedupe_unit_bytes) / dedupe_ratio);
+    const long double dedupe_percent = (long double) 1.0 - ((long double) 1.0 / (dedupe_ratio * correction_factor));
 
     uint64_t n           = (uint64_t) (((long double)(unfiltered_sub_block_number  ))*(1.0-dedupe_percent));
     uint64_t n_minus_one = (uint64_t) (((long double)(unfiltered_sub_block_number-1))*(1.0-dedupe_percent));
@@ -759,7 +758,7 @@ uint64_t Eyeo::duplicate_set_sub_block_starting_seed(uint64_t offset_within_this
 
     if (duplicate_set_sub_block_number == 0)
     {
-        const uint64_t& duplicate_set_size = pWorkload->p_current_IosequencerInput->duplicate_set_size;
+        const unsigned int& duplicate_set_size = pWorkload->p_current_IosequencerInput->duplicate_set_size;
         const uint64_t init_seed = 0x0123456789abcdefULL;
 
         assert(duplicate_set_size > 0);
@@ -786,7 +785,7 @@ uint64_t Eyeo::duplicate_set_sub_block_starting_seed(uint64_t offset_within_this
 
         const long double& dedupe_percent = (long double) 1.0 - ((long double) 1.0 / pWorkload->p_current_IosequencerInput->dedupe);
 
-        uint64_t relative_block_number = (uint64_t) (((long double) zero_sub_block_number) * (1.0 - dedupe_percent));
+        uint64_t relative_block_number = (uint64_t) (((long double) zero_sub_block_number) * ((long double) 1.0 - dedupe_percent));
 
         block_seed = pduplicate_set[relative_block_number % duplicate_set_size];
     }

@@ -101,7 +101,7 @@ std::pair<bool,std::string>	IosequencerInputRollup::add(std::string parameterNam
 
 	if (0==parameterNameEqualsTextValueCommaSeparatedList.length())
 	{
-		return std::make_pair(false,"IogeneratoInputRollup::add() called with null list of parameter name = value");
+		return std::make_pair(false,"IosequencerInputRollup::add() called with null list of parameter name = value");
 	}
 
 	unsigned int i=0, start, len;
