@@ -269,6 +269,17 @@ bool RunningStat<FloatType, IntType>::fromIstream(std::istream& i)
 {
 	char c;
 	i >> c; if (i.fail() || c != '<') 	{clear();return false;}
+
+//	i >> c; if (!i.fail() || c == '>') 	// "<>" signifies empty
+//	{
+//        clear();
+//        return true;
+//    }
+//	else
+//	{
+//        i.putback(c);
+//	}
+
 	i >> n; if (i.fail()) 			{clear();return false;}
 	i >> c; if (i.fail() || c != ';') 	{clear();return false;}
 	i >> M1; if (i.fail()) 			{clear();return false;}

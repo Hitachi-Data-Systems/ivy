@@ -366,6 +366,9 @@
 			<Add library="/opt/rh/devtoolset-7/root/lib/gcc/x86_64-redhat-linux/7/libstdc++.a" />
 			<Add directory="/opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7" />
 		</Linker>
+		<Unit filename="../../../usr/include/liburing.h">
+			<Option target="ivydriver" />
+		</Unit>
 		<Unit filename="../LUN_discovery/include/printableAndHex.h">
 			<Option target="ivymaster" />
 			<Option target="ivydriver" />

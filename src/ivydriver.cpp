@@ -49,7 +49,7 @@ IvyDriver ivydriver;
 
 bool routine_logging {false};
 bool subthread_per_hyperthread {true};  // sorry, this is backwards compared to the ivy main host's one_thread_per_core
-bool measure_submit_time {false};
+//bool measure_submit_time {false};
 
 std::string printable_ascii;
 
@@ -191,7 +191,6 @@ int IvyDriver::main(int argc, char* argv[])
         if (item == "-error_on_critical_temp") { warn_on_critical_temp     = false; continue;}
         if (item == "-log")                    { routine_logging           = true;  continue;}
         if (item == "-one_thread_per_core")    { subthread_per_hyperthread = false; continue;}
-        if (item == "-measure_submit_time")    { measure_submit_time       = true;  continue;}
 
         if (arg_index != (argc-1))
         {
@@ -674,21 +673,6 @@ int IvyDriver::main(int argc, char* argv[])
 
 void IvyDriver::set_command(const std::string& attribute, const std::string& value)
 {
-    if (attribute == "measure_submit_time"s)
-    {
-        try
-        {
-            measure_submit_time = parse_boolean(value);
-            say("<OK>");
-        }
-        catch (std::exception& e)
-        {
-            std::ostringstream o;
-            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for measure_submit_time.  Only yes/no, on/off, or true/false are accepted." << std::endl;
-            say(o.str());
-        }
-        return;
-    }
 
     if (attribute == "log"s)
     {
@@ -705,6 +689,119 @@ void IvyDriver::set_command(const std::string& attribute, const std::string& val
         }
         return;
     }
+
+    if (attribute == "track_long_running_IOs"s)
+    {
+        try
+        {
+            track_long_running_IOs = parse_boolean(value);
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for track_long_running_IOs.  Only yes/no, on/off, or true/false are accepted." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "spinloop"s)
+    {
+        try
+        {
+            spinloop = parse_boolean(value);
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for \"" << attribute << "\".  Only yes/no, on/off, or true/false are accepted." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "fruitless_passes_before_wait"s)
+    {
+        try
+        {
+            fruitless_passes_before_wait = unsigned_long(value);
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for fruitless_passes_before_wait.  Must be a positive value expressed as one or more digits 0-9 like \"56\" or \"2\"." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "sqes_per_submit_limit"s)
+    {
+        try
+        {
+            sqes_per_submit_limit = unsigned_int(value);
+            if (sqes_per_submit_limit == 0) throw std::invalid_argument("sqes_per_submit_limit must be set to a positive value.");
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for " << attribute << ".  Must be a positive value expressed as one or more digits 0-9 like \"56\" or \"2\"." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "generate_at_a_time"s)
+    {
+        try
+        {
+            generate_at_a_time = unsigned_int(value);
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for generate_at_a_time.  Must be a positive value expressed as one or more digits 0-9 like \"56\" or \"2\"." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "max_wait_seconds"s)
+    {
+        ivy_float float_value;
+
+        try
+        {
+            float_value = number_optional_trailing_percent(value);
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value. Must be a positive value with optional trailing %, like \"6\" or \"45.2%\"." << std::endl;
+            say(o.str());
+            return;
+        }
+
+        if (float_value <= 0.0)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value. Must be a positive value with optional trailing %, like \"6\" or \"45.2%\"." << std::endl;
+            say(o.str());
+        }
+        else
+        {
+            max_wait = ivytime(float_value);
+            say("<OK>");
+        }
+
+        return;
+    }
+
 
     {
         std::ostringstream o;
@@ -851,7 +948,7 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
 
                 // now we keep the lock while we are processing this subthread
 
-                number_of_IOs_running_at_end_of_subinterval += wlt.number_of_IOs_running_at_end_of_subinterval;
+                number_of_IOs_running_at_end_of_subinterval += wlt.number_of_IOs_running_at_end_of_subinterval;  // zero unless track_long_running_IOs
 
                 dispatching_latency_seconds_accumulator           += pear.second->dispatching_latency_seconds;
                 lock_aquisition_latency_seconds_accumulator       += pear.second->lock_aquisition_latency_seconds;
@@ -1072,7 +1169,7 @@ void IvyDriver::distribute_TestLUNs_over_cores()
             pWorkloadThread->pTestLUN_reap_IOs_bookmark =
             pWorkloadThread->pTestLUN_pop_bookmark =
             pWorkloadThread->pTestLUN_generate_bookmark =
-            pWorkloadThread->pTestLUN_start_IOs_bookmark =
+            pWorkloadThread->pTestLUN_populate_sqes_bookmark =
                 pWorkloadThread->pTestLUNs.end();
         }
         else
@@ -1080,7 +1177,7 @@ void IvyDriver::distribute_TestLUNs_over_cores()
             pWorkloadThread->pTestLUN_reap_IOs_bookmark =
             pWorkloadThread->pTestLUN_pop_bookmark =
             pWorkloadThread->pTestLUN_generate_bookmark =
-            pWorkloadThread->pTestLUN_start_IOs_bookmark =
+            pWorkloadThread->pTestLUN_populate_sqes_bookmark =
                 pWorkloadThread->pTestLUNs.begin();
         }
     }
@@ -1782,7 +1879,7 @@ void IvyDriver::log_TestLUN_ownership()
 
     unsigned int testLUN_count{0}, workload_count {0};
 
-    o << "There are " << workload_threads.size() << " workload threads." << std::endl;
+    o << "There are " << workload_threads.size() << " workload threads with TestLUNs assigned." << std::endl;
 
     for (auto& pear : workload_threads)
     {

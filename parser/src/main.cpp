@@ -86,6 +86,7 @@ void usage_message(char* argv_0)
         << "     the cooldwon_by_wp and cooldown_by_MP_busy featueres." << std::endl << std::endl
         << "-spinloop" << std::endl
         << "     Used to make test host code continually check for work to do without ever waiting." << std::endl << std::endl
+        << "     - Deprecated. Superceded by ivy_engine_set(\"spinloop\", \"on\")." << std::endl
         << "-one_thread_per_core" << std::endl
         << "     Use -one_thread_per_core to have ivydriver start a workload subthread on only the first" << std::endl
         << "     hyperthread on each physical CPU core, instead of the default which is start a workload subthread"
@@ -254,11 +255,23 @@ int main(int argc, char* argv[])
         ||  stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-e"))             ) { routine_logging = trace_evaluate = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_cmd")))         { m_s.use_command_device = false; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-skip_LDEV")))      { m_s.skip_ldev_data_default = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-spinloop")))       { spinloop = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-one_thread_per_core"))) { one_thread_per_core = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_perf"))
          || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-suppress_perf")))  { m_s.suppress_subsystem_perf_default = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_check_failed_component")))  { m_s.check_failed_component_default = false; continue; }
+
+
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-spinloop")))
+        {
+            spinloop = true;
+
+            std::cout << std::endl << "===> Note: the -spinloop command line option still works, but please use ivy_engine_set(\"spinloop\", \"on\") instead." << std::endl << std::endl;
+
+            continue;
+        }
+
+
+
 
         if (item.size() > 0 && item[0] == '-') { std::cout << "Invalid option \"" << item << "\"." << std::endl << std::endl; usage_message(argv[0]); return -1; }
 

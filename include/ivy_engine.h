@@ -60,7 +60,7 @@ std::string accumulator_types();
 void ivymaster_signal_handler(int sig, siginfo_t *p_siginfo, void *context);
 extern struct sigaction ivymaster_sigaction;
 
-extern bool measure_submit_time;
+//extern bool measure_submit_time;
 
 struct measurement
 {
@@ -528,6 +528,12 @@ public:
 
     double max_active_core_busy { 0.95 };
 
+    bool track_long_running_IOs {true}; // turn this off for pure speed but blind to long running I/Os.
+
+    unsigned int generate_at_a_time {1}; // the number of IOs pre-generated (and for writes with pattern generateion) before we check for I/O completions;
+
+    bool working_bit;
+
 // methods
 
     void clear_measurements();
@@ -557,6 +563,11 @@ public:
     bool some_subsystem_still_busy();
 
     std::string focus_metric_ID();
+
+    std::pair<bool,std::string> set_ivydriver_positive_unsigned_parameter_value (const std::string& parameter_name, const std::string& value );
+    std::pair<bool,std::string> set_ivydriver_unsigned_parameter_value          (const std::string& parameter_name, const std::string& value );
+    std::pair<bool,std::string> set_ivydriver_boolean_parameter_value           (const std::string& parameter_name, const std::string& value );
+    std::pair<bool,std::string> set_ivydriver_positive_ivy_float_parameter_value(const std::string& parameter_name, const std::string& value );
 
     // ivy engine API methods
 

@@ -107,22 +107,20 @@ bool IosequencerRandom::generate(Eyeo& slang)
     if (nullptr == p_other_area_block_distribution) {throw std::runtime_error("<Error> internal programming error - null pointer to other zone block distribution generator");}
     if (have_hot_zone && nullptr == p_hot_zone_block_distribution) {throw std::runtime_error("<Error> internal programming error - null pointer to hot zone block distribution generator");}
 
-	slang.eyeocb.aio_fildes = pTestLUN->fd;
-
 	if (0.0 == p_IosequencerInput->fractionRead)
 	{
-		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;
+		slang.sqe.opcode=IORING_OP_WRITE_FIXED;
 	}
 	else if (1.0 == p_IosequencerInput->fractionRead)
 	{
-		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PREAD;
+		slang.sqe.opcode=IORING_OP_READ_FIXED;
 	}
 	else
 	{
 		if ( (*p_uniform_real_distribution_0_to_1)(deafrangen) <= p_IosequencerInput->fractionRead )
-			slang.eyeocb.aio_lio_opcode=IOCB_CMD_PREAD;
+            slang.sqe.opcode=IORING_OP_READ_FIXED;
 		else
-			slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;
+            slang.sqe.opcode=IORING_OP_WRITE_FIXED;
 	}
 
 
@@ -132,7 +130,7 @@ bool IosequencerRandom::generate(Eyeo& slang)
 
 	if (have_hot_zone)
 	{
-	    if (slang.eyeocb.aio_lio_opcode == IOCB_CMD_PREAD)
+	    if (slang.sqe.opcode == IORING_OP_READ_FIXED)
 	    {
 	        if (p_IosequencerInput->hot_zone_read_fraction >= 1.0)
 	        {
@@ -182,29 +180,26 @@ bool IosequencerRandom::generate(Eyeo& slang)
 	    block_number = (*p_other_area_block_distribution)(deafrangen);
 	}
 
-	slang.eyeocb.aio_offset = (p_IosequencerInput->blocksize_bytes) * block_number;
-	// slang.eyeocb.aio_nbytes was set when I/Os were built for the Workload
-	slang.eyeocb.aio_nbytes = p_IosequencerInput->blocksize_bytes;
+	slang.sqe.off = (p_IosequencerInput->blocksize_bytes) * block_number;
+	// slang.sqe.len was set when I/Os were built for the Workload
 	slang.scheduled_time=ivytime_zero;
 	slang.start_time=0;
 	slang.end_time=0;
 	slang.return_value=-2;
-	slang.errno_value=-2;
 
-    if (slang.eyeocb.aio_lio_opcode == IOCB_CMD_PWRITE)
+    if (slang.sqe.opcode == IORING_OP_WRITE_FIXED)
     {
         slang.generate_pattern();
     }
 
-    if ((slang.eyeocb.aio_offset + p_IosequencerInput->blocksize_bytes) > pTestLUN->LUN_size_bytes)
+    if ((slang.sqe.off + p_IosequencerInput->blocksize_bytes) > pTestLUN->LUN_size_bytes)
     {
         std::ostringstream o;
-        o << "<Error> Internal programming error - IosequencerRandom::generate() - I/O offset from beginning of LUN = " << slang.eyeocb.aio_offset
+        o << "<Error> Internal programming error - IosequencerRandom::generate() - I/O offset from beginning of LUN = " << slang.sqe.off
             << " plus blocksize = " << p_IosequencerInput->blocksize_bytes << " is past the end of the LUN, whose size in bytes is " << pTestLUN->LUN_size_bytes << std::endl
             << "TestLUN members - maxLBA = " << pTestLUN->maxLBA
             << ", LUN_size_bytes = " << pTestLUN->LUN_size_bytes
             << ", sector_size = " << pTestLUN->sector_size
-            << ", launch_count = " << pTestLUN->launch_count
             << std::endl
             << "IosequencerRandom - hot_zone_coverageStartBlock = " << hot_zone_coverageStartBlock
             << ", hot_zone_coverageEndBlock = " << hot_zone_coverageEndBlock

@@ -34,12 +34,13 @@
 // rounding up blocksize to a page (4096) boundary, and adding 4095 so that std::align can give us the
 // aligned start of an array of I/O buffers.
 
-#include <linux/aio_abi.h>
+#include <liburing.h>
 
 #include "ivytime.h"
 #include "ivydefines.h"
 #include "pattern.h"
 #include "Workload.h"
+#include "WorkloadThread.h"
 
 //////////////////////////////////////////////////////////////////////////////////////
 //
@@ -58,39 +59,39 @@
 //////////////////////////////////////////////////////////////////////////////////////
 
 
+
 class Eyeo {
 public:
 
 // variables
-	struct iocb eyeocb;  // see #include <linux/aio_abi.h>
-		// On my development machine, I put a symbolic link "aio_abi.h" in the ivy src
-		// folder pointing to /usr/include/linux/aio_abi.h to make easy to reference when coding.
-		// Browsing the web indicates there's other locations and forms of aio header file on different systems.  Hope the code is portable, resigned if not.
+
+    cqe_shim shim;
+
+    io_uring_sqe sqe;
+
+    char* p_buffer;
 
 	ivytime scheduled_time {ivytime_zero};  // if we have iorate=max, this is indicated by setting scheduled_time=ivytime(0).
 	ivytime start_time     {ivytime_zero};
-	ivytime running_time   {ivytime_zero};
 	ivytime end_time       {ivytime_zero};
 	int return_value {-1};
-	int errno_value  {-1};
+	uint32_t cqe_flags {0};
+	//int errno_value  {-1};
 
 	Workload* pWorkload;
-	bool iops_max_counted {false};
+//	bool iops_max_counted {false};
 
     uint64_t io_sequence_number {0};
     uint64_t completion_sequence_number {0};
 
 // methods
-	Eyeo(Workload*);
+	Eyeo(Workload*, uint64_t& index_reference);
 	~Eyeo(){};
 
-	std::string toString(bool display_buffer_contents = false);
 	std::string thumbnail();
 	void resetForNextIO();
-	ivy_float service_time_seconds();
-	ivy_float response_time_seconds();
-	ivy_float submit_time_seconds();
-	ivy_float running_time_seconds();
+	ivy_float service_time_seconds() const;
+	ivy_float response_time_seconds() const;
 
 	ivy_float lookup_probabilistic_compressibility(ivy_float compressibility);
 
@@ -133,4 +134,10 @@ private:
     std::uniform_real_distribution<ivy_float> distribution;
 };
 
+std::ostream& operator<<(std::ostream&, const struct Eyeo&);
 std::ostream& operator<<(std::ostream&, const struct io_event&);
+std::ostream& operator<<(std::ostream&, const io_uring_cqe&);
+std::ostream& operator<<(std::ostream&, const io_uring_sqe&);
+std::ostream& format_cqe_with_associated_shims_and_IOs(std::ostream&, const io_uring_cqe&);
+
+

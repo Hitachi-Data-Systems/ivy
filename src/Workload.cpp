@@ -18,11 +18,14 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+
 #include "Workload.h"
+#include "WorkloadThread.h"
 #include "ivydriver.h"
 #include "IosequencerRandomIndependent.h"
 #include "IosequencerRandomSteady.h"
 #include "IosequencerSequential.h"
+#include "ivyhelpers.h"
 
 //#define IVYDRIVER_TRACE
 // IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
@@ -145,7 +148,7 @@ void Workload::prepare_to_run()
 }
 
 
-void Workload::build_Eyeos()
+void Workload::build_Eyeos(uint64_t& p_buffer)
 {
 #if defined(IVYDRIVER_TRACE)
     { workload_callcount_build_Eyeos++; if (workload_callcount_build_Eyeos <= FIRST_FEW_CALLS) { std::ostringstream o;
@@ -167,63 +170,16 @@ void Workload::build_Eyeos()
 
     cancelled_IOs=0;
 
-    precomputedepth = 2 * p_current_IosequencerInput->maxTags;
-    EyeoCount = 2 * (precomputedepth + p_current_IosequencerInput->maxTags);  // the 2x is a postprocess queue allowance
+    const unsigned limit = eyeo_build_qty();
 
-    for (int i=allEyeosThatExist.size() ; i < EyeoCount; i++)
+    for (unsigned int i = 0 ; i < limit; i++)
     {
-        Eyeo* pEyeo = new Eyeo(this);
+        Eyeo* pEyeo = new Eyeo(this,p_buffer);
         allEyeosThatExist.push_back(pEyeo);
         freeStack.push(pEyeo);
     }
-    int rounded_up_to_4KiB_blocksize = p_current_IosequencerInput->blocksize_bytes;
 
-    while (0 != (rounded_up_to_4KiB_blocksize % 4096)) rounded_up_to_4KiB_blocksize++;
-
-    long int buffer_pool_size = 4095 + EyeoCount*rounded_up_to_4KiB_blocksize;
-
-    if (routine_logging)
-    {
-        std::ostringstream o;
-        o << "For workload " << workloadID
-            << ", getting I/O buffer memory for Eyeos.  blksize= " << p_current_IosequencerInput->blocksize_bytes
-            << ", rounded_up_to_4KiB_blocksize = " << rounded_up_to_4KiB_blocksize << ", number of Eyeos = " << allEyeosThatExist.size()
-            << ", memory allocation size for Eyeos with an extra 4095 bytes for alignment padding is " << buffer_pool_size << std::endl;
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-    }
-
-    try
-    {
-        ewe_neek.reset( new unsigned char[buffer_pool_size] );
-    }
-    catch(const std::bad_alloc& e)
-    {
-        throw std::runtime_error("WorkloadThread.cpp - out of memory making I/O buffer pool - "s + e.what() + "\n"s);
-    }
-
-    if (!ewe_neek)
-    {
-        throw std::runtime_error("<Error> WorkloadThread.cpp out of memory making I/O buffer pool\n");
-    }
-
-    void* vp = (void*) ewe_neek.get();
-
-    memset(vp,0x0F,buffer_pool_size);
-
-    uint64_t aio_buf_cursor = (uint64_t) vp;
-
-    while (0 != (aio_buf_cursor % 4096)) aio_buf_cursor++;
-        // In the event that the memory we got didn't start on a 4 KiB boundary,
-        // we bump up the cursor until we are on a 4 KiB boundary to lay out the first I/O buffer.
-
-    for (auto& pEyeo : allEyeosThatExist)
-    {
-        pEyeo->eyeocb.aio_buf    = aio_buf_cursor;
-        pEyeo->eyeocb.aio_nbytes = p_current_IosequencerInput->blocksize_bytes;
-
-        aio_buf_cursor += rounded_up_to_4KiB_blocksize;
-            // successive aio_buf values start on 4 KiB boundaries.
-    }
+    min_freeStack_level = freeStack.size();
 
     return;
 }
@@ -270,85 +226,66 @@ void Workload::switchover()
 }
 
 
-unsigned int /* number of I/Os popped and processed.  */
-    Workload::pop_and_process_an_Eyeo()
+
+void Workload::post_Eyeo_result(struct io_uring_cqe* p_cqe, Eyeo* pEyeo, const ivytime& now)
 {
-#if defined(IVYDRIVER_TRACE)
-    { workload_callcount_pop_and_process_an_Eyeo++; if (workload_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_pop_and_process_an_Eyeo << ") "
-        << "            Entering Workload::pop_and_process_an_Eyeo()."; } }
-#endif
+    struct io_uring_cqe& cqe = *p_cqe;
+    Eyeo&                e   = *pEyeo;
+    struct io_uring_sqe& sqe = e.sqe;
 
-	if (postprocessQ.size()==0) return 0;
+    e.end_time     = now;
+    e.return_value = cqe.res;
+    e.cqe_flags    = cqe.flags;
 
-	// collect I/O statistics / trace data for an I/O
-	Eyeo* p_dun;
-	p_dun=postprocessQ.front();
-	postprocessQ.pop();
+/*debug*/io_return_code_counts[e.return_value].c++;
 
-	ivy_float service_time_seconds, response_time_seconds, submit_time_seconds, running_time_seconds;
+    if (ivydriver.track_long_running_IOs)
+    {
+        auto running_IOs_iter = running_IOs.find(pEyeo);
+        if (running_IOs_iter == running_IOs.end())
+        {
+            std::ostringstream o;
+            o << "an asynchrononus I/O completion event occurred for an I/O "
+                << "that was not found in the ivy workload\'s \"running_IOs\" (set of pointers to ivy Eyeo objects)."
+                << "  The ivy Eyeo object associated with the completion event describes itself as "
+                << e << std::endl;
+            throw std::runtime_error(o.str());
+        }
+        running_IOs.erase(running_IOs_iter);
+    }
+
+    workload_queue_depth--;
+
+	ivy_float service_time_seconds, response_time_seconds;
 
 	bool have_response_time;
 
-	if (p_dun->scheduled_time.isZero())
+	if (e.scheduled_time.isZero())
 	{  // to avoid confusion, we do not post "application level" response time statistics if iorate==max.
 		have_response_time = false;
 		response_time_seconds = -1.0;
 	}
 	else
 	{
-		have_response_time = true;
-		response_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->scheduled_time.getlongdoubleseconds();
-	}
+		response_time_seconds = e.end_time.getlongdoubleseconds() - e.scheduled_time.getlongdoubleseconds();
 
-#ifdef DEBUG_EYEOS
-	if ( p_dun->start_time.isZero()
-	  || p_dun->end_time.isZero()
-	  || p_dun->scheduled_time > p_dun->start_time
-	  || p_dun->start_time     > p_dun->end_time
-	  || (measure_submit_time &&
-			   ( p_dun->running_time.isZero()
-			  || p_dun->start_time   > p_dun->running_time
-			  || p_dun->running_time > p_dun->end_time
-			   )
-		 )
-	   )
-    {
-        std::ostringstream o;
-        o << "When harvesting an I/O completion event and posting its measurements" << std::endl
-            << "One of the following timestamps was missing or they were out of order." << std::endl
-            << "I/O scheduled time = " << p_dun->scheduled_time.format_as_datetime_with_ns() << std::endl
-            << "start time         = " << p_dun->start_time.format_as_duration_HMMSSns() << std::endl
-            << "running time       = " << p_dun->running_time.format_as_duration_HMMSSns() << std::endl
-            << "end time           = " << p_dun->end_time.format_as_duration_HMMSSns() << std::endl
-            << ", measure_submit_time = " << ((measure_submit_time) ? "true" : "false") << std::endl
-            << ", have_response_time = ";
-        if (have_response_time)
-        {
-            o << "true, response_time_seconds = " << response_time_seconds ;
+		if (response_time_seconds < 100)
+		{
+            have_response_time = true;
         }
         else
         {
-            o << "false";
+            have_response_time = false;
+            // this happens when the IOPS is set to a value that cannot be achieved.
         }
-        o << std::endl;
-        throw std::runtime_error(o.str());
-    }
-#endif
-
-	service_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->start_time.getlongdoubleseconds();
-	if (measure_submit_time) {
-		submit_time_seconds = p_dun->running_time.getlongdoubleseconds() - p_dun->start_time.getlongdoubleseconds();
-		running_time_seconds = p_dun->end_time.getlongdoubleseconds() - p_dun->running_time.getlongdoubleseconds();
-	} else {
-		submit_time_seconds = 0.0;
-		running_time_seconds = 0.0;
 	}
+
+	service_time_seconds = e.end_time.getlongdoubleseconds() - e.start_time.getlongdoubleseconds();
 
 	// NOTE:  The breakdown of bytes_transferred (MB/s) follows service time.
 
 
-	if ( p_current_IosequencerInput->blocksize_bytes == (unsigned int) p_dun->return_value) {
+	if ( p_current_IosequencerInput->blocksize_bytes == (unsigned int) e.return_value) {
 
 		int rs, rw, bucket;
 
@@ -361,26 +298,31 @@ unsigned int /* number of I/Os popped and processed.  */
 			rs = 1;
 		}
 
-		if (IOCB_CMD_PREAD==p_dun->eyeocb.aio_lio_opcode)
+		if ( IORING_OP_READ_FIXED == sqe.opcode)
 		{
 			rw=0;
 		}
-		else
+		else // IORING_OP_WRITE_FIXED
 		{
 			rw=1;
 		}
 
-		bucket = Accumulators_by_io_type::get_bucket_index( service_time_seconds );
+		try
+		{
+            bucket = Accumulators_by_io_type::get_bucket_index( service_time_seconds );
+		}
+        catch (std::invalid_argument& e)
+        {
+            std::string s = e.what();
+            trim(s);
+
+            std::ostringstream o;
+            o << s << " - " << (*pEyeo);
+            throw std::runtime_error(o.str());
+        }
 
 		p_current_SubintervalOutput->u.a.service_time     .rs_array[rs][rw][bucket].push(service_time_seconds);
 		p_current_SubintervalOutput->u.a.bytes_transferred.rs_array[rs][rw][bucket].push(p_current_IosequencerInput->blocksize_bytes);
-
-		if (measure_submit_time) {
-			bucket = Accumulators_by_io_type::get_bucket_index( submit_time_seconds );
-			p_current_SubintervalOutput->u.a.submit_time.rs_array[rs][rw][bucket].push(submit_time_seconds);
-			bucket = Accumulators_by_io_type::get_bucket_index( running_time_seconds );
-			p_current_SubintervalOutput->u.a.running_time.rs_array[rs][rw][bucket].push(running_time_seconds);
-		}
 
 		if (have_response_time)
 		{
@@ -392,56 +334,64 @@ unsigned int /* number of I/Os popped and processed.  */
 	else
 	{
 		ioerrorcount++;
-		if ( p_dun->return_value < 0 )
+		if ( e.return_value < 0 )
 		{
-		    if (p_dun->return_value == -1)
-		    {
-                std::ostringstream o;
-                o << "Thread for physical core " << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread<< "  " << workloadID << " - I/O failed return code = " << p_dun->return_value << ", errno = " << errno << " - " << strerror(errno) << p_dun->toString() << std::endl;
+            int err = -e.return_value;
 
-                post_warning(o.str());
+            WorkloadThread& wt = *pWorkloadThread;
 
-                    // %%%%%%%%%%%%%%% come back here later and decide if we want to re-drive failing I/Os, keeping track of the original I/O start time so we record the total respone time for all attempts.
-            }
-            else
+            wt.number_of_IO_errors++;
+
+            if (wt.number_of_IO_errors < wt.IO_error_warning_count_limit)
             {
-                int err = -p_dun->return_value;
                 std::ostringstream o;
-                o << "I/O failed return code = " << p_dun->return_value << " (" << strerror(err) << ") " << p_dun->toString() << std::endl;
-
+                o << "I/O failed return code = " << e.return_value << " (" << strerror(err) << ") " << e << std::endl;
                 post_warning(o.str());
-                    // %%%%%%%%%%%%%%% come back here later and decide if we want to re-drive failing I/Os, keeping track of the original I/O start time so we record the total respone time for all attempts.
             }
+            else if (wt.number_of_IO_errors == wt.IO_error_warning_count_limit)
+            {
+                std::ostringstream o;
+                o << "The maximum number of I/O errors for which a detailed <Warning> is printed is " << (wt.IO_error_warning_count_limit - 1)
+                    << ".  This limit has been exceeded and no further detailed I/O error <Warnings> will be issued." << std::endl;
+                post_warning(o.str());
+            }
+                // %%%%%%%%%%%%%%% come back here later and decide if we want to re-drive failing I/Os, keeping track of the original I/O start time so we record the total respone time for all attempts.
 		}
 		else
 		{
 			std::ostringstream o;
-			o << "I/O only transferred " << p_dun->return_value << " out of requested " << p_current_IosequencerInput->blocksize_bytes << std::endl;
+			o << "I/O only transferred " << e.return_value << " out of requested " << p_current_IosequencerInput->blocksize_bytes << std::endl;
 
             post_warning(o.str());
 		}
 	}
 
 	workload_cumulative_completion_count++;
-	p_dun->completion_sequence_number = workload_cumulative_completion_count;
+	e.completion_sequence_number = workload_cumulative_completion_count;
 
 	if (routine_logging && workload_cumulative_completion_count <= LOG_FIRST_FEW_IO_COMPLETIONS)
 	{
-	    log(pWorkloadThread->slavethreadlogfile,p_dun->toString(true));
+        bool save = ivydriver.display_buffer_contents;
+
+        ivydriver.display_buffer_contents = true;
+
+        std::ostringstream o; o << e; log(pWorkloadThread->slavethreadlogfile,o.str());
+
+	    ivydriver.display_buffer_contents = save;
 	}
 
-	freeStack.push(p_dun);
+	freeStack.push(pEyeo);
 
 #ifdef IVYDRIVER_TRACE
     if (workload_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS)
     {
         std::ostringstream o;
-        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ") =|= popped and processed " << p_dun->thumbnail();
+        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ") =|= popped and processed " << e.thumbnail();
         log(pWorkloadThread->slavethreadlogfile,o.str());
     }
 #endif
 
-	return 1;
+	return;
 }
 
 
@@ -485,15 +435,9 @@ Eyeo* Workload::front_launchable_IO(const ivytime& now)
 }
 
 
-void Workload::load_IOs_to_LaunchPad()
+unsigned int Workload::populate_sqes()
 {
-#if defined(IVYDRIVER_TRACE)
-    { workload_callcount_load_IOs_to_LaunchPad++; if (workload_callcount_load_IOs_to_LaunchPad <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_load_IOs_to_LaunchPad << ") "
-        << "            Entering Workload::load_IOs_to_LaunchPad() " << brief_status(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
-    if (is_IOPS_max_with_positive_skew() && hold_back_this_time()) return;
+    if (is_IOPS_max_with_positive_skew() && hold_back_this_time()) return 0;
         // If there's nobody behind, a workload thread with IOPS=max
         // Then gets to load a "batch" of I/Os, as many as fit within that
         // workload's maxTags setting, thus was thought to be more
@@ -501,185 +445,207 @@ void Workload::load_IOs_to_LaunchPad()
 
     ivytime now; now.setToNow();
 
-    if (pTestLUN->launch_count >= MAX_IOS_LAUNCH_AT_ONCE) return;
+    TestLUN& tl = *pTestLUN;
 
-    unsigned int available_launch_slots = p_current_IosequencerInput->maxTags - workload_queue_depth;
+    WorkloadThread& wt = *tl.pWorkloadThread;
 
-    for (unsigned int i = 0; i < available_launch_slots; i++)
+    unsigned int total = 0;
+
+    while (true)
     {
         Eyeo* pEyeo = front_launchable_IO(now);
 
-        if (pEyeo == nullptr) return;
+        if (pEyeo == nullptr) { return total; } // No ready to launch I/Os.
 
-        pTestLUN->pop_front_to_LaunchPad(this);
+        struct io_uring_sqe* p_sqe = pWorkloadThread->get_sqe(); // This increments the number of sqes queued for submit
 
-#ifdef IVYDRIVER_TRACE
-        if (workload_callcount_load_IOs_to_LaunchPad <= FIRST_FEW_CALLS)
+        if (p_sqe == nullptr) { return total; } // No ready to launch I/Os.
+
+        if ( wt.workload_thread_queue_depth /* includes wt.sqes_queued_for_submit) */ >= wt.workload_thread_queue_depth_limit )
         {
-            std::ostringstream o;
-            o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ") =|= loading to LaunchPad " << pEyeo->thumbnail();
-            log(pWorkloadThread->slavethreadlogfile,o.str());
-        }
-#endif
-
-    }
-
-    return;
-}
-
-unsigned int Workload::generate_an_IO()
-{
-#if defined(IVYDRIVER_TRACE)
-    { workload_callcount_generate_an_IO++; if (workload_callcount_generate_an_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_generate_an_IO << ") "
-        << "            Entering Workload::generate_an_IO() " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
-    if (precomputeQ.size() >= precomputedepth) return 0;
-
-    if (0.0 == p_current_IosequencerInput->IOPS) return 0;
-
-    ivytime now; now.setToNow();
-
-    if (precomputeQ.size() > 0 && (now + ivytime(PRECOMPUTE_HORIZON_SECONDS)) < precomputeQ.back()->scheduled_time ) return 0; // if we are already that much ahead of now.
-
-    // precompute an I/O
-    if (freeStack.empty())
-    {
-        std::ostringstream o; o << "freeStack is empty - can\'t precompute." << std::endl;
-        throw std::runtime_error(o.str());
-        // should not occur unless there's a design fault or maybe if CPU-bound
-    }
-
-    Eyeo* p_Eyeo = freeStack.top();
-
-    freeStack.pop();
-
-    uint64_t new_pattern_number;
-    int bsindex;
-    int dedupeunitsvar;
-
-
-    std::ostringstream o;
-    // deterministic generation of "seed" for this I/O.
-    if (have_writes)
-    {
-        if (doing_dedupe)
-        {
-            switch(subinterval_array[0].input.dedupe_type)
+            if (!wt.have_warned_hitting_cqe_entry_limit)
             {
-                case dedupe_method::serpentine:
-                    serpentine_number += threads_in_workload_name;
-                    new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
-                    while (pattern_number < new_pattern_number)
-                    {
-                        xorshift64star(pattern_seed);
-                        pattern_number++;
-                    }
-                    block_seed = pattern_seed ^ pattern_number;
-                    break;
+                wt.have_warned_hitting_cqe_entry_limit = true;
 
-                case dedupe_method::target_spread:
-                    if (p_my_iosequencer->isRandom())
-                    {
-                        if (pattern_number > dedupe_target_spread_regulator->pattern_number_reuse_threshold)
-                        {
-                            if (dedupe_target_spread_regulator->decide_reuse())
-                            {
-                                ostringstream o;
-                                std::pair<uint64_t, uint64_t> align_pattern;
-                                align_pattern = dedupe_target_spread_regulator->reuse_seed();
-                                pattern_seed = align_pattern.first;
-                                pattern_alignment = align_pattern.second;
-                                pattern_number = pattern_alignment;
-                                o << "workloadthread - Reset pattern seed " << pattern_seed <<  " Offset: " << pattern_alignment << std::endl;
-                                //log(pWorkloadThread->slavethreadlogfile, o.str());
-                            }
-                        }
-                    }
-
-                    dedupeunits = p_current_IosequencerInput->blocksize_bytes / 8192;
-
-                    bsindex = 0;
-                    dedupeunitsvar = dedupeunits;
-                    while (dedupeunitsvar-- > 0)
-                    {
-                        std::ostringstream o;
-
-                        if (dedupe_count == 0) {
-                            modified_dedupe_factor = dedupe_target_spread_regulator->dedupe_distribution();
-                            dedupe_count = (uint64_t) modified_dedupe_factor;
-#if 0
-                            o << "modified_dedupe_factor: " << modified_dedupe_factor << std::endl;
-                            //log(pWorkloadThread->slavethreadlogfile,o.str());
-#endif
-                        }
-
-                        if (dedupe_count == modified_dedupe_factor)
-                        {
-                            int count = dedupe_count;
-                            while (count > 0)
-                            {
-                                xorshift64star(pattern_seed);
-                                pattern_number++;
-                                count--;
-                            }
-                        }
-                        block_seed = pattern_seed ^ pattern_number;
-                        last_block_seeds[bsindex++] = block_seed;
-                        dedupe_count--;
-#if 0
-                        o << "bsindex: " << bsindex << " dedupe_count: " << dedupe_count << " pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
-                        log(pWorkloadThread->slavethreadlogfile,o.str());
-#endif
-                    }
-                    break;
-
-                case dedupe_method::constant_ratio:
-                case dedupe_method::static_method:
-
-                    // Handled elsewhere, as the seed generation depends on the LBA.
-
-                    break;
-
-                case dedupe_method::invalid:
-                default:
-                {
-                    std::ostringstream o; o << "dedupe_method is invalid - can\'t precompute.";
-                    throw std::runtime_error(o.str());
-
-                }
+                std::ostringstream o;
+                o << "have reached the workload_thread_queue_depth_limit value being " << wt.workload_thread_queue_depth_limit
+                    << " : workload_thread_cqe_entrie.";
+                wt.post_warning("");
             }
         }
-        else
+
+        workload_queue_depth++;
+
+        if (workload_max_queue_depth < workload_queue_depth) { workload_max_queue_depth = workload_queue_depth; }
+
+        total++;
+
+        precomputeQ.pop_front();
+
+        (*p_sqe) = pEyeo->sqe; // default copy assignment operators should be fine.
+
+//#define trace_uring_taffic
+#ifdef trace_uring_taffic
+        if (wt.trace_ring_sqe_counter < wt.trace_ring_quantity) { std::ostringstream o; o << "sqe #" << wt.trace_ring_sqe_counter++ << ": " << *p_sqe; log(wt.slavethreadlogfile,o.str()); }
+#endif
+
+        workload_cumulative_launch_count++;
+
+        if (ivydriver.track_long_running_IOs) running_IOs.insert(pEyeo);
+
+        pEyeo->start_time=now;
+    }
+
+    return total;
+}
+
+
+unsigned int Workload::generate_IOs()
+{
+    bool trace {false};
+
+    if(trace){WorkloadThread& wt = *pWorkloadThread; if (wt.debug_c++ < wt.debug_m){std::ostringstream o; o << "Entry to Workload::generate_IOs() for " << workloadID; log(wt.slavethreadlogfile, o.str());}}
+
+    unsigned int generated_qty {0};
+
+    const unsigned limit = precomputedepth();
+
+    while (generated_qty < ivydriver.generate_at_a_time)
+    {
+        if (precomputeQ.size() >= limit) { return generated_qty; }
+
+        if ( p_current_IosequencerInput->IOPS == 0.0 ) { return generated_qty; }
+
+        ivytime now; now.setToNow();
+
+        if (precomputeQ.size() > 0 && (now + ivytime(PRECOMPUTE_HORIZON_SECONDS)) < precomputeQ.back()->scheduled_time ) { return generated_qty; }
+
+        // precompute an I/O
+        if (freeStack.empty())
         {
-            xorshift64star(block_seed);
+            WorkloadThread& wt = *pWorkloadThread;
+
+            std::ostringstream o; o << "Workload::generate_IOs() for " << workloadID << " - freeStack is empty - can\'t precompute." << std::endl;
+            log(wt.slavethreadlogfile, o.str());
+            wt.post_error(o.str());
         }
+
+        pWorkloadThread->did_something_this_pass = true; // generated an I/O
+
+        Eyeo* p_Eyeo = freeStack.top();
+
+        freeStack.pop();
+
+        if (min_freeStack_level > freeStack.size()) { min_freeStack_level = freeStack.size(); }
+
+        uint64_t new_pattern_number;
+        int bsindex;
+        int dedupeunitsvar;
+
+        // deterministic generation of "seed" for this I/O.
+        if (have_writes)
+        {
+            if (doing_dedupe)
+            {
+                switch(subinterval_array[0].input.dedupe_type)
+                {
+                    case dedupe_method::serpentine:
+                        serpentine_number += threads_in_workload_name;
+                        new_pattern_number = ceil(serpentine_number * serpentine_multiplier);
+                        while (pattern_number < new_pattern_number)
+                        {
+                            xorshift64star(pattern_seed);
+                            pattern_number++;
+                        }
+                        block_seed = pattern_seed ^ pattern_number;
+                        break;
+
+                    case dedupe_method::target_spread:
+                        if (p_my_iosequencer->isRandom())
+                        {
+                            if (pattern_number > dedupe_target_spread_regulator->pattern_number_reuse_threshold)
+                            {
+                                if (dedupe_target_spread_regulator->decide_reuse())
+                                {
+                                    ostringstream o;
+                                    std::pair<uint64_t, uint64_t> align_pattern;
+                                    align_pattern = dedupe_target_spread_regulator->reuse_seed();
+                                    pattern_seed = align_pattern.first;
+                                    pattern_alignment = align_pattern.second;
+                                    pattern_number = pattern_alignment;
+                                    o << "workloadthread - Reset pattern seed " << pattern_seed <<  " Offset: " << pattern_alignment << std::endl;
+                                    //log(pWorkloadThread->slavethreadlogfile, o.str());
+                                }
+                            }
+                        }
+
+                        dedupeunits = p_current_IosequencerInput->blocksize_bytes / 8192;
+
+                        bsindex = 0;
+                        dedupeunitsvar = dedupeunits;
+                        while (dedupeunitsvar-- > 0)
+                        {
+                            std::ostringstream o;
+
+                            if (dedupe_count == 0) {
+                                modified_dedupe_factor = dedupe_target_spread_regulator->dedupe_distribution();
+                                dedupe_count = (uint64_t) modified_dedupe_factor;
+                            }
+
+                            if (dedupe_count == modified_dedupe_factor)
+                            {
+                                int count = dedupe_count;
+                                while (count > 0)
+                                {
+                                    xorshift64star(pattern_seed);
+                                    pattern_number++;
+                                    count--;
+                                }
+                            }
+                            block_seed = pattern_seed ^ pattern_number;
+                            last_block_seeds[bsindex++] = block_seed;
+                            dedupe_count--;
+                        }
+                        break;
+
+                    case dedupe_method::constant_ratio:
+                    case dedupe_method::static_method:
+
+                        // Handled elsewhere, as the seed generation depends on the LBA.
+
+                        break;
+
+                    case dedupe_method::invalid:
+                    default:
+                    {
+                        std::ostringstream o; o << "dedupe_method is invalid - can\'t precompute.";
+                        throw std::runtime_error(o.str());
+
+                    }
+                }
+            }
+            else
+            {
+                xorshift64star(block_seed);
+            }
+        }
+        // now need to call the iosequencer function to populate this Eyeo.
+        if (!p_my_iosequencer->generate(*p_Eyeo))
+        {
+            WorkloadThread& wt = *pWorkloadThread;
+
+            std::ostringstream o; o << "Workload::generate_IOs() for " << workloadID << " - iosequencer::generate(->Eyeo) failed." << std::endl;
+            log(wt.slavethreadlogfile, o.str());
+            wt.post_error(o.str());
+        }
+        precomputeQ.push_back(p_Eyeo);
+        generated_qty++;
     }
 
-#if 0
-    o << "pattern number: " << pattern_number << " pattern_seed: " << pattern_seed  << " block_seed:" << block_seed << std::endl;
-    log(pWorkloadThread->slavethreadlogfile,o.str());
-#endif
-
-    // now need to call the iosequencer function to populate this Eyeo.
-    if (!p_my_iosequencer->generate(*p_Eyeo))
-    {
-        throw std::runtime_error("iosequencer::generate() failed.");
-    }
-    precomputeQ.push_back(p_Eyeo);
-
-#ifdef IVYDRIVER_TRACE
-    if (workload_callcount_generate_an_IO <= FIRST_FEW_CALLS)
-    {
-        std::ostringstream o;
-        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ") =|= generated " << p_Eyeo->thumbnail();
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-    }
-#endif
+    if(trace){WorkloadThread& wt = *pWorkloadThread; if (wt.debug_c++ < wt.debug_m){std::ostringstream o; o << "Workload::generate_IOs() for " << workloadID << " reached generate_at_a_time returning " << generated_qty; log(wt.slavethreadlogfile, o.str());}}
 
 
-    return 1;
+    return generated_qty;
 }
 
 
@@ -691,10 +657,8 @@ std::string Workload::brief_status()
         << ", running = "  << running_IOs.size()
         << ", postQ = "    << postprocessQ.size()
         << ", WQ = "  << workload_queue_depth
-        << ", TLQ = "  << pTestLUN->testLUN_queue_depth
         << ", WTQ = "  << pTestLUN->pWorkloadThread->workload_thread_queue_depth
         << ", WMQ = "  << workload_max_queue_depth
-        << ", TLMQ = "  << pTestLUN->testLUN_max_queue_depth
         << ", WTMQ = "  << pTestLUN->pWorkloadThread->workload_thread_max_queue_depth
         << ", I/Os = " <<  workload_cumulative_launch_count
         ;

@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include "Accumulators_by_io_type.h"
+#include "Eyeo.h"
 
 /*static*/ std::string Accumulators_by_io_type::getCategories()
 {

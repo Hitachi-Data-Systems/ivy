@@ -69,7 +69,7 @@ bool IosequencerSequential::generate(Eyeo& slang)
 	// we assume that eyeocb.data already points to the Eyeo object
 	// and that eyeocb.aio_buf already points to a page-aligned I/O buffer
 
-	slang.eyeocb.aio_fildes = pTestLUN->fd;
+	//slang.eyeocb.aio_fildes = pTestLUN->fd;
 
 	lastIOblockNumber++;
 
@@ -91,22 +91,22 @@ bool IosequencerSequential::generate(Eyeo& slang)
 	{
         lastIOblockNumber = coverageStartBlock;   // this doesn't mean we have necessarily written to all blocks, as we may have started part way through.
 	}
-	slang.eyeocb.aio_offset = p_IosequencerInput->blocksize_bytes * lastIOblockNumber;
+	slang.sqe.off = p_IosequencerInput->blocksize_bytes * lastIOblockNumber;
 
 	//slang.eyeocb.aio_nbytes was set when Eyeos were built for the Workload.
 	slang.start_time=0;
 	slang.end_time=0;
 	slang.return_value=-2;
-	slang.errno_value=-2;
+//	slang.errno_value=-2;
 
 	if (0.0 == p_IosequencerInput->fractionRead)
 	{
-		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;
+		slang.sqe.opcode=IORING_OP_WRITE_FIXED;
         slang.generate_pattern();
 	}
 	else if (1.0 == p_IosequencerInput->fractionRead)
 	{
-		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PREAD;
+		slang.sqe.opcode=IORING_OP_READ_FIXED;
 	}
 	else
 	{

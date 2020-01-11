@@ -24,7 +24,7 @@ using namespace std;
 
 extern bool routine_logging;
 
-bool measure_submit_time {false};
+//bool measure_submit_time {false};
 
 ivy_engine m_s;
 

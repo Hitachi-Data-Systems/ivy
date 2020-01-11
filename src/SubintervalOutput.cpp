@@ -69,26 +69,26 @@ bool SubintervalOutput::toBuffer(char* buffer, size_t buffer_size) // same as to
 
     unsigned int number_of_rs_to_format, number_of_rs_to_zero_out;
 
-    extern bool measure_submit_time;
+    //extern bool measure_submit_time;
 
-    if (measure_submit_time)
-    {
-        number_of_rs_to_format   = 5 * Accumulators_by_io_type::total_bucket_count();
-        number_of_rs_to_zero_out = 0;
-        //    Accumulators_by_io_type
-        //        bytes_transferred,
-        //        response_time,		// Time from the scheduled time to the end of the I/O.
-        //        service_time,		// Time from just before AIO submit to start the I/O until it ends.
-
-        // not:
-        //        submit_time,		// Time from just before submitting I/O to just after submitting I/O.  This includes "waiting for an underlying tag".
-        //        running_time;		// Time from just after AIO submit to when the I/O ends
-    }
-    else
-    {
+//    if (measure_submit_time)
+//    {
+//        number_of_rs_to_format   = 5 * Accumulators_by_io_type::total_bucket_count();
+//        number_of_rs_to_zero_out = 0;
+//        //    Accumulators_by_io_type
+//        //        bytes_transferred,
+//        //        response_time,		// Time from the scheduled time to the end of the I/O.
+//        //        service_time,		// Time from just before AIO submit to start the I/O until it ends.
+//
+//        // not:
+//        //        submit_time,		// Time from just before submitting I/O to just after submitting I/O.  This includes "waiting for an underlying tag".
+//        //        running_time;		// Time from just after AIO submit to when the I/O ends
+//    }
+//    else
+//    {
         number_of_rs_to_format   = 3 * Accumulators_by_io_type::total_bucket_count();
         number_of_rs_to_zero_out = 2 * Accumulators_by_io_type::total_bucket_count();
-    }
+//    }
 
     for (unsigned int i = 0; i < number_of_rs_to_format; i++)
     {
@@ -359,41 +359,41 @@ std::string SubintervalOutput::csvValues
 				/* 11 Service Time Standard Deviation (ms) */
 				o << ',' << (service_time.standardDeviation() * 1000.0);
 
-				{
-					// SPM: Would like to use (measure_submit_time) or (measure_submit_time) for these conditionals
-					//		instead of (submit_time_max != 0.0), but the first is only defined for ivydriver and the second is only
-					//		defined for ivymaster compilation units... This is obviously cheating.
-
-					ivy_float submit_time_max = submit_time.max();
-
-					/* 12 Average Submit Time (ms) */
-					if (submit_time_max != 0.0) {
-						o << ',' << (submit_time.avg() * 1000.0);
-					} else {
-						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
-					}
-
-					/* 13 Min Submit Time (ms) */
-					if (submit_time_max != 0.0) {
-						o << ',' << (submit_time.min() * 1000.0);
-					} else {
-						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
-					}
-
-					/* 14 Max Submit Time (ms) */
-					if (submit_time_max != 0.0) {
-						o << ',' << (submit_time.max() * 1000.0);
-					} else {
-						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
-					}
-
-					/* 15 Submit Time Standard Deviation (ms) */
-					if (submit_time_max != 0.0) {
-						o << ',' << (submit_time.standardDeviation() * 1000.0);
-					} else {
-						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
-					}
-				}
+//				{
+//					// SPM: Would like to use (measure_submit_time) or (measure_submit_time) for these conditionals
+//					//		instead of (submit_time_max != 0.0), but the first is only defined for ivydriver and the second is only
+//					//		defined for ivymaster compilation units... This is obviously cheating.
+//
+//					ivy_float submit_time_max = submit_time.max();
+//
+//					/* 12 Average Submit Time (ms) */
+//					if (submit_time_max != 0.0) {
+//						o << ',' << (submit_time.avg() * 1000.0);
+//					} else {
+//						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
+//					}
+//
+//					/* 13 Min Submit Time (ms) */
+//					if (submit_time_max != 0.0) {
+//						o << ',' << (submit_time.min() * 1000.0);
+//					} else {
+//						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
+//					}
+//
+//					/* 14 Max Submit Time (ms) */
+//					if (submit_time_max != 0.0) {
+//						o << ',' << (submit_time.max() * 1000.0);
+//					} else {
+//						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
+//					}
+//
+//					/* 15 Submit Time Standard Deviation (ms) */
+//					if (submit_time_max != 0.0) {
+//						o << ',' << (submit_time.standardDeviation() * 1000.0);
+//					} else {
+//						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
+//					}
+//				}
 
 //				/* 16 Average Running Time (ms) */
 //                o << ',' << (running_time.avg() * 1000.0);

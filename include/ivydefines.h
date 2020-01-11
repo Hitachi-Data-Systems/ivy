@@ -22,7 +22,7 @@
 #include <array>
 #include <string>
 
-const std::string ivy_version {"3.33.12"};
+const std::string ivy_version {"4.00.00"};
 
 //using ivy_int = long long int; using ivy_float = long double;
   using ivy_int =      long int; using ivy_float =      double;
@@ -41,7 +41,7 @@ const std::string ivy_version {"3.33.12"};
 #define MAX_IOS_LAUNCH_AT_ONCE 128
 #define MAX_IOEVENTS_REAP_AT_ONCE 128
 #define MAXWAITFORINITALPROMPT 120
-#define PRECOMPUTE_HORIZON_SECONDS 0.5
+#define PRECOMPUTE_HORIZON_SECONDS (0.5)
 // When ivydriver runs on a test host, it temporarily writes its log files to the following
 // folder location.  Then once ivydriver has exited, the ivy master thread copies the log files
 // to the master host logs subfolder for the run, and deletes the temporary log files on the ivydriver host.
