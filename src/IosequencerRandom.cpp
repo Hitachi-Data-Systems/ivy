@@ -22,16 +22,8 @@ using namespace std;
 
 #include "IosequencerRandom.h"
 
-//#define IVYDRIVER_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
-                           // and so you can turn it off and on for each source file.
-
 void IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
-//*debug*/ log(logfilename,std::string("IosequencerRandom::setFrom_IosequencerInput() - entry.\n"));
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::setFrom_IosequencerInput() for " << workloadID << "."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
 	Iosequencer::setFrom_IosequencerInput(p_i_i);
 
 	ivytime semence;
@@ -88,10 +80,6 @@ void IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 
 bool IosequencerRandom::generate(Eyeo& slang)
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IosequencerRandom::generate() for " << workloadID << " - Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
 	Iosequencer::generate(slang); // Increments the I/O sequence number. Resets Eyeo for next I/O.  Always returns true.
 
 	// This is the base class IosequencerRandom::generate() function that calculates the

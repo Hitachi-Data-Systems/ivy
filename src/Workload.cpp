@@ -27,11 +27,6 @@
 #include "IosequencerSequential.h"
 #include "ivyhelpers.h"
 
-//#define IVYDRIVER_TRACE
-// IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
-//  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
-//  - you can turn on tracing separately for each class in its own source file.
-
 Workload::Workload()
 {
     p_current_subinterval      = & (subinterval_array[0]);
@@ -53,12 +48,6 @@ Workload::~Workload()
 
 void Workload::prepare_to_run()
 {
-#if defined(IVYDRIVER_TRACE)
-    { workload_callcount_prepare_to_run++; if (workload_callcount_prepare_to_run <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_prepare_to_run << ") "
-        << "            Entering Workload::prepare_to_run()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
     if (subinterval_array[0].input.fractionRead == 1.0)
     {
         have_writes = false;
@@ -150,12 +139,6 @@ void Workload::prepare_to_run()
 
 void Workload::build_Eyeos(uint64_t& p_buffer)
 {
-#if defined(IVYDRIVER_TRACE)
-    { workload_callcount_build_Eyeos++; if (workload_callcount_build_Eyeos <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_build_Eyeos << ") "
-        << "            Entering Workload::build_Eyeos()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
     for (auto& pEyeo : allEyeosThatExist) delete pEyeo;
 
     allEyeosThatExist.clear();
@@ -163,8 +146,6 @@ void Workload::build_Eyeos(uint64_t& p_buffer)
     while (0 < freeStack.size()) freeStack.pop(); // stacks curiously don't hve a clear() method.
 
     precomputeQ.clear();
-
-    while (postprocessQ.size() > 0) postprocessQ.pop();
 
     running_IOs.clear();
 
@@ -188,26 +169,6 @@ void Workload::build_Eyeos(uint64_t& p_buffer)
 
 void Workload::switchover()
 {
-#if defined(IVYDRIVER_TRACE)
-    { workload_callcount_switchover++; if (workload_callcount_switchover <= FIRST_FEW_CALLS)
-        {
-            ivytime n; n.setToNow();
-            ivytime seconds_ivytime = n - ivydriver.test_start_time;
-
-            long double cumulative_launches_per_second = ((long double) workload_cumulative_launch_count)
-               / seconds_ivytime.getlongdoubleseconds();
-
-            std::ostringstream o;
-            o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_switchover << ") "
-                << "            Entering Workload::switchover() - subinterval_number " << subinterval_number
-                << " workload_cumulative_launch_count = " << workload_cumulative_launch_count
-                << " doing " << cumulative_launches_per_second << " cumulative I/O launches per second"
-                << ".";
-            log(pWorkloadThread->slavethreadlogfile,o.str());
-        }
-    }
-#endif
-
     subinterval_array[currentSubintervalIndex].subinterval_status=subinterval_state::ready_to_send;
 
     if (0 == currentSubintervalIndex)
@@ -382,28 +343,12 @@ void Workload::post_Eyeo_result(struct io_uring_cqe* p_cqe, Eyeo* pEyeo, const i
 
 	freeStack.push(pEyeo);
 
-#ifdef IVYDRIVER_TRACE
-    if (workload_callcount_pop_and_process_an_Eyeo <= FIRST_FEW_CALLS)
-    {
-        std::ostringstream o;
-        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ") =|= popped and processed " << e.thumbnail();
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-    }
-#endif
-
 	return;
 }
 
 
 Eyeo* Workload::front_launchable_IO(const ivytime& now)
 {
-#if defined(IVYDRIVER_TRACE)
-    { workload_callcount_front_launchable_IO++; if (workload_callcount_front_launchable_IO <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ':' << workload_callcount_front_launchable_IO << ") "
-        << ")             Entering Workload::front_launchable_IO(" << now.format_as_datetime_with_ns() << ") " << brief_status(); log(pWorkloadThread->slavethreadlogfile,o.str()); }
-    pTestLUN->abort_if_queue_depths_corrupted("Workload::front_launchable_IO",workload_callcount_front_launchable_IO); }
-#endif
-
     if (workload_queue_depth > p_current_IosequencerInput->maxTags)
     {
         std::ostringstream o;
@@ -421,15 +366,6 @@ Eyeo* Workload::front_launchable_IO(const ivytime& now)
     Eyeo* pEyeo = precomputeQ.front();
 
     if (pEyeo->scheduled_time > now) return nullptr;
-
-#ifdef IVYDRIVER_TRACE
-    if (workload_callcount_front_launchable_IO <= FIRST_FEW_CALLS)
-    {
-        std::ostringstream o;
-        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << workloadID << ") =|= front launchable is  " << pEyeo->thumbnail();
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-    }
-#endif
 
     return pEyeo;
 }
@@ -484,11 +420,6 @@ unsigned int Workload::populate_sqes()
 
         (*p_sqe) = pEyeo->sqe; // default copy assignment operators should be fine.
 
-//#define trace_uring_taffic
-#ifdef trace_uring_taffic
-        if (wt.trace_ring_sqe_counter < wt.trace_ring_quantity) { std::ostringstream o; o << "sqe #" << wt.trace_ring_sqe_counter++ << ": " << *p_sqe; log(wt.slavethreadlogfile,o.str()); }
-#endif
-
         workload_cumulative_launch_count++;
 
         if (ivydriver.track_long_running_IOs) running_IOs.insert(pEyeo);
@@ -504,7 +435,7 @@ unsigned int Workload::generate_IOs()
 {
     bool trace {false};
 
-    if(trace){WorkloadThread& wt = *pWorkloadThread; if (wt.debug_c++ < wt.debug_m){std::ostringstream o; o << "Entry to Workload::generate_IOs() for " << workloadID; log(wt.slavethreadlogfile, o.str());}}
+    if(trace) {WorkloadThread& wt = *pWorkloadThread; if (wt.debug_c++ < wt.debug_m){std::ostringstream o; o << "Entry to Workload::generate_IOs() for " << workloadID; log(wt.slavethreadlogfile, o.str());}}
 
     unsigned int generated_qty {0};
 
@@ -655,7 +586,6 @@ std::string Workload::brief_status()
     o << "Workload = "     << workloadID
         << ", preQ = "     << precomputeQ.size()
         << ", running = "  << running_IOs.size()
-        << ", postQ = "    << postprocessQ.size()
         << ", WQ = "  << workload_queue_depth
         << ", WTQ = "  << pTestLUN->pWorkloadThread->workload_thread_queue_depth
         << ", WMQ = "  << workload_max_queue_depth

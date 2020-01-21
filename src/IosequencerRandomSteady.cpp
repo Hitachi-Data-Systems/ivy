@@ -21,16 +21,8 @@ using namespace std;
 
 #include "IosequencerRandomSteady.h"
 
-//#define IVYDRIVER_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
-                           // and so you can turn it off and on for each source file.
-
 bool IosequencerRandomSteady::generate(Eyeo& slang)
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
-    o << "Entering IosequencerRandomSteady::generate() for " << workloadID << " - Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
 	if (!IosequencerRandom::generate(slang))
 		return false;
 
@@ -50,10 +42,7 @@ bool IosequencerRandomSteady::generate(Eyeo& slang)
 		}
 		previous_scheduled_time = slang.scheduled_time;
 	}
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
-    o << "Exiting IosequencerRandomSteady::generate() for " << workloadID << " - updated Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
+
 	return true;
 }
 

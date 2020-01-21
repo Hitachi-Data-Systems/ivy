@@ -41,8 +41,6 @@
 #include "DedupeTargetSpreadRegulator.h"
 #include "logger.h"
 
-//#define IVYDRIVER_TRACE
-
 class TestLUN;
 class Eyeo;
 
@@ -221,13 +219,6 @@ public:
     unsigned wait_until_time_count {0};
     ivytime earliest_wait_until_time {};
 
-
-//#define trace_uring_taffic // This is the master define, to uncomment out before building
-#ifdef trace_uring_taffic
-    unsigned long trace_ring_quantity {100};
-    unsigned long trace_ring_sqe_counter {0};
-    unsigned long trace_ring_cqe_counter {0};
-#endif
 
     /*debug*/std::map<int     ,struct counter> short_submit_counter_map {};
     /*debug*/std::map<unsigned,struct counter> dropped_ocurrences_map   {};

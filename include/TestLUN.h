@@ -32,8 +32,6 @@
 #include "ivytime.h"
 #include "logger.h"
 
-//#define IVYDRIVER_TRACE
-
 extern bool routine_logging;
 //extern bool measure_submit_time;
 

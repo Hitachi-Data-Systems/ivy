@@ -21,11 +21,6 @@
 #include <sys/prctl.h>
 #include <stdlib.h>
 
-//#define IVYDRIVER_TRACE
-// IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
-//  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
-//  - you can turn on tracing separately for each class in its own source file.
-
 #include "WorkloadThread.h"
 #include "IosequencerRandomSteady.h"
 #include "IosequencerRandomIndependent.h"
@@ -308,7 +303,10 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
         thread_view_subinterval_number = -1;
 
+/*debug*/ { std::ostringstream o; o << "b4 build uring" << std::endl; log(slavethreadlogfile,o.str());}
+
         build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Eyeos();
+/*debug*/ { std::ostringstream o; o << "after build uring" << std::endl; log(slavethreadlogfile,o.str());}
 
 		for (auto& pTestLUN : pTestLUNs)
 		{
@@ -372,6 +370,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 goto wait_for_command;
             }
 		}
+/*debug*/ { std::ostringstream o; o << "aye" << std::endl; log(slavethreadlogfile,o.str());}
 
 		dispatching_latency_seconds.clear();
         lock_aquisition_latency_seconds.clear();
@@ -406,6 +405,8 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             log(slavethreadlogfile,o.str());
         }
 
+/*debug*/ { std::ostringstream o; o << "eye" << std::endl; log(slavethreadlogfile,o.str());}
+
         for (auto& pTestLUN : pTestLUNs)
         {
             try { pTestLUN->prepare_linux_AIO_driver_to_start(); }
@@ -421,9 +422,10 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
 		state=ThreadState::running;
 
+/*debug*/ { std::ostringstream o; o << "bye" << std::endl; log(slavethreadlogfile,o.str());}
 
 
-        if (routine_logging) log(slavethreadlogfile,"Finished initialization and now about to start running subintervals.");
+        if (routine_logging) { log(slavethreadlogfile,"Finished initialization and now about to start running subintervals."); }
 
         // indent level in loop waiting for run commands
 
@@ -579,8 +581,11 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             // indent level in loop running subintervals
                 // indent level in locked section at subinterval switchover
 
+                if (routine_logging)
                 {
                     std::ostringstream o;
+
+                    o << std::endl;
 
                     for (auto& pTestLUN : pTestLUNs)
                     {
@@ -663,7 +668,11 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                         log_io_uring_engine_stats();
                     }
 
+/*debug*/{std::ostringstream o; o << "about to shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos()."; log(slavethreadlogfile,o.str());}
+
                     shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos();
+
+/*debug*/{std::ostringstream o; o << "about to turn off ivydriver_main_posted_command, go into waiting_for_command state, unlock, notify all ..."; log(slavethreadlogfile,o.str());}
 
                     ivydriver_main_posted_command = false;
 
@@ -882,10 +891,6 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
     /*debug*/
     /*debug*/                dropped_ocurrences_map[dropped].c++;
 
-    //#define trace_uring_taffic
-    #ifdef trace_uring_taffic
-                    if (trace_ring_sqe_counter <= trace_ring_quantity) { std::ostringstream o; o << trace_ring_sqe_counter << " - " <<submitted << " sqes were submitted using io_uring_submit_and_wait()"; log(slavethreadlogfile,o.str()); }
-    #endif
                     if ( submitted != 0 )
                     {
                         std::ostringstream o;
@@ -1164,6 +1169,7 @@ void WorkloadThread::check_for_long_running_IOs()
 
     ivytime run_time = ending-now;
 
+    if (routine_logging)
     {
         std::ostringstream o;
         o << "WorkloadThread::check_for_long_running_IOs() held the lock and ran for " << run_time.getAsNanoseconds() << " nanoseconds." << std::endl;
@@ -1176,6 +1182,22 @@ void WorkloadThread::check_for_long_running_IOs()
 
 void WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Eyeos()
 {
+    if (io_uring_fd != -1)
+    {
+        std::ostringstream o;
+        o << "WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Eyeos()"
+            << " - upon entry, io_uring_fd was not -1, instead it was " << io_uring_fd << std::endl;
+        post_error(o.str());
+    }
+
+    if (p_buffer_pool != nullptr)
+    {
+        std::ostringstream o;
+        o << "WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Eyeos()"
+            << " - upon entry, p_buffer_pool was not nullptr, instead it was " << p_buffer_pool << std::endl;
+        post_error(o.str());
+    }
+
     cumulative_sqes             = 0;
     cumulative_submits          = 0;
     cumulative_waits            = 0;
@@ -1196,13 +1218,7 @@ void WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Ey
 
     total_maxTags = 0;
 
-    if (io_uring_fd != -1)
-    {
-        io_uring_queue_exit(&struct_io_uring);
-        io_uring_fd = -1;
-    }
-
-    if (p_buffer_pool != nullptr) { free(p_buffer_pool); p_buffer_pool = nullptr; }
+/*debug*/ { std::ostringstream o; o << "WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Eyeos() - b4 computing buffer pool size." << std::endl;log(slavethreadlogfile, o.str()); }
 
     unsigned total_Eyeos {0};
 
@@ -1271,7 +1287,10 @@ void WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Ey
 
     requested_uring_entries = 1;
 
-    while (requested_uring_entries < 4096 && ((2*requested_uring_entries)-1) < total_maxTags) { requested_uring_entries *= 2; }
+    while (requested_uring_entries < 4096 && (2*requested_uring_entries) < (total_maxTags+3)) // This formulation OK for unsigned - no subtracting
+    {
+        requested_uring_entries *= 2;
+    }
 
     rc = io_uring_queue_init(requested_uring_entries,&struct_io_uring,0);
 
@@ -1335,7 +1354,7 @@ void WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Ey
             i++;
         }
 
-        rc= io_uring_register_files(&struct_io_uring, arrayof_fds, pTestLUNs.size());
+        rc = io_uring_register_files(&struct_io_uring, arrayof_fds, pTestLUNs.size());
 
         if ( rc != 0)
         {
@@ -1389,23 +1408,43 @@ void WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Ey
 
     sqes_queued_for_submit = 0;
 
-//#define trace_uring_taffic
-#ifdef trace_uring_taffic
-    trace_ring_sqe_counter = trace_ring_cqe_counter = 0;
-#endif
-
     return;
 }
 
 void WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos()
 {
-    io_uring_unregister_buffers(&struct_io_uring);
-    io_uring_unregister_files  (&struct_io_uring);
-    io_uring_queue_exit        (&struct_io_uring);
+/*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - entry." << std::endl;log(slavethreadlogfile, o.str()); }
+
+    int rc_ub, rc_uf;
+    rc_ub = io_uring_unregister_buffers(&struct_io_uring);
+    rc_uf = io_uring_unregister_files  (&struct_io_uring);
+            io_uring_queue_exit        (&struct_io_uring);
+
+    io_uring_fd = -1;
+
+    if (rc_ub != 0 || rc_uf != 0)
+    {
+        std::ostringstream o;
+        o << "shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - ";
+        o << "io_uring_unregister_buffers() return code = " << rc_ub;  if (rc_ub != 0) { o << " (" << std::strerror(abs(rc_ub)) << ")"; }
+        o << "io_uring_unregister_files() return code = "   << rc_uf;  if (rc_uf != 0) { o << " (" << std::strerror(abs(rc_uf)) << ")"; }
+        post_error(o.str());
+    }
+
+/*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - after io_uring_queue_exit()." << std::endl;log(slavethreadlogfile, o.str()); }
 
     for (auto& pTestLUN : pTestLUNs)
     {
-        close(pTestLUN->fd);
+        int rc = close(pTestLUN->fd);
+
+        if (rc != 0)
+        {
+            std::ostringstream o;
+            o << "shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - ";
+            o << "return code " << rc << " (" << std::strerror(abs(rc)) << ") from close(" << pTestLUN->fd << ") for " << pTestLUN->host_plus_lun;
+            post_error(o.str());
+        }
+
         pTestLUN->fd = -1;
 
         for (auto& pear : pTestLUN->workloads)
@@ -1421,16 +1460,24 @@ void WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos()
 
                 w.precomputeQ.clear();
 
-                while (w.postprocessQ.size() > 0) w.postprocessQ.pop();
-
                 w.running_IOs.clear();
             }
         }
     }
 
+/*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - after closing LUN fds." << std::endl;log(slavethreadlogfile, o.str()); }
+    if (p_buffer_pool == nullptr)
+    {
+        std::ostringstream o;
+        o << "shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - ";
+        o << "p_buffer_pool is nullptr.";
+        post_error(o.str());
+    }
+
     free(p_buffer_pool);
 
     p_buffer_pool = nullptr;
+/*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - returning." << std::endl;log(slavethreadlogfile, o.str()); }
 
     return;
 }
@@ -1656,7 +1703,7 @@ void WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
                 << " over a period of " << ivytime( now - upon_entry ).format_as_duration_HMMSSns()
                 << ", there were still " << workload_thread_queue_depth << " pending completion queue events.";
             log(slavethreadlogfile,o.str());
-            break;
+            return;
         }
 
         unsigned cqe_harvest_count = io_uring_peek_batch_cqe(&struct_io_uring, cqe_pointer_array, cqes_with_one_peek_limit);
@@ -1682,6 +1729,8 @@ void WorkloadThread::catch_in_flight_IOs_after_last_subinterval()
         }
 
     }
+
+    now.setToNow();
 
     if (routine_logging)
     {

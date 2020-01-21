@@ -30,8 +30,6 @@
 #include "DedupeTargetSpreadRegulator.h"
 #include "DedupeConstantRatioRegulator.h"
 
-//#define IVYDRIVER_TRACE
-
 typedef long double pattern_float_type;
 
 class WorkloadThread;
@@ -85,12 +83,6 @@ public:
 
 	std::list<Eyeo*> precomputeQ;  // We are using a std::list instead of a std::queue so that
 	                               // if io_submit() doesn't successfully launch all of a batch
-	                               // then we can put the ones that didn't launch back into
-	                               // the precomputeQ in original sequence at the wrong end backwards.
-
-	std::queue<Eyeo*> postprocessQ;
-
-
 	std::set<Eyeo*> running_IOs;
 
 	ivy_int cancelled_IOs {0};
@@ -146,23 +138,6 @@ public:
     uint64_t workload_cumulative_launch_count {0};
     uint64_t workload_cumulative_completion_count {0};
     ivy_float workload_weighted_IOPS_max_skew_progress {0.0};
-
-#ifdef IVYDRIVER_TRACE
-    unsigned int workload_callcount_prepare_to_run {0};
-    unsigned int workload_callcount_build_Eyeos {0};
-    unsigned int workload_callcount_switchover {0};
-    unsigned int workload_callcount_pop_and_process_an_Eyeo {0};
-    unsigned int workload_callcount_front_launchable_IO {0};
-    unsigned int workload_callcount_populate_sqes {0};
-    unsigned int workload_callcount_generate_an_IO {0};
-
-    unsigned int start_IOs_Workload_bookmark_count {0};
-    unsigned int start_IOs_Workload_body_count {0};
-    unsigned int pop_one_bookmark_count {0};
-    unsigned int pop_one_body_count {0};
-    unsigned int generate_one_bookmark_count {0};
-    unsigned int generate_one_body_count {0};
-#endif
 
 //methods
     Workload();

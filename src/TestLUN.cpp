@@ -28,20 +28,8 @@
 #include "Eyeo.h"
 #include "ivydriver.h"
 
-//#define IVYDRIVER_TRACE
-// IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
-//  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
-//  - you can turn on tracing separately for each class in its own source file.
-
-
 unsigned int TestLUN::sum_of_maxTags()
 {
-#if defined(IVYDRIVER_TRACE)
-    { sum_of_maxTags_callcount++; if (sum_of_maxTags_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << sum_of_maxTags_callcount << ") ";
-    o << "      Entering TestLUN::sum_of_maxTags()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
     unsigned int total {0};
 
     for (auto& pear : workloads)
@@ -65,11 +53,6 @@ void TestLUN::post_warning(const std::string& msg) { pWorkloadThread->post_warni
 
 void TestLUN::open_fd()
 {
-#if defined(IVYDRIVER_TRACE)
-    { open_fd_callcount++; if (open_fd_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << ':' << open_fd_callcount << ") ";
-    o << "      Entering TestLUN::open_fd()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
     if (workloads.size() == 0)
     {
         std::ostringstream o;
@@ -130,11 +113,7 @@ void TestLUN::open_fd()
 
 void TestLUN::prepare_linux_AIO_driver_to_start()
 {
-#if defined(IVYDRIVER_TRACE)
-    { prepare_linux_AIO_driver_to_start_callcount++; if (prepare_linux_AIO_driver_to_start_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << prepare_linux_AIO_driver_to_start_callcount << ") ";
-    o << "      Entering TestLUN::prepare_linux_AIO_driver_to_start()."; } }
-#endif
+/*debug*/ { std::ostringstream o; o << "TestLUN::prepare_linux_AIO_driver_to_start() - entry." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
 
 	// Coming in, we expect the subinterval_array[] IosequencerInput and SubintervalOutput objects to be prepared.
 	// That means p_current_subinterval, p_current_IosequencerInput, and p_current_SubintervalOutput are set.
@@ -178,18 +157,13 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 	    }
 	}
 
+/*debug*/ { std::ostringstream o; o << "TestLUN::prepare_linux_AIO_driver_to_start() - returning normallhy." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
 	return;
 }
 
 
 unsigned int /* number of I/Os started */ TestLUN::populate_sqes()
 {
-#if defined(IVYDRIVER_TRACE)
-    { start_IOs_callcount++; if (start_IOs_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << start_IOs_callcount << ") ";
-    o << "      Entering TestLUN::populate_sqes()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
     // This is the code that does the merge onto the TestLUN's AIO context
     // of the individual pre-compute queues of each workload
 
@@ -251,13 +225,6 @@ unsigned int /* number of I/Os started */ TestLUN::populate_sqes()
 
 unsigned int /* number of I/Os generated < ivydriver.  */  TestLUN::generate_IOs()
 {
-#if defined(IVYDRIVER_TRACE)
-    { generate_an_IO_callcount++; if (generate_an_IO_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << generate_an_IO_callcount << ") ";
-    o << "      Entering TestLUN::generate_IOs()."; log(pWorkloadThread->slavethreadlogfile,o.str()); }
-    abort_if_queue_depths_corrupted("TestLUN::generate_an_IO", generate_an_IO_callcount); }
-#endif
-
 //    The default is ivy_engine_set("generate_at_a_time","1");
 //    This gets propagated to ivydriver with the corresponding
 //    ivydriver "set" command;
@@ -283,17 +250,9 @@ unsigned int /* number of I/Os generated < ivydriver.  */  TestLUN::generate_IOs
 
     auto wit = generate_one_bookmark;
 
-#ifdef IVYDRIVER_TRACE
-    (*wit).second.generate_one_bookmark_count++;
-#endif
-
     while (true)
     {
         Workload* pWorkload = &(wit->second);
-
-#ifdef IVYDRIVER_TRACE
-        pWorkload->generate_one_body_count++;
-#endif
 
         generated_qty += pWorkload->generate_IOs();
         if (generated_qty >= ivydriver.generate_at_a_time) break;

@@ -22,9 +22,6 @@ using namespace std;
 
 #include "IosequencerRandomIndependent.h"
 
-//#define IVYDRIVER_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
-                           // and so you can turn it off and on for each source file.
-
 //
 //	The probability distribution of the time between successive I/O operations for the random, independent
 //	case where each I/O arrives at a random time independent of the time of all other I/O operations, but
@@ -56,11 +53,6 @@ using namespace std;
 
 bool IosequencerRandomIndependent::generate(Eyeo& slang)
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
-    o << "Entering IosequencerRandomIndependent::generate() for " << workloadID << " - Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
 	if (!IosequencerRandom::generate(slang))
 		return false;
 
@@ -86,10 +78,6 @@ bool IosequencerRandomIndependent::generate(Eyeo& slang)
 		previous_scheduled_time = slang.scheduled_time;
 
 	}
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
-    o << "Exiting IosequencerRandomIndependent::generate() for " << workloadID << " - updated Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
 
 	return true;
 }
