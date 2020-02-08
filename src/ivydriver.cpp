@@ -43,7 +43,6 @@ IvyDriver ivydriver;
 
 bool routine_logging {false};
 bool subthread_per_hyperthread {true};  // sorry, this is backwards compared to the ivy main host's one_thread_per_core
-//bool measure_submit_time {false};
 
 std::string printable_ascii;
 
@@ -151,10 +150,11 @@ void sig_handler(int sig, siginfo_t *p_siginfo, void *context);
 
 int IvyDriver::main(int argc, char* argv[])
 {
-    struct sigaction sigactshun;
-    memset(&sigactshun, 0, sizeof(sigactshun));
-    sigactshun.sa_flags = SA_SIGINFO;  // three argument form of signal handler
-    sigactshun.sa_sigaction = sig_handler;
+//    struct sigaction sigactshun;
+//    memset(&sigactshun, 0, sizeof(sigactshun));
+//    sigactshun.sa_flags = SA_SIGINFO;  // three argument form of signal handler
+//    sigactshun.sa_sigaction = sig_handler;
+
     //sigaction(SIGINT, &sigactshun, NULL);
     //sigaction(SIGHUP, &sigactshun, NULL);
     //sigaction(SIGCHLD, &sigactshun, NULL);
@@ -862,7 +862,8 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
  	    o << cpubusydetail << std::endl;log(slavelogfile, o.str());
     }
 
-	say(std::string("[CPU]")+cpubusysummary.toString() + std::string("+") + digital_readouts.toString());
+    RunningStat_double_long_int* p_rs = (RunningStat_double_long_int*) &digital_readouts;
+	say(std::string("[CPU]")+cpubusysummary.toString() + std::string("+") + p_rs->toString()); // this p_rs is to use snprintf instead as it's faster.
 
 	interval_start_CPU.copy(interval_end_CPU);
 
@@ -901,7 +902,7 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
         if ( n > thread_limit_time)
         {
             std::ostringstream o;
-            o << "Excessive latency over 3/4 of the way through the next subinterval when sending up workload detail lines for the previous subinterval."
+            o << "Interlock failure - over 3/4 of the way through the next subinterval when still sending up workload detail lines for the previous subinterval."
                 << "  If there is a huge number of workloads, consider running a longer subinterval_seconds." << std::endl;
             throw std::runtime_error(o.str());
         }
@@ -919,7 +920,7 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
                            [&wlt] { return wlt.ivydriver_main_posted_command == false; }))  // WorkloadThread turns this off when switching to a new subinterval
                 {
                     std::ostringstream o;
-                    o << "Excessive latency over 3/4 of the way through the next subinterval when sending up workload detail lines for the previous subinterval."
+                    o << "Interlock failure - over 3/4 of the way through the next subinterval when still sending up workload detail lines for the previous subinterval."
                         << "  If there is a huge number of workloads, consider running a longer subinterval_seconds." << std::endl;
                     throw std::runtime_error(o.str());
                 }

@@ -33,15 +33,6 @@
 #include "logger.h"
 
 extern bool routine_logging;
-//extern bool measure_submit_time;
-
-// for some strange reason, there's no header file for these system call wrapper functions
-inline int io_setup(unsigned nr, aio_context_t *ctxp)                   { return syscall(__NR_io_setup, nr, ctxp); }
-inline int io_destroy(aio_context_t ctx)                                { return syscall(__NR_io_destroy, ctx); }
-inline int io_submit(aio_context_t ctx, long nr,  struct iocb **iocbpp) { return syscall(__NR_io_submit, ctx, nr, iocbpp); }
-inline int io_getevents(aio_context_t ctx, long min_nr, long max_nr, struct io_event *events, struct timespec *timeout)
-	                                                                    { return syscall(__NR_io_getevents, ctx, min_nr, max_nr, events, timeout); }
-inline int io_cancel(aio_context_t ctx, struct iocb * p_iocb, struct io_event *p_io_event){ return syscall(__NR_io_cancel, ctx, p_iocb, p_io_event); };
 
 // We can't use POSIX AIO, because it uses a thread model internally.
 

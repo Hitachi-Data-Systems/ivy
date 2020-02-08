@@ -225,7 +225,7 @@ unsigned int /* number of I/Os started */ TestLUN::populate_sqes()
 
 unsigned int /* number of I/Os generated < ivydriver.  */  TestLUN::generate_IOs()
 {
-//    The default is ivy_engine_set("generate_at_a_time","1");
+//    The default is ivy_engine_set("generate_at_a_time","4");
 //    This gets propagated to ivydriver with the corresponding
 //    ivydriver "set" command;
 //

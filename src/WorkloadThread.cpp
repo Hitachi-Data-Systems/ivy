@@ -29,8 +29,6 @@
 #include "linux/io_uring.h"
 #include "liburing.h"
 
-//#define CHECK_FOR_LONG_RUNNING_IOS
-
 extern bool routine_logging;
 
 pid_t get_subthread_pid()
@@ -116,7 +114,18 @@ std::ostream& operator<<(std::ostream& o, const struct cqe_shim& s)
 
 struct cqe_shim* timeout_shims::insert_timeout(const ivytime& then, const ivytime& now)
 {
+    if (then.isZero() || now.isZero() || then <= now)
+    {
+        std::ostringstream o;
+        o << "<Error> timeout_shims::insert_timeout(const ivytime& then = " << then.format_as_datetime_with_ns()
+            << ", const ivytime& now = " << now.format_as_datetime_with_ns() << ")"
+            << " - Neither \"then\" nor \"now\" may be zero, and \"then\" must be after \"now\".";
+        throw std::runtime_error(o.str());
+    }
+
     struct cqe_shim* p_shim = new struct cqe_shim;
+
+    if (p_shim == nullptr) {throw std::runtime_error("<Error> internal programming error - timeout_shims::insert_timeout() - failed getting memory for cqe_shim.");}
 
     p_shim->type = cqe_type::timeout;
     p_shim->wait_until_this_time = then;
@@ -131,12 +140,12 @@ ivytime timeout_shims::earliest_timeout()
 {
     ivytime earliest {0};
 
-    for ( auto& p_shim : unexpired_shims )
+    for ( cqe_shim* p_shim : unexpired_shims )
     {
         if (earliest.isZero() || p_shim->wait_until_this_time < earliest) { earliest = p_shim->wait_until_this_time; }
     }
 
-    if ( (! unsubmitted_timeout.isZero()) && unsubmitted_timeout < earliest) { earliest = unsubmitted_timeout; }
+    if ( (!unsubmitted_timeout.isZero()) && (earliest.isZero() || unsubmitted_timeout < earliest)) { earliest = unsubmitted_timeout; }
 
     return earliest;
 }
@@ -299,14 +308,18 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
 		// "start" command received.
 
+		number_of_concurrent_timeouts.clear();
+
 		slaveThreadConditionVariable.notify_all();
 
         thread_view_subinterval_number = -1;
 
-/*debug*/ { std::ostringstream o; o << "b4 build uring" << std::endl; log(slavethreadlogfile,o.str());}
+//*debug*/ { std::ostringstream o; o << "b4 build uring" << std::endl; log(slavethreadlogfile,o.str());}
 
         build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Eyeos();
-/*debug*/ { std::ostringstream o; o << "after build uring" << std::endl; log(slavethreadlogfile,o.str());}
+//*debug*/ { std::ostringstream o; o << "after build uring" << std::endl; log(slavethreadlogfile,o.str());}
+
+		step_run_time_seconds = 0.0;
 
 		for (auto& pTestLUN : pTestLUNs)
 		{
@@ -316,7 +329,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                 for (auto& pear: pTestLUN->workloads)
                 {
-/*debug*/pear.second.io_return_code_counts.clear();
+//*debug*/pear.second.io_return_code_counts.clear();
                     pear.second.iops_max_io_count = 0;
                     pear.second.currentSubintervalIndex=0;
                     pear.second.otherSubintervalIndex=1;
@@ -370,7 +383,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 goto wait_for_command;
             }
 		}
-/*debug*/ { std::ostringstream o; o << "aye" << std::endl; log(slavethreadlogfile,o.str());}
+//*debug*/ { std::ostringstream o; o << "aye" << std::endl; log(slavethreadlogfile,o.str());}
 
 		dispatching_latency_seconds.clear();
         lock_aquisition_latency_seconds.clear();
@@ -405,7 +418,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             log(slavethreadlogfile,o.str());
         }
 
-/*debug*/ { std::ostringstream o; o << "eye" << std::endl; log(slavethreadlogfile,o.str());}
+//*debug*/ { std::ostringstream o; o << "eye" << std::endl; log(slavethreadlogfile,o.str());}
 
         for (auto& pTestLUN : pTestLUNs)
         {
@@ -422,7 +435,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
 		state=ThreadState::running;
 
-/*debug*/ { std::ostringstream o; o << "bye" << std::endl; log(slavethreadlogfile,o.str());}
+//*debug*/ { std::ostringstream o; o << "bye" << std::endl; log(slavethreadlogfile,o.str());}
 
 
         if (routine_logging) { log(slavethreadlogfile,"Finished initialization and now about to start running subintervals."); }
@@ -485,12 +498,12 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
             try
             {
-                linux_AIO_driver_run_subinterval();
+                run_subinterval();
             }
             catch (std::exception& e)
             {
                 std::ostringstream o;
-                o << "failed running linux_AIO_driver_run_subinterval() - "
+                o << "failed running run_subinterval() - "
                     << e.what() << "." << std::endl;
                 post_error(o.str());
                 goto wait_for_command;
@@ -501,6 +514,9 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             // First record the dispatching latency,
             // the time from when the clock clicked over to a new subinterval
             // to the time that the WorkloadThread code starts running.
+
+//*debug*/ { std::ostringstream o; o << "back in WorkloadThreadRun() after running subinterval." << std::endl; log(slavethreadlogfile,o.str());}
+
 
             ivytime before_getting_lock, dispatch_time;
             before_getting_lock.setToNow();
@@ -524,7 +540,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                 o << "Physical core " << physical_core << " hyperthread " << hyperthread << ": Bottom of subinterval " << thread_view_subinterval_number
                     << " " << thread_view_subinterval_start.format_as_datetime_with_ns()
                     << " to " << thread_view_subinterval_end.format_as_datetime_with_ns() << std::endl;
-/*debug*/for (auto& pTestLUN:pTestLUNs){for (auto& pear : pTestLUN->workloads) {Workload& w = pear.second; for (auto& q : w.io_return_code_counts ){ o << w.workloadID << "I/O return code " << q.first << " occurred " << q.second.c << " times."<< std::endl;}}}
+//*debug*/for (auto& pTestLUN:pTestLUNs){for (auto& pear : pTestLUN->workloads) {Workload& w = pear.second; for (auto& q : w.io_return_code_counts ){ o << w.workloadID << "I/O return code " << q.first << " occurred " << q.second.c << " times."<< std::endl;}}}
                 log(slavethreadlogfile,o.str());
             }
 
@@ -534,6 +550,8 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             {
                 // start of locked section at subinterval switchover
                 std::unique_lock<std::mutex> wkld_lk(slaveThreadMutex);
+
+//*debug*/ { std::ostringstream o; o << "Got lock to look at command which is " << mainThreadCommandToString(ivydriver_main_says) << "." << std::endl; log(slavethreadlogfile,o.str()); }
 
                 ivytime got_lock_time;  got_lock_time.setToNow();
 
@@ -569,7 +587,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                         catch (std::exception& e)
                         {
                             std::ostringstream o;
-                            o << "failed switchover to next subinterval for " << pTestLUN->host_plus_lun <<" - "
+                            o << "failed switcover to next subinterval for " << pTestLUN->host_plus_lun <<" - "
                                 << e.what() << "." << std::endl;
                             post_error(o.str());
                             goto wait_for_command;
@@ -613,8 +631,6 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
 
                     log(slavethreadlogfile, o.str());
                 }
-
-
 
                 if (MainThreadCommand::stop == ivydriver_main_says)
                 {
@@ -668,11 +684,22 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                         log_io_uring_engine_stats();
                     }
 
-/*debug*/{std::ostringstream o; o << "about to shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos()."; log(slavethreadlogfile,o.str());}
+                    //if (routine_logging)
+                    {
+                        std::ostringstream o;
+                        o << "number_of_concurrent_timeouts: "
+                            << "count() = " << number_of_concurrent_timeouts.count()
+                            << "avg() = "   << number_of_concurrent_timeouts.avg()
+                            << "max() = "   << number_of_concurrent_timeouts.max()
+                            << ".";
+                        log(slavethreadlogfile,o.str());
+                    }
+
+//*debug*/{std::ostringstream o; o << "about to shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos()."; log(slavethreadlogfile,o.str());}
 
                     shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos();
 
-/*debug*/{std::ostringstream o; o << "about to turn off ivydriver_main_posted_command, go into waiting_for_command state, unlock, notify all ..."; log(slavethreadlogfile,o.str());}
+//*debug*/{std::ostringstream o; o << "about to turn off ivydriver_main_posted_command, go into waiting_for_command state, unlock, notify all ..."; log(slavethreadlogfile,o.str());}
 
                     ivydriver_main_posted_command = false;
 
@@ -697,6 +724,8 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                     post_error(o.str());
                     goto wait_for_command;
 				}
+
+//*debug*/{std::ostringstream o; o << "processing keep_going command."; log(slavethreadlogfile,o.str());}
 
                 // MainThreadCommand::keep_going
 
@@ -730,14 +759,14 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
             switchover_complete.setToNow();
             switchover_completion_latency_seconds.push(ivytime(switchover_complete-switchover_begin).getlongdoubleseconds());
 			slaveThreadConditionVariable.notify_all();
+//*debug*/{std::ostringstream o; o << "switchover complete."; log(slavethreadlogfile,o.str());}
 		}
 	}
 }
 
-void WorkloadThread::linux_AIO_driver_run_subinterval()
-// see also https://code.google.com/p/kernel/wiki/AIOUserGuide
+void WorkloadThread::run_subinterval()
 {
-/*debug*/short_submit_counter_map.clear(); dropped_ocurrences_map.clear();
+//*debug*/short_submit_counter_map.clear(); dropped_ocurrences_map.clear();
 
     ivytime now; now.setToNow();
 
@@ -745,13 +774,11 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
     {
         std::ostringstream o;
         now = now - thread_view_subinterval_end;
-        o << "WorkloadThread::linux_AIO_driver_run_subinterval() running subinterval which will end at "
+        o << "WorkloadThread::run_subinterval() running subinterval which will end at "
             << thread_view_subinterval_end.format_as_datetime_with_ns()
             << " - " << (thread_view_subinterval_end-now).format_as_duration_HMMSSns() << " from now " << std::endl;
         log(slavethreadlogfile,o.str());
     }
-
-    //last_pass_nothing_to_do = false;
 
     try_generating_IOs = true;
         // The idea here is that if there's no new information since last time
@@ -769,9 +796,15 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
     consecutive_fruitless_passes = 0;
 
+//*debug*/unsigned torque = 0;
+
 	while (true)
 	{
         cumulative_loop_passes ++;
+
+//*debug*/if (++torque == 100) { std::ostringstream o; o << " %%%%%%%%%%%%%% 100th pass %%%%%%%%%%%%%%%%%%"; log(slavethreadlogfile,o.str()); }
+
+//*debug*/if (cumulative_loop_passes % 10000 == 0) { std::ostringstream o; o << " ||||||||||||||============== cumulative_loop_passes = " << cumulative_loop_passes << "."; log(slavethreadlogfile,o.str()); }
 
 	    did_something_this_pass = false;
 
@@ -822,32 +855,22 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
         if ( !did_something_this_pass )                            { generate_IOs(); }
 
-        if ( (!ivydriver.spinloop) && (!did_something_this_pass) ) { possibly_insert_timeout(); }
+        if ( (!ivydriver.spinloop) && (!did_something_this_pass) ) { possibly_insert_timeout(now); }
 
         bool fruitless_pass = (!did_something_this_pass)  && (!ivydriver.spinloop) && sqes_queued_for_submit == 0;
 
-        bool if_nothing_to_submit_then_wait = false;
-
-        if (fruitless_pass)
-        {
-            cumulative_fruitless_passes++; consecutive_fruitless_passes++;
-
-            if (consecutive_fruitless_passes >= ivydriver.fruitless_passes_before_wait)
-            {
-                if_nothing_to_submit_then_wait = true;
-            }
-        }
-        else { consecutive_fruitless_passes = 0; }
+        if   (fruitless_pass) { consecutive_fruitless_passes++; cumulative_fruitless_passes++; }
+        else                  { consecutive_fruitless_passes = 0; }
 
         int submitted = 0;
 
         if ( sqes_queued_for_submit > 0 )
         {
-            // we already knew it wasn't a fruitless pass, but know we know there are sqes to submit
+            // we already knew it wasn't a fruitless pass, but now we know there are sqes to submit
 
             if ( max_sqes_tried_to_submit_at_once < sqes_queued_for_submit ) { max_sqes_tried_to_submit_at_once = sqes_queued_for_submit; }
 
-            int submitted = io_uring_submit(&struct_io_uring); cumulative_submits++;
+            submitted = io_uring_submit(&struct_io_uring); cumulative_submits++;
 
             if (submitted < 0)
             {
@@ -859,19 +882,21 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
 
             if ( ((unsigned int) submitted) > max_sqes_submitted_at_once ) { max_sqes_submitted_at_once = ((unsigned int) submitted); }
 
-/*debug*/                int short_submit = ((int) sqes_queued_for_submit) - submitted;
-/*debug*/
-/*debug*/                short_submit_counter_map[short_submit].c++;
-/*debug*/
-/*debug*/                unsigned dropped = *(struct_io_uring.sq.kdropped);
-/*debug*/
-/*debug*/                dropped_ocurrences_map[dropped].c++;
+///*debug*/                int short_submit = ((int) sqes_queued_for_submit) - submitted;
+///*debug*/
+///*debug*/                short_submit_counter_map[short_submit].c++;
+///*debug*/
+///*debug*/                unsigned dropped = *(struct_io_uring.sq.kdropped);
+///*debug*/
+///*debug*/                dropped_ocurrences_map[dropped].c++;
             sqes_queued_for_submit -= (unsigned) submitted;
         }
         else // There are no sqes queued for submit
         {
-            if (if_nothing_to_submit_then_wait)
+            if (consecutive_fruitless_passes > ivydriver.fruitless_passes_before_wait)
             {
+                /*debug*/if (workload_thread_queue_depth == 0) {throw std::runtime_error("Wait with zero queue depth.");}
+
                 submitted = io_uring_submit_and_wait(&struct_io_uring,1); cumulative_waits++;
 
                 if (submitted < 0)
@@ -883,13 +908,13 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
                 }
                 else
                 {
-    /*debug*/                int short_submit = ((int) sqes_queued_for_submit) - submitted;
-    /*debug*/
-    /*debug*/                short_submit_counter_map[short_submit].c++;
-    /*debug*/
-    /*debug*/                unsigned dropped = *(struct_io_uring.sq.kdropped);
-    /*debug*/
-    /*debug*/                dropped_ocurrences_map[dropped].c++;
+//    /*debug*/                int short_submit = ((int) sqes_queued_for_submit) - submitted;
+//    /*debug*/
+//    /*debug*/                short_submit_counter_map[short_submit].c++;
+//    /*debug*/
+//    /*debug*/                unsigned dropped = *(struct_io_uring.sq.kdropped);
+//    /*debug*/
+//    /*debug*/                dropped_ocurrences_map[dropped].c++;
 
                     if ( submitted != 0 )
                     {
@@ -899,8 +924,6 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
                             << "." << std::endl;
                         post_error(o.str());
                     }
-
-                    //sqes_queued_for_submit -= submitted;
                 }
             }
         }
@@ -931,8 +954,46 @@ void WorkloadThread::linux_AIO_driver_run_subinterval()
         log_io_uring_engine_stats();
     }
 
+    step_run_time_seconds += ivydriver.subinterval_duration.getlongdoubleseconds();
 
 	return;
+}
+
+
+void WorkloadThread::examine_timer_pop(struct cqe_shim* p_shim,const ivytime& now)
+{
+    double scheduled_seconds = (p_shim->scheduled_duration()).getlongdoubleseconds();
+
+    double actual_seconds = (p_shim->since_insertion(now)).getlongdoubleseconds();
+
+    if (scheduled_seconds <= 0.0 || actual_seconds <= 0.0)
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error - WorkloadThread::examine_timer_pop()"
+            << " - one or both of scheduled duration in seconds (" << scheduled_seconds
+            << ") or actual duration seconds (" << actual_seconds << ") is less than or equal to zero.";
+        throw std::runtime_error(o.str());
+    }
+
+    if ( scheduled_seconds >= .001 && actual_seconds < (0.2 * scheduled_seconds) )
+    {
+        std::ostringstream o;
+        o << "<Error> internal programming error - WorkloadThread::examine_timer_pop()"
+            << " - actual duration seconds (" << actual_seconds
+            << ") less than 1/5th of scheduled duration in seconds (" << scheduled_seconds << ")";
+        throw std::runtime_error(o.str());
+    }
+
+//    if ( actual_seconds > 0.1 && actual_seconds > (10 * scheduled_seconds) )
+//    {
+//        std::ostringstream o;
+//        o << "<Error> internal programming error - WorkloadThread::examine_timer_pop()"
+//            << " - actual duration seconds (" << actual_seconds
+//            << ") greater than 10x scheduled duration in seconds (" << scheduled_seconds << ")";
+//        throw std::runtime_error(o.str());
+//    }
+
+    return;
 }
 
 
@@ -967,6 +1028,8 @@ void WorkloadThread::process_cqe(struct io_uring_cqe* p_cqe, const ivytime& now)
                     ivydriver.workload_thread_warning_messages.push_back(o.str());
                 }
             }
+
+            examine_timer_pop(p_shim, now);
 
             unexpired_timeouts.delete_shim(p_shim);
 
@@ -1218,7 +1281,7 @@ void WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Ey
 
     total_maxTags = 0;
 
-/*debug*/ { std::ostringstream o; o << "WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Eyeos() - b4 computing buffer pool size." << std::endl;log(slavethreadlogfile, o.str()); }
+//*debug*/ { std::ostringstream o; o << "WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Eyeos() - b4 computing buffer pool size." << std::endl;log(slavethreadlogfile, o.str()); }
 
     unsigned total_Eyeos {0};
 
@@ -1413,7 +1476,7 @@ void WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Ey
 
 void WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos()
 {
-/*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - entry." << std::endl;log(slavethreadlogfile, o.str()); }
+//*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - entry." << std::endl;log(slavethreadlogfile, o.str()); }
 
     int rc_ub, rc_uf;
     rc_ub = io_uring_unregister_buffers(&struct_io_uring);
@@ -1431,7 +1494,7 @@ void WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos()
         post_error(o.str());
     }
 
-/*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - after io_uring_queue_exit()." << std::endl;log(slavethreadlogfile, o.str()); }
+//*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - after io_uring_queue_exit()." << std::endl;log(slavethreadlogfile, o.str()); }
 
     for (auto& pTestLUN : pTestLUNs)
     {
@@ -1465,7 +1528,7 @@ void WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos()
         }
     }
 
-/*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - after closing LUN fds." << std::endl;log(slavethreadlogfile, o.str()); }
+//*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - after closing LUN fds." << std::endl;log(slavethreadlogfile, o.str()); }
     if (p_buffer_pool == nullptr)
     {
         std::ostringstream o;
@@ -1477,16 +1540,18 @@ void WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos()
     free(p_buffer_pool);
 
     p_buffer_pool = nullptr;
-/*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - returning." << std::endl;log(slavethreadlogfile, o.str()); }
+//*debug*/ { std::ostringstream o; o << "WorkloadThread::shutdown_uring_and_unmap_Eyeo_buffers_and_delete_Eyeos() - returning." << std::endl;log(slavethreadlogfile, o.str()); }
 
     return;
 }
 
-void WorkloadThread::possibly_insert_timeout()
+void WorkloadThread::possibly_insert_timeout(const ivytime& now)
 {
-    ivytime timer_expiry {0};
+    ivytime timer_expiry = now + ivydriver.max_wait;
 
-    ivytime now; now.setToNow();
+    if (now > thread_view_subinterval_end) { did_something_this_pass = true; return; }
+
+    if (timer_expiry > thread_view_subinterval_end) { timer_expiry = thread_view_subinterval_end; }
 
     for (TestLUN* pTestLUN : pTestLUNs)
     {
@@ -1503,12 +1568,9 @@ void WorkloadThread::possibly_insert_timeout()
 
                 Eyeo* pEyeo = w.precomputeQ.front();
 
-                if (timer_expiry.isZero())
-                {
-                    timer_expiry = pEyeo->scheduled_time;
-                }
+                if (pEyeo->scheduled_time.isZero()) continue;
 
-                if ( (!pEyeo->scheduled_time.isZero()) && pEyeo->scheduled_time <  timer_expiry)
+                if (timer_expiry.isZero() || pEyeo->scheduled_time < timer_expiry)
                 {
                     timer_expiry = pEyeo->scheduled_time;
                 }
@@ -1516,11 +1578,7 @@ void WorkloadThread::possibly_insert_timeout()
         }
     }
 
-    ivytime now_plus_max_wait = now + ivydriver.max_wait;
-
-    if (timer_expiry.isZero())                      { timer_expiry = now_plus_max_wait; }
-
-    if (timer_expiry > thread_view_subinterval_end) { timer_expiry = thread_view_subinterval_end; }
+//*debug*/if (timer_expiry.isZero()) {throw std::runtime_error("<Error> internal programming error - WorkloadThread::possibly_insert_timeout(const ivytime& now) - Borked!");}
 
     ivytime earliest_unexpired = unexpired_timeouts.earliest_timeout(); // including a possibly queued timeout
 
@@ -1530,6 +1588,8 @@ void WorkloadThread::possibly_insert_timeout()
         // need to submit new timeout
 
         did_something_this_pass = true;
+
+        if (timer_expiry <= now) return;
 
         if ( unexpired_timeouts.unsubmitted_timeout.isZero() )
         {
@@ -1548,10 +1608,8 @@ void WorkloadThread::possibly_insert_timeout()
         }
         else
         {
-            if (unexpired_timeouts.unsubmitted_timeout > timer_expiry)
-            {
-                unexpired_timeouts.unsubmitted_timeout = timer_expiry;
-            }
+            unexpired_timeouts.unsubmitted_timeout = timer_expiry;
+            try_to_submit_unsubmitted_timeout(now);
         }
     }
 
@@ -1561,7 +1619,18 @@ void WorkloadThread::possibly_insert_timeout()
 
 void WorkloadThread::fill_in_timeout_sqe(struct io_uring_sqe* p_sqe, const ivytime& timestamp, const ivytime& now)
 {
+    if ( timestamp.isZero() || now.isZero() || now > timestamp )
+    {
+        std::ostringstream o;
+        o << "<Error> WorkloadThread::fill_in_timeout_sqe(struct io_uring_sqe* p_sqe, const ivytime& timestamp = "
+            << timestamp.format_as_datetime_with_ns() << ", const ivytime& now = " << now.format_as_datetime_with_ns() << ")"
+            << " - both \"timestamp\" and \"now\" must be non-zero, and \"timestamp\" must be after \"now\"." << std::endl;
+        throw std::runtime_error(o.str());
+    }
+
     cqe_shim* p_shim = unexpired_timeouts.insert_timeout(timestamp, now);
+
+    number_of_concurrent_timeouts.push ((ivy_float) unexpired_timeouts.unexpired_shims.size());
 
     ivytime delta_to_timestamp = timestamp - now;
 
@@ -1576,8 +1645,6 @@ void WorkloadThread::fill_in_timeout_sqe(struct io_uring_sqe* p_sqe, const ivyti
     io_uring_prep_timeout(p_sqe, &(p_shim->kts), 0 /* count*/, 0 /* flags */);
 
     p_sqe->user_data = (uint64_t) p_shim;
-
-    unexpired_timeouts.unsubmitted_timeout.setToZero();
 
     return;
 }
@@ -1619,9 +1686,11 @@ struct io_uring_sqe* WorkloadThread::get_sqe()
 }
 
 
-void WorkloadThread::try_to_submit_unsubmitted_timeout(const ivytime& now) // returns true if any pending timeouts were successfully submitted.
+void WorkloadThread::try_to_submit_unsubmitted_timeout(const ivytime& now)
 {
     if ( unexpired_timeouts.unsubmitted_timeout.isZero() ) { return; }
+
+    did_something_this_pass = true;
 
     if (now >= unexpired_timeouts.unsubmitted_timeout)
     {
@@ -1637,17 +1706,13 @@ void WorkloadThread::try_to_submit_unsubmitted_timeout(const ivytime& now) // re
     }
     else
     {
-        fill_in_timeout_sqe(p_sqe, thread_view_subinterval_end, now);
+        fill_in_timeout_sqe(p_sqe, unexpired_timeouts.unsubmitted_timeout, now);
+            // this also creates & inserts a cqe_shim for the timeout.
         unexpired_timeouts.unsubmitted_timeout.setToZero();
     }
 
     return;
 }
-
-
-
-
-
 
 
 void WorkloadThread::log_io_uring_engine_stats()
@@ -1662,6 +1727,7 @@ void WorkloadThread::log_io_uring_engine_stats()
     o << ", generate_at_a_time = "               << ivydriver.generate_at_a_time;
 
     o << ", loop_passes_per_IO() = "             << loop_passes_per_IO();
+    o << ", timer_pops_per_second() = "          << timer_pops_per_second();
     o << ", timer_pops_per_IO() = "              << timer_pops_per_IO();
     o << ", submits_per_IO() = "                 << submits_per_IO();
     o << ", fruitless_passes_per_IO() = "        << fruitless_passes_per_IO();
@@ -1669,8 +1735,8 @@ void WorkloadThread::log_io_uring_engine_stats()
     o << ", sqes_per_submit() = "                << sqes_per_submit();
     o << ", IOs_per_system_call() = "            << IOs_per_system_call();
 
-/*debug*/{ unsigned total {0}; o << std::endl; for (auto& pear : short_submit_counter_map) { total += pear.second.c; o << "For short submit value " << pear.first << " the number of occurrences was " << pear.second.c << "."<< std::endl;} o << "Total " << total << " occurrences." << std::endl; }
-/*debug*/{ unsigned total {0}; o << std::endl; for (auto& pear : dropped_ocurrences_map  ) { total += pear.second.c; o << "For dropped value "      << pear.first << " the number of occurrences was " << pear.second.c << "."<< std::endl;} o << "Total " << total << " occurrences." << std::endl; }
+//*debug*/{ unsigned total {0}; o << std::endl; for (auto& pear : short_submit_counter_map) { total += pear.second.c; o << "For short submit value " << pear.first << " the number of occurrences was " << pear.second.c << "."<< std::endl;} o << "Total " << total << " occurrences." << std::endl; }
+//*debug*/{ unsigned total {0}; o << std::endl; for (auto& pear : dropped_ocurrences_map  ) { total += pear.second.c; o << "For dropped value "      << pear.first << " the number of occurrences was " << pear.second.c << "."<< std::endl;} o << "Total " << total << " occurrences." << std::endl; }
 
     o << ", track_long_running_IOs = "   << (ivydriver.track_long_running_IOs ? "on" : "off");
     o << ", spinloop = "                 << (ivydriver.spinloop               ? "on" : "off");

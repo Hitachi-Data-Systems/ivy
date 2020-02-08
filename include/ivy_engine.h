@@ -60,8 +60,6 @@ std::string accumulator_types();
 void ivymaster_signal_handler(int sig, siginfo_t *p_siginfo, void *context);
 extern struct sigaction ivymaster_sigaction;
 
-//extern bool measure_submit_time;
-
 struct measurement
 {
     int first_subinterval {-1};
@@ -530,9 +528,11 @@ public:
 
     bool track_long_running_IOs {true}; // turn this off for pure speed but blind to long running I/Os.
 
-    unsigned int generate_at_a_time {1}; // the number of IOs pre-generated (and for writes with pattern generateion) before we check for I/O completions;
+    unsigned int generate_at_a_time {4}; // the number of IOs pre-generated (and for writes with pattern generateion) before we check for I/O completions;
 
     bool working_bit;
+
+    std::string command_line_options {};
 
 // methods
 

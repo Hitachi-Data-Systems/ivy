@@ -47,7 +47,7 @@ std::string inter_statement_divider {"==========================================
 
 bool routine_logging {false};
 bool rest_api {false};
-bool spinloop {false};
+bool spinloop {true};
 bool one_thread_per_core {false};
 
 void usage_message(char* argv_0)
@@ -83,10 +83,12 @@ void usage_message(char* argv_0)
         << "     to \"no_perf=on\" to suppress the collection of subsystem performance data" << std::endl
         << "     while ivy is running driving I/O.  Collection of performance data resumes" << std::endl
         << "     with the second and subsequent cooldown subintervals at IOPS=0 to support" << std::endl
-        << "     the cooldwon_by_wp and cooldown_by_MP_busy featueres." << std::endl << std::endl
+        << "     the cooldwon_by_wp and cooldown_by_MP_busy features." << std::endl << std::endl
         << "-spinloop" << std::endl
-        << "     Used to make test host code continually check for work to do without ever waiting." << std::endl << std::endl
-        << "     - Deprecated. Superceded by ivy_engine_set(\"spinloop\", \"on\")." << std::endl
+        << "     (Deprecated) The default behaviour is for ivydriver to constantly check in a \"spin loop\"" << std::endl
+        << "     to see if there are any I/Os to start or to harvest.  This default results in optimal" << std::endl
+        << "     I/O performance, but at the expense of running at 100% CPU busy.  To wait for events, say:" << std::endl
+        << "         ivy_engine_set(\"spinloop\",\"off\");" << std::endl << std::endl
         << "-one_thread_per_core" << std::endl
         << "     Use -one_thread_per_core to have ivydriver start a workload subthread on only the first" << std::endl
         << "     hyperthread on each physical CPU core, instead of the default which is start a workload subthread"
@@ -156,6 +158,35 @@ std::string get_running_user()
          return std::string(p->pw_name);
     }
     return std::string("");
+}
+
+
+
+void check_Linux_version_at_least_5_5()
+{
+    std::string s = GetStdoutFromCommand("uname -r"s);
+
+    trim(s);
+
+	std::regex rx{ R"(([0-9]+)\.([0-9]+)\.([0-9])([^0-9].*)?)" };
+	std::smatch sm;
+
+	if (std::regex_match(s, sm, rx))
+	{
+		std::ssub_match major_ssm = sm[1];  std::string major = major_ssm.str();
+		std::ssub_match minor_ssm = sm[2];  std::string minor = minor_ssm.str();
+
+		int maj = atoi(major.c_str());
+		int min = atoi(minor.c_str());
+
+		if (maj < 5 || (maj == 5 && min < 5))
+		{
+			std::ostringstream o;
+			o << "<Error> Sorry, this version of ivy is only supported on Linux kernel version 5.5 or newer.  This system is running version " << s << std::endl;
+			throw std::runtime_error(o.str());
+		}
+	}
+	return;
 }
 
 int main(int argc, char* argv[])
@@ -230,6 +261,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    check_Linux_version_at_least_5_5();
 
     m_s.path_to_ivy_executable = get_my_path_part();
 
@@ -241,24 +273,24 @@ int main(int argc, char* argv[])
     {{  // double braces to be really sure "item" is fresh every time.
         std::string item {argv[arg_index]};
 
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-rest")))           { rest_api = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-log")))            { routine_logging = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_wrap")))        { m_s.formula_wrapping = false; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_stepcsv")))     { m_s.stepcsv_default = false; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-storcsv")))        { m_s.storcsv_default = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-t")))              { routine_logging = trace_lexer = trace_parser = trace_evaluate = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-rest")))           { m_s.command_line_options += (" "s + item); rest_api = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-log")))            { m_s.command_line_options += (" "s + item); routine_logging = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_wrap")))        { m_s.command_line_options += (" "s + item); m_s.formula_wrapping = false; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_stepcsv")))     { m_s.command_line_options += (" "s + item); m_s.stepcsv_default = false; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-storcsv")))        { m_s.command_line_options += (" "s + item); m_s.storcsv_default = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-t")))              { m_s.command_line_options += (" "s + item); routine_logging = trace_lexer = trace_parser = trace_evaluate = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-trace_lexer"))
-         || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-l"))          )    { routine_logging = trace_lexer = true; continue; }
+         || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-l"))          )    { m_s.command_line_options += (" "s + item); routine_logging = trace_lexer = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-trace_parser"))
-         || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-p"))           )   { routine_logging = trace_parser = true; continue; }
+         || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-p"))           )   { m_s.command_line_options += (" "s + item); routine_logging = trace_parser = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-trace_evaluate"))
-        ||  stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-e"))             ) { routine_logging = trace_evaluate = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_cmd")))         { m_s.use_command_device = false; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-skip_LDEV")))      { m_s.skip_ldev_data_default = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-one_thread_per_core"))) { one_thread_per_core = true; continue; }
+        ||  stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-e"))             ) { m_s.command_line_options += (" "s + item); routine_logging = trace_evaluate = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_cmd")))         { m_s.command_line_options += (" "s + item); m_s.use_command_device = false; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-skip_LDEV")))      { m_s.command_line_options += (" "s + item); m_s.skip_ldev_data_default = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-one_thread_per_core"))) { m_s.command_line_options += (" "s + item); one_thread_per_core = true; continue; }
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_perf"))
-         || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-suppress_perf")))  { m_s.suppress_subsystem_perf_default = true; continue; }
-        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_check_failed_component")))  { m_s.check_failed_component_default = false; continue; }
+         || stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-suppress_perf")))  { m_s.command_line_options += (" "s + item); m_s.suppress_subsystem_perf_default = true; continue; }
+        if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-no_check_failed_component")))  { m_s.command_line_options += (" "s + item); m_s.check_failed_component_default = false; continue; }
 
 
         if (stringCaseInsensitiveEquality(remove_underscores(item), remove_underscores("-spinloop")))
@@ -279,6 +311,8 @@ int main(int argc, char* argv[])
 
         ivyscriptFilename = item;
     }}
+
+    trim(m_s.command_line_options);
 
     bool is_python_script {false};
     if (endsIn(ivyscriptFilename, ".py"))

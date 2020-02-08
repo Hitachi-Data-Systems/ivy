@@ -172,7 +172,7 @@ struct IvyDriver
 	std::string remainder;
 	std::string subinterval_duration_as_string;
 
-    bool spinloop {false};
+    bool spinloop {true};
     bool reported_error {false};
     ivytime time_error_reported {0};
 
@@ -185,11 +185,9 @@ struct IvyDriver
 
     bool warn_on_critical_temp {false};
 
-    //bool measure_submit_time {false};
-
     bool track_long_running_IOs {true}; // turn this off for pure speed but blind to long running I/Os.
 
-    unsigned int generate_at_a_time {1}; // the number of IOs pre-generated (and for writes with pattern generateion) before we check for I/O completions;
+    unsigned int generate_at_a_time {4}; // the number of IOs pre-generated (and for writes with pattern generateion) before we check for I/O completions;
 
     bool display_buffer_contents {false}; // used by operator<<(,const Eyeo
 

@@ -40,6 +40,7 @@
 #include "Subinterval.h"
 #include "DedupeTargetSpreadRegulator.h"
 #include "logger.h"
+#include "ivydefines.h"
 
 class TestLUN;
 class Eyeo;
@@ -220,13 +221,15 @@ public:
     ivytime earliest_wait_until_time {};
 
 
-    /*debug*/std::map<int     ,struct counter> short_submit_counter_map {};
-    /*debug*/std::map<unsigned,struct counter> dropped_ocurrences_map   {};
+//    /*debug*/std::map<int     ,struct counter> short_submit_counter_map {};
+//    /*debug*/std::map<unsigned,struct counter> dropped_ocurrences_map   {};
 
     bool try_generating_IOs {true};
 
 
+    double step_run_time_seconds {-1.0};
 
+    RunningStat<ivy_float, ivy_int> number_of_concurrent_timeouts {};
 
 
 
@@ -243,7 +246,7 @@ public:
 	std::string stateToString();
 	std::string ivydriver_main_saysToString();
 	void WorkloadThreadRun();
-	void linux_AIO_driver_run_subinterval();
+	void run_subinterval();
 
     unsigned int /* # of I/Os */ populate_sqes();
     unsigned int /* # of I/Os */ generate_IOs();
@@ -256,6 +259,7 @@ public:
     void post_warning(const std::string&);
 
     inline double loop_passes_per_IO()      { if (cumulative_eyeo_cqes == 0) {return -1;} return ( (double) cumulative_loop_passes      ) / ( (double) cumulative_eyeo_cqes ); }
+    inline double timer_pops_per_second()   { if (cumulative_eyeo_cqes == 0 || step_run_time_seconds == 0.0) {return -1;} return ( (double) cumulative_timer_pop_cqes   ) / step_run_time_seconds; }
     inline double timer_pops_per_IO()       { if (cumulative_eyeo_cqes == 0) {return -1;} return ( (double) cumulative_timer_pop_cqes   ) / ( (double) cumulative_eyeo_cqes ); }
     inline double submits_per_IO()          { if (cumulative_eyeo_cqes == 0) {return -1;} return ( (double) cumulative_submits          ) / ( (double) cumulative_eyeo_cqes ); }
     inline double fruitless_passes_per_IO() { if (cumulative_eyeo_cqes == 0) {return -1;} return ( (double) cumulative_fruitless_passes ) / ( (double) cumulative_eyeo_cqes ); }
@@ -270,7 +274,10 @@ public:
 
     void try_to_submit_unsubmitted_timeout(const ivytime& now); // returns true if any pending timeouts were successfully submitted.
 
-    void possibly_insert_timeout(); // sets did_something_this_pass
+    void possibly_insert_timeout(const ivytime&); // sets did_something_this_pass
+
+    void examine_timer_pop(struct cqe_shim* p_shim, const ivytime& );
+
 
     struct io_uring_sqe* get_sqe();
 

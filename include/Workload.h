@@ -45,7 +45,7 @@ class Workload
 {
 public:
 
-/*debug*/ std::map<int,compteur> io_return_code_counts {};
+//*debug*/ std::map<int,compteur> io_return_code_counts {};
 
 //variables
 

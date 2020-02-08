@@ -198,7 +198,7 @@ void Workload::post_Eyeo_result(struct io_uring_cqe* p_cqe, Eyeo* pEyeo, const i
     e.return_value = cqe.res;
     e.cqe_flags    = cqe.flags;
 
-/*debug*/io_return_code_counts[e.return_value].c++;
+//*debug*/io_return_code_counts[e.return_value].c++;
 
     if (ivydriver.track_long_running_IOs)
     {
