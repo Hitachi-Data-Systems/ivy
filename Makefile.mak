@@ -242,7 +242,7 @@ OUT_DEDUPECONSTANTRATIOTABLEGENERATOR = bin/DedupeConstantRatioTableGenerator
 
 OBJ_IVYMASTER = $(OBJDIR_IVYMASTER)/src/Subinterval_detail_line.o $(OBJDIR_IVYMASTER)/src/RestHandler.o $(OBJDIR_IVYMASTER)/src/RestLogsUri.o $(OBJDIR_IVYMASTER)/src/RestRollupsUri.o $(OBJDIR_IVYMASTER)/src/RestSessionsUri.o $(OBJDIR_IVYMASTER)/src/RestWorkloadsUri.o $(OBJDIR_IVYMASTER)/src/RollupInstance.o $(OBJDIR_IVYMASTER)/src/RollupSet.o $(OBJDIR_IVYMASTER)/src/RollupType.o $(OBJDIR_IVYMASTER)/src/RunningStat.o $(OBJDIR_IVYMASTER)/src/SubintervalOutput.o $(OBJDIR_IVYMASTER)/src/SubintervalRollup.o $(OBJDIR_IVYMASTER)/src/Subinterval_CPU.o $(OBJDIR_IVYMASTER)/src/RestEngineUri.o $(OBJDIR_IVYMASTER)/src/Subsystem.o $(OBJDIR_IVYMASTER)/src/Test_config_thumbnail.o $(OBJDIR_IVYMASTER)/src/WorkloadID.o $(OBJDIR_IVYMASTER)/src/WorkloadTracker.o $(OBJDIR_IVYMASTER)/src/WorkloadTrackerPointerList.o $(OBJDIR_IVYMASTER)/src/GatherData.o $(OBJDIR_IVYMASTER)/src/IosequencerInput.o $(OBJDIR_IVYMASTER)/src/IosequencerInputRollup.o $(OBJDIR_IVYMASTER)/src/JSON_select.o $(OBJDIR_IVYMASTER)/src/select/select.scanner.o $(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.parser.o $(OBJDIR_IVYMASTER)/src/select/select.parser.o $(OBJDIR_IVYMASTER)/src/hosts/hosts.scanner.o $(OBJDIR_IVYMASTER)/src/hosts/hosts.parser.o $(OBJDIR_IVYMASTER)/src/LDEVset.o $(OBJDIR_IVYMASTER)/src/LUN.o $(OBJDIR_IVYMASTER)/src/LUNpointerList.o $(OBJDIR_IVYMASTER)/src/ListOfNameEqualsValueList.o $(OBJDIR_IVYMASTER)/src/ListOfWorkloadIDs.o $(OBJDIR_IVYMASTER)/src/MeasureController.o $(OBJDIR_IVYMASTER)/src/MeasureCtlr.o $(OBJDIR_IVYMASTER)/src/NameEqualsValueList.o $(OBJDIR_IVYMASTER)/src/ParameterValueLookupTable.o $(OBJDIR_IVYMASTER)/src/RestBaseUri.o $(OBJDIR_IVYMASTER)/src/RestCsvqueryUri.o $(OBJDIR_IVYMASTER)/src/run_subinterval_sequence.o $(OBJDIR_IVYMASTER)/src/measurement.o $(OBJDIR_IVYMASTER)/src/multi_measure.o $(OBJDIR_IVYMASTER)/src/nestedit.o $(OBJDIR_IVYMASTER)/src/pattern.o $(OBJDIR_IVYMASTER)/src/pipe_driver_gather.o $(OBJDIR_IVYMASTER)/src/pipe_driver_subthread.o $(OBJDIR_IVYMASTER)/src/prepare_dedupe.o $(OBJDIR_IVYMASTER)/src/process_cmddev_commands.o $(OBJDIR_IVYMASTER)/src/rollup_Hitachi_RAID_data.o $(OBJDIR_IVYMASTER)/src/logger.o $(OBJDIR_IVYMASTER)/src/skew_weight.o $(OBJDIR_IVYMASTER)/src/studentsTdistribution.o $(OBJDIR_IVYMASTER)/src/subsystem_summary_data.o $(OBJDIR_IVYMASTER)/src/ivy_engine.o $(OBJDIR_IVYMASTER)/src/csvfile.o $(OBJDIR_IVYMASTER)/src/dedupe_method.o $(OBJDIR_IVYMASTER)/src/discover_luns.o $(OBJDIR_IVYMASTER)/src/hosts_list.o $(OBJDIR_IVYMASTER)/src/AttributeNameCombo.o $(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_rollup.o $(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_workload.o $(OBJDIR_IVYMASTER)/src/ivy_engine_edit_rollup.o $(OBJDIR_IVYMASTER)/src/ivy_engine_get_set.o $(OBJDIR_IVYMASTER)/src/ivy_engine_go.o $(OBJDIR_IVYMASTER)/src/ivy_engine_startup.o $(OBJDIR_IVYMASTER)/src/ivyhelpers.o $(OBJDIR_IVYMASTER)/src/ivylinuxcpubusy.o $(OBJDIR_IVYMASTER)/src/ivymaster_signal_handler.o $(OBJDIR_IVYMASTER)/src/ivytime.o $(OBJDIR_IVYMASTER)/__/LUN_discovery/src/printableAndHex.o $(OBJDIR_IVYMASTER)/parser/src/Block.o $(OBJDIR_IVYMASTER)/parser/src/Arg.o $(OBJDIR_IVYMASTER)/parser/src/Builtin.o $(OBJDIR_IVYMASTER)/parser/src/Frame.o $(OBJDIR_IVYMASTER)/parser/src/Ivy_pgm.o $(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.scanner.o $(OBJDIR_IVYMASTER)/parser/src/IvyscriptLine.o $(OBJDIR_IVYMASTER)/parser/src/OverloadSet.o $(OBJDIR_IVYMASTER)/parser/src/Stmt.o $(OBJDIR_IVYMASTER)/parser/src/Stmt_nested_Block.o $(OBJDIR_IVYMASTER)/parser/src/SymbolTableEntry.o $(OBJDIR_IVYMASTER)/parser/src/Type.o $(OBJDIR_IVYMASTER)/parser/src/Xpr.o $(OBJDIR_IVYMASTER)/parser/src/main.o $(OBJDIR_IVYMASTER)/src/Accumulators_by_io_type.o
 
-OBJ_IVYDRIVER = $(OBJDIR_IVYDRIVER)/src/RunningStat.o $(OBJDIR_IVYDRIVER)/src/Subinterval.o $(OBJDIR_IVYDRIVER)/src/SubintervalOutput.o $(OBJDIR_IVYDRIVER)/src/TestLUN.o $(OBJDIR_IVYDRIVER)/src/Workload.o $(OBJDIR_IVYDRIVER)/src/WorkloadID.o $(OBJDIR_IVYDRIVER)/src/WorkloadThread.o $(OBJDIR_IVYDRIVER)/src/WorkloadTracker.o $(OBJDIR_IVYDRIVER)/src/WorkloadTrackerPointerList.o $(OBJDIR_IVYDRIVER)/src/IosequencerSequential.o $(OBJDIR_IVYDRIVER)/src/Count_by_workloadID.o $(OBJDIR_IVYDRIVER)/src/DedupeConstantRatioRegulator.o $(OBJDIR_IVYDRIVER)/src/DedupeTargetSpreadRegulator.o $(OBJDIR_IVYDRIVER)/src/Eyeo.o $(OBJDIR_IVYDRIVER)/src/Iosequencer.o $(OBJDIR_IVYDRIVER)/src/IosequencerInput.o $(OBJDIR_IVYDRIVER)/src/IosequencerInputRollup.o $(OBJDIR_IVYDRIVER)/src/IosequencerRandom.o $(OBJDIR_IVYDRIVER)/src/IosequencerRandomIndependent.o $(OBJDIR_IVYDRIVER)/src/IosequencerRandomSteady.o $(OBJDIR_IVYDRIVER)/src/LDEVset.o $(OBJDIR_IVYDRIVER)/src/LUN.o $(OBJDIR_IVYDRIVER)/src/ListOfWorkloadIDs.o $(OBJDIR_IVYDRIVER)/src/pattern.o $(OBJDIR_IVYDRIVER)/src/pipe_line_reader.o $(OBJDIR_IVYDRIVER)/src/logger.o $(OBJDIR_IVYDRIVER)/src/studentsTdistribution.o $(OBJDIR_IVYDRIVER)/src/unique_words.o $(OBJDIR_IVYDRIVER)/src/dedupe_method.o $(OBJDIR_IVYDRIVER)/src/discover_luns.o $(OBJDIR_IVYDRIVER)/src/AttributeNameCombo.o $(OBJDIR_IVYDRIVER)/src/ivydriver.o $(OBJDIR_IVYDRIVER)/src/ivyhelpers.o $(OBJDIR_IVYDRIVER)/src/ivylinuxcpubusy.o $(OBJDIR_IVYDRIVER)/src/ivytime.o $(OBJDIR_IVYDRIVER)/__/LUN_discovery/src/printableAndHex.o $(OBJDIR_IVYDRIVER)/src/Accumulators_by_io_type.o
+OBJ_IVYDRIVER = $(OBJDIR_IVYDRIVER)/src/RunningStat.o $(OBJDIR_IVYDRIVER)/src/Subinterval.o $(OBJDIR_IVYDRIVER)/src/SubintervalOutput.o $(OBJDIR_IVYDRIVER)/src/TestLUN.o $(OBJDIR_IVYDRIVER)/src/Workload.o $(OBJDIR_IVYDRIVER)/src/WorkloadID.o $(OBJDIR_IVYDRIVER)/src/WorkloadThread.o $(OBJDIR_IVYDRIVER)/src/WorkloadTracker.o $(OBJDIR_IVYDRIVER)/src/WorkloadTrackerPointerList.o $(OBJDIR_IVYDRIVER)/src/IosequencerSequential.o $(OBJDIR_IVYDRIVER)/src/Count_by_workloadID.o $(OBJDIR_IVYDRIVER)/src/DedupeConstantRatioRegulator.o $(OBJDIR_IVYDRIVER)/src/DedupeRoundRobinSingleton.o $(OBJDIR_IVYDRIVER)/src/DedupeRoundRobinRegulator.o $(OBJDIR_IVYDRIVER)/src/DedupeTargetSpreadRegulator.o $(OBJDIR_IVYDRIVER)/src/Eyeo.o $(OBJDIR_IVYDRIVER)/src/Iosequencer.o $(OBJDIR_IVYDRIVER)/src/IosequencerInput.o $(OBJDIR_IVYDRIVER)/src/IosequencerInputRollup.o $(OBJDIR_IVYDRIVER)/src/IosequencerRandom.o $(OBJDIR_IVYDRIVER)/src/IosequencerRandomIndependent.o $(OBJDIR_IVYDRIVER)/src/IosequencerRandomSteady.o $(OBJDIR_IVYDRIVER)/src/LDEVset.o $(OBJDIR_IVYDRIVER)/src/LUN.o $(OBJDIR_IVYDRIVER)/src/ListOfWorkloadIDs.o $(OBJDIR_IVYDRIVER)/src/pattern.o $(OBJDIR_IVYDRIVER)/src/pipe_line_reader.o $(OBJDIR_IVYDRIVER)/src/logger.o $(OBJDIR_IVYDRIVER)/src/studentsTdistribution.o $(OBJDIR_IVYDRIVER)/src/unique_words.o $(OBJDIR_IVYDRIVER)/src/dedupe_method.o $(OBJDIR_IVYDRIVER)/src/discover_luns.o $(OBJDIR_IVYDRIVER)/src/AttributeNameCombo.o $(OBJDIR_IVYDRIVER)/src/ivydriver.o $(OBJDIR_IVYDRIVER)/src/ivyhelpers.o $(OBJDIR_IVYDRIVER)/src/ivylinuxcpubusy.o $(OBJDIR_IVYDRIVER)/src/ivytime.o $(OBJDIR_IVYDRIVER)/__/LUN_discovery/src/printableAndHex.o $(OBJDIR_IVYDRIVER)/src/Accumulators_by_io_type.o
 
 OBJ_CLEAR_HUNG_IVY_THREADS = $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/clear_hung_ivy_threads.o $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/ivyhelpers.o $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/ivytime.o
 
@@ -330,6 +330,8 @@ $(OBJDIR_IVYMASTER)/src/RestHandler.o: src/RestHandler.cpp include/RestHandler.h
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -355,6 +357,8 @@ $(OBJDIR_IVYMASTER)/src/RestLogsUri.o: src/RestLogsUri.cpp include/RestHandler.h
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -380,6 +384,8 @@ $(OBJDIR_IVYMASTER)/src/RestRollupsUri.o: src/RestRollupsUri.cpp include/RestHan
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -405,6 +411,8 @@ $(OBJDIR_IVYMASTER)/src/RestSessionsUri.o: src/RestSessionsUri.cpp include/RestH
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -430,6 +438,8 @@ $(OBJDIR_IVYMASTER)/src/RestWorkloadsUri.o: src/RestWorkloadsUri.cpp include/Res
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -456,6 +466,8 @@ $(OBJDIR_IVYMASTER)/src/RollupInstance.o: src/RollupInstance.cpp include/RollupI
 	include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/Test_config_thumbnail.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/LUN.h include/LDEVset.h include/ivy_engine.h \
 	include/WorkloadTrackers.h include/WorkloadTracker.h \
 	include/Iosequencer.h include/Eyeo.h include/WorkloadThread.h \
@@ -480,6 +492,8 @@ $(OBJDIR_IVYMASTER)/src/RollupSet.o: src/RollupSet.cpp include/RollupSet.h inclu
 	include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/Test_config_thumbnail.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/LDEVset.h include/ivy_engine.h include/WorkloadTrackers.h \
 	include/WorkloadTracker.h include/Iosequencer.h include/Eyeo.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
@@ -501,6 +515,8 @@ $(OBJDIR_IVYMASTER)/src/RollupType.o: src/RollupType.cpp include/RollupType.h \
 	include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/Test_config_thumbnail.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/LDEVset.h include/ivy_engine.h include/WorkloadTrackers.h \
 	include/WorkloadTracker.h include/Iosequencer.h include/Eyeo.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
@@ -531,6 +547,8 @@ $(OBJDIR_IVYMASTER)/src/SubintervalRollup.o: src/SubintervalRollup.cpp include/i
 	include/IosequencerInput.h include/ivyhelpers.h include/logger.h \
 	include/TestLUN.h include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -558,6 +576,8 @@ $(OBJDIR_IVYMASTER)/src/RestEngineUri.o: src/RestEngineUri.cpp include/RestHandl
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -583,6 +603,8 @@ $(OBJDIR_IVYMASTER)/src/Subsystem.o: src/Subsystem.cpp include/Subsystem.h inclu
 	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
 	include/TestLUN.h include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/Subinterval_CPU.h include/ivylinuxcpubusy.h include/RollupSet.h \
 	include/RollupType.h include/AttributeNameCombo.h \
 	include/RollupInstance.h include/subsystem_summary_data.h \
@@ -605,6 +627,8 @@ $(OBJDIR_IVYMASTER)/src/Test_config_thumbnail.o: src/Test_config_thumbnail.cpp \
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -629,6 +653,8 @@ $(OBJDIR_IVYMASTER)/src/WorkloadTracker.o: src/WorkloadTracker.cpp include/Workl
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/WorkloadTracker.cpp -o $(OBJDIR_IVYMASTER)/src/WorkloadTracker.o
 
@@ -642,6 +668,8 @@ $(OBJDIR_IVYMASTER)/src/WorkloadTrackerPointerList.o: src/WorkloadTrackerPointer
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/WorkloadTrackerPointerList.cpp -o $(OBJDIR_IVYMASTER)/src/WorkloadTrackerPointerList.o
 
@@ -655,6 +683,8 @@ $(OBJDIR_IVYMASTER)/src/GatherData.o: src/GatherData.cpp include/ivy_engine.h \
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -689,6 +719,8 @@ $(OBJDIR_IVYMASTER)/src/JSON_select.o: src/JSON_select.cpp include/LUN.h include
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/Subinterval_CPU.h include/ivylinuxcpubusy.h include/RollupSet.h \
 	include/RollupType.h include/AttributeNameCombo.h \
 	include/RollupInstance.h include/subsystem_summary_data.h \
@@ -739,6 +771,8 @@ $(OBJDIR_IVYMASTER)/src/LUNpointerList.o: src/LUNpointerList.cpp include/LUN.h i
 	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
 	include/TestLUN.h include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/Subinterval_CPU.h include/ivylinuxcpubusy.h include/RollupSet.h \
 	include/RollupType.h include/AttributeNameCombo.h \
 	include/RollupInstance.h include/subsystem_summary_data.h \
@@ -763,7 +797,9 @@ $(OBJDIR_IVYMASTER)/src/ListOfWorkloadIDs.o: src/ListOfWorkloadIDs.cpp \
 	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
 	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
-	include/DedupeConstantRatioRegulator.h
+	include/DedupeConstantRatioRegulator.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h
 	$(CXX) $(CFLAGS_IVYMASTER) $(INC_IVYMASTER) -c src/ListOfWorkloadIDs.cpp -o $(OBJDIR_IVYMASTER)/src/ListOfWorkloadIDs.o
 
 $(OBJDIR_IVYMASTER)/src/MeasureController.o: src/MeasureController.cpp \
@@ -781,6 +817,8 @@ $(OBJDIR_IVYMASTER)/src/MeasureCtlr.o: src/MeasureCtlr.cpp include/MeasureCtlr.h
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -807,6 +845,8 @@ $(OBJDIR_IVYMASTER)/src/ParameterValueLookupTable.o: src/ParameterValueLookupTab
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -829,6 +869,8 @@ $(OBJDIR_IVYMASTER)/src/RestBaseUri.o: src/RestBaseUri.cpp include/RestHandler.h
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -854,6 +896,8 @@ $(OBJDIR_IVYMASTER)/src/RestCsvqueryUri.o: src/RestCsvqueryUri.cpp include/RestH
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -879,6 +923,8 @@ $(OBJDIR_IVYMASTER)/src/run_subinterval_sequence.o: src/run_subinterval_sequence
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -901,6 +947,8 @@ $(OBJDIR_IVYMASTER)/src/measurement.o: src/measurement.cpp include/ivy_engine.h 
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -923,6 +971,8 @@ $(OBJDIR_IVYMASTER)/src/multi_measure.o: src/multi_measure.cpp include/multi_mea
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -945,6 +995,8 @@ $(OBJDIR_IVYMASTER)/src/nestedit.o: src/nestedit.cpp include/nestedit.h include/
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -972,6 +1024,8 @@ $(OBJDIR_IVYMASTER)/src/pipe_driver_gather.o: src/pipe_driver_gather.cpp include
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -993,6 +1047,8 @@ $(OBJDIR_IVYMASTER)/src/pipe_driver_subthread.o: src/pipe_driver_subthread.cpp \
 	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/Subsystem.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/GatherData.h include/Subinterval_CPU.h include/ivylinuxcpubusy.h \
 	include/LUNpointerList.h include/JSON_select.h include/ivy_engine.h \
 	include/WorkloadTrackers.h include/WorkloadTracker.h \
@@ -1017,6 +1073,8 @@ $(OBJDIR_IVYMASTER)/src/prepare_dedupe.o: src/prepare_dedupe.cpp include/ivy_eng
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1039,6 +1097,8 @@ $(OBJDIR_IVYMASTER)/src/process_cmddev_commands.o: src/process_cmddev_commands.c
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1062,6 +1122,8 @@ $(OBJDIR_IVYMASTER)/src/rollup_Hitachi_RAID_data.o: src/rollup_Hitachi_RAID_data
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/Subinterval_CPU.h include/ivylinuxcpubusy.h include/RollupSet.h \
 	include/RollupType.h include/AttributeNameCombo.h \
 	include/RollupInstance.h include/subsystem_summary_data.h \
@@ -1087,6 +1149,8 @@ $(OBJDIR_IVYMASTER)/src/skew_weight.o: src/skew_weight.cpp include/skew_weight.h
 	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
 	include/TestLUN.h include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/ivy_engine.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadTrackers.h include/WorkloadTracker.h \
 	include/Iosequencer.h include/Eyeo.h include/LUN.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
@@ -1117,6 +1181,8 @@ $(OBJDIR_IVYMASTER)/src/subsystem_summary_data.o: src/subsystem_summary_data.cpp
 	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
 	include/TestLUN.h include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1139,6 +1205,8 @@ $(OBJDIR_IVYMASTER)/src/ivy_engine.o: src/ivy_engine.cpp include/ivy_engine.h \
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1186,6 +1254,8 @@ $(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_rollup.o: src/ivy_engine_create
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1208,6 +1278,8 @@ $(OBJDIR_IVYMASTER)/src/ivy_engine_create_delete_workload.o: src/ivy_engine_crea
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1230,6 +1302,8 @@ $(OBJDIR_IVYMASTER)/src/ivy_engine_edit_rollup.o: src/ivy_engine_edit_rollup.cpp
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1254,6 +1328,8 @@ $(OBJDIR_IVYMASTER)/src/ivy_engine_get_set.o: src/ivy_engine_get_set.cpp include
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1276,6 +1352,8 @@ $(OBJDIR_IVYMASTER)/src/ivy_engine_go.o: src/ivy_engine_go.cpp include/ivy_engin
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1299,6 +1377,8 @@ $(OBJDIR_IVYMASTER)/src/ivy_engine_startup.o: src/ivy_engine_startup.cpp include
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1333,6 +1413,8 @@ $(OBJDIR_IVYMASTER)/src/ivymaster_signal_handler.o: src/ivymaster_signal_handler
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1392,6 +1474,8 @@ $(OBJDIR_IVYMASTER)/parser/src/Ivy_pgm.o: parser/src/Ivy_pgm.cpp parser/include/
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1432,6 +1516,8 @@ $(OBJDIR_IVYMASTER)/parser/lexyacc/ivy.parser.o: parser/lexyacc/ivy.parser.cc in
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1466,6 +1552,8 @@ $(OBJDIR_IVYMASTER)/parser/src/Stmt.o: parser/src/Stmt.cpp parser/include/Ivy_pg
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1519,6 +1607,8 @@ $(OBJDIR_IVYMASTER)/parser/src/main.o: parser/src/main.cpp parser/include/Ivy_pg
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h include/Subinterval_CPU.h \
 	include/ivylinuxcpubusy.h include/RollupSet.h include/RollupType.h \
 	include/AttributeNameCombo.h include/RollupInstance.h \
@@ -1604,6 +1694,8 @@ $(OBJDIR_IVYDRIVER)/src/TestLUN.o: src/TestLUN.cpp include/TestLUN.h include/ivy
 	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
 	include/WorkloadID.h include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/WorkloadThread.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/LUN.h include/Eyeo.h include/ivydriver.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/TestLUN.cpp -o $(OBJDIR_IVYDRIVER)/src/TestLUN.o
 
@@ -1614,6 +1706,8 @@ $(OBJDIR_IVYDRIVER)/src/Workload.o: src/Workload.cpp include/Workload.h include/
 	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/ivydriver.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/ListOfWorkloadIDs.h include/LUN.h include/discover_luns.h \
 	include/ivybuilddate.h include/ivylinuxcpubusy.h include/Eyeo.h \
 	include/Iosequencer.h include/WorkloadThread.h \
@@ -1633,6 +1727,8 @@ $(OBJDIR_IVYDRIVER)/src/WorkloadThread.o: src/WorkloadThread.cpp include/Workloa
 	include/IosequencerRandom.h include/Iosequencer.h include/Eyeo.h \
 	include/Workload.h include/WorkloadID.h include/TestLUN.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/IosequencerRandomIndependent.h include/IosequencerSequential.h \
 	include/ivydriver.h include/ListOfWorkloadIDs.h include/discover_luns.h \
 	include/ivybuilddate.h include/ivylinuxcpubusy.h
@@ -1647,6 +1743,8 @@ $(OBJDIR_IVYDRIVER)/src/WorkloadTracker.o: src/WorkloadTracker.cpp include/Workl
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/WorkloadTracker.cpp -o $(OBJDIR_IVYDRIVER)/src/WorkloadTracker.o
 
@@ -1660,6 +1758,8 @@ $(OBJDIR_IVYDRIVER)/src/WorkloadTrackerPointerList.o: src/WorkloadTrackerPointer
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/WorkloadTrackerPointerList.cpp -o $(OBJDIR_IVYDRIVER)/src/WorkloadTrackerPointerList.o
 
@@ -1672,6 +1772,8 @@ $(OBJDIR_IVYDRIVER)/src/IosequencerSequential.o: src/IosequencerSequential.cpp \
 	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/IosequencerSequential.cpp -o $(OBJDIR_IVYDRIVER)/src/IosequencerSequential.o
 
@@ -1690,6 +1792,22 @@ $(OBJDIR_IVYDRIVER)/src/DedupeConstantRatioRegulator.o: src/DedupeConstantRatioR
 	include/DedupeTargetSpreadRegulator.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/DedupeConstantRatioRegulator.cpp -o $(OBJDIR_IVYDRIVER)/src/DedupeConstantRatioRegulator.o
 
+$(OBJDIR_IVYDRIVER)/src/DedupeRoundRobinRegulator.o: src/DedupeRoundRobinRegulator.cpp \
+	include/DedupeRoundRobinRegulator.h include/ivydefines.h \
+	include/DedupeRoundRobinSingleton.h \
+	include/pattern.h include/dedupe_method.h \
+	include/DedupeConstantRatioTable.h include/Eyeo.h include/ivytime.h \
+	include/Workload.h include/Subinterval.h include/IosequencerInput.h \
+	include/ivyhelpers.h include/RunningStat.h include/logger.h \
+	include/SubintervalOutput.h include/Accumulators_by_io_type.h \
+	include/WorkloadID.h include/TestLUN.h \
+	include/DedupeTargetSpreadRegulator.h
+	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/DedupeRoundRobinRegulator.cpp -o $(OBJDIR_IVYDRIVER)/src/DedupeRoundRobinRegulator.o
+
+$(OBJDIR_IVYDRIVER)/src/DedupeRoundRobinSingleton.o: src/DedupeRoundRobinSingleton.cpp \
+	include/DedupeRoundRobinSingleton.h
+	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/DedupeRoundRobinSingleton.cpp -o $(OBJDIR_IVYDRIVER)/src/DedupeRoundRobinSingleton.o
+
 $(OBJDIR_IVYDRIVER)/src/DedupeTargetSpreadRegulator.o: src/DedupeTargetSpreadRegulator.cpp \
 	include/DedupeTargetSpreadRegulator.h include/ivydefines.h \
 	include/pattern.h include/dedupe_method.h include/ivytime.h \
@@ -1704,6 +1822,8 @@ $(OBJDIR_IVYDRIVER)/src/Eyeo.o: src/Eyeo.cpp include/Eyeo.h include/ivytime.h \
 	include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	src/../../LUN_discovery/include/printableAndHex.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/Eyeo.cpp -o $(OBJDIR_IVYDRIVER)/src/Eyeo.o
 
@@ -1715,6 +1835,8 @@ $(OBJDIR_IVYDRIVER)/src/Iosequencer.o: src/Iosequencer.cpp include/IosequencerIn
 	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/Iosequencer.cpp -o $(OBJDIR_IVYDRIVER)/src/Iosequencer.o
 
@@ -1739,6 +1861,8 @@ $(OBJDIR_IVYDRIVER)/src/IosequencerRandom.o: src/IosequencerRandom.cpp \
 	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/IosequencerRandom.cpp -o $(OBJDIR_IVYDRIVER)/src/IosequencerRandom.o
 
@@ -1752,6 +1876,8 @@ $(OBJDIR_IVYDRIVER)/src/IosequencerRandomIndependent.o: src/IosequencerRandomInd
 	include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/IosequencerRandomIndependent.cpp -o $(OBJDIR_IVYDRIVER)/src/IosequencerRandomIndependent.o
 
@@ -1765,6 +1891,8 @@ $(OBJDIR_IVYDRIVER)/src/IosequencerRandomSteady.o: src/IosequencerRandomSteady.c
 	include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/IosequencerRandomSteady.cpp -o $(OBJDIR_IVYDRIVER)/src/IosequencerRandomSteady.o
 
@@ -1785,7 +1913,9 @@ $(OBJDIR_IVYDRIVER)/src/ListOfWorkloadIDs.o: src/ListOfWorkloadIDs.cpp \
 	include/RunningStat.h include/logger.h include/SubintervalOutput.h \
 	include/Accumulators_by_io_type.h include/WorkloadID.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
-	include/DedupeConstantRatioRegulator.h
+	include/DedupeConstantRatioRegulator.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/ListOfWorkloadIDs.cpp -o $(OBJDIR_IVYDRIVER)/src/ListOfWorkloadIDs.o
 
 $(OBJDIR_IVYDRIVER)/src/pattern.o: src/pattern.cpp include/ivyhelpers.h include/ivytime.h \
@@ -1802,6 +1932,8 @@ $(OBJDIR_IVYDRIVER)/src/pipe_line_reader.o: src/pipe_line_reader.cpp include/pip
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/discover_luns.h include/ivybuilddate.h include/ivylinuxcpubusy.h \
 	include/Eyeo.h include/Iosequencer.h include/WorkloadThread.h
 	$(CXX) $(CFLAGS_IVYDRIVER) $(INC_IVYDRIVER) -c src/pipe_line_reader.cpp -o $(OBJDIR_IVYDRIVER)/src/pipe_line_reader.o
@@ -1844,6 +1976,8 @@ $(OBJDIR_IVYDRIVER)/src/ivydriver.o: src/ivydriver.cpp include/ivydriver.h inclu
 	include/Accumulators_by_io_type.h include/TestLUN.h \
 	include/DedupeTargetSpreadRegulator.h \
 	include/DedupeConstantRatioRegulator.h include/LUN.h \
+	include/DedupeRoundRobinRegulator.h \
+	include/DedupeRoundRobinSingleton.h \
 	include/discover_luns.h include/ivybuilddate.h include/ivylinuxcpubusy.h \
 	include/Eyeo.h include/Iosequencer.h include/WorkloadThread.h \
 	include/pipe_line_reader.h

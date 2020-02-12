@@ -1,4 +1,4 @@
-//Copyright (c) 2018 Hitachi Vantara Corporation
+//Copyright (c) 2020 Hitachi Vantara Corporation
 //All Rights Reserved.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,26 +13,29 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>, Stephen Morgan <stephen.morgan@hitachivantara.com>
+//Authors: Stephen Morgan <stephen.morgan@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #pragma once
 
-enum class dedupe_method
+#include "ivydefines.h"
+#include "LUN.h"
+
+class Eyeo;
+
+class DedupeRoundRobinRegulator
 {
-    invalid = 0,
-    serpentine,
-    target_spread,
-    constant_ratio,
-    static_method,
-    round_robin,
+    public:
+    
+		DedupeRoundRobinRegulator(uint64_t my_coverage_blocks, uint64_t my_block_size, ivy_float my_dedupe_ratio, uint64_t my_dedupe_unit_bytes, LUN *pLUN);
+		virtual ~DedupeRoundRobinRegulator();
+		uint64_t get_seed(Eyeo *p_eyeo, uint64_t offset);
+
+    protected:
+
+    private:
+    
+		uint64_t LUN_number;
 };
-
-std::string valid_dedupe_methods();
-
-dedupe_method parse_dedupe_method(std::string);
-
-std::string dedupe_method_to_string(dedupe_method);
-

@@ -29,6 +29,7 @@
 #include "TestLUN.h"
 #include "DedupeTargetSpreadRegulator.h"
 #include "DedupeConstantRatioRegulator.h"
+#include "DedupeRoundRobinRegulator.h"
 
 //#define IVYDRIVER_TRACE
 
@@ -101,6 +102,7 @@ public:
 
     DedupeTargetSpreadRegulator *dedupe_target_spread_regulator;
     DedupeConstantRatioRegulator *dedupe_constant_ratio_regulator;
+    DedupeRoundRobinRegulator *dedupe_round_robin_regulator;
 
     bool doing_dedupe;
     uint64_t constant_ratio_sides;

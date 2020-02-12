@@ -37,6 +37,7 @@ Workload::Workload()
     p_my_iosequencer = nullptr;
     dedupe_target_spread_regulator = nullptr;
     dedupe_constant_ratio_regulator = nullptr;
+    dedupe_round_robin_regulator = nullptr;
 }
 
 Workload::~Workload()
@@ -45,6 +46,7 @@ Workload::~Workload()
     for (auto& pEyeo : allEyeosThatExist) delete pEyeo;
     if (dedupe_target_spread_regulator != nullptr) delete dedupe_target_spread_regulator;
     if (dedupe_constant_ratio_regulator != nullptr) delete dedupe_constant_ratio_regulator;
+    if (dedupe_round_robin_regulator != nullptr) delete dedupe_round_robin_regulator;
 }
 
 
@@ -637,6 +639,7 @@ unsigned int Workload::generate_an_IO()
 
                 case dedupe_method::constant_ratio:
                 case dedupe_method::static_method:
+                case dedupe_method::round_robin:
 
                     // Handled elsewhere, as the seed generation depends on the LBA.
 

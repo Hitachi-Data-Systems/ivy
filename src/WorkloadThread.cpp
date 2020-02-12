@@ -323,6 +323,19 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                                                                                                        pear.second.uint64_t_hash_of_host_plus_LUN);
                     }
 
+
+                    if (pear.second.dedupe_round_robin_regulator != nullptr) { delete pear.second.dedupe_round_robin_regulator; pear.second.dedupe_round_robin_regulator = nullptr;}
+                    if (pear.second.p_current_IosequencerInput->dedupe > 1.0 && pear.second.p_current_IosequencerInput->fractionRead != 1.0 &&
+                        pear.second.p_current_IosequencerInput->dedupe_type == dedupe_method::round_robin)
+                    {
+                        pear.second.dedupe_round_robin_regulator = new DedupeRoundRobinRegulator(
+                        		pear.second.p_my_iosequencer->numberOfCoverageBlocks,
+                                pear.second.p_current_IosequencerInput->blocksize_bytes,
+                        		pear.second.p_current_IosequencerInput->dedupe,
+								pear.second.p_current_IosequencerInput->dedupe_unit_bytes,
+								pear.second.p_my_iosequencer->pLUN);
+                    }
+
     #ifdef IVYDRIVER_TRACE
                     pear.second.workload_callcount_prepare_to_run = 0;
                     pear.second.workload_callcount_build_Eyeos = 0;

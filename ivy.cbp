@@ -392,6 +392,14 @@
 		<Unit filename="include/DedupeConstantRatioTable.h">
 			<Option target="ivymaster" />
 		</Unit>
+		<Unit filename="include/DedupeRoundRobinRegulator.h">
+			<Option target="ivymaster" />
+			<Option target="ivydriver" />
+		</Unit>
+		<Unit filename="include/DedupeRoundRobinSingleton.h">
+			<Option target="ivymaster" />
+			<Option target="ivydriver" />
+		</Unit>
 		<Unit filename="include/DedupeTargetSpreadRegulator.h">
 			<Option target="ivymaster" />
 			<Option target="ivydriver" />
@@ -768,6 +776,12 @@
 		</Unit>
 		<Unit filename="src/DedupeConstantRatioTable.cpp">
 			<Option target="DedupeConstantRatioTableGenerator" />
+		</Unit>
+		<Unit filename="src/DedupeRoundRobinRegulator.cpp">
+			<Option target="ivydriver" />
+		</Unit>
+		<Unit filename="src/DedupeRoundRobinSingleton.cpp">
+			<Option target="ivydriver" />
 		</Unit>
 		<Unit filename="src/DedupeTargetSpreadRegulator.cpp">
 			<Option target="ivydriver" />

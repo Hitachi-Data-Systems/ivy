@@ -987,6 +987,7 @@ std::pair<bool,std::string> IosequencerInput::setMultipleParameters(std::string 
 
             case dedupe_method::constant_ratio: break; // separate error message below.
             case dedupe_method::static_method: break;
+            case dedupe_method::round_robin: break;
 
             case dedupe_method::invalid:
             default:
@@ -1001,7 +1002,7 @@ std::pair<bool,std::string> IosequencerInput::setMultipleParameters(std::string 
         }
 	}
 
-	if ((dedupe_type != dedupe_method::constant_ratio && dedupe_type != dedupe_method::static_method) && fraction_zero_pattern != 0.0)
+	if ((dedupe_type != dedupe_method::constant_ratio && dedupe_type != dedupe_method::static_method && dedupe_type != dedupe_method::round_robin) && fraction_zero_pattern != 0.0)
     {
         std::ostringstream o;
         o << "Invalid fraction_zero_pattern = " << fraction_zero_pattern << ".  This may only be used with the \"constant_ratio\" and \"static\" dedupe methods.";
@@ -1010,7 +1011,7 @@ std::pair<bool,std::string> IosequencerInput::setMultipleParameters(std::string 
         composite_error_message += o.str();
     }
 
-	if (fractionRead != 1.0 && dedupe > 1.0 && (dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method) && ((blocksize_bytes < dedupe_unit_bytes) || (0 != blocksize_bytes % dedupe_unit_bytes)))
+	if (fractionRead != 1.0 && dedupe > 1.0 && (dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method || dedupe_type == dedupe_method::round_robin) && ((blocksize_bytes < dedupe_unit_bytes) || (0 != blocksize_bytes % dedupe_unit_bytes)))
     {
         std::ostringstream o;
         o << "Invalid combination of blocksize = " << put_on_KiB_etc_suffix(blocksize_bytes) << " with dedupe_unit_bytes = " << put_on_KiB_etc_suffix(dedupe_unit_bytes) << ".  Blocksize must be a multiple of dedupe_unit_bytes.";
@@ -1171,8 +1172,8 @@ std::string IosequencerInput::getParameterNameEqualsTextValueCommaSeparatedList(
 		}
 	}
 	o << ",compressibility=" << (100.0 * compressibility) << "%";
-	if (dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method) o << ",fraction_zero_pattern=" << fraction_zero_pattern;
-    if (dedupe_type == dedupe_method::static_method) o << ",duplicate_set_size=" << duplicate_set_size;
+	if (dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method || dedupe_type == dedupe_method::round_robin) o << ",fraction_zero_pattern=" << fraction_zero_pattern;
+    if (dedupe_type == dedupe_method::static_method || dedupe_type == dedupe_method::round_robin) o << ",duplicate_set_size=" << duplicate_set_size;
     o << ",threads_in_workload_name=" << threads_in_workload_name;
     o << ",this_thread_in_workload=" << this_thread_in_workload;
     o << ",pattern_seed=" << pattern_seed;
@@ -1248,7 +1249,7 @@ std::string IosequencerInput::getNonDefaultParameterNameEqualsTextValueCommaSepa
 		}
 	}
 	if (!defaultCompressibility())              { o << ",compressibility=" << (100.0 * compressibility) << "%";}
-	if ((dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method) && !default_fraction_zero_pattern())       { o << ",fraction_zero_pattern=" << fraction_zero_pattern;}
+	if ((dedupe_type == dedupe_method::constant_ratio || dedupe_type == dedupe_method::static_method || dedupe_type == dedupe_method::round_robin) && !default_fraction_zero_pattern())       { o << ",fraction_zero_pattern=" << fraction_zero_pattern;}
 
     if (!defaultThreads_in_workload_name()) { o << ",threads_in_workload_name=" << threads_in_workload_name;}
     if (!defaultThis_thread_in_workload())  { o << ",this_thread_in_workload=" << this_thread_in_workload;}
