@@ -478,7 +478,7 @@ void Eyeo::generate_pattern()
 
     const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
-    ivy_float probabilistic_compressibility = lookup_probabilistic_compressibility(pWorkload->compressibility, (uint64_t) eyeocb.aio_buf);
+    ivy_float probabilistic_compressibility = lookup_probabilistic_compressibility(pWorkload->compressibility, sqe.addr);
 
     pWorkload->write_io_count++;
 
@@ -870,7 +870,7 @@ uint64_t Eyeo::fixed_pattern_sub_block_starting_seed(uint64_t offset_within_this
 
 uint64_t Eyeo::duplicate_set_filtered_sub_block_number(uint64_t unfiltered_sub_block_number)
 {
-    const uint64_t& blocksize = eyeocb.aio_nbytes;
+    const uint32_t& blocksize = sqe.len;
     const ivy_float& dedupe_ratio = pWorkload->p_current_IosequencerInput->dedupe;
     const uint64_t& regionSize_bytes = pWorkload->p_my_iosequencer->numberOfCoverageBlocks * blocksize;
     const unsigned int& duplicate_set_size = pWorkload->p_current_IosequencerInput->duplicate_set_size;
@@ -938,18 +938,18 @@ uint64_t Eyeo::duplicate_set_sub_block_starting_seed(uint64_t offset_within_this
 
         // Choose the appropriate duplicate set member for this block seed.
 
-    	const uint64_t& blocksize = eyeocb.aio_nbytes;
+    	const uint32_t& blocksize = sqe.len;
     	const ivy_float& dedupe_ratio = pWorkload->p_current_IosequencerInput->dedupe;
-	const uint64_t& regionSize_bytes = pWorkload->p_my_iosequencer->numberOfCoverageBlocks * blocksize;
-	const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
+        const uint64_t& regionSize_bytes = pWorkload->p_my_iosequencer->numberOfCoverageBlocks * blocksize;
+        const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
-	const long double correction_factor = ((((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio) + (long double) duplicate_set_size) /
-    										(((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio);
-	const long double dedupe_percent = (long double) 1.0 - ((long double) 1.0 / (dedupe_ratio * correction_factor));
+        const long double correction_factor = ((((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio) + (long double) duplicate_set_size) /
+                                                (((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio);
+        const long double dedupe_percent = (long double) 1.0 - ((long double) 1.0 / (dedupe_ratio * correction_factor));
 
-	uint64_t relative_block_number = (uint64_t) (((long double) zero_sub_block_number) * ((long double) 1.0 - dedupe_percent));
+        uint64_t relative_block_number = (uint64_t) (((long double) zero_sub_block_number) * ((long double) 1.0 - dedupe_percent));
 
-	block_seed = pduplicate_set[relative_block_number % duplicate_set_size];
+        block_seed = pduplicate_set[relative_block_number % duplicate_set_size];
     }
     else
     {
