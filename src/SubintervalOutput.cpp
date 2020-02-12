@@ -69,26 +69,8 @@ bool SubintervalOutput::toBuffer(char* buffer, size_t buffer_size) // same as to
 
     unsigned int number_of_rs_to_format, number_of_rs_to_zero_out;
 
-    extern bool measure_submit_time;
-
-    if (measure_submit_time)
-    {
-        number_of_rs_to_format   = 5 * Accumulators_by_io_type::total_bucket_count();
-        number_of_rs_to_zero_out = 0;
-        //    Accumulators_by_io_type
-        //        bytes_transferred,
-        //        response_time,		// Time from the scheduled time to the end of the I/O.
-        //        service_time,		// Time from just before AIO submit to start the I/O until it ends.
-
-        // not:
-        //        submit_time,		// Time from just before submitting I/O to just after submitting I/O.  This includes "waiting for an underlying tag".
-        //        running_time;		// Time from just after AIO submit to when the I/O ends
-    }
-    else
-    {
-        number_of_rs_to_format   = 3 * Accumulators_by_io_type::total_bucket_count();
-        number_of_rs_to_zero_out = 2 * Accumulators_by_io_type::total_bucket_count();
-    }
+    number_of_rs_to_format   = 3 * Accumulators_by_io_type::total_bucket_count();
+    number_of_rs_to_zero_out = 2 * Accumulators_by_io_type::total_bucket_count();
 
     for (unsigned int i = 0; i < number_of_rs_to_format; i++)
     {
@@ -194,10 +176,10 @@ void SubintervalOutput::add(const SubintervalOutput& s_o) {
 /*10*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Service Time (ms)";
 /*11*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Service Time Standard Deviation (ms)";
 
-/*12*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Submit Time (ms)";
-/*13*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Submit Time (ms)";
-/*14*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Submit Time (ms)";
-/*15*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Submit Time Standard Deviation (ms)";
+//*12*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Submit Time (ms)";
+//*13*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Submit Time (ms)";
+//*14*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Max Submit Time (ms)";
+//*15*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Submit Time Standard Deviation (ms)";
 
 //*16*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Average Running Time (ms)";
 //*17*/		o << "," << Accumulators_by_io_type::getRunningStatTitleByCategory(i) << " Min Running Time (ms)";
@@ -232,7 +214,7 @@ std::string SubintervalOutput::csvValues
 		return o.str();
 	}
 
-	RunningStat<ivy_float, ivy_int> bytes_transferred, service_time, response_time, submit_time, running_time;
+	RunningStat<ivy_float, ivy_int> bytes_transferred, service_time, response_time;
 
 	std::ostringstream o;
 	for (int i=0; i <= Accumulators_by_io_type::max_category_index(); i++)
@@ -240,16 +222,12 @@ std::string SubintervalOutput::csvValues
 		bytes_transferred.clear();
 		service_time.clear();
 		response_time.clear();
-        submit_time.clear();
-        running_time.clear();
 
 		bytes_transferred += u.a.bytes_transferred.getRunningStatByCategory(i);  // not a reference because some categories are generated upon demand by summing more detailed categories.
 		service_time      += u.a.service_time     .getRunningStatByCategory(i);
 		response_time     += u.a.response_time    .getRunningStatByCategory(i);
-		submit_time       += u.a.submit_time      .getRunningStatByCategory(i);
-		running_time      += u.a.running_time     .getRunningStatByCategory(i);
 
-        unsigned int columns = 17;   //////////////////////////////  <=====  change this if you change the number of columns below  ##################################################
+        unsigned int columns = 13;   //////////////////////////////  <=====  change this if you change the number of columns below  ##################################################
 
 		if (0 == bytes_transferred.count())
 		{
@@ -316,9 +294,6 @@ std::string SubintervalOutput::csvValues
 				/* 6 Little's law average queue depth */
 				o << ',' <<	( 	( ((ivy_float) bytes_transferred.count()) / seconds)   /*IOPS*/ *  	service_time.avg() 	);
 
-//				/* 6a running time Little's law average queue depth */
-//				o << ',' <<	( 	( ((ivy_float) bytes_transferred.count()) / seconds)   /*IOPS*/ *  	running_time.avg() 	);
-
 				/* 7 Average Service Time (ms) */
 				o << ',' << (service_time.avg() * 1000.0);
 
@@ -359,54 +334,6 @@ std::string SubintervalOutput::csvValues
 				/* 11 Service Time Standard Deviation (ms) */
 				o << ',' << (service_time.standardDeviation() * 1000.0);
 
-				{
-					// SPM: Would like to use (measure_submit_time) or (measure_submit_time) for these conditionals
-					//		instead of (submit_time_max != 0.0), but the first is only defined for ivydriver and the second is only
-					//		defined for ivymaster compilation units... This is obviously cheating.
-
-					ivy_float submit_time_max = submit_time.max();
-
-					/* 12 Average Submit Time (ms) */
-					if (submit_time_max != 0.0) {
-						o << ',' << (submit_time.avg() * 1000.0);
-					} else {
-						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
-					}
-
-					/* 13 Min Submit Time (ms) */
-					if (submit_time_max != 0.0) {
-						o << ',' << (submit_time.min() * 1000.0);
-					} else {
-						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
-					}
-
-					/* 14 Max Submit Time (ms) */
-					if (submit_time_max != 0.0) {
-						o << ',' << (submit_time.max() * 1000.0);
-					} else {
-						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
-					}
-
-					/* 15 Submit Time Standard Deviation (ms) */
-					if (submit_time_max != 0.0) {
-						o << ',' << (submit_time.standardDeviation() * 1000.0);
-					} else {
-						o << ',' << "[Use ivy_engine_set(\"measure_submit_time\"<comma> \"true\") to measure this.]";
-					}
-				}
-
-//				/* 16 Average Running Time (ms) */
-//                o << ',' << (running_time.avg() * 1000.0);
-//
-//				/* 17 Min Running Time (ms) */
-//                o << ',' << (running_time.min() * 1000.0);
-//
-//				/* 18 Max Running Time (ms) */
-//                o << ',' << (running_time.max() * 1000.0);
-//
-//				/* 19 Running Time Standard Deviation (ms) */
-//                o << ',' << (running_time.standardDeviation() * 1000.0);
-
 				if (0 == response_time.count())
 				{
 					o << ",,,,";
@@ -446,17 +373,6 @@ RunningStat<ivy_float,ivy_int> SubintervalOutput::overall_bytes_transferred_RS()
 	return u.a.bytes_transferred.getRunningStatByCategory(0);
 }
 
-RunningStat<ivy_float,ivy_int> SubintervalOutput::overall_submit_time_RS()
-{
-    return u.a.submit_time.getRunningStatByCategory(0);
-}
-
-RunningStat<ivy_float,ivy_int> SubintervalOutput::overall_running_time_RS()
-{
-    return u.a.running_time.getRunningStatByCategory(0);
-}
-
-
 
 std::string SubintervalOutput::thumbnail(ivy_float seconds)
 {
@@ -470,8 +386,6 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 
 	RunningStat<ivy_float, ivy_int>	bytes_transferred       {u.a.bytes_transferred.getRunningStatByCategory(0)};
 	RunningStat<ivy_float, ivy_int>	service_time            {u.a.service_time.getRunningStatByCategory(0)};
-	RunningStat<ivy_float, ivy_int> submit_time             {u.a.submit_time.getRunningStatByCategory(0)};
-	RunningStat<ivy_float, ivy_int> running_time            {u.a.running_time.getRunningStatByCategory(0)};
 	RunningStat<ivy_float, ivy_int>	read_service_time       {u.a.service_time.getRunningStatByCategory(3)};
 	RunningStat<ivy_float, ivy_int>	write_service_time      {u.a.service_time.getRunningStatByCategory(4)};
 
@@ -505,13 +419,8 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 	o << ", avg Blk (KiB) = " << std::fixed << std::setprecision(1) << ( bytes_transferred.avg() / 1024.0      );
 
 	o << ", Little\'s law avg Q = " << std::fixed << std::setprecision(1) << (    ( ((ivy_float) bytes_transferred.count()) / seconds )/*IOPS*/  *   service_time.avg()     );
-//	o << ", running time Little\'s law avg Q = " << std::fixed << std::setprecision(1) << (    ( ((ivy_float) bytes_transferred.count()) / seconds )/*IOPS*/  *   running_time.avg()     );
 
 	o << ", service time = " <<  std::fixed << std::setprecision(3) <<  (service_time.avg() * 1000.0) << " ms";
-
-//	o << ", submit time = " <<  std::fixed << std::setprecision(3) <<  (submit_time.avg() * 1000.0) << " ms";
-
-//	o << ", running time = " <<  std::fixed << std::setprecision(3) <<  (running_time.avg() * 1000.0) << " ms";
 
 	//o << ", avg Read Serv. Time (ms) = "; if (read_bytes_transferred.count()==0) o << "< no reads >"; else o <<  std::fixed << std::setprecision(3) << (read_service_time.avg() * 1000.0) ;
 	//o << ", avg Write Serv. Time (ms) = "; if (write_bytes_transferred.count()==0) o << "< no writes >"; else o <<  std::fixed << std::setprecision(3) << (write_service_time.avg() * 1000.0) ;

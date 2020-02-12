@@ -30,6 +30,7 @@
 #include <iomanip>
 #include <cmath> // for sqrt()
 #include <string>
+#include <cstring>
 
 using namespace std;
 
@@ -269,6 +270,17 @@ bool RunningStat<FloatType, IntType>::fromIstream(std::istream& i)
 {
 	char c;
 	i >> c; if (i.fail() || c != '<') 	{clear();return false;}
+
+//	i >> c; if (!i.fail() || c == '>') 	// "<>" signifies empty
+//	{
+//        clear();
+//        return true;
+//    }
+//	else
+//	{
+//        i.putback(c);
+//	}
+
 	i >> n; if (i.fail()) 			{clear();return false;}
 	i >> c; if (i.fail() || c != ';') 	{clear();return false;}
 	i >> M1; if (i.fail()) 			{clear();return false;}
@@ -289,12 +301,21 @@ bool RunningStat<FloatType, IntType>::fromIstream(std::istream& i)
 }
 
 template <typename FloatType, typename IntType>
-bool RunningStat<FloatType, IntType>::fromString(const std::string& s) {
+bool RunningStat<FloatType, IntType>::fromString(const std::string& s)
+{
+// Note use this if possible, it's faster:  bool RunningStat_double_long_int::fromString(const std::string& s)
+
+
 	std::istringstream is(s);
+
 	if (!fromIstream(is)) return false;
+
 	char c;
+
 	is >> c;
+
 	if (!is.fail()) return false;
+
 	return true;
 }
 
@@ -305,8 +326,8 @@ struct RunningStat_double_long_int
     double M1, M2, min_value, max_value;
 
     void clear();
-
     bool fromString(const std::string&);  // returns true if successful, clears RunningStat and returns false if unsuccessful.
+    std::string toString();
 };
 
 

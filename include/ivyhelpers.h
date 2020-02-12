@@ -136,6 +136,7 @@ bool isPlusSignCombo(std::string& callers_error_message, int& callersNumberOfFie
 
 ivy_float number_optional_trailing_percent(const std::string& s /* e.g. "1.2%" */, const std::string& name_associated_with_value_for_error_message = std::string("") );  // throws std::invalid_argument
 unsigned int unsigned_int(const std::string&, std::string name_associated_with_value_for_error_message = std::string("") );
+unsigned long unsigned_long(const std::string&, std::string name_associated_with_value_for_error_message = std::string("") );
 
 std::string render_string_harmless(const std::string s);
 std::string quote_wrap(const std::string s);
@@ -172,3 +173,22 @@ std::pair<bool /*false means attempt to read past the end*/, std::string /*field
 std::string seconds_to_hhmmss(unsigned int input_value);
 
 bool parse_boolean(const std::string&); // throws std::invalid_argument
+
+unsigned int round_up_to_4096_multiple(unsigned int);
+
+std::string size_GB_GiB_TB_TiB(ivy_float);
+
+std::ostream& interpret_struct_timespec_as_localtime(std::ostream&, const struct timespec&);
+
+template<class T> std::ostream& print_in_dec_and_hex(std::ostream& o, T thing)
+{
+    o << std::dec
+          << thing
+      << " (0x" << std::hex << std::setw(2 * sizeof(T)) << std::uppercase << std::setfill('0')
+          << thing << ")";
+
+    return o;
+}
+
+struct counter { unsigned long c {0}; };
+

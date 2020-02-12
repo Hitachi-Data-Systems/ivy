@@ -24,16 +24,8 @@ using namespace std;
 extern std::string printable_ascii;
 extern bool ivydriver_wrapping;
 
-//#define IVYDRIVER_TRACE   // Defined here in this source file, so the CodeBlocks editor knows it's defined for code highlighting,
-                           // and so you can turn it off and on for each source file.
-
 void IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
-    o << "Entering IosequencerSequential::setFrom_IosequencerInput() for " << workloadID; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
 	Iosequencer::setFrom_IosequencerInput(p_i_i);
 
 	lastIOblockNumber = -1 + coverageStartBlock + (long long int) (p_IosequencerInput->seqStartPoint * (ivy_float) numberOfCoverageBlocks);
@@ -59,17 +51,12 @@ void IosequencerSequential::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 
 bool IosequencerSequential::generate(Eyeo& slang)
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
-    o << "Entering IosequencerSequential::generate() for " << workloadID << " - initial Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
 	Iosequencer::generate(slang); // Increments the I/O sequence number. Resets Eyeo for next I/O.  Always returns true.
 
 	// we assume that eyeocb.data already points to the Eyeo object
 	// and that eyeocb.aio_buf already points to a page-aligned I/O buffer
 
-	slang.eyeocb.aio_fildes = pTestLUN->fd;
+	//slang.eyeocb.aio_fildes = pTestLUN->fd;
 
 	lastIOblockNumber++;
 
@@ -91,22 +78,22 @@ bool IosequencerSequential::generate(Eyeo& slang)
 	{
         lastIOblockNumber = coverageStartBlock;   // this doesn't mean we have necessarily written to all blocks, as we may have started part way through.
 	}
-	slang.eyeocb.aio_offset = p_IosequencerInput->blocksize_bytes * lastIOblockNumber;
+	slang.sqe.off = p_IosequencerInput->blocksize_bytes * lastIOblockNumber;
 
 	//slang.eyeocb.aio_nbytes was set when Eyeos were built for the Workload.
 	slang.start_time=0;
 	slang.end_time=0;
 	slang.return_value=-2;
-	slang.errno_value=-2;
+//	slang.errno_value=-2;
 
 	if (0.0 == p_IosequencerInput->fractionRead)
 	{
-		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PWRITE;
+		slang.sqe.opcode=IORING_OP_WRITE_FIXED;
         slang.generate_pattern();
 	}
 	else if (1.0 == p_IosequencerInput->fractionRead)
 	{
-		slang.eyeocb.aio_lio_opcode=IOCB_CMD_PREAD;
+		slang.sqe.opcode=IORING_OP_READ_FIXED;
 	}
 	else
 	{
@@ -132,11 +119,6 @@ bool IosequencerSequential::generate(Eyeo& slang)
 		}
 		previous_scheduled_time = slang.scheduled_time;
 	}
-
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";
-    o << "Entering IosequencerSequential::generate() for " << workloadID << " - updated Eyeo = " << slang.toString(); log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
 
 	return true;
 }

@@ -3,7 +3,7 @@
 %language "C++"
 %defines
 %locations
-%define parser_class_name {hosts}
+%define api.parser.class {hosts}
 
 %{
 

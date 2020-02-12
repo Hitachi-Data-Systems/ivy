@@ -18,12 +18,40 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include <unistd.h>
+#include <sys/syscall.h>
 #include <assert.h>
+
+inline int ioprio_set(int which, int who, int ioprio)
+{
+	return syscall(SYS_ioprio_set, which, who, ioprio);
+}
+
+inline int ioprio_get(int which, int who)
+{
+	return syscall(SYS_ioprio_get, which, who);
+}
+
+enum {
+	IOPRIO_CLASS_NONE,
+	IOPRIO_CLASS_RT,
+	IOPRIO_CLASS_BE,
+	IOPRIO_CLASS_IDLE,
+};
+
+enum {
+	IOPRIO_WHO_PROCESS = 1,
+	IOPRIO_WHO_PGRP,
+	IOPRIO_WHO_USER,
+};
+
 
 using namespace std;
 
 #include "Eyeo.h"
 #include "LUN.h"
+#include "ivydriver.h"
+
 #include "../../LUN_discovery/include/printableAndHex.h"
     // display_memory_contents() is part of "printableAndHex" which is in the LUN_discovery project
     // https://github.com/Hitachi-Data-Systems/LUN_discovery
@@ -32,12 +60,29 @@ using namespace std;
 extern std::string printable_ascii;
 extern std::default_random_engine deafrangen;
 
-Eyeo::Eyeo(Workload* pw) : pWorkload(pw)
+Eyeo::Eyeo(Workload* pw, uint64_t& p_buffer) : pWorkload(pw)
 {
 // Note that the pointer to the buffer and the blocksize in the iocb are set separately after createing the Eyeos.
 // This is because we get the memory for the buffer pool in one big piece for each Workload's Eyeos.
 
-	eyeocb.aio_data=(uint64_t) this; // see if this works ... yes
+    memset(& sqe,0,sizeof(sqe));
+
+    //sqe.opcode - set for each I/O - IORING_OP_READ_FIXED or IORING_OP_WRITE_FIXED (or IORING_OP_TIMEOUT, but this isn't done using an Eyeo)
+
+	sqe.flags = IOSQE_FIXED_FILE;
+
+//	sqe.ioprio = ioprio_get(IOPRIO_WHO_USER, 0 /*root*/);
+//	sqe.ioprio = 0;
+
+	sqe.fd = pw->pTestLUN->fd_index;
+	//sqe.off - set for each I/O
+	sqe.addr = p_buffer;
+	sqe.len = pw->subinterval_array[0].input.blocksize_bytes;
+	sqe.rw_flags = 0;
+	sqe.user_data =(uint64_t) this;
+	sqe.buf_index = 0; // there is only one big fixed buffer
+
+	 p_buffer += round_up_to_4096_multiple(pw->subinterval_array[0].input.blocksize_bytes);
 }
 
 ivytime Eyeo::since_start_time() // returns ivytime(0) if start_time is not in the past
@@ -48,103 +93,225 @@ ivytime Eyeo::since_start_time() // returns ivytime(0) if start_time is not in t
     else                   return now - start_time;
 }
 
-void Eyeo::resetForNextIO() {
-	int      save_aio_fildes = eyeocb.aio_fildes;
-	uint64_t save_aio_data = eyeocb.aio_data; // we put a pointer to the Eyeo object here so that when the system returns an iocb after an I/O we automatically know what Eyeo that is for.
-	uint64_t save_aio_buf = eyeocb.aio_buf;
-	uint64_t save_aio_nbytes = eyeocb.aio_nbytes;
-
-	memset(&eyeocb, 0, sizeof(eyeocb));
-
-	eyeocb.aio_fildes=save_aio_fildes;
-	eyeocb.aio_data=save_aio_data;
-	eyeocb.aio_buf=save_aio_buf;
-	eyeocb.aio_nbytes = save_aio_nbytes;
-
-	iops_max_counted = false;
-	scheduled_time = start_time = running_time = end_time = ivytime_zero;
+void Eyeo::resetForNextIO()
+{
+	scheduled_time = start_time = end_time = ivytime_zero;
 }
 
-std::ostream& operator<<(std::ostream& o, const struct io_event& e)
+std::ostream& format_cqe_with_associated_shims_and_IOs(std::ostream& o, const io_uring_cqe& cqe)
 {
-    o << "struct io_event at " << std::hex << std::uppercase << &e << ": ";
-    o << " data (=struct iocb.aio_data) = 0x" << std::hex << std::uppercase << e.data;
-    o << ", obj (iocb*) " << std::hex << std::uppercase << e.obj;
-    o << ", res = "  << std::dec << e.res;
-    o << ", res2 = " << std::dec << e.res2;
-    Eyeo* pEyeo = (Eyeo*) e.data;
-    o << ".  io_event.data -> Eyeo = " << pEyeo->toString();
+    o << std::endl << cqe;
+
+    if (cqe.user_data != 0)
+    {
+        const struct cqe_shim& shim = *((cqe_shim*)cqe.user_data);
+
+        o << std::endl << "   " << shim;
+
+        if (shim.type == cqe_type::eyeo)
+        {
+            const Eyeo& eyeo = *((Eyeo*)cqe.user_data);
+
+            o << std::endl << "      " << eyeo;
+        }
+    }
+
     return o;
 }
 
-std::string Eyeo::toString(bool display_buffer_contents) {
-	std::ostringstream o;
+std::ostream& operator<<(std::ostream& o, const io_uring_cqe& cqe)
+{
+	o << "{ \"io_uring_cqe\" : { ";
 
-	o << std::endl << std::endl; // to make the Eyeos separated in the log
+    o << "\"this\" : \"" << &cqe << "\"";
 
-	o << "Eyeo " << pWorkload->workloadID << "#" << io_sequence_number << " at " << this;
+    o << ", \"user_data" << "\" : \"" << std::dec << cqe.user_data     << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(cqe.user_data)) << std::setfill('0') << cqe.user_data << ")\"";
 
-    o << ", eyeocb.aio_data (Eyeo*)= 0x" << std::hex << std::uppercase << eyeocb.aio_data;
+    o << ", \"res" << "\" : \"" << std::dec << cqe.res     << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(cqe.res)) << std::setfill('0') << cqe.res << ")\"";
 
-	o << ", opcode=";
+    if (cqe.res < 0) { o << ", \"strerror\" : \"" << std::strerror(abs(cqe.res)) << "\""; }
 
-	switch (eyeocb.aio_lio_opcode) {
-		case IOCB_CMD_PREAD:   o << "IOCB_CMD_PREAD"; break;
-		case IOCB_CMD_PWRITE:  o << "IOCB_CMD_PWRITE"; break;
-		case IOCB_CMD_FSYNC:   o << "IOCB_CMD_FSYNC"; break;
-		case IOCB_CMD_FDSYNC:  o << "IOCB_CMD_FDSYNC"; break;
-		case IOCB_CMD_NOOP:    o << "IOCB_CMD_NOOP"; break;
-		case IOCB_CMD_PREADV:  o << "IOCB_CMD_PREADV"; break;
-		case IOCB_CMD_PWRITEV: o << "IOCB_CMD_PWRITEV"; break;
-		default: o << "unknown opcode 0x"
-		    << std::hex << std::setw(2*sizeof(eyeocb.aio_lio_opcode)) << std::setfill('0') << std::uppercase
-            << eyeocb.aio_lio_opcode;
+    o << ", \"flags" << "\" : \"" << std::dec << cqe.flags     << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(cqe.flags)) << std::setfill('0') << cqe.flags << ")\"";
+
+    o << " } }";
+
+    return o;
+}
+std::ostream& operator<<(std::ostream& o, const io_uring_sqe& sqe)
+{
+	o << "{ \"io_uring_sqe\" : { ";
+
+    o << "\"this\" : \"" << &sqe << "\"";
+
+	o << ", \"opcode\" : \"0x" << std::hex << std::setw(2*sizeof(sqe.opcode)) << std::setfill('0') << ((unsigned)sqe.opcode) << " - ";
+
+	switch (sqe.opcode) {
+        case IORING_OP_NOP:             o << "IORING_OP_NOP";             break;
+        case IORING_OP_READV:           o << "IORING_OP_READV";           break;
+        case IORING_OP_WRITEV:          o << "IORING_OP_WRITEV";          break;
+        case IORING_OP_FSYNC:           o << "IORING_OP_FSYNC";           break;
+        case IORING_OP_READ_FIXED:      o << "IORING_OP_READ_FIXED";      break;
+        case IORING_OP_WRITE_FIXED:     o << "IORING_OP_WRITE_FIXED";     break;
+        case IORING_OP_POLL_ADD:        o << "IORING_OP_POLL_ADD";        break;
+        case IORING_OP_POLL_REMOVE:     o << "IORING_OP_POLL_REMOVE";     break;
+        case IORING_OP_SYNC_FILE_RANGE: o << "IORING_OP_SYNC_FILE_RANGE"; break;
+        case IORING_OP_SENDMSG:         o << "IORING_OP_SENDMSG";         break;
+        case IORING_OP_RECVMSG:         o << "IORING_OP_RECVMSG";         break;
+        case IORING_OP_TIMEOUT:         o << "IORING_OP_TIMEOUT";         break;
+        case IORING_OP_TIMEOUT_REMOVE:  o << "IORING_OP_TIMEOUT_REMOVE";  break;
+        case IORING_OP_ACCEPT:          o << "IORING_OP_ACCEPT";          break;
+        case IORING_OP_ASYNC_CANCEL:    o << "IORING_OP_ASYNC_CANCEL";    break;
+        case IORING_OP_LINK_TIMEOUT:    o << "IORING_OP_LINK_TIMEOUT";    break;
+        case IORING_OP_CONNECT:         o << "IORING_OP_CONNECT";         break;
+		default: o << "<unknown opcode>";
 	}
+	o << "\"";
 
-    o << ", eyeocb.aio_filedes = "  << std::dec << eyeocb.aio_fildes;
-    o << ", eyeocb.aio_buf = 0x"    << std::hex << std::uppercase << eyeocb.aio_buf;
-    o << ", eyeocb.aio_nbytes = "   << std::dec << eyeocb.aio_nbytes;
-    o << ", eyeocb.aio_offset = 0x" << std::hex << std::uppercase << eyeocb.aio_offset;
-    o << ", eyeocb.aio_flags = 0x"  << std::hex << std::uppercase << eyeocb.aio_flags;
-    o << ", eyeocb.aio_resfd = "    << std::dec << eyeocb.aio_resfd;
+	if (sqe.opcode == IORING_OP_READ_FIXED || sqe.opcode == IORING_OP_WRITE_FIXED)
+    {
+        o << ", \"flags\" : \"0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned) sqe.flags;
+        if (sqe.flags & IOSQE_FIXED_FILE) o << " IOSQE_FIXED_FILE";
+        if (sqe.flags & IOSQE_IO_DRAIN)   o << " IOSQE_IO_DRAIN";
+        if (sqe.flags & IOSQE_IO_LINK)    o << " IOSQE_IO_LINK";
+        o << "\"";
 
-	o << ", sched="   << scheduled_time.format_as_datetime_with_ns()
-	  << ", start="   << start_time    .format_as_datetime_with_ns()
-	  << ", running=" << running_time  .format_as_datetime_with_ns()
-	  << ", end="     << end_time      .format_as_datetime_with_ns()
-	  << ", service_time_seconds="  << std::fixed << std::setprecision(6) << service_time_seconds()
-	  << ", response_time_seconds=" << std::fixed << std::setprecision(6) << response_time_seconds()
-	  << ", submit_time_seconds="   << std::fixed << std::setprecision(6) << submit_time_seconds()
-	  << ", running_time_seconds="  << std::fixed << std::setprecision(6) << running_time_seconds()
-	  << ", ret="     << return_value
-	  << ", errno="    << errno_value
-	  << ", pWorkload=" << pWorkload
-	  << ", iops_max_counted = ";
-	if (iops_max_counted) o << "true";
-	else                  o << "false";
+        o << ", \"ioprio"    << "\" : \"" << std::dec << sqe.ioprio        << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.ioprio   )) << std::setfill('0') << sqe.ioprio << ")\"";
+        o << ", \"fd"        << "\" : \"" << std::dec << sqe.fd            << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.fd       )) << std::setfill('0') << sqe.fd << ")\"";;
+        o << ", \"off/addr2" << "\" : \"" << std::dec << sqe.off           << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.off      )) << std::setfill('0') << sqe.off << ")\"";
+        o << ", \"addr"      << "\" : \"" << std::dec << sqe.addr          << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.addr     )) << std::setfill('0') << sqe.addr << ")\"";
+        o << ", \"len"       << "\" : \"" << std::dec << sqe.len           << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.len      )) << std::setfill('0') << sqe.len << ")\"";
+        o << ", \"rw_flags"  << "\" : \"" << std::dec << sqe.rw_flags      << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.rw_flags )) << std::setfill('0') << sqe.rw_flags << ")";
+        o << "\"";
 
-	const uint64_t dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
-	if (display_buffer_contents)
+        o << ", \"user_data" << "\" : \"" << std::dec << sqe.user_data     << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.user_data)) << std::setfill('0') << sqe.user_data << ")\"";
+        o << ", \"buf_index" << "\" : \"" << std::dec << sqe.buf_index     << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.buf_index)) << std::setfill('0') << sqe.buf_index << ")\"";
+
+
+    }
+    else if (sqe.opcode == IORING_OP_TIMEOUT)
+    {
+        o << ", \"timeout_flags" << "\" : \"" << std::dec << sqe.timeout_flags << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.timeout_flags)) << std::setfill('0') << sqe.timeout_flags << ")";
+        if (sqe.timeout_flags & IORING_TIMEOUT_ABS)    o << " IORING_TIMEOUT_ABS";
+        o << "\"";
+
+        o << ", \"fd\" : \"" << std::dec << sqe.fd << "\"";
+
+        o << ", \"offset (event count)" << "\" : \"" << std::dec << sqe.off << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.off      )) << std::setfill('0') << sqe.off << ")\"";
+
+        __kernel_timespec* p_timespec64 = ( __kernel_timespec* ) sqe.addr;
+
+        if (p_timespec64 != nullptr)
+        {
+            o << ", \"addr->timespec64.tv_sec"  << "\" : \"" << std::dec << p_timespec64->tv_sec  << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(p_timespec64->tv_sec )) << std::setfill('0') << p_timespec64->tv_sec   << ")\"";
+            o << ", \"addr->timespec64.tv_nsec" << "\" : \"" << std::dec << p_timespec64->tv_nsec << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(p_timespec64->tv_nsec)) << std::setfill('0') << p_timespec64->tv_nsec  << ")\"";
+            struct timespec ts;
+            ts.tv_sec = p_timespec64->tv_sec;
+            ts.tv_nsec = p_timespec64->tv_nsec;
+
+            if (sqe.timeout_flags & IORING_TIMEOUT_ABS)
+            {
+                o << ", \"absolute\" : \"";
+                interpret_struct_timespec_as_localtime(o, ts);
+                o << "\"";
+            }
+            else
+            {
+                ivytime i (ts);
+                o << ", \"duration\" : \"" << i.format_as_duration_HMMSSns() << "\"";
+            }
+        }
+
+        o << ", \"user_data" << "\" : \"" << std::dec << sqe.user_data     << " (0x" << std::hex << std::uppercase << std::setw(2 * sizeof(sqe.user_data)) << std::setfill('0') << sqe.user_data << ")\"";
+    }
+
+	o << " } }";
+
+	return o;
+}
+
+std::ostream& operator<<(std::ostream& o, const Eyeo& e)
+{
+	o << "{ \"Eyeo\" : { ";
+
+    o << "\"this\" : \"" << &e << "\"";
+
+
+
+	o << ", " << e.shim;
+
+    o << ", " << e.sqe;
+
+    o << ", \"comment\" : ";
+    o << "\"";
+        {
+            if (e.sqe.off == 0)
+            {
+                o << "<Error> submit queue entry offset may not be zero.  Thou shalt not trifle with sector zero.";
+            }
+
+            long double LUN_size_bytes_float = ((long double)e.pWorkload->pTestLUN->LUN_size_bytes);
+
+            uint64_t just_past_Eyeo = e.sqe.off + ((uint64_t)e.sqe.len);
+
+            if (e.sqe.off > e.pWorkload->pTestLUN->LUN_size_bytes)
+            {
+                o << "<Error> I/O offset is past the end of the LUN.";
+            }
+            else if (just_past_Eyeo > e.pWorkload->pTestLUN->LUN_size_bytes)
+            {
+                o << "<Error> I/O offset plus length is past the end of the LUN.";
+            }
+
+            long double just_past_Eyeo_float = (long double) just_past_Eyeo;
+
+            if (LUN_size_bytes_float > 0)
+            {
+                long double from_fraction = ((long double) e.sqe.off) / LUN_size_bytes_float;
+
+                long double just_past_fraction = just_past_Eyeo_float / LUN_size_bytes_float;
+
+                o << "Eyeo from ";
+                o << std::dec << std::fixed << std::setprecision(6) << (100.0 * from_fraction) << " % to ";
+                o << std::dec << std::fixed << std::setprecision(6) << (100.0 * just_past_fraction) << " % of LUN.";
+            }
+        }
+    o << "\"";
+
+	o << ", \"workloadID"          << "\" : \"" << e.pWorkload->workloadID                       << "\"";
+	o << ", \"io_sequence_number"  << "\" : \"" << e.io_sequence_number                          << "\"";
+	o << ", \"scheduled_time"      << "\" : \"" << e.scheduled_time.format_as_datetime_with_ns() << "\"";
+    o << ", \"start_time"          << "\" : \"" << e.start_time    .format_as_datetime_with_ns() << "\"";
+    o << ", \"end_time"            << "\" : \"" << e.end_time      .format_as_datetime_with_ns() << "\"";
+    o << ", \"return_value"        << "\" : \"" << std::dec << e.return_value   << "(0x" << std::hex << std::setw(2*sizeof(e.return_value  )) << std::setfill('0') << e.return_value << ")\"";
+
+	o << ", \"pWorkload"           << "\" : \"" << e.pWorkload                                   << "\"";
+
+	const uint64_t dedupe_unit_bytes = e.pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
+	if (ivydriver.display_buffer_contents)
 	{
-	    if (eyeocb.aio_nbytes <= (2*dedupe_unit_bytes))
+	    if (e.sqe.len <= (2*dedupe_unit_bytes))
 	    {
-	        o << std::endl << "buffer contents:" << std::endl;
-	        display_memory_contents(o,((const unsigned char*) eyeocb.aio_buf),(int) eyeocb.aio_nbytes,32);
+	        o << "\"buffer contents\" :\""  << std::endl;
+	        display_memory_contents(o,((const unsigned char*) e.sqe.addr),(int) e.sqe.len,32);
+	        o << "\"";
 	    }
 	    else
 	    {
-	        o << std::endl << "first dedupe_unit_bytes = " << dedupe_unit_bytes << " of buffer contents:" << std::endl;
-	        display_memory_contents(o,((const unsigned char*) eyeocb.aio_buf),dedupe_unit_bytes,32);
+	        o << "\"first dedupe_unit_bytes = " << dedupe_unit_bytes << " of buffer contents\" : \"";
+	        display_memory_contents(o,((const unsigned char*) e.sqe.addr),dedupe_unit_bytes,32);
+	        o << "\"";
 
-	        o << std::endl << "..." << std::endl << "last dedupe_unit_bytes = " << dedupe_unit_bytes << " of buffer contents:" << std::endl;
-	        display_memory_contents(o,((const unsigned char*) (eyeocb.aio_buf+eyeocb.aio_nbytes-dedupe_unit_bytes)),dedupe_unit_bytes,32);
+	        o << "\"last dedupe_unit_bytes = " << dedupe_unit_bytes << " of buffer contents\" : \"";
+	        display_memory_contents(o,((const unsigned char*) (e.sqe.addr+e.sqe.len-dedupe_unit_bytes)),dedupe_unit_bytes,32);
+	        o << "\"";
 	    }
 	}
 
-	o << std::endl;
-	o << std::endl;
+	o << ", \"service_time_seconds()\" : \""  << std::fixed << std::setprecision(6) << e.service_time_seconds() << "\"";
+    o << ", \"response_time_seconds()\" : \"" << std::fixed << std::setprecision(6) << e.response_time_seconds() << "\"";
+    o << " } }";
 
-	return o.str();
+	return o;
 }
 
 std::string Eyeo::thumbnail()
@@ -183,32 +350,18 @@ std::string Eyeo::thumbnail()
 }
 
 
-ivy_float Eyeo::service_time_seconds()
+ivy_float Eyeo::service_time_seconds() const
 {
 	if (end_time.isZero() || start_time.isZero()) return -1.0;
 	ivytime service_time = end_time - start_time;
 	return (ivy_float) service_time;
 }
 
-ivy_float Eyeo::response_time_seconds()
+ivy_float Eyeo::response_time_seconds() const
 {
 	if (end_time.isZero() || scheduled_time.isZero()) return -1.0;
 	ivytime response_time = end_time - scheduled_time;
 	return (ivy_float) response_time;
-}
-
-ivy_float Eyeo::submit_time_seconds()
-{
-	if (start_time.isZero() || running_time.isZero()) return -1.0;
-	ivytime submit_time = running_time - start_time;
-	return (ivy_float) submit_time;
-}
-
-ivy_float Eyeo::running_time_seconds()
-{
-	if (end_time.isZero() || running_time.isZero()) return -1.0;
-	ivytime run_time = end_time - running_time;
-	return (ivy_float) run_time;
 }
 
 // This method corrects for the difference between compressibility desired by the caller and
@@ -308,7 +461,7 @@ ivy_float Eyeo::lookup_probabilistic_compressibility(ivy_float desired_compressi
 
 void Eyeo::generate_pattern()
 {
-    uint64_t blocksize = eyeocb.aio_nbytes;
+    uint64_t blocksize = sqe.len;
     uint64_t* p_uint64;
     char* p_c;
     uint64_t d;
@@ -325,7 +478,7 @@ void Eyeo::generate_pattern()
 
     const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
-    ivy_float probabilistic_compressibility = lookup_probabilistic_compressibility(pWorkload->compressibility, (uint64_t) eyeocb.aio_buf);
+    ivy_float probabilistic_compressibility = lookup_probabilistic_compressibility(pWorkload->compressibility, sqe.addr);
 
     pWorkload->write_io_count++;
 
@@ -333,7 +486,7 @@ void Eyeo::generate_pattern()
     {
         case pattern::random:
 
-            p_uint64 = (uint64_t*) eyeocb.aio_buf;
+            p_uint64 = (uint64_t*) sqe.addr;
             count = blocksize / 8;
 
             // For dedupe_method  = constant_ratio, target_spread, static_method, or round_robin, we have already confirmed that the blocksize is a multiple of 8192 in setMultipleParameters
@@ -348,10 +501,10 @@ void Eyeo::generate_pattern()
                     }
                     else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, eyeocb.aio_offset + i * sizeof(uint64_t));
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, sqe.off + i * sizeof(uint64_t));
                         if (pWorkload->block_seed == 0)
                         {
-                            void* p = (void*) (eyeocb.aio_buf + (i * 8));
+                            void* p = (void*) (sqe.addr + (i * 8));
                             memset(p,0x00,dedupe_unit_bytes);
                             i += ((dedupe_unit_bytes/8)-1);
                             goto past_random_pattern_8byte_write;
@@ -362,7 +515,7 @@ void Eyeo::generate_pattern()
                         pWorkload->block_seed = duplicate_set_sub_block_starting_seed( i * 8 );
                         if (pWorkload->block_seed == 0)
                         {
-                            void* p = (void*) (eyeocb.aio_buf + (i * 8));
+                            void* p = (void*) (sqe.addr + (i * 8));
                             memset(p,0x00,dedupe_unit_bytes);
                             i += ((dedupe_unit_bytes/8)-1);
                             goto past_random_pattern_8byte_write;
@@ -393,7 +546,7 @@ past_random_pattern_8byte_write:;
             break;
 
         case pattern::ascii:
-            p_c = (char*) eyeocb.aio_buf;
+            p_c = (char*) sqe.addr;
             count = blocksize / 8;
 
             for (uint64_t i=0; i < count; i++)
@@ -406,10 +559,10 @@ past_random_pattern_8byte_write:;
                     }
                     else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, eyeocb.aio_offset + i * sizeof(uint64_t));
+                        pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, sqe.off + i * sizeof(uint64_t));
                         if (pWorkload->block_seed == 0)
                         {
-                            void* p = (void*) (eyeocb.aio_buf + (i * 8));
+                            void* p = (void*) (sqe.addr + (i * 8));
                             memset(p,0x00,dedupe_unit_bytes);
                             i += ((dedupe_unit_bytes/8)-1);
                             p_c += dedupe_unit_bytes;
@@ -421,7 +574,7 @@ past_random_pattern_8byte_write:;
                         pWorkload->block_seed = duplicate_set_sub_block_starting_seed( i * 8 );
                         if (pWorkload->block_seed == 0)
                         {
-                            void* p = (void*) (eyeocb.aio_buf + (i * 8));
+                            void* p = (void*) (sqe.addr + (i * 8));
                             memset(p,0x00,dedupe_unit_bytes);
                             i += ((dedupe_unit_bytes/8)-1);
                             p_c += dedupe_unit_bytes;
@@ -472,9 +625,9 @@ past_ascii_pattern_8byte_write:;
 
         case pattern::trailing_blanks:
 
-            p_uint64 = (uint64_t*) eyeocb.aio_buf;
+            p_uint64 = (uint64_t*) sqe.addr;
 
-            past_buf = ((char*) eyeocb.aio_buf)+blocksize;
+            past_buf = ((char*) sqe.addr)+blocksize;
 
             pieces = blocksize / dedupe_unit_bytes;
             remainder = blocksize % dedupe_unit_bytes;
@@ -495,13 +648,13 @@ past_ascii_pattern_8byte_write:;
                         }
                         else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                         {
-                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, eyeocb.aio_offset + (piece * dedupe_unit_bytes) /* + i * sizeof(uint64_t))*/ );
+                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, sqe.off + (piece * dedupe_unit_bytes) /* + i * sizeof(uint64_t))*/ );
                             if (pWorkload->block_seed == 0)
                             {
-                                void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
+                                void* p = (void*) (sqe.addr + (piece * dedupe_unit_bytes));
                                 memset(p,0x00,dedupe_unit_bytes);
                                 i += ((dedupe_unit_bytes/8)-1);
-                                p_uint64 = (uint64_t*) (eyeocb.aio_buf + (piece+1)*dedupe_unit_bytes);
+                                p_uint64 = (uint64_t*) (sqe.addr + (piece+1)*dedupe_unit_bytes);
                                 goto past_trailing_blanks_pattern_8byte_write;
                             }
                         }
@@ -510,10 +663,10 @@ past_ascii_pattern_8byte_write:;
                             pWorkload->block_seed = duplicate_set_sub_block_starting_seed(piece * dedupe_unit_bytes);
                             if (pWorkload->block_seed == 0)
                             {
-                                void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
+                                void* p = (void*) (sqe.addr + (piece * dedupe_unit_bytes));
                                 memset(p,0x00,dedupe_unit_bytes);
                                 i += ((dedupe_unit_bytes/8)-1);
-                                p_uint64 = (uint64_t*) (eyeocb.aio_buf + (piece+1)*dedupe_unit_bytes);
+                                p_uint64 = (uint64_t*) (sqe.addr + (piece+1)*dedupe_unit_bytes);
                                 goto past_trailing_blanks_pattern_8byte_write;
                             }
                         }
@@ -541,9 +694,9 @@ past_ascii_pattern_8byte_write:;
 
                 first_bite = floor((1.0-probabilistic_compressibility) * dedupe_unit_bytes );
 
-                past_piece = ((char*) eyeocb.aio_buf) + dedupe_unit_bytes * (piece +1);
+                past_piece = ((char*) sqe.addr) + dedupe_unit_bytes * (piece +1);
 
-                for (p_c = (((char*) eyeocb.aio_buf) + (piece * dedupe_unit_bytes) + first_bite); p_c < past_piece; p_c++)
+                for (p_c = (((char*) sqe.addr) + (piece * dedupe_unit_bytes) + first_bite); p_c < past_piece; p_c++)
                 {
                     *p_c = ' ';
                 }
@@ -564,7 +717,7 @@ past_trailing_blanks_pattern_8byte_write:;
 
                 first_bite = floor((1.0-probabilistic_compressibility) * remainder );
 
-                for (p_c = (((char*) eyeocb.aio_buf) + (dedupe_unit_bytes * pieces) + first_bite); p_c < past_buf; p_c++)
+                for (p_c = (((char*) sqe.addr) + (dedupe_unit_bytes * pieces) + first_bite); p_c < past_buf; p_c++)
                 {
                     *p_c = ' ';
                 }
@@ -574,19 +727,19 @@ past_trailing_blanks_pattern_8byte_write:;
 
         case pattern::zeros:
 
-            memset((void*)eyeocb.aio_buf,0,blocksize);
+            memset((void*)sqe.addr,0,blocksize);
 
             break;
 
         case pattern::all_0xFF:
 
-            memset((void*)eyeocb.aio_buf,0xFF,blocksize);
+            memset((void*)sqe.addr,0xFF,blocksize);
 
             break;
 
         case pattern::all_0x0F:
 
-            memset((void*)eyeocb.aio_buf,0x0F,blocksize);
+            memset((void*)sqe.addr,0x0F,blocksize);
 
             break;
 
@@ -597,7 +750,7 @@ past_trailing_blanks_pattern_8byte_write:;
 
             for (uint64_t piece = 0; piece < pieces; piece++)
             {
-                p_c = (char*) (((uint64_t) eyeocb.aio_buf) + piece * dedupe_unit_bytes);
+                p_c = (char*) (((uint64_t) sqe.addr) + piece * dedupe_unit_bytes);
                 past_buf = p_c + dedupe_unit_bytes;
                 count = 0;
                 while(p_c < past_buf)
@@ -610,10 +763,10 @@ past_trailing_blanks_pattern_8byte_write:;
                         }
                         else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::constant_ratio)
                         {
-                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, eyeocb.aio_offset + piece*dedupe_unit_bytes + count * sizeof(uint64_t));
+                            pWorkload->block_seed = pWorkload->dedupe_constant_ratio_regulator->get_seed(this, sqe.off + piece*dedupe_unit_bytes + count * sizeof(uint64_t));
                             if (pWorkload->block_seed == 0)
                             {
-                                void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
+                                void* p = (void*) (sqe.addr + (piece * dedupe_unit_bytes));
                                 memset(p,0x00,dedupe_unit_bytes);
                                 goto past_trailing_gobbldegook_pattern_write;
                             }
@@ -623,7 +776,7 @@ past_trailing_blanks_pattern_8byte_write:;
                             pWorkload->block_seed = duplicate_set_sub_block_starting_seed(piece * dedupe_unit_bytes);
                             if (pWorkload->block_seed == 0)
                             {
-                                void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
+                                void* p = (void*) (sqe.addr + (piece * dedupe_unit_bytes));
                                 memset(p,0x00,dedupe_unit_bytes);
                                 goto past_trailing_gobbldegook_pattern_write;
                             }
@@ -658,8 +811,8 @@ past_trailing_gobbldegook_pattern_write:;
 
             if (remainder > 0) // this doesn't happen when we're doing dedupe.
             {
-                p_c      = (char*) (((uint64_t) eyeocb.aio_buf) + pieces * dedupe_unit_bytes);
-                past_buf = (char*) (((uint64_t) eyeocb.aio_buf) + blocksize);
+                p_c      = (char*) (((uint64_t) sqe.addr) + pieces * dedupe_unit_bytes);
+                past_buf = (char*) (((uint64_t) sqe.addr) + blocksize);
                 while(p_c < past_buf)
                 {
                     xorshift64star(pWorkload->block_seed);
@@ -695,10 +848,10 @@ std::string Eyeo::buffer_first_last_16_hex()
 {
     std::ostringstream o;
 
-    if (eyeocb.aio_nbytes >= 32)
+    if (sqe.len >= 32)
     {
         unsigned char*
-        pc = (unsigned char*) eyeocb.aio_buf;
+        pc = (unsigned char*) sqe.addr;
         for (int i=0; i<16; i++)
         {
             o << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (int)(*pc);
@@ -707,7 +860,7 @@ std::string Eyeo::buffer_first_last_16_hex()
 
         o << " ... ";
 
-        pc = (unsigned char*) (eyeocb.aio_buf+eyeocb.aio_nbytes-16);
+        pc = (unsigned char*) (sqe.addr+sqe.len-16);
         for (int i=0; i<16; i++)
         {
             o << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (int)(*pc);
@@ -715,7 +868,7 @@ std::string Eyeo::buffer_first_last_16_hex()
         }
     }
 
-    o << "(length = " << std::dec << eyeocb.aio_nbytes << ")";
+    o << "(length = " << std::dec << sqe.len << ")";
 
     return o.str();
 }
@@ -726,13 +879,13 @@ uint64_t Eyeo::zero_pattern_filtered_sub_block_number(uint64_t offset_within_thi
 
     uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
-    uint64_t unfiltered_sub_block_number = (((uint64_t) eyeocb.aio_offset) + offset_within_this_Eyeo_buffer) / dedupe_unit_bytes;
+    uint64_t unfiltered_sub_block_number = (((uint64_t) sqe.off) + offset_within_this_Eyeo_buffer) / dedupe_unit_bytes;
 
     if (unfiltered_sub_block_number == 0)
     {
         std::ostringstream o;
         o << "Eyeo::zero_pattern_filtered_sub_block_number() was called for block zero.  We never write to block zero, so we don\'t over-write partition table / boot sector."
-                << "  This Eyeo toString() = " << toString();
+                << "  This Eyeo toString() = " << *this;
         throw std::runtime_error(o.str());
     }
 
@@ -762,7 +915,7 @@ uint64_t Eyeo::fixed_pattern_sub_block_starting_seed(uint64_t offset_within_this
 
 uint64_t Eyeo::duplicate_set_filtered_sub_block_number(uint64_t unfiltered_sub_block_number)
 {
-    const uint64_t& blocksize = eyeocb.aio_nbytes;
+    const uint32_t& blocksize = sqe.len;
     const ivy_float& dedupe_ratio = pWorkload->p_current_IosequencerInput->dedupe;
     const uint64_t& regionSize_bytes = pWorkload->p_my_iosequencer->numberOfCoverageBlocks * blocksize;
     const unsigned int& duplicate_set_size = pWorkload->p_current_IosequencerInput->duplicate_set_size;
@@ -830,13 +983,13 @@ uint64_t Eyeo::duplicate_set_sub_block_starting_seed(uint64_t offset_within_this
 
         // Choose the appropriate duplicate set member for this block seed.
 
-    	const uint64_t& blocksize = eyeocb.aio_nbytes;
+    	const uint32_t& blocksize = sqe.len;
     	const ivy_float& dedupe_ratio = pWorkload->p_current_IosequencerInput->dedupe;
     	const uint64_t& regionSize_bytes = pWorkload->p_my_iosequencer->numberOfCoverageBlocks * blocksize;
     	const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
     	const long double correction_factor = ((((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio) + (long double) duplicate_set_size) /
-    										(((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio);
+    											(((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio);
     	const long double dedupe_percent = (long double) 1.0 - ((long double) 1.0 / (dedupe_ratio * correction_factor));
 
     	uint64_t relative_block_number = (uint64_t) (((long double) zero_sub_block_number) * ((long double) 1.0 - dedupe_percent));
@@ -852,3 +1005,28 @@ uint64_t Eyeo::duplicate_set_sub_block_starting_seed(uint64_t offset_within_this
 
     return pWorkload->uint64_t_hash_of_host_plus_LUN ^ block_seed;
 }
+
+
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
+#include <time.h>
+
+
+std::ostream& interpret_struct_timespec_as_localtime(std::ostream& o, const struct timespec& ts)
+{
+    char buffer[100];
+
+    {
+        std::strftime(buffer, sizeof buffer, "%D %T", std::localtime(&ts.tv_sec));
+        o << buffer << "." << std::dec << std::fixed << std::setw(9) << std::setfill('0') << ts.tv_nsec;
+
+        o << " or ";
+
+        std::strftime(buffer, sizeof buffer, "%D %T", std::gmtime(&ts.tv_sec));
+        o << buffer << "." << std::dec << std::fixed << std::setw(9) << std::setfill('0') << ts.tv_nsec << " UTC";
+    }
+
+    return o;
+}
+

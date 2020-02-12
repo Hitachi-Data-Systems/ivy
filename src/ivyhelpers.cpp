@@ -1099,7 +1099,6 @@ ivy_float number_optional_trailing_percent(const std::string& s /* e.g. "1.2%" *
 }
 
 
-
 unsigned int unsigned_int(const std::string& s /* e.g. "5" */, std::string name_associated_with_value_for_error_message)  // throws std::invalid_argument
 {
 	if (!std::regex_match(s, unsigned_int_regex))
@@ -1110,6 +1109,24 @@ unsigned int unsigned_int(const std::string& s /* e.g. "5" */, std::string name_
 	}
 
 	unsigned int value;
+	{
+		std::istringstream is(s);
+		is >> value;
+	}
+
+	return value;
+}
+
+unsigned long unsigned_long(const std::string& s /* e.g. "5" */, std::string name_associated_with_value_for_error_message)  // throws std::invalid_argument
+{
+	if (!std::regex_match(s, unsigned_int_regex))
+	{
+		std::ostringstream o;
+		o << "unsigned_long(\"" << s << "\") - for \"" << name_associated_with_value_for_error_message << "\" - character string must look like \"0\" or \"27\"." << std::endl ;
+		throw std::invalid_argument(o.str());
+	}
+
+	unsigned long value;
 	{
 		std::istringstream is(s);
 		is >> value;
@@ -1503,11 +1520,32 @@ bool parse_boolean(const std::string& s) // throws std::invalid_argument
 }
 
 
+unsigned int round_up_to_4096_multiple(unsigned int ui)
+{
+    unsigned int remainder = ui % 4096;
+
+    if (remainder) { return ui + (4096 - remainder); }
+
+    return ui;
+}
 
 
+std::string size_GB_GiB_TB_TiB(ivy_float x)
+{
+    static const ivy_float GB  { 1.0e9 };
+    static const ivy_float GiB { 1024.0 * 1024.0 * 1024.0 };
+    static const ivy_float TB  { 1.0e12 };
+    static const ivy_float TiB { 1024.0 * 1024.0 * 1024.0 * 1024. };
 
+    std::ostringstream o;
 
+    o << std::fixed << std::setprecision(3) << ( x / GB)  << " GB|";
+    o << std::fixed << std::setprecision(3) << ( x / GiB) << " GiB|";
+    o << std::fixed << std::setprecision(3) << ( x / TB)  << " TB|";
+    o << std::fixed << std::setprecision(3) << ( x / TiB) << " TiB";
 
+    return o.str();
+}
 
 
 

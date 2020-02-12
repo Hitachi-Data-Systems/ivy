@@ -28,20 +28,8 @@
 #include "Eyeo.h"
 #include "ivydriver.h"
 
-//#define IVYDRIVER_TRACE
-// IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
-//  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
-//  - you can turn on tracing separately for each class in its own source file.
-
-
 unsigned int TestLUN::sum_of_maxTags()
 {
-#if defined(IVYDRIVER_TRACE)
-    { sum_of_maxTags_callcount++; if (sum_of_maxTags_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << sum_of_maxTags_callcount << ") ";
-    o << "      Entering TestLUN::sum_of_maxTags()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
     unsigned int total {0};
 
     for (auto& pear : workloads)
@@ -65,12 +53,6 @@ void TestLUN::post_warning(const std::string& msg) { pWorkloadThread->post_warni
 
 void TestLUN::open_fd()
 {
-#if defined(IVYDRIVER_TRACE)
-    { open_fd_callcount++; if (open_fd_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << ':' << open_fd_callcount << ") ";
-    o << "      Entering TestLUN::open_fd()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
     if (workloads.size() == 0)
     {
         std::ostringstream o;
@@ -131,11 +113,7 @@ void TestLUN::open_fd()
 
 void TestLUN::prepare_linux_AIO_driver_to_start()
 {
-#if defined(IVYDRIVER_TRACE)
-    { prepare_linux_AIO_driver_to_start_callcount++; if (prepare_linux_AIO_driver_to_start_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << prepare_linux_AIO_driver_to_start_callcount << ") ";
-    o << "      Entering TestLUN::prepare_linux_AIO_driver_to_start()."; } }
-#endif
+//*debug*/ { std::ostringstream o; o << "TestLUN::prepare_linux_AIO_driver_to_start() - entry." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
 
 	// Coming in, we expect the subinterval_array[] IosequencerInput and SubintervalOutput objects to be prepared.
 	// That means p_current_subinterval, p_current_IosequencerInput, and p_current_SubintervalOutput are set.
@@ -161,54 +139,7 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 
 	if (workloads.size() == 0) return;
 
-	max_IOs_launched_at_once = 0;
-	max_IOs_reaped_at_once = 0;
-	max_IOs_tried_to_launch_at_once = 0;
-
-    extra_reaped_after_read_from_eventfd = 0;
-	consecutive_count_event_fd_writeback = 0;
-	consecutive_count_event_fd_behind = 0;
-	max_consecutive_count_event_fd_writeback = 0;
-	max_consecutive_count_event_fd_behind = 0;
-
 	testLUN_furthest_behind_weighted_IOPS_max_skew_progress = 0.0;
-
-	open_fd();
-
-    // Now we create the eventfd that all I/Os into the LUN's aio context will use.
-    // This fd will be closed when at the end of a test step we destroy the corresponding aio context.
-    // There's a 64-bit unsigned counter, an 8-byte thing you read or write.
-
-    //      A write(2) call adds the 8-byte integer value supplied in its
-    //      buffer to the counter.
-
-    //      *  If EFD_SEMAPHORE was not specified and the eventfd counter
-    //         has a nonzero value, then a read(2) returns 8 bytes
-    //         containing that value, and the counter's value is reset to
-    //         zero.
-    //
-    //      *  If EFD_SEMAPHORE was specified and the eventfd counter has
-    //         a nonzero value, then a read(2) returns 8 bytes containing
-    //         the value 1, and the counter's value is decremented by 1.
-
-	act=0;  // must be set to zero otherwise io_setup() will fail with return code 22 - invalid parameter.
-
-	if (0 != io_setup(sum_of_maxTags(),&act))
-	{
-        std::ostringstream o;
-        o << "io_setup(" << sum_of_maxTags() << "," << (&act) << ") failed errno " << errno << " (" << strerror(errno) << ")."<< std::endl;
-        throw std::runtime_error(o.str());
-	}
-
-	if (routine_logging)
-	{
-        std::ostringstream o;
-        o << "TestLUN::prepare_linux_AIO_driver_to_start() done - LUN opened with fd = " << fd
-            << ", aio context successfully constructed, with eventfd = " << event_fd
-            << ", epoll fd " << pWorkloadThread->epoll_fd
-            << " and timerfd " << pWorkloadThread->timer_fd << "." << std::endl;
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-	}
 
 	all_workloads_are_IOPS_max = true;
 
@@ -226,452 +157,35 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 	    }
 	}
 
+//*debug*/ { std::ostringstream o; o << "TestLUN::prepare_linux_AIO_driver_to_start() - returning normally." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
 	return;
 }
 
 
-unsigned int /* number of I/Os */ TestLUN::reap_IOs()
+unsigned int /* number of I/Os started */ TestLUN::populate_sqes()
 {
-#if defined(IVYDRIVER_TRACE)
-    { reap_IOs_callcount++; if (reap_IOs_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << reap_IOs_callcount << ") ";
-    o << "      Entering TestLUN::reap_IOs().";
-    abort_if_queue_depths_corrupted("TestLUN::reap_IOs()", reap_IOs_callcount); } }
-#endif
-
-    // The eventfd does not have the EFD_NONBLOCK flag turned on, meaning it should block on reads
-    // if the underlying kernel counter is zero.  But we only call reap_IOs() when epoll_wait() says the eventfd is readable.
-
-    unsigned int number_of_IOs_harvested {0};
-
-    uint64_t pending_event_count {0};
-
-    int rc = read(event_fd, &pending_event_count, 8);
-
-    if (rc != 8)
-    {
-        std::ostringstream o;
-        o << "internal programming error -  in TestLUN::reap_IOs() for " << host_plus_lun << ", failed trying to read the 64 bit unsigned counter value underlying my eventfd which is " << event_fd << "." << std::endl
-            << "Return value from reading 8 byte counter should have been 8.  Instead, it was " << rc << ", with errno = " << errno << " (" << strerror(errno) << ")." << std::endl;
-
-        int flags = fcntl(event_fd, F_GETFD, 0);
-
-        o << "Return value from fcntl(event_fd = " << event_fd << ", F_GETFD, 0) was " << flags;
-
-        if (flags != 0) o << " with errno " << errno << " - " << strerror(errno);
-
-        throw std::runtime_error(o.str());
-    }
-
-    if (pending_event_count == 0)
-    {
-        std::ostringstream o;
-        o << "internal programming error - in TestLUN::reap_IOs() for " << host_plus_lun
-            << ", epoll_wait() said the eventfd for this LUN had pending events, but when we read from the eventfd there were zero pending events." << std::endl;
-        o << "Not only that, but the eventfd did not have the EFD_NONBLOCK flag set, so it should have blocked rather than read the zero value.";
-        throw std::runtime_error(o.str());
-    }
-
-    if (extra_reaped_after_read_from_eventfd > 0)
-    {
-        consecutive_count_event_fd_writeback = 0;
-
-        if (extra_reaped_after_read_from_eventfd > pending_event_count)
-        {
-            consecutive_count_event_fd_behind++;
-
-            if (consecutive_count_event_fd_behind > max_consecutive_count_event_fd_behind) { max_consecutive_count_event_fd_behind = consecutive_count_event_fd_behind; }
-
-            if (consecutive_count_event_fd_behind > 10)
-            {
-                std::ostringstream o;
-                o << "internal programming error - in TestLUN::reap_IOs() for " << host_plus_lun
-                    << ", for over 10 passes through reap_IOs(), the eventfd pending I/O completion event count hasn\'t caught up to number of events we have harvested using io_getevents().";
-                throw std::runtime_error(o.str());
-            }
-
-            extra_reaped_after_read_from_eventfd -= pending_event_count;
-
-            return number_of_IOs_harvested;
-        }
-        else
-        {
-            pending_event_count -= extra_reaped_after_read_from_eventfd;
-            extra_reaped_after_read_from_eventfd = 0;
-
-            consecutive_count_event_fd_behind = 0;
-
-            if (pending_event_count == 0) // we just caught up by reading the eventfd counts for the extra I/Os we harvested last time, but there were no new I/O events.
-            {
-                return number_of_IOs_harvested;
-            }
-        }
-    }
-    else
-    {
-        consecutive_count_event_fd_behind = 0;
-    }
-
-    static ivytime zero_wait_duration(0);
-
-    while (true)
-    {
-        ivytime now; now.setToNow();
-
-        int reaped;
-		do {
-        	reaped = io_getevents(
-                                  act,
-                                  0, // zero events_needed, meaning non-blocking
-                                  MAX_IOEVENTS_REAP_AT_ONCE,
-                                  &(ReapHeap[0]),
-                                  &(zero_wait_duration.t)
-                                  );
-		} while ((reaped < 0) && (errno == EINTR));
-        if (reaped < 0)
-        {
-            std::ostringstream o;
-            o << "call to Linux AIO context io_getevents() failed errno " << errno << " (" << strerror(errno) << ")." << std::endl;
-            throw std::runtime_error(o.str());
-        }
-
-        if (reaped > max_IOs_reaped_at_once) max_IOs_reaped_at_once = reaped;
-
-        number_of_IOs_harvested += reaped;
-
-        for (int i=0; i < reaped; i++)
-        {
-            struct io_event* p_event;
-            Eyeo* p_Eyeo;
-            struct iocb* p_iocb;
-
-            p_event=&(ReapHeap[i]);
-            p_Eyeo = (Eyeo*) p_event->data;
-            p_iocb = (iocb*) p_event->obj;
-            p_Eyeo->end_time = now;
-            p_Eyeo->return_value = p_event->res;
-            p_Eyeo->errno_value = p_event->res2;
-
-            Workload* pWorkload = p_Eyeo->pWorkload;
-
-            auto running_IOs_iter = pWorkload->running_IOs.find(p_iocb);
-            if (running_IOs_iter == pWorkload->running_IOs.end())
-            {
-                std::ostringstream o;
-                o << "an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
-                    << "that was not found in the ivy workload\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
-                    << "  The ivy Eyeo object associated with the completion event describes itself as "
-                    << p_Eyeo->toString() << std::endl;
-                throw std::runtime_error(o.str());
-            }
-            pWorkload->running_IOs.erase(running_IOs_iter);
-
-                         pWorkload->workload_queue_depth--;
-                                     testLUN_queue_depth--;
-            pWorkloadThread->workload_thread_queue_depth--;
-
-            pWorkload->postprocessQ.push(p_Eyeo);
-
-    #ifdef IVYDRIVER_TRACE
-            if (reap_IOs_callcount <= FIRST_FEW_CALLS)
-            {
-                std::ostringstream o;
-                o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ") =|= reaped " << p_Eyeo->thumbnail();
-                log(pWorkloadThread->slavethreadlogfile,o.str());
-            }
-    #endif
-
-        }
-
-        uint64_t reaped64 = (uint64_t) reaped;
-
-        if ( reaped64 > pending_event_count )
-        {
-            extra_reaped_after_read_from_eventfd = reaped64 - pending_event_count;
-            consecutive_count_event_fd_writeback = 0;
-
-            return number_of_IOs_harvested;
-        }
-
-        if (reaped64 == pending_event_count)
-        {
-            consecutive_count_event_fd_writeback = 0;
-
-            return number_of_IOs_harvested;
-        }
-
-        if (reaped64 == MAX_IOEVENTS_REAP_AT_ONCE)
-        {
-            pending_event_count -= reaped64;
-
-            if (pending_event_count == 0)
-            {
-                consecutive_count_event_fd_writeback = 0;
-
-                return number_of_IOs_harvested;
-            }
-            else
-            {
-                continue;
-            }
-        }
-
-        // reaped64 < pending_event_count && reaped64 < MAX_IOEVENTS_REAP_AT_ONCE
-
-        // Some I/Os that had incremented the eventfd had not yet shown up to io_getevents.
-        // We write the excess number back into the eventfd so that next time around we can try again to see if the missing events have showed up.
-
-        consecutive_count_event_fd_writeback++;
-
-        if (consecutive_count_event_fd_writeback > max_consecutive_count_event_fd_writeback) { max_consecutive_count_event_fd_writeback = consecutive_count_event_fd_writeback; }
-
-        if (consecutive_count_event_fd_writeback == 10)
-        {
-            std::ostringstream o;
-            o << "internal programming warning - in TestLUN::reap_IOs() for " << host_plus_lun
-                << ", we went for " << consecutive_count_event_fd_writeback << " consecutive passes through reap_IOs() with I/Os that were counted in an eventfd but hadn\'t yet appeared to io_getevents()." << std::endl;
-            pWorkloadThread->post_warning(o.str());
-
-        }
-        else if (consecutive_count_event_fd_writeback >= 20)
-        {
-            std::ostringstream o;
-            o << "internal programming warning - in TestLUN::reap_IOs() for " << host_plus_lun
-                << ", we went for " << consecutive_count_event_fd_writeback << " consecutive passes through reap_IOs() with I/Os that were counted in an eventfd but hadn\'t yet appeared to io_getevents()." << std::endl;
-            throw std::runtime_error(o.str());
-        }
-
-        event_fd_writeback_value = pending_event_count - reaped64;
-
-        rc = write(event_fd, &event_fd_writeback_value, 8);
-
-        if (rc != 8)
-        {
-            std::ostringstream o;
-            o << "internal programming error -  in TestLUN::reap_IOs() for " << host_plus_lun
-                << ", failed trying to write back into the eventfd the 64 bit unsigned counter value " << event_fd_writeback_value
-                << " representing the number of pending events that didn't show up in io_getevents() this pass." << std::endl
-                << "  Return value from writing 8 byte counter should have been 8.  Instead, it was " << rc << ", with errno = " << errno << " (" << strerror(errno) << ")." << std::endl;
-
-            int flags = fcntl(event_fd, F_GETFD, 0);
-
-            o << "Return value from fcntl(event_fd = " << event_fd << ", F_GETFD, 0) was " << flags;
-
-            if (flags != 0) o << " with errno " << errno << " - " << strerror(errno);
-
-            throw std::runtime_error(o.str());
-        }
-
-        return number_of_IOs_harvested;
-    }
-    // don't need a return here because we never break from the loop, rather, we return from inside the loop.
-}
-
-void TestLUN::pop_front_to_LaunchPad(Workload* pWorkload)
-{
-#if defined(IVYDRIVER_TRACE)
-    { pop_front_to_LaunchPad_callcount++; if (pop_front_to_LaunchPad_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << pop_front_to_LaunchPad_callcount << ") ";
-    o << "      Entering TestLUN::pop_front_to_LaunchPad(" << pWorkload->workloadID << ")."; log(pWorkloadThread->slavethreadlogfile,o.str());} }
-#endif
-
-    if (pWorkload == nullptr)
-    {
-        std::ostringstream o;
-        o << "pop_front_to_LaunchPad() called with null pointer to Workload" << std::endl;
-        throw std::runtime_error(o.str());
-    }
-
-    if (launch_count >= MAX_IOS_LAUNCH_AT_ONCE)
-    {
-        std::ostringstream o;
-        o << "pop_front_to_LaunchPad() called with no space in LaunchPad." << std::endl;
-        throw std::runtime_error(o.str());
-    }
-
-    if (pWorkload->precomputeQ.size() == 0)
-    {
-        std::ostringstream o;
-        o << "pop_front_to_LaunchPad() called for a Workload with an empty precomputeQ " << std::endl;
-        throw std::runtime_error(o.str());
-    }
-
-    ivytime now; now.setToNow();
-
-    Eyeo* pEyeo = pWorkload->precomputeQ.front();
-
-    pWorkload->precomputeQ.pop_front();
-
-    LaunchPad[launch_count++]=pEyeo;
-
-    pWorkload->workload_cumulative_launch_count++;
-
-    pEyeo->start_time=now;
-
-    pEyeo->eyeocb.aio_resfd = event_fd;
-    pEyeo->eyeocb.aio_flags = pEyeo->eyeocb.aio_flags | IOCB_FLAG_RESFD;
-
-#ifdef IVYDRIVER_TRACE
-    if (pop_front_to_LaunchPad_callcount <= FIRST_FEW_CALLS)
-    {
-        std::ostringstream o;
-        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ") =|= popped to Launchpad" << pEyeo->thumbnail();
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-    }
-#endif
-
-    return;
-}
-
-unsigned int /* number of I/Os started */ TestLUN::start_IOs()
-{
-#if defined(IVYDRIVER_TRACE)
-    { start_IOs_callcount++; if (start_IOs_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << start_IOs_callcount << ") ";
-    o << "      Entering TestLUN::start_IOs()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-
     // This is the code that does the merge onto the TestLUN's AIO context
     // of the individual pre-compute queues of each workload
 
-    if (workloads.size() == 0) { return 0; }
-
-    launch_count = 0;
+    if (workloads.size() == 0 || pWorkloadThread->have_failed_to_get_an_sqe) { return 0; }
 
     std::map<std::string, Workload>::iterator wit = start_IOs_Workload_bookmark;
         // gets initialized to workloads.begin() by IvyDriver::distribute_TestLUNs_over_cores()
 
-#if defined(IVYDRIVER_TRACE)
-    (*wit).second.start_IOs_Workload_bookmark_count++;
-#endif
-
     if (wit == workloads.end()) { return 0; }
 
-    while (launch_count < MAX_IOS_LAUNCH_AT_ONCE)
+    unsigned int total = 0;
+
+    while (true)
     {
-#if defined(IVYDRIVER_TRACE)
-        (*wit).second.start_IOs_Workload_body_count++;
-#endif
-        wit->second.load_IOs_to_LaunchPad();
+        total += wit->second.populate_sqes();
 
         wit++; if (wit == workloads.end()) { wit = workloads.begin(); }
 
-        if (wit == start_IOs_Workload_bookmark) { break; }
+        if (wit == start_IOs_Workload_bookmark || pWorkloadThread->have_failed_to_get_an_sqe) { break; }
     }
 
     start_IOs_Workload_bookmark++; if (start_IOs_Workload_bookmark == workloads.end()) { start_IOs_Workload_bookmark = workloads.begin(); }
-
-    // Now LaunchPad is fully loaded, issue submit and then put back any non-starters.
-
-    if (launch_count == 0) return 0;
-
-    // Now launch and then put back any Eyeos that didn't get launched.
-
-    if (max_IOs_tried_to_launch_at_once < launch_count) max_IOs_tried_to_launch_at_once = launch_count;
-
-    int rc;
-
-    if ( 0 > (rc = io_submit(act, launch_count, (struct iocb **) LaunchPad /* iocb comes first in an Eyeo */)))
-    {
-        std::ostringstream o;
-        o << "asynchronous I/O \"io_submit()\" failed, errno=" << errno << " (" << strerror(errno) << ")." << std::endl;
-        throw std::runtime_error(o.str());
-    }
-    // return code is number of I/Os succesfully launched.
-
-    ivytime running_timestamp;
-
-    if (measure_submit_time) {
-    	running_timestamp.setToNow();
-    } else {
-    	running_timestamp = ivytime_zero;
-    }
-
-    if (rc > max_IOs_launched_at_once) max_IOs_launched_at_once = rc;
-
-    for (int i=0; i<rc; i++)
-    {
-        Eyeo* pEyeo = (Eyeo*)(LaunchPad[i]->eyeocb.aio_data);
-        pEyeo->running_time = running_timestamp;
-        Workload* pWorkload = pEyeo->pWorkload;
-
-        auto running_IOs_iterator = pWorkload->running_IOs.insert(&(pEyeo->eyeocb));
-        if (running_IOs_iterator.first == pWorkload->running_IOs.end())
-        {
-            std::ostringstream o;
-            o << "failed trying to insert a Linux aio I/O tracker "
-                << "into the ivy workload\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
-                << "  The ivy Eyeo object associated with the completion event describes itself as "
-                << pEyeo->toString() << std::endl;
-            throw std::runtime_error(o.str());
-        }
-
-        pWorkload->workload_queue_depth++;
-        if (pWorkload->workload_queue_depth     > pWorkload->workload_max_queue_depth)
-            pWorkload->workload_max_queue_depth = pWorkload->workload_queue_depth;
-
-        testLUN_queue_depth++;
-        if (testLUN_queue_depth > testLUN_max_queue_depth)
-            testLUN_max_queue_depth = testLUN_queue_depth;
-
-
-        pWorkloadThread->workload_thread_queue_depth++;
-        if (pWorkloadThread->workload_thread_queue_depth     > pWorkloadThread->workload_thread_max_queue_depth)
-            pWorkloadThread->workload_thread_max_queue_depth = pWorkloadThread->workload_thread_queue_depth;
-
-#ifdef IVYDRIVER_TRACE
-        if (start_IOs_callcount <= FIRST_FEW_CALLS)
-        {
-            std::ostringstream o;
-            o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ") =|= started " << pEyeo->thumbnail();
-            log(pWorkloadThread->slavethreadlogfile, o.str());
-        }
-#endif
-
-    }
-
-    // We put back any unsuccessfully launched back into the precomputeQ.
-
-    if (0 == rc) log(pWorkloadThread->slavethreadlogfile, "io_submit() return code zero.  No I/Os successfully submitted.\n");
-
-    int number_to_put_back = launch_count - rc;
-
-    if (routine_logging && number_to_put_back>0)
-    {
-        std::ostringstream o;
-        o << "aio context didn\'t take all the I/Os.  Putting " << number_to_put_back << " back." << std::endl;
-        log(pWorkloadThread->slavethreadlogfile,o.str());
-    }
-
-    while (number_to_put_back>0) {
-        // we put them back in reverse order of how they came out
-
-        Eyeo* pEyeo = (Eyeo*)(LaunchPad[launch_count-1]->eyeocb.aio_data);
-
-        Workload* pWorkload = pEyeo->pWorkload;
-
-        struct iocb* p_iocb = &(pEyeo->eyeocb);
-
-        auto running_IOs_iter = pWorkload->running_IOs.find(p_iocb);
-        if (running_IOs_iter == pWorkload->running_IOs.end())
-        {
-            std::ostringstream o;
-            o << "after a submit was not successful for all I/Os, when trying to "
-                << "remove from \"running_IOs\" one of the I/Os that wasn\'t successfully launched, that "
-                << "unsuccessful I/O was not found in \"running_IOs\" for the owning Workload."
-                << "  The ivy Eyeo object associated with the completion event describes itself as "
-                << pEyeo->toString() << std::endl;
-            throw std::runtime_error(o.str());
-        }
-        pWorkload->running_IOs.erase(running_IOs_iter);
-
-        pWorkload->precomputeQ.push_front(pEyeo);
-
-        pWorkload->workload_cumulative_launch_count--;
-
-        launch_count--;
-        number_to_put_back--;
-    }
 
     // recalculate furthest behind IOPS=max with positive skew workload.
     // This way at the bottom of the loop, we can use Workload::hold_back_this_time().
@@ -706,82 +220,42 @@ unsigned int /* number of I/Os started */ TestLUN::start_IOs()
         }
     }
 
-    return launch_count;
+    return total;
 }
 
-unsigned int /* number of I/Os popped and processed */ TestLUN::pop_and_process_an_Eyeo()
+unsigned int /* number of I/Os generated < ivydriver.  */  TestLUN::generate_IOs()
 {
-#if defined(IVYDRIVER_TRACE)
-    { pop_and_process_an_Eyeo_callcount++;
-        if (pop_and_process_an_Eyeo_callcount <= FIRST_FEW_CALLS)     { std::ostringstream o;
-        o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << pop_and_process_an_Eyeo_callcount << ") ";
-        o << "      Entering TestLUN::pop_and_process_an_Eyeo()."; log(pWorkloadThread->slavethreadlogfile,o.str()); }
-
-        abort_if_queue_depths_corrupted("TestLUN::pop_and_process_an_Eyeo",pop_and_process_an_Eyeo_callcount);
-    }
-#endif
+//    The default is ivy_engine_set("generate_at_a_time","4");
+//    This gets propagated to ivydriver with the corresponding
+//    ivydriver "set" command;
+//
+//    This means when we call WorkloadThread::generate_IOs(), we only
+//    generate one I/O and then return.
+//
+//    During generation of I/Os, we aren't responsive to I/O completion events.
+//
+//    There's not much work in generating a read I/O compared to generating
+//    a write I/O where we may be generating vast numbers of pseudo-random
+//    numbers to write a particular dedupe & compression data pattern.all_0x0F
+//
+//    TBD: for 100% random read workloads, where test host CPU is high to
+//    saturated, try setting generate_at_a_time to numbers like 2, 4, 8
+//    and analyze how measured response time, CPU % busy, and IOPS
+//    vary by batching I/O generation so as to reduce the overall
+//    number of system calls made.
 
     if (workloads.size() == 0) return 0;
 
-    unsigned int n {0};
-
-    auto wit = pop_one_bookmark;
-
-#ifdef IVYDRIVER_TRACE
-    (*wit).second.pop_one_bookmark_count++;
-#endif
-
-    while (true)
-    {
-        Workload* pWorkload = &(wit->second);
-
-#ifdef IVYDRIVER_TRACE
-        pWorkload->pop_one_body_count++;
-#endif
-        n += pWorkload->pop_and_process_an_Eyeo();
-
-        if ( n > 0) { break; }
-
-        wit++; if (wit == workloads.end()) wit = workloads.begin();
-
-        if (wit == pop_one_bookmark) break;
-    }
-
-    pop_one_bookmark++; if (pop_one_bookmark == workloads.end()) pop_one_bookmark = workloads.begin();
-
-    return n;
-}
-
-
-unsigned int /* number of I/Os generated - 0 or 1  */  TestLUN::generate_an_IO()
-{
-#if defined(IVYDRIVER_TRACE)
-    { generate_an_IO_callcount++; if (generate_an_IO_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << generate_an_IO_callcount << ") ";
-    o << "      Entering TestLUN::generate_an_IO()."; log(pWorkloadThread->slavethreadlogfile,o.str()); }
-    abort_if_queue_depths_corrupted("TestLUN::generate_an_IO", generate_an_IO_callcount); }
-#endif
-
-    if (workloads.size() == 0) return 0;
-
-    unsigned int generated_one {0};
+    unsigned int generated_qty {0};
 
     auto wit = generate_one_bookmark;
 
-#ifdef IVYDRIVER_TRACE
-    (*wit).second.generate_one_bookmark_count++;
-#endif
-
     while (true)
     {
         Workload* pWorkload = &(wit->second);
 
-#ifdef IVYDRIVER_TRACE
-        pWorkload->generate_one_body_count++;
-#endif
-
-        generated_one += pWorkload->generate_an_IO();
-        if (generated_one) break;
+        generated_qty += pWorkload->generate_IOs();
+        if (generated_qty >= ivydriver.generate_at_a_time) break;
 
         wit++; if (wit == workloads.end()) wit = workloads.begin();
 
@@ -790,84 +264,13 @@ unsigned int /* number of I/Os generated - 0 or 1  */  TestLUN::generate_an_IO()
 
     generate_one_bookmark++; if (generate_one_bookmark == workloads.end()) generate_one_bookmark = workloads.begin();
 
-    return generated_one;
+    return generated_qty;
 }
 
-
-void TestLUN::catch_in_flight_IOs()
-{
-#if defined(IVYDRIVER_TRACE)
-    { catch_in_flight_IOs_callcount++; if (catch_in_flight_IOs_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << catch_in_flight_IOs_callcount << ") ";
-    o << "      Entering TestLUN::catch_in_flight_IOs()."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
-    // While there are events to harvest within 1 ms, do so.
-
-	ivytime zero(0);
-
-    int reaped;
-
-	while (testLUN_queue_depth > 0 && (reaped=io_getevents(act,
-	                                                       0,  // need zero events, meaning non-blocking
-	                                                       MAX_IOEVENTS_REAP_AT_ONCE,
-	                                                       &(ReapHeap[0]),
-	                                                       &(zero.t) // This would otherwise mean wait forever.
-	                                                       )
-                                      ) != 0
-          )
-	{
-		if ((reaped < 0) && (errno == EINTR)) continue;
-	    if (reaped < 0)
-		{
-            std::ostringstream o;
-            o << "io_getevents() failed errno " << errno << " (" << strerror(errno) << ")." << std::endl;
-            throw std::runtime_error(o.str());
-		}
-
-        for (int i=0; i< reaped; i++)
-        {
-            struct io_event* p_event;
-            Eyeo* p_Eyeo;
-            struct iocb* p_iocb;
-
-            p_event=&(ReapHeap[i]);
-            p_Eyeo = (Eyeo*) p_event->data;
-            p_iocb = (iocb*) p_event->obj;
-
-            p_Eyeo->pWorkload->workload_queue_depth --;
-            testLUN_queue_depth--;
-            pWorkloadThread->workload_thread_queue_depth--;
-
-            auto running_IOs_iter =  p_Eyeo->pWorkload->running_IOs.find(p_iocb);
-            if  (running_IOs_iter == p_Eyeo->pWorkload->running_IOs.end())
-            {
-                std::ostringstream o;
-                o << "in catch_in_flight_IOs(), an asynchrononus I/O completion event occurred for a Linux aio I/O tracker "
-                    << "that was not found in the ivy workload thread\'s \"running_IOs\" (set of pointers to Linux I/O tracker objects)."
-                    << "  The ivy Eyeo object associated with the completion event describes itself as "
-                    << p_Eyeo->toString() << std::endl;
-                throw std::runtime_error(o.str());
-            }
-            p_Eyeo->pWorkload->running_IOs.erase(running_IOs_iter);
-
-            if (p_Eyeo->pWorkload->workload_queue_depth != p_Eyeo->pWorkload->running_IOs.size())
-            {
-                std::ostringstream o;
-                o << "before cancelling any remaining I/Os found to our consternation that queue_depth was "
-                    << p_Eyeo->pWorkload->workload_queue_depth << "." << std::endl;
-                throw std::runtime_error(o.str());
-            }
-        }
-	}
-
-    return;
-}
 
 
 void TestLUN::abort_if_queue_depths_corrupted(const std::string& where_from, unsigned int callcount)
 {
-    unsigned int workload_queue_depth_total {0};
-
     std::ostringstream o;
 
     o << " at entry to " << where_from << ": ";
@@ -903,7 +306,7 @@ void TestLUN::abort_if_queue_depths_corrupted(const std::string& where_from, uns
                     << " workload_queue_depth = " << w.workload_queue_depth
                     << " but workload_max_queue_depth = " << w.workload_max_queue_depth << " - bad!" << std::endl;
             }
-            else if (w.running_IOs.size() != w.workload_queue_depth)
+            else if (ivydriver.track_long_running_IOs && w.running_IOs.size() != w.workload_queue_depth)
             {
                 bad = true;
 
@@ -918,29 +321,7 @@ void TestLUN::abort_if_queue_depths_corrupted(const std::string& where_from, uns
                     << " workload_max_queue_depth = " << w.workload_max_queue_depth
                     << " | ";
             }
-
-            workload_queue_depth_total += w.workload_queue_depth;
         }
-    }
-
-    if (workload_queue_depth_total != testLUN_queue_depth)
-    {
-        bad = true;
-
-        o << "Total over Workloads of workload_queue_depth is " << workload_queue_depth_total
-            << " but testLUN_queue_depth is " << testLUN_queue_depth << " - bad!" << std::endl;
-    }
-    else if (workload_queue_depth_total > testLUN_max_queue_depth)
-    {
-        bad = true;
-
-        o << "Total over Workloads of workload_queue_depth is " << workload_queue_depth_total
-            << " but testLUN_max_queue_depth = " << testLUN_max_queue_depth << " - bad!" << std::endl;
-    }
-    else
-    {
-        o << "testLUN_queue_depth = " << testLUN_queue_depth;
-        o << ", testLUN_max_queue_depth = " << testLUN_max_queue_depth;
     }
 
     if (bad)
@@ -953,83 +334,8 @@ void TestLUN::abort_if_queue_depths_corrupted(const std::string& where_from, uns
     return;
 }
 
-void TestLUN::ivy_cancel_IO(struct iocb* p_iocb)
-{
-#if defined(IVYDRIVER_TRACE)
-    { ivy_cancel_IO_callcount++; if (ivy_cancel_IO_callcount <= FIRST_FEW_CALLS) { std::ostringstream o;
-    o << "(physical core" << pWorkloadThread->physical_core << " hyperthread " << pWorkloadThread->hyperthread << '-' << host_plus_lun << ':' << ivy_cancel_IO_callcount << ") ";
-    o << "      Entering TestLUN::ivy_cancel_IO(struct iocb* p_iocb)."; log(pWorkloadThread->slavethreadlogfile,o.str()); } }
-#endif
 
-    Eyeo* p_Eyeo = (Eyeo*) p_iocb->aio_data;
-
-
-    auto it = p_Eyeo->pWorkload->running_IOs.find(p_iocb);
-    if (it == p_Eyeo->pWorkload->running_IOs.end())
-    {
-        std::ostringstream o;
-        o << "ivy_cancel_IO was called to cancel an I/O that ivy wasn\'t tracking as running.  The I/O describes itself as " << p_Eyeo->toString() << "." << std::endl;
-        throw std::runtime_error(o.str());
-    }
-
-    {
-        std::ostringstream o;
-        o << "about to cancel an I/O operation that has been running for " << (p_Eyeo->since_start_time()).format_as_duration_HMMSSns()
-            << " described as " << p_Eyeo->toString();
-
-        post_warning(o.str());
-    }
-
-    struct io_event ioev;
-
-    long rc = EAGAIN;
-
-    ivy_int retry_count = 0;
-
-    while (rc == EAGAIN)
-    {
-        retry_count++;
-        if (retry_count > 100)
-        {
-            std::ostringstream o;
-            o << "after over 100 retries of the system call to cancel an I/O, ivy_cancel_IO() is abandoning the attempt." << "." << std::endl;
-            throw std::runtime_error(o.str());
-        }
-        rc = io_cancel(act,p_iocb, &ioev);
-    }
-
-    if (rc == 0)
-    {
-        p_Eyeo->pWorkload->running_IOs.erase(it);
-        p_Eyeo->pWorkload->cancelled_IOs++;
-        return;
-    }
-
-    {
-        std::ostringstream o;
-        o << "in " << __FILE__ << " line " << __LINE__ << " in ivy_cancel_IO(), system call to cancel the I/O failed saying - ";
-        switch (rc)
-        {
-            case EINVAL:
-                o << "EINVAL - invalid AIO context";
-                break;
-            case EFAULT:
-                o << "EFAULT - one of the data structures points to invalid data";
-                break;
-            case ENOSYS:
-                o << "ENOSYS - io_cancel() not supported on this system.";
-                break;
-            default:
-                o << "unknown error return code " << rc;
-        }
-
-        post_warning(o.str());
-    }
-
-    return;
-}
-
-// Comments from start_IOs() moved to bottom of source file:
+// Comments from populate_sqes() moved to bottom of source file:
 
     // How the merge from multiple Workloads to start I/Os on the AIO context works:
 

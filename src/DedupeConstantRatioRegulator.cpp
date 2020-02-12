@@ -111,7 +111,7 @@ uint64_t DedupeConstantRatioRegulator::get_seed(Eyeo *p_eyeo, uint64_t offset)
 
     // Should this be a zero-filled block?
 
-    modblock = p_eyeo->zero_pattern_filtered_sub_block_number(offset - (uint64_t) (p_eyeo->eyeocb.aio_offset));
+    modblock = p_eyeo->zero_pattern_filtered_sub_block_number(offset - (uint64_t) (p_eyeo->sqe.off));
     if (modblock == 0)
     {
         return 0; // Generate a zero-filled block.

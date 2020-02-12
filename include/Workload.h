@@ -31,17 +31,23 @@
 #include "DedupeConstantRatioRegulator.h"
 #include "DedupeRoundRobinRegulator.h"
 
-//#define IVYDRIVER_TRACE
-
 typedef long double pattern_float_type;
 
 class WorkloadThread;
 class Eyeo;
 class Iosequencer;
 
+/*debug*/struct compteur
+/*debug*/{
+/*debug*/    uint64_t c {0};
+/*debug*/};
+
 class Workload
 {
 public:
+
+//*debug*/ std::map<int,compteur> io_return_code_counts {};
+
 //variables
 
     WorkloadID workloadID;
@@ -67,31 +73,28 @@ public:
     // IogeneratorSequential for writes sets this to a value expressing the progress from 0.0 to 1.0
     // of what fraction of all blocks in the coverage range within the LUN have been written to so far.
 
+    unsigned int blocksize_rounded_up_to_4KiB_multiple {0};
+        // This is the amount of memory allocated for each Eyeo's buffer, so each is aligned on a 4 KiB boundary.
+
 	std::list<Eyeo*> allEyeosThatExist;
 
 	std::stack<Eyeo*> freeStack;
 
+    unsigned min_freeStack_level; // reset by build
+
 	std::list<Eyeo*> precomputeQ;  // We are using a std::list instead of a std::queue so that
 	                               // if io_submit() doesn't successfully launch all of a batch
-	                               // then we can put the ones that didn't launch back into
-	                               // the precomputeQ in original sequence at the wrong end backwards.
-
-	std::queue<Eyeo*> postprocessQ;
-
-
-	std::set<struct iocb*> running_IOs;
-	    // The iocb* also points to the containing ivy Eyeo object,
-	    // as the iocb is the first thing in an Eyeo.  This way
-	    // we can pass the address in as an iocb* when talking to Linux,
-	    // but when it answers back about the I/O, we refer to what
-	    // Linux gives us as an Eyeo*.
+	std::set<Eyeo*> running_IOs;
 
 	ivy_int cancelled_IOs {0};
 
-    ivy_int EyeoCount;
+    inline unsigned eyeo_build_qty()  const { return precomputedepth() + ( 2 * p_current_IosequencerInput->maxTags ); }
+	inline unsigned precomputedepth() const { return 2 * p_current_IosequencerInput->maxTags; }  // will be set to be equal to the maxTags spec when we get "Go!"
+    inline unsigned flex_Eyeos()      const { return eyeo_build_qty() - (p_current_IosequencerInput->maxTags + precomputedepth()); }
+    inline unsigned io_buffer_space() const { return eyeo_build_qty() * round_up_to_4096_multiple(p_current_IosequencerInput->blocksize_bytes); }
+
 	int currentSubintervalIndex, otherSubintervalIndex, subinterval_number;  // The master thread never sets these or refers to them.
 	int ioerrorcount=0;
-	unsigned int precomputedepth;  // will be set to be equal to the maxTags spec when we get "Go!"
 	int rc;
 	unsigned int workload_queue_depth{0};
 	unsigned int workload_max_queue_depth{0}; // max actually achieved, not the maxTags value
@@ -132,38 +135,21 @@ public:
     uint64_t iops_max_io_count {0};
     ivy_float iops_max_progress {0};
 
-	std::unique_ptr<unsigned char[]> ewe_neek {}; // Points to a buffer pool for the Eyeos for this workload
+	//std::unique_ptr<unsigned char[]> ewe_neek {}; // Points to a buffer pool for the Eyeos for this workload
 
     uint64_t workload_cumulative_launch_count {0};
     uint64_t workload_cumulative_completion_count {0};
     ivy_float workload_weighted_IOPS_max_skew_progress {0.0};
-
-#ifdef IVYDRIVER_TRACE
-    unsigned int workload_callcount_prepare_to_run {0};
-    unsigned int workload_callcount_build_Eyeos {0};
-    unsigned int workload_callcount_switchover {0};
-    unsigned int workload_callcount_pop_and_process_an_Eyeo {0};
-    unsigned int workload_callcount_front_launchable_IO {0};
-    unsigned int workload_callcount_load_IOs_to_LaunchPad {0};
-    unsigned int workload_callcount_generate_an_IO {0};
-
-    unsigned int start_IOs_Workload_bookmark_count {0};
-    unsigned int start_IOs_Workload_body_count {0};
-    unsigned int pop_one_bookmark_count {0};
-    unsigned int pop_one_body_count {0};
-    unsigned int generate_one_bookmark_count {0};
-    unsigned int generate_one_body_count {0};
-#endif
 
 //methods
     Workload();
     ~Workload();
     void prepare_to_run();
 	void switchover();
-	void build_Eyeos();
-	unsigned int /* number of I/Os popped and processed */ pop_and_process_an_Eyeo();
-	unsigned int generate_an_IO(); // returns 1 if we generated an I/O, zero if not
-	void load_IOs_to_LaunchPad();
+	void build_Eyeos(uint64_t& aio_buf_cursor); // aio_buf_cursor is incremented by BuildEyeos();
+	void post_Eyeo_result(struct io_uring_cqe*, Eyeo*, const ivytime& now);
+	unsigned int generate_IOs(); // returns 1 if we generated an I/O, zero if not
+	unsigned int populate_sqes(); // returns false if we failed to get a sqe or if we hit the workload thread max queue depth = number of cqes.
 	Eyeo* front_launchable_IO(const ivytime& now);
 	    // Returns precomputeQ.front() if all of the following are true:
         //   - queue_depth < maxTags

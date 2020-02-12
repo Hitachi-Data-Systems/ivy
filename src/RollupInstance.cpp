@@ -29,6 +29,7 @@ extern std::string masterlogfile();
 
 extern bool routine_logging;
 extern void say_and_log(const std::string&);
+extern bool spinloop;
 
 
 std::pair<bool,std::string> RollupInstance::makeMeasurementRollup()
@@ -1151,8 +1152,6 @@ void RollupInstance::print_by_subinterval_header()
 
     o << ",IOPS histogram by service time scaled by bucket width (ms):";
     for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
-    o << ",IOPS histogram by submit time scaled by bucket width (ms):";
-    for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
     o << ",IOPS histogram by random read service time scaled by bucket width ms):";
     for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
     o << ",IOPS histogram by random write service time (scaled by bucket width ms):";
@@ -1362,18 +1361,6 @@ void RollupInstance::print_subinterval_csv_line(
     }
 
     csvline << ",subinterval " << i;
-    for (int bucket=0; bucket < io_time_buckets; bucket++)
-    {
-        csvline << ',';
-        RunningStat<ivy_float,ivy_int>
-        rs  = subintervals.sequence[i].outputRollup.u.a.submit_time.rs_array[0][0][bucket];
-        rs += subintervals.sequence[i].outputRollup.u.a.submit_time.rs_array[0][1][bucket];
-        rs += subintervals.sequence[i].outputRollup.u.a.submit_time.rs_array[1][0][bucket];
-        rs += subintervals.sequence[i].outputRollup.u.a.submit_time.rs_array[1][1][bucket];
-        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(bucket) * (ivy_float) rs.count() / seconds);
-    }
-
-    csvline << ",subinterval " << i;
     for (int bucket=0; bucket < io_time_buckets; bucket++) // random read
     {
         csvline << ',';
@@ -1466,7 +1453,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
             {
                 std::ostringstream o;
 
-                o << "ivy version,build date,";
+                o << "ivy version,build date,command line options,";
 
                 if (m_s.command_device_etc_version.size() > 0 ) o << "subsystem version,";
 
@@ -1513,15 +1500,6 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 o << ",service time histogram scaled by bucket width and normalized by step total IOPS:";
                 for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
 
-                o << ",submit time true IOPS histogram:";
-                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
-                o << ",submit time histogram normalized by step total IOPS:";
-                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
-                o << ",submit time histogram scaled by bucket width:";
-                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
-                o << ",submit time histogram scaled by bucket width and normalized by step total IOPS:";
-                for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
-
                 o << ",random read service time true IOPS histogram:";
                 for (int i=0; i<io_time_buckets; i++) o << ',' << std::get<0>(io_time_clip_levels[i]);
                 o << ",random write service time true IOPS histogram:";
@@ -1540,6 +1518,8 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
         std::ostringstream csvline;
 
         csvline << ivy_version << ',' << IVYBUILDDATE;
+
+        csvline << ","; if (m_s.command_line_options.size() > 0) { csvline << "=\"" << m_s.command_line_options << "\""; }
 
         if (m_s.command_device_etc_version.size() > 0 ) { csvline << ","; csvline << m_s.command_device_etc_version; }
 
@@ -1597,7 +1577,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
 
             bool active_core_busy_error {false};
 
-            if (active_core_average_busy > m_s.max_active_core_busy)
+            if ( (!spinloop) && active_core_average_busy > m_s.max_active_core_busy)
             {
                 active_core_busy_error = true;
 
@@ -1606,7 +1586,7 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                 o << "[Average ivydriver active core % busy " << std::fixed << std::setprecision(2) << (100.0 * active_core_average_busy) << "%"
                     << " exceeds limit of "<< std::fixed << std::setprecision(2) << (100.0 * m_s.max_active_core_busy) << "%."
                     << "  IOPS may be limited by test host CPU busy.  Consider using more test hosts."
-                    << "  (Set limit with ivy_engine_set(\"max_active_core_busy\", \"95%\").]";
+                    << "  (Set limit with ivy_engine_set(\"max_active_core_busy\" <comma> \"95%\").]";
                 validation_errors += o.str();
             }
 
@@ -1843,67 +1823,8 @@ void RollupInstance::print_measurement_summary_csv_line(unsigned int measurement
                             if (rs.count()>0) csvline << ( (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds) / total_IOPS);
                         }
                     }
-                    /////////////////////////////////////////////////////////////////////////////////////
-                    // ",submit time true IOPS histogram:";
-                    csvline << "," << m_s.stepName;
-                    for (int i=0; i < io_time_buckets; i++)
-                    {
-                        csvline << ',';
-                        RunningStat<ivy_float,ivy_int>
-                        rs  = mro.u.a.submit_time.rs_array[0][0][i];
-                        rs += mro.u.a.submit_time.rs_array[0][1][i];
-                        rs += mro.u.a.submit_time.rs_array[1][0][i];
-                        rs += mro.u.a.submit_time.rs_array[1][1][i];
-                        if (rs.count()>0) csvline << ((ivy_float) rs.count() / seconds);
-                    }
-
-                    // ",submit time histogram normalized by step total IOPS:";
-                    csvline << "," << m_s.stepName;
-                    for (int i=0; i < io_time_buckets; i++)
-                    {
-                        csvline << ',';
-
-                        if (total_IOPS > 0.)
-                        {
-                            RunningStat<ivy_float,ivy_int>
-                            rs  = mro.u.a.submit_time.rs_array[0][0][i];
-                            rs += mro.u.a.submit_time.rs_array[0][1][i];
-                            rs += mro.u.a.submit_time.rs_array[1][0][i];
-                            rs += mro.u.a.submit_time.rs_array[1][1][i];
-                            if (rs.count()>0) csvline << ( ((ivy_float) rs.count() / seconds) / total_IOPS);
-                        }
-                    }
-                    // ",submit time histogram scaled by bucket width:";
-
-                    csvline << "," << m_s.stepName;
-                    for (int i=0; i < io_time_buckets; i++)
-                    {
-                        csvline << ',';
-                        RunningStat<ivy_float,ivy_int>
-                        rs  = mro.u.a.submit_time.rs_array[0][0][i];
-                        rs += mro.u.a.submit_time.rs_array[0][1][i];
-                        rs += mro.u.a.submit_time.rs_array[1][0][i];
-                        rs += mro.u.a.submit_time.rs_array[1][1][i];
-                        if (rs.count()>0) csvline << (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds);
-                    }
-
-                    // ",submit time histogram scaled by bucket width and normalized by step total IOPS:";
-                    csvline << "," << m_s.stepName;
-                    for (int i=0; i < io_time_buckets; i++)
-                    {
-                        csvline << ',';
-
-                        if (total_IOPS > 0.)
-                        {
-                            RunningStat<ivy_float,ivy_int>
-                            rs  = mro.u.a.submit_time.rs_array[0][0][i];
-                            rs += mro.u.a.submit_time.rs_array[0][1][i];
-                            rs += mro.u.a.submit_time.rs_array[1][0][i];
-                            rs += mro.u.a.submit_time.rs_array[1][1][i];
-                            if (rs.count()>0) csvline << ( (histogram_bucket_scale_factor(i) * (ivy_float) rs.count() / seconds) / total_IOPS);
-                        }
-                    }
                 }
+
                 /////////////////////////////////////////////////////////////////////////////////////
                 // ",random read service time true IOPS histogram:";
                 csvline << "," << m_s.stepName;

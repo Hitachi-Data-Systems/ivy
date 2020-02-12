@@ -2,6 +2,10 @@
 
 "ivy" is a Linux-based block storage synthetic workload generator and benchmarking system.
 
+## 2020-02-10 News - ivy now supports io_uring
+* This requires a 5.5 or newer Linux Kernel.
+* Executables for ivy 3 using "aio" are also available.
+
 ## Features
 
 * **Low CPU overhead** - Written in C++ using Linux native Asynchronous I/O interface to issue multiple I/Os in parallel from one workload thread.
@@ -33,12 +37,10 @@ Look in the doc subfolder and read the "Introduction to ivy" PowerPoint or .pdf 
 See src subfolder.  ivy is built using the CodeBlocks IDE.
 
 ## Binary Linux executables
-Download the latest version version of the binaries from https://hcpanywhere.hitachivantara.com/u/tERhdz1EYf-mRGF2/ivy.bin.zip?l
+Download the latest version version of the ivy & LUN_discovery binaries from https://hcpanywhere.hitachivantara.com/u/tERhdz1EYf-mRGF2/ivy.bin.zip?l
 * When you unzip the ivy.bin.zip file, you will get a folder whose name includes the version number, so you won't overwrite any earlier downloads, and you can easily see if it's a new version.
 
-The binaries for LUN_discovery are included.
-
-These binaries were built on RHEL 7.2.  The binaries are statically linked with libstdc++ and dynamically linked with libc.
+If you are running a Linux kernel version lower than 5.5, here is the download link for ivy 3 executables: https://hcpanywhere.hitachivantara.com/u/oKCIrSmgiD2yoIis/ivy3.bin.zip?l 
 
 ## The LUN_discovery tool set is required to run ivy
 [LUN_discovery on github](https://github.com/Hitachi-Data-Systems/LUN_discovery)

@@ -41,3 +41,20 @@ bool RunningStat_double_long_int::fromString(const std::string& s)
 
 	return true;
 }
+
+
+std::string RunningStat_double_long_int::toString()
+{
+    char buf[256];
+
+    int rc = snprintf( buf, sizeof(buf), "<%li;%lg;%lg;%lg;%lg>", n, M1, M2, min_value, max_value);
+
+    if (rc < 0 || rc >= (int) sizeof(buf))
+    {
+        std::ostringstream o;
+        o << "<Error> avgcpubusypercent::toString() - internal programming error bad return code " << rc << " from snprintf(),";
+        throw std::runtime_error(o.str());
+    }
+
+    return buf;  // convert to std::string	f
+}

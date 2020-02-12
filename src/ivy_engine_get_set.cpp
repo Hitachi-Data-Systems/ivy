@@ -56,14 +56,16 @@ int ivy_engine_set(std::string thing, std::string value)
 std::string valid_get_parameters()
 {
     std::ostringstream o;
-    o << "Valid ivy engine get parameters are:"
+    o << "Valid ivy engine get parameters:"
             << " output_folder_root"
             << ", test_name"
             << ", last_result"
             << ", step_NNNN"
             << ", step_name"
             << ", step_folder"
-            << ", and achieved_IOPS_tolerance"
+            << ", achieved_IOPS_tolerance"
+            << ", track_long_running_IOs"
+            << ", generate_at_a_time"
                 << std::endl
             << "(Parameter names are not case sensitive and underscores are ignored in parameter names, and thus OutputFolderRoot is equivalent to output_folder_root.)"
                 << std::endl << std::endl;
@@ -87,6 +89,12 @@ ivy_engine::get(const std::string& thingee)
             << valid_get_parameters();
         return std::make_pair(false,o.str());
     }
+
+    if (0 == t.compare(normalize_identifier("version")))
+    {
+        return std::make_pair(true,ivy_version);
+    }
+
 
     if (0 == t.compare(normalize_identifier("summary_csv")))
     {
@@ -244,33 +252,12 @@ ivy_engine::set(const std::string& thingee,
         }
     }
 
-
-    if (0 == t.compare(normalize_identifier("measure_submit_time")))
-    {
-        try
-        {
-            measure_submit_time = parse_boolean(value);
-        }
-        catch (std::exception& e)
-        {
-            std::ostringstream o;
-            o << "<Error> ivy engine set(\"measure_submit_time\", \"" << value << "\") - may only be set to true/false, yes/no, or on/off."
-                << std::endl << std::endl;
-            return std::make_pair(false,o.str());
-        }
-
-        try
-        {
-            issue_set_command_to_ivydriver("measure_submit_time",value);
-        }
-        catch (std::exception& e)
-        {
-            std::ostringstream o;
-            o << "<Error> ivy engine set(\"measure_submit_time\", \"" << value << "\") - failed sending set command to ivydriver(s) - " << e.what() << std::endl << std::endl;
-            return std::make_pair(false,o.str());
-        }
-        return std::make_pair(true,"");
-    }
+    if (0 == t.compare(normalize_identifier("fruitless_passes_before_wait"))) { return set_ivydriver_unsigned_parameter_value          ("fruitless_passes_before_wait"s, value); }
+    if (0 == t.compare(normalize_identifier("sqes_per_submit_limit"s)))       { return set_ivydriver_positive_unsigned_parameter_value ("sqes_per_submit_limit"s       , value); }
+    if (0 == t.compare(normalize_identifier("generate_at_a_time"s)))          { return set_ivydriver_positive_unsigned_parameter_value ("generate_at_a_time"s          , value); }
+    if (0 == t.compare(normalize_identifier("track_long_running_IOs")))       { return set_ivydriver_boolean_parameter_value           ("track_long_running_IOs"s      , value); }
+    if (0 == t.compare(normalize_identifier("spinloop")))                     { return set_ivydriver_boolean_parameter_value           ("spinloop"s                    , value); }
+    if (0 == t.compare(normalize_identifier("max_wait_seconds")))             { return set_ivydriver_positive_ivy_float_parameter_value("max_wait_seconds"s            , value); }
 
     if (0 == t.compare(normalize_identifier("log")))
     {
@@ -348,6 +335,34 @@ ivy_engine::set(const std::string& thingee,
         return std::make_pair(true,"");
     }
 
+    if (0 == t.compare(normalize_identifier("log")))
+    {
+        try
+        {
+            routine_logging = parse_boolean(value);
+        }
+        catch (const std::invalid_argument& ia)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"log\", \"" << value << "\") - must be yes/no true/false on/off."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        try
+        {
+            issue_set_command_to_ivydriver("log",value);
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"log\", \"" << value << "\") - failed sending set command to ivydriver(s) - " << e.what() << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+
+        return std::make_pair(true,"");
+    }
+
 
     {
         std::ostringstream o;
@@ -399,12 +414,157 @@ void ivy_engine::issue_set_command_to_ivydriver(const std::string& attribute, co
     }
 }
 
+std::pair<bool,std::string>
+ivy_engine::set_ivydriver_positive_unsigned_parameter_value(const std::string& parameter_name, const std::string& value)
+{
+    string s = value;
+    trim(s);
+
+    if (!isalldigits(s))
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - value must be a positive number expressed as all decimal digits 0-9."
+            << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    {
+        unsigned long ul;
+        std::istringstream is {s};
+        is >> ul;
+        if (is.fail() || ul == 0 || !is.eof())
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - value must be a positive number expressed as all decimal digits 0-9."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+    }
+
+    try
+    {
+        issue_set_command_to_ivydriver(parameter_name,s);
+    }
+    catch (std::exception& e)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - failed sending set command to ivydriver(s) - " << e.what() << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    return std::make_pair(true,"");
+}
+
+std::pair<bool,std::string>
+ivy_engine::set_ivydriver_unsigned_parameter_value(const std::string& parameter_name, const std::string& value)
+{
+    string s = value;
+    trim(s);
+
+    if (!isalldigits(s))
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - value must be a number expressed as all decimal digits 0-9."
+            << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    {
+        unsigned long ul;
+        std::istringstream is {s};
+        is >> ul;
+        if (is.fail() || !is.eof())
+        {
+            std::ostringstream o;
+            o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - value must be a number expressed as all decimal digits 0-9."
+                << std::endl << std::endl;
+            return std::make_pair(false,o.str());
+        }
+    }
+
+    try
+    {
+        issue_set_command_to_ivydriver(parameter_name,s);
+    }
+    catch (std::exception& e)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - failed sending set command to ivydriver(s) - " << e.what() << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    return std::make_pair(true,"");
+}
 
 
+std::pair<bool,std::string>
+ivy_engine::set_ivydriver_boolean_parameter_value(const std::string& parameter_name, const std::string& value)
+{
+    try
+    {
+        working_bit = parse_boolean(value);
+    }
+    catch (std::exception& e)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - may only be set to true/false, yes/no, or on/off."
+            << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    try
+    {
+        issue_set_command_to_ivydriver(parameter_name,value);
+    }
+    catch (std::exception& e)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - failed sending set command to ivydriver(s) - " << e.what() << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    return std::make_pair(true,"");
+}
 
 
+std::pair<bool,std::string>
+ivy_engine::set_ivydriver_positive_ivy_float_parameter_value(const std::string& parameter_name, const std::string& value)
+{
+    ivy_float v;
 
+    try
+    {
+        v = number_optional_trailing_percent(value,parameter_name);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - value must be a positive number with optional trailing %."
+            << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
 
+    if (v <= 0.0)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - value must be a positive number with optional trailing %."
+            << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    try
+    {
+        issue_set_command_to_ivydriver(parameter_name,value);
+    }
+    catch (std::exception& e)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - failed sending set command to ivydriver(s) - " << e.what() << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    return std::make_pair(true,"");
+}
 
 
 

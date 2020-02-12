@@ -155,7 +155,7 @@ struct IvyDriver
 
     ivytime last_message_time = ivytime_zero;
 
-    	std::vector<std::string> luns;
+    std::vector<std::string> luns;
 
 	discovered_LUNs disco;
 	std::string header_line{""};
@@ -166,13 +166,13 @@ struct IvyDriver
 		// We don't know what our ivyscript hostname is, as that gets glued on at the master end.
 		// But the WorkloadID for each workload is named ivyscript_hostname+/dev/sdxxx+workload_name, so you can see the ivyscript_hostname there if you need it.
 
-	std::string bracketedExit{"[Exit]"};
-	std::string bracketedCreateWorkload{"[CreateWorkload]"};
-	std::string bracketedDeleteWorkload{"[DeleteWorkload]"};
+	std::string bracketedExit          {"[Exit]"s};
+	std::string bracketedCreateWorkload{"[CreateWorkload]"s};
+	std::string bracketedDeleteWorkload{"[DeleteWorkload]"s};
 	std::string remainder;
 	std::string subinterval_duration_as_string;
 
-    bool spinloop {false};
+    bool spinloop {true};
     bool reported_error {false};
     ivytime time_error_reported {0};
 
@@ -185,7 +185,17 @@ struct IvyDriver
 
     bool warn_on_critical_temp {false};
 
-    bool measure_submit_time {false};
+    bool track_long_running_IOs {true}; // turn this off for pure speed but blind to long running I/Os.
+
+    unsigned int generate_at_a_time {4}; // the number of IOs pre-generated (and for writes with pattern generateion) before we check for I/O completions;
+
+    bool display_buffer_contents {false}; // used by operator<<(,const Eyeo
+
+    unsigned long fruitless_passes_before_wait {1};
+
+    unsigned sqes_per_submit_limit {1024};
+
+    ivytime max_wait { 0.100 };
 
 // methods
 

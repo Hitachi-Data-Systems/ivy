@@ -34,20 +34,15 @@
 #include <gnu/libc-version.h>
 #endif
 
+#include <signal.h>
+
 #include "ivydriver.h"
 #include "pipe_line_reader.h"
-
-//#define IVYDRIVER_TRACE
-// IVYDRIVER_TRACE defined here in this source file rather than globally in ivydefines.h so that
-//  - the CodeBlocks editor knows the symbol is defined and highlights text accordingly.
-//  - you can turn on tracing separately for each class in its own source file.
-
 
 IvyDriver ivydriver;
 
 bool routine_logging {false};
 bool subthread_per_hyperthread {true};  // sorry, this is backwards compared to the ivy main host's one_thread_per_core
-bool measure_submit_time {false};
 
 std::string printable_ascii;
 
@@ -103,10 +98,6 @@ void IvyDriver::say(std::string s)
 
 void IvyDriver::killAllSubthreads()
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "Entering IvyDriver::killAllSubthreads()."; log(slavelogfile, o.str()); } }
-#endif
-
 	for (auto& pear : all_workload_threads)
     {
         if (ThreadState::died == pear.second->state || ThreadState::exited_normally == pear.second->state)
@@ -159,10 +150,11 @@ void sig_handler(int sig, siginfo_t *p_siginfo, void *context);
 
 int IvyDriver::main(int argc, char* argv[])
 {
-    struct sigaction sigactshun;
-    memset(&sigactshun, 0, sizeof(sigactshun));
-    sigactshun.sa_flags = SA_SIGINFO;  // three argument form of signal handler
-    sigactshun.sa_sigaction = sig_handler;
+//    struct sigaction sigactshun;
+//    memset(&sigactshun, 0, sizeof(sigactshun));
+//    sigactshun.sa_flags = SA_SIGINFO;  // three argument form of signal handler
+//    sigactshun.sa_sigaction = sig_handler;
+
     //sigaction(SIGINT, &sigactshun, NULL);
     //sigaction(SIGHUP, &sigactshun, NULL);
     //sigaction(SIGCHLD, &sigactshun, NULL);
@@ -189,7 +181,6 @@ int IvyDriver::main(int argc, char* argv[])
         if (item == "-error_on_critical_temp") { warn_on_critical_temp     = false; continue;}
         if (item == "-log")                    { routine_logging           = true;  continue;}
         if (item == "-one_thread_per_core")    { subthread_per_hyperthread = false; continue;}
-        if (item == "-measure_submit_time")    { measure_submit_time       = true;  continue;}
 
         if (arg_index != (argc-1))
         {
@@ -475,6 +466,7 @@ int IvyDriver::main(int argc, char* argv[])
             say(render_string_harmless(o.str()));
             log(slavelogfile, o.str());
         }
+//*debug*/ break; // only one WT
     }
 
     disco.discover();
@@ -601,16 +593,7 @@ int IvyDriver::main(int argc, char* argv[])
 			{
 				say("[LUN]<eof>");
 
-#ifdef IVYDRIVER_TRACE
-                {
-                    std::ostringstream o;
-                    o << "<Warning> ivydriver pid is " << getpid() << ", and";
-                    for (auto& pear : all_workload_threads) {o << " physical core " << pear.second->physical_core << " hyperthread " << pear.second->hyperthread << "\'s tid is " << pear.second->my_tid;}
-                    o << "." << std::endl;
-                    say(o.str());
-                }
-#endif
-	}
+            }
 		}
 		// end of send LUN
 
@@ -672,21 +655,6 @@ int IvyDriver::main(int argc, char* argv[])
 
 void IvyDriver::set_command(const std::string& attribute, const std::string& value)
 {
-    if (attribute == "measure_submit_time"s)
-    {
-        try
-        {
-            measure_submit_time = parse_boolean(value);
-            say("<OK>");
-        }
-        catch (std::exception& e)
-        {
-            std::ostringstream o;
-            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for measure_submit_time.  Only yes/no, on/off, or true/false are accepted." << std::endl;
-            say(o.str());
-        }
-        return;
-    }
 
     if (attribute == "log"s)
     {
@@ -704,6 +672,119 @@ void IvyDriver::set_command(const std::string& attribute, const std::string& val
         return;
     }
 
+    if (attribute == "track_long_running_IOs"s)
+    {
+        try
+        {
+            track_long_running_IOs = parse_boolean(value);
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for track_long_running_IOs.  Only yes/no, on/off, or true/false are accepted." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "spinloop"s)
+    {
+        try
+        {
+            spinloop = parse_boolean(value);
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for \"" << attribute << "\".  Only yes/no, on/off, or true/false are accepted." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "fruitless_passes_before_wait"s)
+    {
+        try
+        {
+            fruitless_passes_before_wait = unsigned_long(value);
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for fruitless_passes_before_wait.  Must be a positive value expressed as one or more digits 0-9 like \"56\" or \"2\"." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "sqes_per_submit_limit"s)
+    {
+        try
+        {
+            sqes_per_submit_limit = unsigned_int(value);
+            if (sqes_per_submit_limit == 0) throw std::invalid_argument("sqes_per_submit_limit must be set to a positive value.");
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for " << attribute << ".  Must be a positive value expressed as one or more digits 0-9 like \"56\" or \"2\"." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "generate_at_a_time"s)
+    {
+        try
+        {
+            generate_at_a_time = unsigned_int(value);
+            say("<OK>");
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for generate_at_a_time.  Must be a positive value expressed as one or more digits 0-9 like \"56\" or \"2\"." << std::endl;
+            say(o.str());
+        }
+        return;
+    }
+
+    if (attribute == "max_wait_seconds"s)
+    {
+        ivy_float float_value;
+
+        try
+        {
+            float_value = number_optional_trailing_percent(value);
+        }
+        catch (std::exception& e)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value. Must be a positive value with optional trailing %, like \"6\" or \"45.2%\"." << std::endl;
+            say(o.str());
+            return;
+        }
+
+        if (float_value <= 0.0)
+        {
+            std::ostringstream o;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value. Must be a positive value with optional trailing %, like \"6\" or \"45.2%\"." << std::endl;
+            say(o.str());
+        }
+        else
+        {
+            max_wait = ivytime(float_value);
+            say("<OK>");
+        }
+
+        return;
+    }
+
+
     {
         std::ostringstream o;
         o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - \"" << attribute << "\" is not recognized as something that can be set in ivydriver." << std::endl;
@@ -715,10 +796,6 @@ void IvyDriver::set_command(const std::string& attribute, const std::string& val
 
 void IvyDriver::waitForSubintervalEndThenHarvest()
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "Entering IvyDriver::waitForSubintervalEndThenHarvest()."; log(slavelogfile, o.str()); } }
-#endif
-
     // wait for subinterval ending time
 
     ivytime now; now.setToNow();
@@ -785,7 +862,8 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
  	    o << cpubusydetail << std::endl;log(slavelogfile, o.str());
     }
 
-	say(std::string("[CPU]")+cpubusysummary.toString() + std::string("+") + digital_readouts.toString());
+    RunningStat_double_long_int* p_rs = (RunningStat_double_long_int*) &digital_readouts;
+	say(std::string("[CPU]")+cpubusysummary.toString() + std::string("+") + p_rs->toString()); // this p_rs is to use snprintf instead as it's faster.
 
 	interval_start_CPU.copy(interval_end_CPU);
 
@@ -824,7 +902,7 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
         if ( n > thread_limit_time)
         {
             std::ostringstream o;
-            o << "Excessive latency over 3/4 of the way through the next subinterval when sending up workload detail lines for the previous subinterval."
+            o << "Interlock failure - over 3/4 of the way through the next subinterval when still sending up workload detail lines for the previous subinterval."
                 << "  If there is a huge number of workloads, consider running a longer subinterval_seconds." << std::endl;
             throw std::runtime_error(o.str());
         }
@@ -842,14 +920,14 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
                            [&wlt] { return wlt.ivydriver_main_posted_command == false; }))  // WorkloadThread turns this off when switching to a new subinterval
                 {
                     std::ostringstream o;
-                    o << "Excessive latency over 3/4 of the way through the next subinterval when sending up workload detail lines for the previous subinterval."
+                    o << "Interlock failure - over 3/4 of the way through the next subinterval when still sending up workload detail lines for the previous subinterval."
                         << "  If there is a huge number of workloads, consider running a longer subinterval_seconds." << std::endl;
                     throw std::runtime_error(o.str());
                 }
 
                 // now we keep the lock while we are processing this subthread
 
-                number_of_IOs_running_at_end_of_subinterval += wlt.number_of_IOs_running_at_end_of_subinterval;
+                number_of_IOs_running_at_end_of_subinterval += wlt.number_of_IOs_running_at_end_of_subinterval;  // zero unless track_long_running_IOs
 
                 dispatching_latency_seconds_accumulator           += pear.second->dispatching_latency_seconds;
                 lock_aquisition_latency_seconds_accumulator       += pear.second->lock_aquisition_latency_seconds;
@@ -991,10 +1069,6 @@ void IvyDriver::waitForSubintervalEndThenHarvest()
 
 void IvyDriver::distribute_TestLUNs_over_cores()
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "IvyDriver::distribute_TestLUNs_over_cores()."; log(slavelogfile,o.str()); } }
-#endif
-
     for (auto& pear : active_cores)
     {
         pear.second = false;
@@ -1070,7 +1144,7 @@ void IvyDriver::distribute_TestLUNs_over_cores()
             pWorkloadThread->pTestLUN_reap_IOs_bookmark =
             pWorkloadThread->pTestLUN_pop_bookmark =
             pWorkloadThread->pTestLUN_generate_bookmark =
-            pWorkloadThread->pTestLUN_start_IOs_bookmark =
+            pWorkloadThread->pTestLUN_populate_sqes_bookmark =
                 pWorkloadThread->pTestLUNs.end();
         }
         else
@@ -1078,7 +1152,7 @@ void IvyDriver::distribute_TestLUNs_over_cores()
             pWorkloadThread->pTestLUN_reap_IOs_bookmark =
             pWorkloadThread->pTestLUN_pop_bookmark =
             pWorkloadThread->pTestLUN_generate_bookmark =
-            pWorkloadThread->pTestLUN_start_IOs_bookmark =
+            pWorkloadThread->pTestLUN_populate_sqes_bookmark =
                 pWorkloadThread->pTestLUNs.begin();
         }
     }
@@ -1111,10 +1185,6 @@ void IvyDriver::distribute_TestLUNs_over_cores()
 
 void IvyDriver::create_workload()
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvyDriver::create_workload()."; log(slavelogfile,o.str()); } }
-#endif
-
     // We get "[CreateWorkload] myhostname+/dev/sdxy+workload_name [Parameters] subinterval_input.toString()
 
     // The myhostname+/dev/sdxy+workload_name part is a "WorkloadID"
@@ -1229,9 +1299,6 @@ void IvyDriver::create_workload()
 
 void IvyDriver::edit_workload()
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "IvyDriver::edit_workload()."; log(slavelogfile,o.str()); } }
-#endif
     // We get "[EditWorkload] <myhostname+/dev/sdxy+workload_name, myhostname+/dev/sdxz+workload_name> [Parameters] IOPS = *1.25
 
     // The <myhostname+/dev/sdxy+workload_name, myhostname+/dev/sdxz+workload_name> part is the toString()/fromString() format for ListOfWorkloadIDs.
@@ -1347,10 +1414,6 @@ void IvyDriver::edit_workload()
 
 void IvyDriver::delete_workload()
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") ";  o << "Entering IvyDriver::delete_workload()."; log(slavelogfile,o.str()); } }
-#endif
-
     // We get "[DeleteWorkload]myhostname+/dev/sdxy+workload_name"
 
     // The myhostname+/dev/sdxy+workload_name part is a "WorkloadID"
@@ -1404,11 +1467,6 @@ void IvyDriver::delete_workload()
 
 void IvyDriver::go()
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvyDriver::go()."; log(slavelogfile,o.str()); } }
-    log_iosequencer_settings("debug: entry to go():");
-#endif
-
     std::string dash_spinloop {"-spinloop"};
 
     if (endsWith(subinterval_duration_as_string,dash_spinloop))
@@ -1419,10 +1477,6 @@ void IvyDriver::go()
             subinterval_duration_as_string.size()-dash_spinloop.size(),
             dash_spinloop.size()
         );
-    }
-    else
-    {
-        spinloop = false;
     }
 
     distribute_TestLUNs_over_cores();
@@ -1480,6 +1534,7 @@ void IvyDriver::go()
             wrkldThread.slaveThreadConditionVariable.notify_all();
         }
     }
+{std::ostringstream o; o << " after checking if workload threads are in waiting for command state and posting start command."; log(slavelogfile,o.str());}
 
     // Although we have prepared two subintervals for the iosequencer thread to use,
     // when the iosequencer threads get to the end of the first subinterval, they are going to
@@ -1499,16 +1554,13 @@ void IvyDriver::go()
         }
         pear.second->slaveThreadConditionVariable.notify_all();
     }
+{std::ostringstream o; o << " after waiting for workload threads to consume start command and then posting keep going command."; log(slavelogfile,o.str());}
 
     say("<OK>");
 }
 
 void IvyDriver::continue_or_cooldown()
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvyDriver::continue_or_cooldown()."; log(slavelogfile,o.str()); } }
-#endif
-
     for (auto& pear : workload_threads)
     {
         { // lock
@@ -1544,9 +1596,6 @@ void IvyDriver::continue_or_cooldown()
 
 void IvyDriver::stop()
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "Entering IvyDriver::stop()."; log(slavelogfile,o.str()); } }
-#endif
     for (auto& pear : workload_threads)
     {
         { // lock
@@ -1772,15 +1821,11 @@ past_si_code:
 
 void IvyDriver::log_TestLUN_ownership()
 {
-#if defined(IVYDRIVER_TRACE)
-    { static unsigned int callcount {0}; callcount++; if (callcount <= FIRST_FEW_CALLS) { std::ostringstream o; o << "(" << callcount << ") "; o << "IvyDriver::log_TestLUN_ownership()."; log(slavelogfile,o.str()); } }
-#endif
-
     std::ostringstream o;
 
     unsigned int testLUN_count{0}, workload_count {0};
 
-    o << "There are " << workload_threads.size() << " workload threads." << std::endl;
+    o << "There are " << workload_threads.size() << " workload threads with TestLUNs assigned." << std::endl;
 
     for (auto& pear : workload_threads)
     {

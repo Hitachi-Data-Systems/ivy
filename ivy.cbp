@@ -347,9 +347,9 @@
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="main" targets="ivymaster;ivydriver;clear_hung_ivy_threads;ivyenglib;" />
 			<Add alias="all" targets="ivymaster;ivydriver;clear_hung_ivy_threads;csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;ivycore;" />
 			<Add alias="csv_utilities" targets="csv_rows;csv_header_columns;csv_columns_in_row;csv_column_header;csv_raw_cell_value;csv_cell_value;csv_lookup_column;csv_row;csv_column;remove_empty_columns;" />
+			<Add alias="main" targets="ivymaster;ivydriver;clear_hung_ivy_threads;ivyenglib;" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
@@ -366,6 +366,9 @@
 			<Add library="/opt/rh/devtoolset-7/root/lib/gcc/x86_64-redhat-linux/7/libstdc++.a" />
 			<Add directory="/opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7" />
 		</Linker>
+		<Unit filename="../../../usr/include/liburing.h">
+			<Option target="ivydriver" />
+		</Unit>
 		<Unit filename="../LUN_discovery/include/printableAndHex.h">
 			<Option target="ivymaster" />
 			<Option target="ivydriver" />
@@ -1167,6 +1170,7 @@
 			<code_completion>
 				<search_path add="src" />
 				<search_path add="include" />
+				<search_path add="/usr/local/include/cpprest" />
 			</code_completion>
 			<debugger />
 			<envvars />

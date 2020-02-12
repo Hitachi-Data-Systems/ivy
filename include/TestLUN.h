@@ -32,18 +32,7 @@
 #include "ivytime.h"
 #include "logger.h"
 
-//#define IVYDRIVER_TRACE
-
 extern bool routine_logging;
-extern bool measure_submit_time;
-
-// for some strange reason, there's no header file for these system call wrapper functions
-inline int io_setup(unsigned nr, aio_context_t *ctxp)                   { return syscall(__NR_io_setup, nr, ctxp); }
-inline int io_destroy(aio_context_t ctx)                                { return syscall(__NR_io_destroy, ctx); }
-inline int io_submit(aio_context_t ctx, long nr,  struct iocb **iocbpp) { return syscall(__NR_io_submit, ctx, nr, iocbpp); }
-inline int io_getevents(aio_context_t ctx, long min_nr, long max_nr, struct io_event *events, struct timespec *timeout)
-	                                                                    { return syscall(__NR_io_getevents, ctx, min_nr, max_nr, events, timeout); }
-inline int io_cancel(aio_context_t ctx, struct iocb * p_iocb, struct io_event *p_io_event){ return syscall(__NR_io_cancel, ctx, p_iocb, p_io_event); };
 
 // We can't use POSIX AIO, because it uses a thread model internally.
 
@@ -113,70 +102,16 @@ public:
 
 	ivy_float skew_total;
 
-	unsigned int AIO_slots;
-
-	long long int LUN_size_bytes;
+	uint64_t LUN_size_bytes;
 
 	int sector_size=512;
 
 	int fd {-1};
-
-	int event_fd {-1};
-    struct epoll_event epoll_ev;
-
-	struct io_event ReapHeap[MAX_IOEVENTS_REAP_AT_ONCE];
-
-	Eyeo* LaunchPad[MAX_IOS_LAUNCH_AT_ONCE];
-
-	aio_context_t act{0};
-
-	unsigned int testLUN_queue_depth {0};
-	unsigned int testLUN_max_queue_depth {0};
-	unsigned int max_IOs_tried_to_launch_at_once {0};
-	int max_IOs_launched_at_once {0};
-	int max_IOs_reaped_at_once {0};
-	uint64_t extra_reaped_after_read_from_eventfd {0};
-	uint64_t event_fd_writeback_value;
-	unsigned int consecutive_count_event_fd_writeback {0};
-	unsigned int consecutive_count_event_fd_behind {0};
-	unsigned int max_consecutive_count_event_fd_writeback {0};
-	unsigned int max_consecutive_count_event_fd_behind {0};
-
-	unsigned int launch_count {0};
+	int fd_index {-1}; // index of fd in io_uring array of fds.
 
     ivy_float testLUN_furthest_behind_weighted_IOPS_max_skew_progress {0.0};
 
     bool all_workloads_are_IOPS_max {false};
-
-#ifdef IVYDRIVER_TRACE
-    unsigned int sum_of_maxTags_callcount {0};
-    unsigned int open_fd_callcount {0};
-    unsigned int prepare_linux_AIO_driver_to_start_callcount {0};
-    unsigned int reap_IOs_callcount {0};
-    unsigned int pop_front_to_LaunchPad_callcount {0};
-    unsigned int start_IOs_callcount {0};
-    unsigned int catch_in_flight_IOs_callcount {0};
-    unsigned int ivy_cancel_IO_callcount {0};
-    unsigned int pop_and_process_an_Eyeo_callcount {0};
-    unsigned int generate_an_IO_callcount {0};
-    unsigned int next_scheduled_io_callcount {0};
-
-    unsigned int start_IOs_bookmark_count {0};
-    unsigned int start_IOs_body_count {0};
-    unsigned int reap_IOs_bookmark_count {0};
-    unsigned int reap_IOs_body_count {0};
-    unsigned int pop_n_p_bookmark_count {0};
-    unsigned int pop_n_p_body_count {0};
-    unsigned int generate_bookmark_count {0};
-    unsigned int generate_body_count {0};
-
-    unsigned int total_start_IOs_Workload_bookmark_count = 0;
-    unsigned int total_start_IOs_Workload_body_count = 0;
-    unsigned int total_pop_one_bookmark_count = 0;
-    unsigned int total_pop_one_body_count = 0;
-    unsigned int total_generate_one_bookmark_count = 0;
-    unsigned int total_generate_one_body_count = 0;
-#endif
 
 
 //methods
@@ -187,13 +122,11 @@ public:
 
     void open_fd();
 
-    unsigned int /* # of I/Os */ reap_IOs();
-    unsigned int /* # of I/Os */ start_IOs();
-    unsigned int /* # of I/Os */ pop_and_process_an_Eyeo();
-    unsigned int /* # of I/Os */ generate_an_IO();
+    unsigned int /* # of I/Os */ populate_sqes();
+    unsigned int /* # of I/Os */ generate_IOs();
 
-    void catch_in_flight_IOs();
-    void ivy_cancel_IO(struct iocb*); // writes to log file indicating success or failure.
+//    void catch_in_flight_IOs();
+//    void ivy_cancel_IO(struct iocb*); // writes to log file indicating success or failure.
     //ivytime next_scheduled_io();
         // ivytime(0) means this TestLUN has no workloads at all or it has only IOPS=max workloads
     void pop_front_to_LaunchPad(Workload*);

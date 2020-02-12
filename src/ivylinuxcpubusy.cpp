@@ -208,36 +208,81 @@ void	avgcpubusypercent::add(const avgcpubusypercent& other)
 
 std::string avgcpubusypercent::toString()
 {
-	std::ostringstream o;
-	o <<"<"
-	<< cores
-	<< "," << sumcores_total
-	<< "," << avgcore_total
-	<< "," << mincore_total
-	<< "," << maxcore_total
-	<< "," << sumcores_system
-	<< "," << avgcore_system
-	<< "," << mincore_system
-	<< "," << maxcore_system
-	<< "," << sumcores_user
-	<< "," << avgcore_user
-	<< "," << mincore_user
-	<< "," << maxcore_user
-	<< "," << activecores
-	<< "," << sum_activecores_total
-	<< "," << avg_activecore_total
-	<< "," << min_activecore_total
-	<< "," << max_activecore_total
-	<< "," << sum_activecores_system
-	<< "," << avg_activecore_system
-	<< "," << min_activecore_system
-	<< "," << max_activecore_system
-	<< "," << sum_activecores_user
-	<< "," << avg_activecore_user
-	<< "," << min_activecore_user
-	<< "," << max_activecore_user
-	<< ">";
-	return o.str();
+    char buf[512];
+
+    int rc = snprintf
+    (
+        buf
+        , sizeof(buf)
+        , "<%u, %g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%u,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g>"
+        , cores
+        , sumcores_total
+        , avgcore_total
+        , mincore_total
+        , maxcore_total
+        , sumcores_system
+        , avgcore_system
+        , mincore_system
+        , maxcore_system
+        , sumcores_user
+        , avgcore_user
+        , mincore_user
+        , maxcore_user
+        , activecores
+        , sum_activecores_total
+        , avg_activecore_total
+        , min_activecore_total
+        , max_activecore_total
+        , sum_activecores_system
+        , avg_activecore_system
+        , min_activecore_system
+        , max_activecore_system
+        , sum_activecores_user
+        , avg_activecore_user
+        , min_activecore_user
+        , max_activecore_user
+	);
+
+
+    if (rc < 0 || rc >= (int) sizeof(buf))
+    {
+        std::ostringstream o;
+        o << "<Error> avgcpubusypercent::toString() - internal programming error bad return code " << rc << " from snprintf(),";
+        throw std::runtime_error(o.str());
+    }
+
+    return buf;  // convert to std::string
+
+//	std::ostringstream o;
+//	o << "<"
+//	<< cores
+//	<< "," << sumcores_total
+//	<< "," << avgcore_total
+//	<< "," << mincore_total
+//	<< "," << maxcore_total
+//	<< "," << sumcores_system
+//	<< "," << avgcore_system
+//	<< "," << mincore_system
+//	<< "," << maxcore_system
+//	<< "," << sumcores_user
+//	<< "," << avgcore_user
+//	<< "," << mincore_user
+//	<< "," << maxcore_user
+//	<< "," << activecores
+//	<< "," << sum_activecores_total
+//	<< "," << avg_activecore_total
+//	<< "," << min_activecore_total
+//	<< "," << max_activecore_total
+//	<< "," << sum_activecores_system
+//	<< "," << avg_activecore_system
+//	<< "," << min_activecore_system
+//	<< "," << max_activecore_system
+//	<< "," << sum_activecores_user
+//	<< "," << avg_activecore_user
+//	<< "," << min_activecore_user
+//	<< "," << max_activecore_user
+//	<< ">";
+//	return o.str();
 }
 
 bool avgcpubusypercent::fromString(const std::string& s)

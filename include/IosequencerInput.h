@@ -113,6 +113,7 @@ public:
     long double hot_zone_read_fraction {0};
     long double hot_zone_write_fraction {0};
 
+
 public:
 	inline IosequencerInput(){reset();}
 

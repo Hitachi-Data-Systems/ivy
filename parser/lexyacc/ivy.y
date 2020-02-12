@@ -2,7 +2,7 @@
 %language "C++"
 %defines
 %locations
-%define parser_class_name {ivy}
+%define api.parser.class {ivy}
 
 %{
 

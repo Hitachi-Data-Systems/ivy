@@ -202,12 +202,14 @@ void Iosequencer::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 
     if (routine_logging)
     {
-        ostringstream o; o << "Iosequencer::setFrom_IosequencerInput() - LUN_size_bytes = " << pTestLUN->LUN_size_bytes
+        ostringstream o; o << workloadID << " Iosequencer::setFrom_IosequencerInput() - LUN_size_bytes = " << pTestLUN->LUN_size_bytes
             << ", sector_size = " << pTestLUN->sector_size
-            << std::endl << ", number_of_potential_coverage_sectors = " << number_of_potential_coverage_sectors
-            << std::endl << ", coverageStartLBA = " << coverageStartLBA << ", coverageEndLBA = " << coverageEndLBA<< ", numberOfCoverageLBAs = " << numberOfCoverageLBAs
-            << std::endl << ", p_IosequencerInput->blocksize_bytes = " << p_IosequencerInput->blocksize_bytes
-            << std::endl << ", coverageStartBlock = " << coverageStartBlock << ", coverageEndBlock = " << coverageEndBlock<< ", numberOfCoverageBlocks = " << numberOfCoverageBlocks;
+            << ", number_of_potential_coverage_sectors = " << number_of_potential_coverage_sectors
+            << " or " << size_GB_GiB_TB_TiB( ((ivy_float)number_of_potential_coverage_sectors) * ((ivy_float)pTestLUN->sector_size) )
+            << ", coverageStartLBA = " << coverageStartLBA << ", coverageEndLBA = " << coverageEndLBA<< ", numberOfCoverageLBAs = " << numberOfCoverageLBAs
+            << ", p_IosequencerInput->blocksize_bytes = " << p_IosequencerInput->blocksize_bytes
+            << ", coverageStartBlock = " << coverageStartBlock << ", coverageEndBlock = " << coverageEndBlock<< ", numberOfCoverageBlocks = " << numberOfCoverageBlocks
+            << " or " << size_GB_GiB_TB_TiB( ((ivy_float)numberOfCoverageBlocks) * ((ivy_float)p_IosequencerInput->blocksize_bytes) );
         log(logfilename,o.str());
     }
 
