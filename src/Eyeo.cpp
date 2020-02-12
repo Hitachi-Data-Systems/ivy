@@ -55,6 +55,7 @@ using namespace std;
 #include "../../LUN_discovery/include/printableAndHex.h"
     // display_memory_contents() is part of "printableAndHex" which is in the LUN_discovery project
     // https://github.com/Hitachi-Data-Systems/LUN_discovery
+#include "Iosequencer.h"
 
 extern std::string printable_ascii;
 extern std::default_random_engine deafrangen;
@@ -372,7 +373,7 @@ ivy_float Eyeo::response_time_seconds() const
 // and probabilistically determines a corrected compression ratio. The method returns either
 // a corrected compression ratio (usually higher than the desired one) or zero (0.0) if the
 // given block should not be compressed (probabilistically).
-ivy_float Eyeo::lookup_probabilistic_compressibility(ivy_float desired_compressibility)
+ivy_float Eyeo::lookup_probabilistic_compressibility(ivy_float desired_compressibility, uint64_t address)
 {
     ivy_float requested_compressibility = 0.0;
     ivy_float measured_compressibility = 0.0;
@@ -452,8 +453,10 @@ ivy_float Eyeo::lookup_probabilistic_compressibility(ivy_float desired_compressi
 
     if (probability == 1.0)
         return requested_compressibility;
-    else
-        return (distribution(generator) < probability) ? requested_compressibility : 0.0;
+    else {
+		generator.seed(address); // Always make the same decision, based on LBA: probabilistic, but static.
+		return (distribution(generator) < probability) ? requested_compressibility : 0.0;
+	}
 }
 
 void Eyeo::generate_pattern()
@@ -475,7 +478,7 @@ void Eyeo::generate_pattern()
 
     const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
-    ivy_float probabilistic_compressibility = lookup_probabilistic_compressibility(pWorkload->compressibility);
+    ivy_float probabilistic_compressibility = lookup_probabilistic_compressibility(pWorkload->compressibility, (uint64_t) eyeocb.aio_buf);
 
     pWorkload->write_io_count++;
 
@@ -867,7 +870,15 @@ uint64_t Eyeo::fixed_pattern_sub_block_starting_seed(uint64_t offset_within_this
 
 uint64_t Eyeo::duplicate_set_filtered_sub_block_number(uint64_t unfiltered_sub_block_number)
 {
-    const long double& dedupe_percent = (long double) 1.0 - ((long double) 1.0 / pWorkload->p_current_IosequencerInput->dedupe);
+    const uint64_t& blocksize = eyeocb.aio_nbytes;
+    const ivy_float& dedupe_ratio = pWorkload->p_current_IosequencerInput->dedupe;
+    const uint64_t& regionSize_bytes = pWorkload->p_my_iosequencer->numberOfCoverageBlocks * blocksize;
+    const unsigned int& duplicate_set_size = pWorkload->p_current_IosequencerInput->duplicate_set_size;
+    const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
+
+    const long double correction_factor = ((((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio) + (long double) duplicate_set_size) /
+    										(((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio);
+    const long double dedupe_percent = (long double) 1.0 - ((long double) 1.0 / (dedupe_ratio * correction_factor));
 
     uint64_t n           = (uint64_t) (((long double)(unfiltered_sub_block_number  ))*(1.0-dedupe_percent));
     uint64_t n_minus_one = (uint64_t) (((long double)(unfiltered_sub_block_number-1))*(1.0-dedupe_percent));
@@ -902,7 +913,7 @@ uint64_t Eyeo::duplicate_set_sub_block_starting_seed(uint64_t offset_within_this
 
     if (duplicate_set_sub_block_number == 0)
     {
-        const uint64_t& duplicate_set_size = pWorkload->p_current_IosequencerInput->duplicate_set_size;
+        const unsigned int& duplicate_set_size = pWorkload->p_current_IosequencerInput->duplicate_set_size;
         const uint64_t init_seed = 0x0123456789abcdefULL;
 
         assert(duplicate_set_size > 0);
@@ -927,11 +938,18 @@ uint64_t Eyeo::duplicate_set_sub_block_starting_seed(uint64_t offset_within_this
 
         // Choose the appropriate duplicate set member for this block seed.
 
-        const long double& dedupe_percent = (long double) 1.0 - ((long double) 1.0 / pWorkload->p_current_IosequencerInput->dedupe);
+    	const uint64_t& blocksize = eyeocb.aio_nbytes;
+    	const ivy_float& dedupe_ratio = pWorkload->p_current_IosequencerInput->dedupe;
+	const uint64_t& regionSize_bytes = pWorkload->p_my_iosequencer->numberOfCoverageBlocks * blocksize;
+	const uint64_t& dedupe_unit_bytes = pWorkload->p_current_IosequencerInput->dedupe_unit_bytes;
 
-        uint64_t relative_block_number = (uint64_t) (((long double) zero_sub_block_number) * (1.0 - dedupe_percent));
+	const long double correction_factor = ((((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio) + (long double) duplicate_set_size) /
+    										(((long double) regionSize_bytes / dedupe_unit_bytes) / dedupe_ratio);
+	const long double dedupe_percent = (long double) 1.0 - ((long double) 1.0 / (dedupe_ratio * correction_factor));
 
-        block_seed = pduplicate_set[relative_block_number % duplicate_set_size];
+	uint64_t relative_block_number = (uint64_t) (((long double) zero_sub_block_number) * ((long double) 1.0 - dedupe_percent));
+
+	block_seed = pduplicate_set[relative_block_number % duplicate_set_size];
     }
     else
     {

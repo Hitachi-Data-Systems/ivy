@@ -1285,6 +1285,7 @@ void IosequencerInput::copy(const IosequencerInput& source)
 	dedupe                = source.dedupe;
 	dedupe_type           = source.dedupe_type;
 	dedupe_unit_bytes     = source.dedupe_unit_bytes;
+	duplicate_set_size    = source.duplicate_set_size;
 	pat                   = source.pat;
 	compressibility       = source.compressibility;
 	fraction_zero_pattern = source.fraction_zero_pattern;

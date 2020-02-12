@@ -93,7 +93,7 @@ public:
 	ivy_float service_time_seconds() const;
 	ivy_float response_time_seconds() const;
 
-	ivy_float lookup_probabilistic_compressibility(ivy_float compressibility);
+	ivy_float lookup_probabilistic_compressibility(ivy_float compressibility, uint64_t address);
 
 	std::string buffer_first_last_16_hex();
 
