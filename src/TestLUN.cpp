@@ -113,7 +113,7 @@ void TestLUN::open_fd()
 
 void TestLUN::prepare_linux_AIO_driver_to_start()
 {
-/*debug*/ { std::ostringstream o; o << "TestLUN::prepare_linux_AIO_driver_to_start() - entry." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
+//*debug*/ { std::ostringstream o; o << "TestLUN::prepare_linux_AIO_driver_to_start() - entry." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
 
 	// Coming in, we expect the subinterval_array[] IosequencerInput and SubintervalOutput objects to be prepared.
 	// That means p_current_subinterval, p_current_IosequencerInput, and p_current_SubintervalOutput are set.
@@ -157,7 +157,7 @@ void TestLUN::prepare_linux_AIO_driver_to_start()
 	    }
 	}
 
-/*debug*/ { std::ostringstream o; o << "TestLUN::prepare_linux_AIO_driver_to_start() - returning normallhy." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
+//*debug*/ { std::ostringstream o; o << "TestLUN::prepare_linux_AIO_driver_to_start() - returning normally." << std::endl; log(pWorkloadThread->slavethreadlogfile,o.str());}
 	return;
 }
 

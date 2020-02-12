@@ -684,13 +684,13 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                         log_io_uring_engine_stats();
                     }
 
-                    //if (routine_logging)
+                    if (routine_logging && !ivydriver.spinloop)
                     {
                         std::ostringstream o;
                         o << "number_of_concurrent_timeouts: "
                             << "count() = " << number_of_concurrent_timeouts.count()
-                            << "avg() = "   << number_of_concurrent_timeouts.avg()
-                            << "max() = "   << number_of_concurrent_timeouts.max()
+                            << ", avg() = "   << number_of_concurrent_timeouts.avg()
+                            << ", max() = "   << number_of_concurrent_timeouts.max()
                             << ".";
                         log(slavethreadlogfile,o.str());
                     }
