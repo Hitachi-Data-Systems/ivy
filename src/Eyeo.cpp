@@ -523,10 +523,10 @@ void Eyeo::generate_pattern()
                     }
                     else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::round_robin)
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_round_robin_regulator->get_seed(this, eyeocb.aio_offset + i * sizeof(uint64_t));
+                        pWorkload->block_seed = pWorkload->dedupe_round_robin_regulator->get_seed(this, sqe.off + i * sizeof(uint64_t));
                         if (pWorkload->block_seed == 0)
                         {
-                            void* p = (void*) (eyeocb.aio_buf + (i * 8));
+                            void* p = (void*) (sqe.addr + (i * 8));
                             memset(p,0x00,dedupe_unit_bytes);
                             i += ((dedupe_unit_bytes/8)-1);
                             goto past_random_pattern_8byte_write;
@@ -583,10 +583,10 @@ past_random_pattern_8byte_write:;
                     }
                     else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::round_robin)
                     {
-                        pWorkload->block_seed = pWorkload->dedupe_round_robin_regulator->get_seed(this, eyeocb.aio_offset + i * sizeof(uint64_t));
+                        pWorkload->block_seed = pWorkload->dedupe_round_robin_regulator->get_seed(this, sqe.off + i * sizeof(uint64_t));
                         if (pWorkload->block_seed == 0)
                         {
-                            void* p = (void*) (eyeocb.aio_buf + (i * 8));
+                            void* p = (void*) (sqe.addr + (i * 8));
                             memset(p,0x00,dedupe_unit_bytes);
                             i += ((dedupe_unit_bytes/8)-1);
                             p_c += dedupe_unit_bytes;
@@ -672,13 +672,13 @@ past_ascii_pattern_8byte_write:;
                         }
                         else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::round_robin)
                         {
-                            pWorkload->block_seed = pWorkload->dedupe_round_robin_regulator->get_seed(this, eyeocb.aio_offset + (piece * dedupe_unit_bytes) /* + i * sizeof(uint64_t))*/ );
+                            pWorkload->block_seed = pWorkload->dedupe_round_robin_regulator->get_seed(this, sqe.off + (piece * dedupe_unit_bytes) /* + i * sizeof(uint64_t))*/ );
                             if (pWorkload->block_seed == 0)
                             {
-                                void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
+                                void* p = (void*) (sqe.addr + (piece * dedupe_unit_bytes));
                                 memset(p,0x00,dedupe_unit_bytes);
                                 i += ((dedupe_unit_bytes/8)-1);
-                                p_uint64 = (uint64_t*) (eyeocb.aio_buf + (piece+1)*dedupe_unit_bytes);
+                                p_uint64 = (uint64_t*) (sqe.addr + (piece+1)*dedupe_unit_bytes);
                                 goto past_trailing_blanks_pattern_8byte_write;
                             }
                         }
@@ -783,10 +783,10 @@ past_trailing_blanks_pattern_8byte_write:;
                         }
                         else if (pWorkload->p_current_IosequencerInput->dedupe_type == dedupe_method::round_robin)
                         {
-                            pWorkload->block_seed = pWorkload->dedupe_round_robin_regulator->get_seed(this, eyeocb.aio_offset + piece*dedupe_unit_bytes + count * sizeof(uint64_t));
+                            pWorkload->block_seed = pWorkload->dedupe_round_robin_regulator->get_seed(this, sqe.off + piece*dedupe_unit_bytes + count * sizeof(uint64_t));
                             if (pWorkload->block_seed == 0)
                             {
-                                void* p = (void*) (eyeocb.aio_buf + (piece * dedupe_unit_bytes));
+                                void* p = (void*) (sqe.addr + (piece * dedupe_unit_bytes));
                                 memset(p,0x00,dedupe_unit_bytes);
                                 goto past_trailing_gobbldegook_pattern_write;
                             }
