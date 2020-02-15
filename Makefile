@@ -1253,7 +1253,7 @@ virtual_all: \
 	clean_csv_column \
 	before_testregex \
 	after_testregex \
-	clean_testregex 
+	clean_testregex  \
 	before_remove_empty_columns \
 	after_remove_empty_columns \
 	clean_remove_empty_columns \
