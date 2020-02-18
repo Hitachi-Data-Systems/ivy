@@ -3,7 +3,6 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="ivy" />
-		<Option makefile="Makefile.mak" />
 		<Option makefile_is_custom="1" />
 		<Option pch_mode="2" />
 		<Option default_target="ivymaster" />
@@ -44,7 +43,7 @@
 				</ExtraCommands>
 				<MakeCommands>
 					<Build command="$make -f $makefile $target -j32" />
-					<CompileFile command="$make -f $makefile $file" />
+					<CompileFile command="$make -f $makefile $file -j32" />
 					<Clean command="$make -f $makefile clean_$target" />
 					<DistClean command="$make -f $makefile distclean$target" />
 					<AskRebuildNeeded command="$make -q -f $makefile $target" />
@@ -353,10 +352,10 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=c++14" />
 			<Add option="-fPIC" />
 			<Add option="-Og" />
 			<Add option="-g" />
-			<Add option="-std=c++14" />
 			<Add directory="src" />
 			<Add directory="include" />
 		</Compiler>
