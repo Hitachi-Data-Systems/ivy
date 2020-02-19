@@ -18,6 +18,8 @@ LIBDIR =
 LIB =
 LDFLAGS = -lrt
 SRCDIR = src
+OBJDIR = .objs
+OUTDIR = bin
 DEPFLAGS_CC = -MMD -MP -MF $(@:.o=.cc.d)
 DEPFLAGS_CXX = -MMD -MP -MF $(@:.o=.cpp.d)
 
@@ -57,8 +59,8 @@ CFLAGS_IVYMASTER = $(CFLAGS) -pthread
 LIBDIR_IVYMASTER = $(LIBDIR) -L/usr/lib64
 LIB_IVYMASTER = $(LIB)
 LDFLAGS_IVYMASTER = $(LDFLAGS) -lrt -lpthread -lssl -lcrypto -lboost_system -lcpprest
-OBJDIR_IVYMASTER = .objs/.ivymaster
-OUT_IVYMASTER = bin/ivy
+OBJDIR_IVYMASTER = $(OBJDIR)/.ivymaster
+OUTFILE_IVYMASTER = $(OUTDIR)/ivy
 CXX_IVYMASTER = $(CXX) $(DEPFLAGS_CXX) $(INC_IVYMASTER) $(CFLAGS_IVYMASTER) -o $@ -c
 CC_IVYMASTER  = $(CC) $(DEPFLAGS_CC) $(INC_IVYMASTER) $(CFLAGS_IVYMASTER) -o $@ -c
 
@@ -190,8 +192,8 @@ CFLAGS_IVYDRIVER = $(CFLAGS) -pthread
 LIBDIR_IVYDRIVER = $(LIBDIR)
 LIB_IVYDRIVER = $(LIB)
 LDFLAGS_IVYDRIVER = $(LDFLAGS) -lrt -lpthread -lssl -luring
-OBJDIR_IVYDRIVER = .objs/.ivydriver
-OUT_IVYDRIVER = bin/ivydriver
+OBJDIR_IVYDRIVER = $(OBJDIR)/.ivydriver
+OUTFILE_IVYDRIVER = $(OUTDIR)/ivydriver
 CXX_IVYDRIVER = $(CXX) $(DEPFLAGS_CXX) $(INC_IVYDRIVER) $(CFLAGS_IVYDRIVER) -o $@ -c
 CC_IVYDRIVER  = $(CC) $(DEPFLAGS_CC) $(INC_IVYDRIVER) $(CFLAGS_IVYDRIVER) -o $@ -c
 
@@ -277,8 +279,8 @@ CFLAGS_CLEAR_HUNG_IVY_THREADS = $(CFLAGS)
 LIBDIR_CLEAR_HUNG_IVY_THREADS = $(LIBDIR)
 LIB_CLEAR_HUNG_IVY_THREADS = $(LIB)
 LDFLAGS_CLEAR_HUNG_IVY_THREADS = $(LDFLAGS)
-OBJDIR_CLEAR_HUNG_IVY_THREADS = .objs/.clear_hung_ivy_threads
-OUT_CLEAR_HUNG_IVY_THREADS = bin/clear_hung_ivy_threads
+OBJDIR_CLEAR_HUNG_IVY_THREADS = $(OBJDIR)/.clear_hung_ivy_threads
+OUTFILE_CLEAR_HUNG_IVY_THREADS = $(OUTDIR)/clear_hung_ivy_threads
 CXX_CLEAR_HUNG_IVY_THREADS = $(CXX) $(DEPFLAGS_CXX) $(INC_CLEAR_HUNG_IVY_THREADS) $(CFLAGS_CLEAR_HUNG_IVY_THREADS) -o $@ -c
 
 $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src/%.cpp.d
@@ -302,8 +304,8 @@ CFLAGS_MAKEDICT = $(CFLAGS)
 LIBDIR_MAKEDICT = $(LIBDIR)
 LIB_MAKEDICT = $(LIB)
 LDFLAGS_MAKEDICT = $(LDFLAGS)
-OBJDIR_MAKEDICT = .objs/.makedict
-OUT_MAKEDICT = bin/makedict
+OBJDIR_MAKEDICT = $(OBJDIR)/.makedict
+OUTFILE_MAKEDICT = $(OUTDIR)/makedict
 CXX_MAKEDICT = $(CXX) $(DEPFLAGS_CXX) $(INC_MAKEDICT) $(CFLAGS_MAKEDICT) -o $@ -c
 
 $(OBJDIR_MAKEDICT)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_MAKEDICT)/src/%.cpp.d
@@ -325,8 +327,8 @@ CFLAGS_CSV_ROWS = $(CFLAGS)
 LIBDIR_CSV_ROWS = $(LIBDIR)
 LIB_CSV_ROWS = $(LIB)
 LDFLAGS_CSV_ROWS = $(LDFLAGS)
-OBJDIR_CSV_ROWS = .objs/.csv_rows
-OUT_CSV_ROWS = bin/csv_rows
+OBJDIR_CSV_ROWS = $(OBJDIR)/.csv_rows
+OUTFILE_CSV_ROWS = $(OUTDIR)/csv_rows
 CXX_CSV_ROWS = $(CXX) $(DEPFLAGS_CXX) $(INC_CSV_ROWS) $(CFLAGS_CSV_ROWS) -o $@ -c
 
 $(OBJDIR_CSV_ROWS)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_CSV_ROWS)/src/%.cpp.d
@@ -352,8 +354,8 @@ CFLAGS_CSV_HEADER_COLUMNS = $(CFLAGS)
 LIBDIR_CSV_HEADER_COLUMNS = $(LIBDIR)
 LIB_CSV_HEADER_COLUMNS = $(LIB)
 LDFLAGS_CSV_HEADER_COLUMNS = $(LDFLAGS)
-OBJDIR_CSV_HEADER_COLUMNS = .objs/.csv_header_columns
-OUT_CSV_HEADER_COLUMNS = bin/csv_header_columns
+OBJDIR_CSV_HEADER_COLUMNS = $(OBJDIR)/.csv_header_columns
+OUTFILE_CSV_HEADER_COLUMNS = $(OUTDIR)/csv_header_columns
 CXX_CSV_HEADER_COLUMNS = $(CXX) $(DEPFLAGS_CXX) $(INC_CSV_HEADER_COLUMNS) $(CFLAGS_CSV_HEADER_COLUMNS) -o $@ -c
 
 $(OBJDIR_CSV_HEADER_COLUMNS)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_CSV_HEADER_COLUMNS)/src/%.cpp.d
@@ -379,8 +381,8 @@ CFLAGS_CSV_COLUMNS_IN_ROW = $(CFLAGS)
 LIBDIR_CSV_COLUMNS_IN_ROW = $(LIBDIR)
 LIB_CSV_COLUMNS_IN_ROW = $(LIB)
 LDFLAGS_CSV_COLUMNS_IN_ROW = $(LDFLAGS)
-OBJDIR_CSV_COLUMNS_IN_ROW = .objs/.csv_columns_in_row
-OUT_CSV_COLUMNS_IN_ROW = bin/csv_columns_in_row
+OBJDIR_CSV_COLUMNS_IN_ROW = $(OBJDIR)/.csv_columns_in_row
+OUTFILE_CSV_COLUMNS_IN_ROW = $(OUTDIR)/csv_columns_in_row
 CXX_CSV_COLUMNS_IN_ROW = $(CXX) $(DEPFLAGS_CXX) $(INC_CSV_COLUMNS_IN_ROW) $(CFLAGS_CSV_COLUMNS_IN_ROW) -o $@ -c
 
 $(OBJDIR_CSV_COLUMNS_IN_ROW)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_CSV_COLUMNS_IN_ROW)/src/%.cpp.d
@@ -406,8 +408,8 @@ CFLAGS_CSV_COLUMN_HEADER = $(CFLAGS)
 LIBDIR_CSV_COLUMN_HEADER = $(LIBDIR)
 LIB_CSV_COLUMN_HEADER = $(LIB)
 LDFLAGS_CSV_COLUMN_HEADER = $(LDFLAGS)
-OBJDIR_CSV_COLUMN_HEADER = .objs/.csv_column_header
-OUT_CSV_COLUMN_HEADER = bin/csv_column_header
+OBJDIR_CSV_COLUMN_HEADER = $(OBJDIR)/.csv_column_header
+OUTFILE_CSV_COLUMN_HEADER = $(OUTDIR)/csv_column_header
 CXX_CSV_COLUMN_HEADER = $(CXX) $(DEPFLAGS_CXX) $(INC_CSV_COLUMN_HEADER) $(CFLAGS_CSV_COLUMN_HEADER) -o $@ -c
 
 $(OBJDIR_CSV_COLUMN_HEADER)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_CSV_COLUMN_HEADER)/src/%.cpp.d
@@ -433,8 +435,8 @@ CFLAGS_CSV_RAW_CELL_VALUE = $(CFLAGS)
 LIBDIR_CSV_RAW_CELL_VALUE = $(LIBDIR)
 LIB_CSV_RAW_CELL_VALUE = $(LIB)
 LDFLAGS_CSV_RAW_CELL_VALUE = $(LDFLAGS)
-OBJDIR_CSV_RAW_CELL_VALUE = .objs/.csv_raw_cell_value
-OUT_CSV_RAW_CELL_VALUE = bin/csv_raw_cell_value
+OBJDIR_CSV_RAW_CELL_VALUE = $(OBJDIR)/.csv_raw_cell_value
+OUTFILE_CSV_RAW_CELL_VALUE = $(OUTDIR)/csv_raw_cell_value
 CXX_CSV_RAW_CELL_VALUE = $(CXX) $(DEPFLAGS_CXX) $(INC_CSV_RAW_CELL_VALUE) $(CFLAGS_CSV_RAW_CELL_VALUE) -o $@ -c
 
 $(OBJDIR_CSV_RAW_CELL_VALUE)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_CSV_RAW_CELL_VALUE)/src/%.cpp.d
@@ -460,8 +462,8 @@ CFLAGS_CSV_CELL_VALUE = $(CFLAGS)
 LIBDIR_CSV_CELL_VALUE = $(LIBDIR)
 LIB_CSV_CELL_VALUE = $(LIB)
 LDFLAGS_CSV_CELL_VALUE = $(LDFLAGS)
-OBJDIR_CSV_CELL_VALUE = .objs/.csv_cell_value
-OUT_CSV_CELL_VALUE = bin/csv_cell_value
+OBJDIR_CSV_CELL_VALUE = $(OBJDIR)/.csv_cell_value
+OUTFILE_CSV_CELL_VALUE = $(OUTDIR)/csv_cell_value
 CXX_CSV_CELL_VALUE = $(CXX) $(DEPFLAGS_CXX) $(INC_CSV_CELL_VALUE) $(CFLAGS_CSV_CELL_VALUE) -o $@ -c
 
 $(OBJDIR_CSV_CELL_VALUE)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_CSV_CELL_VALUE)/src/%.cpp.d
@@ -487,8 +489,8 @@ CFLAGS_CSV_LOOKUP_COLUMN = $(CFLAGS)
 LIBDIR_CSV_LOOKUP_COLUMN = $(LIBDIR)
 LIB_CSV_LOOKUP_COLUMN = $(LIB)
 LDFLAGS_CSV_LOOKUP_COLUMN = $(LDFLAGS)
-OBJDIR_CSV_LOOKUP_COLUMN = .objs/.csv_lookup_column
-OUT_CSV_LOOKUP_COLUMN = bin/csv_lookup_column
+OBJDIR_CSV_LOOKUP_COLUMN = $(OBJDIR)/.csv_lookup_column
+OUTFILE_CSV_LOOKUP_COLUMN = $(OUTDIR)/csv_lookup_column
 CXX_CSV_LOOKUP_COLUMN = $(CXX) $(DEPFLAGS_CXX) $(INC_CSV_LOOKUP_COLUMN) $(CFLAGS_CSV_LOOKUP_COLUMN) -o $@ -c
 
 $(OBJDIR_CSV_LOOKUP_COLUMN)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_CSV_LOOKUP_COLUMN)/src/%.cpp.d
@@ -514,8 +516,8 @@ CFLAGS_CSV_ROW = $(CFLAGS)
 LIBDIR_CSV_ROW = $(LIBDIR)
 LIB_CSV_ROW = $(LIB)
 LDFLAGS_CSV_ROW = $(LDFLAGS)
-OBJDIR_CSV_ROW = .objs/.csv_row
-OUT_CSV_ROW = bin/csv_row
+OBJDIR_CSV_ROW = $(OBJDIR)/.csv_row
+OUTFILE_CSV_ROW = $(OUTDIR)/csv_row
 CXX_CSV_ROW = $(CXX) $(DEPFLAGS_CXX) $(INC_CSV_ROW) $(CFLAGS_CSV_ROW) -o $@ -c
 
 $(OBJDIR_CSV_ROW)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_CSV_ROW)/src/%.cpp.d
@@ -541,8 +543,8 @@ CFLAGS_CSV_COLUMN = $(CFLAGS)
 LIBDIR_CSV_COLUMN = $(LIBDIR)
 LIB_CSV_COLUMN = $(LIB)
 LDFLAGS_CSV_COLUMN = $(LDFLAGS)
-OBJDIR_CSV_COLUMN = .objs/.csv_column
-OUT_CSV_COLUMN = bin/csv_column
+OBJDIR_CSV_COLUMN = $(OBJDIR)/.csv_column
+OUTFILE_CSV_COLUMN = $(OUTDIR)/csv_column
 CXX_CSV_COLUMN = $(CXX) $(DEPFLAGS_CXX) $(INC_CSV_COLUMN) $(CFLAGS_CSV_COLUMN) -o $@ -c
 
 $(OBJDIR_CSV_COLUMN)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_CSV_COLUMN)/src/%.cpp.d
@@ -568,8 +570,8 @@ CFLAGS_TESTREGEX = $(CFLAGS)
 LIBDIR_TESTREGEX = $(LIBDIR)
 LIB_TESTREGEX = $(LIB)
 LDFLAGS_TESTREGEX = $(LDFLAGS)
-OBJDIR_TESTREGEX = .objs/.testregex
-OUT_TESTREGEX = bin/testRegex
+OBJDIR_TESTREGEX = $(OBJDIR)/.testregex
+OUTFILE_TESTREGEX = $(OUTDIR)/testRegex
 CXX_TESTREGEX = $(CXX) $(DEPFLAGS_CXX) $(INC_TESTREGEX) $(CFLAGS_TESTREGEX) -o $@ -c
 
 $(OBJDIR_TESTREGEX)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_TESTREGEX)/src/%.cpp.d
@@ -593,8 +595,8 @@ include $(wildcard $(DEPFILES_CXX_TESTREGEX))
 #LIBDIR_TEST_LDEVSET = $(LIBDIR)
 #LIB_TEST_LDEVSET = $(LIB)
 #LDFLAGS_TEST_LDEVSET = $(LDFLAGS)
-#OBJDIR_TEST_LDEVSET = .objs/.test_ldevset
-#OUT_TEST_LDEVSET = bin/ldevset
+#OBJDIR_TEST_LDEVSET = $(OBJDIR)/.test_ldevset
+#OUTFILE_TEST_LDEVSET = $(OUTDIR)/ldevset
 #CXX_TEST_LDEVSET = $(CXX) $(DEPFLAGS_CXX) $(INC_TEST_LDEVSET) $(CFLAGS_TEST_LDEVSET) -o $@ -c
 #
 #$(OBJDIR_TEST_LDEVSET)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_TEST_LDEVSET)/src/%.cpp.d
@@ -619,8 +621,8 @@ CFLAGS_REMOVE_EMPTY_COLUMNS = $(CFLAGS)
 LIBDIR_REMOVE_EMPTY_COLUMNS = $(LIBDIR)
 LIB_REMOVE_EMPTY_COLUMNS = $(LIB)
 LDFLAGS_REMOVE_EMPTY_COLUMNS = $(LDFLAGS)
-OBJDIR_REMOVE_EMPTY_COLUMNS = .objs/.remove_empty_columns
-OUT_REMOVE_EMPTY_COLUMNS = bin/remove_empty_columns
+OBJDIR_REMOVE_EMPTY_COLUMNS = $(OBJDIR)/.remove_empty_columns
+OUTFILE_REMOVE_EMPTY_COLUMNS = $(OUTDIR)/remove_empty_columns
 CXX_REMOVE_EMPTY_COLUMNS = $(CXX) $(DEPFLAGS_CXX) $(INC_REMOVE_EMPTY_COLUMNS) $(CFLAGS_REMOVE_EMPTY_COLUMNS) -o $@ -c
 
 $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src/%.cpp.d
@@ -645,8 +647,8 @@ CFLAGS_TEST_HOSTS_LIST = $(CFLAGS)
 LIBDIR_TEST_HOSTS_LIST = $(LIBDIR)
 LIB_TEST_HOSTS_LIST = $(LIB)
 LDFLAGS_TEST_HOSTS_LIST = $(LDFLAGS)
-OBJDIR_TEST_HOSTS_LIST = .objs/.test_hosts_list
-OUT_TEST_HOSTS_LIST = bin/test_hosts_list
+OBJDIR_TEST_HOSTS_LIST = $(OBJDIR)/.test_hosts_list
+OUTFILE_TEST_HOSTS_LIST = $(OUTDIR)/test_hosts_list
 CXX_TEST_HOSTS_LIST = $(CXX) $(DEPFLAGS_CXX) $(INC_TEST_HOSTS_LIST) $(CFLAGS_TEST_HOSTS_LIST) -o $@ -c
 CC_TEST_HOSTS_LIST = $(CC) $(DEPFLAGS_CC) $(INC_TEST_HOSTS_LIST) $(CFLAGS_TEST_HOSTS_LIST) -o $@ -c
 
@@ -673,7 +675,7 @@ $(DEPFILES_CXX_TEST_HOSTS_LIST):
 include $(wildcard $(DEPFILES_CXX_TEST_HOSTS_LIST))
 
 #
-# test_negativ_ivytimes definition section
+# test_negative_ivytimes definition section
 #
 
 INC_TEST_NEGATIVE_IVYTIMES = $(INC)
@@ -681,8 +683,8 @@ CFLAGS_TEST_NEGATIVE_IVYTIMES = $(CFLAGS) -O2
 LIBDIR_TEST_NEGATIVE_IVYTIMES = $(LIBDIR)
 LIB_TEST_NEGATIVE_IVYTIMES = $(LIB)
 LDFLAGS_TEST_NEGATIVE_IVYTIMES = $(LDFLAGS) -s
-OBJDIR_TEST_NEGATIVE_IVYTIMES = .objs/.test_negative_ivytimes
-OUT_TEST_NEGATIVE_IVYTIMES = bin/test_negative_ivytimes/ivy
+OBJDIR_TEST_NEGATIVE_IVYTIMES = $(OBJDIR)/.test_negative_ivytimes
+OUTFILE_TEST_NEGATIVE_IVYTIMES = $(OUTDIR)/test_negative_ivytimes/ivy
 CXX_TEST_NEGATIVE_IVYTIMES = $(CXX) $(DEPFLAGS_CXX) $(INC_TEST_NEGATIVE_IVYTIMES) $(CFLAGS_TEST_NEGATIVE_IVYTIMES) -o $@ -c
 
 $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src/%.cpp.d
@@ -705,8 +707,8 @@ CFLAGS_IVYCORE = $(CFLAGS)
 LIBDIR_IVYCORE = $(LIBDIR)
 LIB_IVYCORE = $(LIB)
 LDFLAGS_IVYCORE = $(LDFLAGS)
-OBJDIR_IVYCORE = .objs/.ivycore
-OUT_IVYCORE = bin/ivycore
+OBJDIR_IVYCORE = $(OBJDIR)/.ivycore
+OUTFILE_IVYCORE = $(OUTDIR)/ivycore
 CXX_IVYCORE = $(CXX) $(DEPFLAGS_CXX) $(INC_IVYCORE) $(CFLAGS_IVYCORE) -o $@ -c
 
 $(OBJDIR_IVYCORE)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_IVYCORE)/src/%.cpp.d
@@ -730,8 +732,8 @@ CFLAGS_DEDUPECONSTANTRATIO = $(CFLAGS)
 LIBDIR_DEDUPECONSTANTRATIO = $(LIBDIR)
 LIB_DEDUPECONSTANTRATIO = $(LIB)
 LDFLAGS_DEDUPECONSTANTRATIO = $(LDFLAGS)
-OBJDIR_DEDUPECONSTANTRATIO = .objs/.dedupeconstantratiotablegenerator
-OUT_DEDUPECONSTANTRATIO = bin/DedupeConstantRatioTableGenerator
+OBJDIR_DEDUPECONSTANTRATIO = $(OBJDIR)/.dedupeconstantratiotablegenerator
+OUTFILE_DEDUPECONSTANTRATIO = $(OUTDIR)/DedupeConstantRatioTableGenerator
 CXX_DEDUPECONSTANTRATIO = $(CXX) $(DEPFLAGS_CXX) $(INC_DEDUPECONSTANTRATIO) $(CFLAGS_DEDUPECONSTANTRATIO) -o $@ -c
 
 $(OBJDIR_DEDUPECONSTANTRATIO)/src/%.o : $(SRCDIR)/%.cpp $(OBJDIR_DEDUPECONSTANTRATIO)/src/%.cpp.d
@@ -854,11 +856,11 @@ clean: \
 
 distclean: \
 	clean
-	rm -rf bin
+	rm -rf $(OUTDIR)
 
 before_ivymaster:
 	touch include/ivybuilddate.h
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_IVYMASTER) || mkdir -p $(OBJDIR_IVYMASTER)
 	test -d $(OBJDIR_IVYMASTER)/src || mkdir -p $(OBJDIR_IVYMASTER)/src
 	test -d $(OBJDIR_IVYMASTER)/__/LUN_discovery/src || mkdir -p $(OBJDIR_IVYMASTER)/__/LUN_discovery/src
@@ -872,16 +874,16 @@ after_ivymaster:
 ivymaster: base before_ivymaster out_ivymaster after_ivymaster
 
 out_ivymaster: before_ivymaster $(OBJFILES_IVYMASTER)
-	$(LD) $(LIBDIR_IVYMASTER) -o $(OUT_IVYMASTER) $(OBJFILES_IVYMASTER) $(LDFLAGS_IVYMASTER) $(LIB_IVYMASTER)
+	$(LD) $(LIBDIR_IVYMASTER) -o $(OUTFILE_IVYMASTER) $(OBJFILES_IVYMASTER) $(LDFLAGS_IVYMASTER) $(LIB_IVYMASTER)
 
 clean_ivymaster:
-	rm -f $(OUT_IVYMASTER)
+	rm -f $(OUTFILE_IVYMASTER)
 	rm -f $(OBJFILES_IVYMASTER)
 	rm -rf $(OBJDIR_IVYMASTER)
 
 before_ivydriver:
 	touch include/ivybuilddate.h
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_IVYDRIVER) || mkdir -p $(OBJDIR_IVYDRIVER)
 	test -d $(OBJDIR_IVYDRIVER)/src || mkdir -p $(OBJDIR_IVYDRIVER)/src
 	test -d $(OBJDIR_IVYDRIVER)/__/LUN_discovery/src || mkdir -p $(OBJDIR_IVYDRIVER)/__/LUN_discovery/src
@@ -891,15 +893,15 @@ after_ivydriver:
 ivydriver: before_ivydriver out_ivydriver after_ivydriver
 
 out_ivydriver: before_ivydriver $(OBJFILES_IVYDRIVER)
-	$(LD) $(LIBDIR_IVYDRIVER) -o $(OUT_IVYDRIVER) $(OBJFILES_IVYDRIVER)  $(LDFLAGS_IVYDRIVER) $(LIB_IVYDRIVER)
+	$(LD) $(LIBDIR_IVYDRIVER) -o $(OUTFILE_IVYDRIVER) $(OBJFILES_IVYDRIVER)  $(LDFLAGS_IVYDRIVER) $(LIB_IVYDRIVER)
 
 clean_ivydriver:
-	rm -f $(OUT_IVYDRIVER)
+	rm -f $(OUTFILE_IVYDRIVER)
 	rm -f $(OBJFILES_IVYDRIVER)
 	rm -rf $(OBJDIR_IVYDRIVER)
 
 before_clear_hung_ivy_threads:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_CLEAR_HUNG_IVY_THREADS) || mkdir -p $(OBJDIR_CLEAR_HUNG_IVY_THREADS)
 	test -d $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src || mkdir -p $(OBJDIR_CLEAR_HUNG_IVY_THREADS)/src
 
@@ -908,15 +910,15 @@ after_clear_hung_ivy_threads:
 clear_hung_ivy_threads: before_clear_hung_ivy_threads out_clear_hung_ivy_threads after_clear_hung_ivy_threads
 
 out_clear_hung_ivy_threads: before_clear_hung_ivy_threads $(OBJFILES_CLEAR_HUNG_IVY_THREADS)
-	$(LD) $(LIBDIR_CLEAR_HUNG_IVY_THREADS) -o $(OUT_CLEAR_HUNG_IVY_THREADS) $(OBJFILES_CLEAR_HUNG_IVY_THREADS)  $(LDFLAGS_CLEAR_HUNG_IVY_THREADS) $(LIB_CLEAR_HUNG_IVY_THREADS)
+	$(LD) $(LIBDIR_CLEAR_HUNG_IVY_THREADS) -o $(OUTFILE_CLEAR_HUNG_IVY_THREADS) $(OBJFILES_CLEAR_HUNG_IVY_THREADS)  $(LDFLAGS_CLEAR_HUNG_IVY_THREADS) $(LIB_CLEAR_HUNG_IVY_THREADS)
 
 clean_clear_hung_ivy_threads:
-	rm -f $(OUT_CLEAR_HUNG_IVY_THREADS)
+	rm -f $(OUTFILE_CLEAR_HUNG_IVY_THREADS)
 	rm -f $(OBJFILES_CLEAR_HUNG_IVY_THREADS)
 	rm -rf $(OBJDIR_CLEAR_HUNG_IVY_THREADS)
 
 before_makedict:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_MAKEDICT) || mkdir -p $(OBJDIR_MAKEDICT)
 	test -d $(OBJDIR_MAKEDICT)/src || mkdir -p $(OBJDIR_MAKEDICT)/src
 
@@ -925,14 +927,15 @@ after_makedict:
 makedict: before_makedict out_makedict after_makedict
 
 out_makedict: before_makedict $(OBJFILES_MAKEDICT)
-	$(LD) $(LIBDIR_MAKEDICT) -o $(OUT_MAKEDICT) $(OBJFILES_MAKEDICT)  $(LDFLAGS_MAKEDICT) $(LIB_MAKEDICT)
+	$(LD) $(LIBDIR_MAKEDICT) -o $(OUTFILE_MAKEDICT) $(OBJFILES_MAKEDICT)  $(LDFLAGS_MAKEDICT) $(LIB_MAKEDICT)
 
 clean_makedict:
-	rm -f $(OBJFILES_MAKEDICT) $(OUT_MAKEDICT)
+	rm -f $(OUTFILE_MAKEDICT)
+	rm -f $(OBJFILES_MAKEDICT)
 	rm -rf $(OBJDIR_MAKEDICT)
 
 before_csv_rows:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_CSV_ROWS) || mkdir -p $(OBJDIR_CSV_ROWS)
 	test -d $(OBJDIR_CSV_ROWS)/src || mkdir -p $(OBJDIR_CSV_ROWS)/src
 
@@ -941,15 +944,15 @@ after_csv_rows:
 csv_rows: before_csv_rows out_csv_rows after_csv_rows
 
 out_csv_rows: before_csv_rows $(OBJFILES_CSV_ROWS)
-	$(LD) $(LIBDIR_CSV_ROWS) -o $(OUT_CSV_ROWS) $(OBJFILES_CSV_ROWS)  $(LDFLAGS_CSV_ROWS) $(LIB_CSV_ROWS)
+	$(LD) $(LIBDIR_CSV_ROWS) -o $(OUTFILE_CSV_ROWS) $(OBJFILES_CSV_ROWS)  $(LDFLAGS_CSV_ROWS) $(LIB_CSV_ROWS)
 
 clean_csv_rows:
-	rm -f $(OUT_CSV_ROWS)
+	rm -f $(OUTFILE_CSV_ROWS)
 	rm -f $(OBJFILES_CSV_ROWS)
 	rm -rf $(OBJDIR_CSV_ROWS)
 
 before_csv_header_columns:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_CSV_HEADER_COLUMNS) || mkdir -p $(OBJDIR_CSV_HEADER_COLUMNS)
 	test -d $(OBJDIR_CSV_HEADER_COLUMNS)/src || mkdir -p $(OBJDIR_CSV_HEADER_COLUMNS)/src
 
@@ -958,15 +961,15 @@ after_csv_header_columns:
 csv_header_columns: before_csv_header_columns out_csv_header_columns after_csv_header_columns
 
 out_csv_header_columns: before_csv_header_columns $(OBJFILES_CSV_HEADER_COLUMNS)
-	$(LD) $(LIBDIR_CSV_HEADER_COLUMNS) -o $(OUT_CSV_HEADER_COLUMNS) $(OBJFILES_CSV_HEADER_COLUMNS)  $(LDFLAGS_CSV_HEADER_COLUMNS) $(LIB_CSV_HEADER_COLUMNS)
+	$(LD) $(LIBDIR_CSV_HEADER_COLUMNS) -o $(OUTFILE_CSV_HEADER_COLUMNS) $(OBJFILES_CSV_HEADER_COLUMNS)  $(LDFLAGS_CSV_HEADER_COLUMNS) $(LIB_CSV_HEADER_COLUMNS)
 
 clean_csv_header_columns:
-	rm -f $(OUT_CSV_HEADER_COLUMNS)
+	rm -f $(OUTFILE_CSV_HEADER_COLUMNS)
 	rm -f $(OBJFILES_CSV_HEADER_COLUMNS)
 	rm -rf $(OBJDIR_CSV_HEADER_COLUMNS)
 
 before_csv_columns_in_row:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_CSV_COLUMNS_IN_ROW) || mkdir -p $(OBJDIR_CSV_COLUMNS_IN_ROW)
 	test -d $(OBJDIR_CSV_COLUMNS_IN_ROW)/src || mkdir -p $(OBJDIR_CSV_COLUMNS_IN_ROW)/src
 
@@ -975,15 +978,15 @@ after_csv_columns_in_row:
 csv_columns_in_row: before_csv_columns_in_row out_csv_columns_in_row after_csv_columns_in_row
 
 out_csv_columns_in_row: before_csv_columns_in_row $(OBJFILES_CSV_COLUMNS_IN_ROW)
-	$(LD) $(LIBDIR_CSV_COLUMNS_IN_ROW) -o $(OUT_CSV_COLUMNS_IN_ROW) $(OBJFILES_CSV_COLUMNS_IN_ROW)  $(LDFLAGS_CSV_COLUMNS_IN_ROW) $(LIB_CSV_COLUMNS_IN_ROW)
+	$(LD) $(LIBDIR_CSV_COLUMNS_IN_ROW) -o $(OUTFILE_CSV_COLUMNS_IN_ROW) $(OBJFILES_CSV_COLUMNS_IN_ROW)  $(LDFLAGS_CSV_COLUMNS_IN_ROW) $(LIB_CSV_COLUMNS_IN_ROW)
 
 clean_csv_columns_in_row:
-	rm -f $(OUT_CSV_COLUMNS_IN_ROW)
+	rm -f $(OUTFILE_CSV_COLUMNS_IN_ROW)
 	rm -f $(OBJFILES_CSV_COLUMNS_IN_ROW)
 	rm -rf $(OBJDIR_CSV_COLUMNS_IN_ROW)
 
 before_csv_column_header:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_CSV_COLUMN_HEADER) || mkdir -p $(OBJDIR_CSV_COLUMN_HEADER)
 	test -d $(OBJDIR_CSV_COLUMN_HEADER)/src || mkdir -p $(OBJDIR_CSV_COLUMN_HEADER)/src
 
@@ -992,15 +995,15 @@ after_csv_column_header:
 csv_column_header: before_csv_column_header out_csv_column_header after_csv_column_header
 
 out_csv_column_header: before_csv_column_header $(OBJFILES_CSV_COLUMN_HEADER)
-	$(LD) $(LIBDIR_CSV_COLUMN_HEADER) -o $(OUT_CSV_COLUMN_HEADER) $(OBJFILES_CSV_COLUMN_HEADER)  $(LDFLAGS_CSV_COLUMN_HEADER) $(LIB_CSV_COLUMN_HEADER)
+	$(LD) $(LIBDIR_CSV_COLUMN_HEADER) -o $(OUTFILE_CSV_COLUMN_HEADER) $(OBJFILES_CSV_COLUMN_HEADER)  $(LDFLAGS_CSV_COLUMN_HEADER) $(LIB_CSV_COLUMN_HEADER)
 
 clean_csv_column_header:
-	rm -f $(OUT_CSV_COLUMN_HEADER)
+	rm -f $(OUTFILE_CSV_COLUMN_HEADER)
 	rm -f $(OBJFILES_CSV_COLUMN_HEADER)
 	rm -rf $(OBJDIR_CSV_COLUMN_HEADER)
 
 before_csv_raw_cell_value:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_CSV_RAW_CELL_VALUE) || mkdir -p $(OBJDIR_CSV_RAW_CELL_VALUE)
 	test -d $(OBJDIR_CSV_RAW_CELL_VALUE)/src || mkdir -p $(OBJDIR_CSV_RAW_CELL_VALUE)/src
 
@@ -1009,15 +1012,15 @@ after_csv_raw_cell_value:
 csv_raw_cell_value: before_csv_raw_cell_value out_csv_raw_cell_value after_csv_raw_cell_value
 
 out_csv_raw_cell_value: before_csv_raw_cell_value $(OBJFILES_CSV_RAW_CELL_VALUE)
-	$(LD) $(LIBDIR_CSV_RAW_CELL_VALUE) -o $(OUT_CSV_RAW_CELL_VALUE) $(OBJFILES_CSV_RAW_CELL_VALUE)  $(LDFLAGS_CSV_RAW_CELL_VALUE) $(LIB_CSV_RAW_CELL_VALUE)
+	$(LD) $(LIBDIR_CSV_RAW_CELL_VALUE) -o $(OUTFILE_CSV_RAW_CELL_VALUE) $(OBJFILES_CSV_RAW_CELL_VALUE)  $(LDFLAGS_CSV_RAW_CELL_VALUE) $(LIB_CSV_RAW_CELL_VALUE)
 
 clean_csv_raw_cell_value:
-	rm -f $(OUT_CSV_RAW_CELL_VALUE)
+	rm -f $(OUTFILE_CSV_RAW_CELL_VALUE)
 	rm -f $(OBJFILES_CSV_RAW_CELL_VALUE)
 	rm -rf $(OBJDIR_CSV_RAW_CELL_VALUE)
 
 before_csv_cell_value:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_CSV_CELL_VALUE) || mkdir -p $(OBJDIR_CSV_CELL_VALUE)
 	test -d $(OBJDIR_CSV_CELL_VALUE)/src || mkdir -p $(OBJDIR_CSV_CELL_VALUE)/src
 
@@ -1026,15 +1029,15 @@ after_csv_cell_value:
 csv_cell_value: before_csv_cell_value out_csv_cell_value after_csv_cell_value
 
 out_csv_cell_value: before_csv_cell_value $(OBJFILES_CSV_CELL_VALUE)
-	$(LD) $(LIBDIR_CSV_CELL_VALUE) -o $(OUT_CSV_CELL_VALUE) $(OBJFILES_CSV_CELL_VALUE)  $(LDFLAGS_CSV_CELL_VALUE) $(LIB_CSV_CELL_VALUE)
+	$(LD) $(LIBDIR_CSV_CELL_VALUE) -o $(OUTFILE_CSV_CELL_VALUE) $(OBJFILES_CSV_CELL_VALUE)  $(LDFLAGS_CSV_CELL_VALUE) $(LIB_CSV_CELL_VALUE)
 
 clean_csv_cell_value:
-	rm -f $(OUT_CSV_CELL_VALUE)
+	rm -f $(OUTFILE_CSV_CELL_VALUE)
 	rm -f $(OBJFILES_CSV_CELL_VALUE)
 	rm -rf $(OBJDIR_CSV_CELL_VALUE)
 
 before_csv_lookup_column:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_CSV_LOOKUP_COLUMN) || mkdir -p $(OBJDIR_CSV_LOOKUP_COLUMN)
 	test -d $(OBJDIR_CSV_LOOKUP_COLUMN)/src || mkdir -p $(OBJDIR_CSV_LOOKUP_COLUMN)/src
 
@@ -1043,15 +1046,15 @@ after_csv_lookup_column:
 csv_lookup_column: before_csv_lookup_column out_csv_lookup_column after_csv_lookup_column
 
 out_csv_lookup_column: before_csv_lookup_column $(OBJFILES_CSV_LOOKUP_COLUMN)
-	$(LD) $(LIBDIR_CSV_LOOKUP_COLUMN) -o $(OUT_CSV_LOOKUP_COLUMN) $(OBJFILES_CSV_LOOKUP_COLUMN)  $(LDFLAGS_CSV_LOOKUP_COLUMN) $(LIB_CSV_LOOKUP_COLUMN)
+	$(LD) $(LIBDIR_CSV_LOOKUP_COLUMN) -o $(OUTFILE_CSV_LOOKUP_COLUMN) $(OBJFILES_CSV_LOOKUP_COLUMN)  $(LDFLAGS_CSV_LOOKUP_COLUMN) $(LIB_CSV_LOOKUP_COLUMN)
 
 clean_csv_lookup_column:
-	rm -f $(OUT_CSV_LOOKUP_COLUMN)
+	rm -f $(OUTFILE_CSV_LOOKUP_COLUMN)
 	rm -f $(OBJFILES_CSV_LOOKUP_COLUMN)
 	rm -rf $(OBJDIR_CSV_LOOKUP_COLUMN)
 
 before_csv_row:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_CSV_ROW) || mkdir -p $(OBJDIR_CSV_ROW)
 	test -d $(OBJDIR_CSV_ROW)/src || mkdir -p $(OBJDIR_CSV_ROW)/src
 
@@ -1060,15 +1063,15 @@ after_csv_row:
 csv_row: before_csv_row out_csv_row after_csv_row
 
 out_csv_row: before_csv_row $(OBJFILES_CSV_ROW)
-	$(LD) $(LIBDIR_CSV_ROW) -o $(OUT_CSV_ROW) $(OBJFILES_CSV_ROW)  $(LDFLAGS_CSV_ROW) $(LIB_CSV_ROW)
+	$(LD) $(LIBDIR_CSV_ROW) -o $(OUTFILE_CSV_ROW) $(OBJFILES_CSV_ROW)  $(LDFLAGS_CSV_ROW) $(LIB_CSV_ROW)
 
 clean_csv_row:
-	rm -f $(OUT_CSV_ROW)
+	rm -f $(OUTFILE_CSV_ROW)
 	rm -f $(OBJFILES_CSV_ROW)
 	rm -rf $(OBJDIR_CSV_ROW)
 
 before_csv_column:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_CSV_COLUMN) || mkdir -p $(OBJDIR_CSV_COLUMN)
 	test -d $(OBJDIR_CSV_COLUMN)/src || mkdir -p $(OBJDIR_CSV_COLUMN)/src
 
@@ -1077,15 +1080,15 @@ after_csv_column:
 csv_column: before_csv_column out_csv_column after_csv_column
 
 out_csv_column: before_csv_column $(OBJFILES_CSV_COLUMN)
-	$(LD) $(LIBDIR_CSV_COLUMN) -o $(OUT_CSV_COLUMN) $(OBJFILES_CSV_COLUMN)  $(LDFLAGS_CSV_COLUMN) $(LIB_CSV_COLUMN)
+	$(LD) $(LIBDIR_CSV_COLUMN) -o $(OUTFILE_CSV_COLUMN) $(OBJFILES_CSV_COLUMN)  $(LDFLAGS_CSV_COLUMN) $(LIB_CSV_COLUMN)
 
 clean_csv_column:
-	rm -f $(OUT_CSV_COLUMN)
+	rm -f $(OUTFILE_CSV_COLUMN)
 	rm -f $(OBJFILES_CSV_COLUMN)
 	rm -rf $(OBJDIR_CSV_COLUMN)
 
 before_testregex:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_TESTREGEX) || mkdir -p $(OBJDIR_TESTREGEX)
 	test -d $(OBJDIR_TESTREGEX)/src || mkdir -p $(OBJDIR_TESTREGEX)/src
 
@@ -1094,15 +1097,15 @@ after_testregex:
 testregex: before_testregex out_testregex after_testregex
 
 out_testregex: before_testregex $(OBJFILES_TESTREGEX)
-	$(LD) $(LIBDIR_TESTREGEX) -o $(OUT_TESTREGEX) $(OBJFILES_TESTREGEX)  $(LDFLAGS_TESTREGEX) $(LIB_TESTREGEX)
+	$(LD) $(LIBDIR_TESTREGEX) -o $(OUTFILE_TESTREGEX) $(OBJFILES_TESTREGEX)  $(LDFLAGS_TESTREGEX) $(LIB_TESTREGEX)
 
 clean_testregex:
-	rm -f $(OUT_TESTREGEX)
+	rm -f $(OUTFILE_TESTREGEX)
 	rm -f $(OBJFILES_TESTREGEX)
 	rm -rf $(OBJDIR_TESTREGEX)
 
 #before_test_ldevset:
-#	test -d bin || mkdir -p bin
+#	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 #	test -d $(OBJDIR_TEST_LDEVSET) || mkdir -p $(OBJDIR_TEST_LDEVSET)
 #	test -d $(OBJDIR_TEST_LDEVSET)/src || mkdir -p $(OBJDIR_TEST_LDEVSET)/src
 #
@@ -1111,15 +1114,15 @@ clean_testregex:
 #test_ldevset: before_test_ldevset out_test_ldevset after_test_ldevset
 #
 #out_test_ldevset: before_test_ldevset $(OBJFILES_TEST_LDEVSET)
-#	$(LD) $(LIBDIR_TEST_LDEVSET) -o $(OUT_TEST_LDEVSET) $(OBJFILES_TEST_LDEVSET)  $(LDFLAGS_TEST_LDEVSET) $(LIB_TEST_LDEVSET)
+#	$(LD) $(LIBDIR_TEST_LDEVSET) -o $(OUTFILE_TEST_LDEVSET) $(OBJFILES_TEST_LDEVSET)  $(LDFLAGS_TEST_LDEVSET) $(LIB_TEST_LDEVSET)
 #
 #clean_test_ldevset:
-#	rm -f $(OUT_TEST_LDEVSET)
+#	rm -f $(OUTFILE_TEST_LDEVSET)
 #	rm -f $(OBJFILES_TEST_LDEVSET)
 #	rm -rf $(OBJDIR_TEST_LDEVSET)
 
 before_remove_empty_columns:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_REMOVE_EMPTY_COLUMNS) || mkdir -p $(OBJDIR_REMOVE_EMPTY_COLUMNS)
 	test -d $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src || mkdir -p $(OBJDIR_REMOVE_EMPTY_COLUMNS)/src
 
@@ -1128,15 +1131,15 @@ after_remove_empty_columns:
 remove_empty_columns: before_remove_empty_columns out_remove_empty_columns after_remove_empty_columns
 
 out_remove_empty_columns: before_remove_empty_columns $(OBJFILES_REMOVE_EMPTY_COLUMNS)
-	$(LD) $(LIBDIR_REMOVE_EMPTY_COLUMNS) -o $(OUT_REMOVE_EMPTY_COLUMNS) $(OBJFILES_REMOVE_EMPTY_COLUMNS)  $(LDFLAGS_REMOVE_EMPTY_COLUMNS) $(LIB_REMOVE_EMPTY_COLUMNS)
+	$(LD) $(LIBDIR_REMOVE_EMPTY_COLUMNS) -o $(OUTFILE_REMOVE_EMPTY_COLUMNS) $(OBJFILES_REMOVE_EMPTY_COLUMNS)  $(LDFLAGS_REMOVE_EMPTY_COLUMNS) $(LIB_REMOVE_EMPTY_COLUMNS)
 
 clean_remove_empty_columns:
-	rm -f $(OUT_REMOVE_EMPTY_COLUMNS)
+	rm -f $(OUTFILE_REMOVE_EMPTY_COLUMNS)
 	rm -f $(OBJFILES_REMOVE_EMPTY_COLUMNS)
 	rm -rf $(OBJDIR_REMOVE_EMPTY_COLUMNS)
 
 before_test_hosts_list:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_TEST_HOSTS_LIST) || mkdir -p $(OBJDIR_TEST_HOSTS_LIST)
 	test -d $(OBJDIR_TEST_HOSTS_LIST)/src || mkdir -p $(OBJDIR_TEST_HOSTS_LIST)/src
 	test -d $(OBJDIR_TEST_HOSTS_LIST)/src/hosts || mkdir -p $(OBJDIR_TEST_HOSTS_LIST)/src/hosts
@@ -1146,14 +1149,15 @@ after_test_hosts_list:
 test_hosts_list: base before_test_hosts_list out_test_hosts_list after_test_hosts_list
 
 out_test_hosts_list: before_test_hosts_list $(OBJFILES_TEST_HOSTS_LIST)
-	$(LD) $(LIBDIR_TEST_HOSTS_LIST) -o $(OUT_TEST_HOSTS_LIST) $(OBJFILES_TEST_HOSTS_LIST)  $(LDFLAGS_TEST_HOSTS_LIST) $(LIB_TEST_HOSTS_LIST)
+	$(LD) $(LIBDIR_TEST_HOSTS_LIST) -o $(OUTFILE_TEST_HOSTS_LIST) $(OBJFILES_TEST_HOSTS_LIST)  $(LDFLAGS_TEST_HOSTS_LIST) $(LIB_TEST_HOSTS_LIST)
 
 clean_test_hosts_list:
-	rm -f $(OBJFILES_TEST_HOSTS_LIST) $(OUT_TEST_HOSTS_LIST)
+	rm -f $(OUTFILE_TEST_HOSTS_LIST)
+	rm -f $(OBJFILES_TEST_HOSTS_LIST)
 	rm -rf $(OBJDIR_TEST_HOSTS_LIST)
 
 before_test_negative_ivytimes:
-	test -d bin/test_negative_ivytimes || mkdir -p bin/test_negative_ivytimes
+	test -d $(OUTDIR)/test_negative_ivytimes || mkdir -p $(OUTDIR)/test_negative_ivytimes
 	test -d $(OBJDIR_TEST_NEGATIVE_IVYTIMES) || mkdir -p $(OBJDIR_TEST_NEGATIVE_IVYTIMES)
 	test -d $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src || mkdir -p $(OBJDIR_TEST_NEGATIVE_IVYTIMES)/src
 
@@ -1162,15 +1166,15 @@ after_test_negative_ivytimes:
 test_negative_ivytimes: before_test_negative_ivytimes out_test_negative_ivytimes after_test_negative_ivytimes
 
 out_test_negative_ivytimes: before_test_negative_ivytimes $(OBJFILES_TEST_NEGATIVE_IVYTIMES)
-	$(LD) $(LIBDIR_TEST_NEGATIVE_IVYTIMES) -o $(OUT_TEST_NEGATIVE_IVYTIMES) $(OBJFILES_TEST_NEGATIVE_IVYTIMES)  $(LDFLAGS_TEST_NEGATIVE_IVYTIMES) $(LIB_TEST_NEGATIVE_IVYTIMES)
+	$(LD) $(LIBDIR_TEST_NEGATIVE_IVYTIMES) -o $(OUTFILE_TEST_NEGATIVE_IVYTIMES) $(OBJFILES_TEST_NEGATIVE_IVYTIMES)  $(LDFLAGS_TEST_NEGATIVE_IVYTIMES) $(LIB_TEST_NEGATIVE_IVYTIMES)
 
 clean_test_negative_ivytimes:
-	rm -f $(OUT_TEST_NEGATIVE_IVYTIMES)
+	rm -f $(OUTFILE_TEST_NEGATIVE_IVYTIMES)
 	rm -f $(OBJFILES_TEST_NEGATIVE_IVYTIMES)
 	rm -rf $(OBJDIR_TEST_NEGATIVE_IVYTIMES)
 
 before_ivycore:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_IVYCORE) || mkdir -p $(OBJDIR_IVYCORE)
 	test -d $(OBJDIR_IVYCORE)/src || mkdir -p $(OBJDIR_IVYCORE)/src
 
@@ -1179,15 +1183,15 @@ after_ivycore:
 ivycore: before_ivycore out_ivycore after_ivycore
 
 out_ivycore: before_ivycore $(OBJFILES_IVYCORE)
-	$(LD) $(LIBDIR_IVYCORE) -o $(OUT_IVYCORE) $(OBJFILES_IVYCORE)  $(LDFLAGS_IVYCORE) $(LIB_IVYCORE)
+	$(LD) $(LIBDIR_IVYCORE) -o $(OUTFILE_IVYCORE) $(OBJFILES_IVYCORE)  $(LDFLAGS_IVYCORE) $(LIB_IVYCORE)
 
 clean_ivycore:
-	rm -f $(OUT_IVYCORE)
+	rm -f $(OUTFILE_IVYCORE)
 	rm -f $(OBJFILES_IVYCORE)
 	rm -rf $(OBJDIR_IVYCORE)
 
 before_dedupeconstantratiotablegenerator:
-	test -d bin || mkdir -p bin
+	test -d $(OUTDIR) || mkdir -p $(OUTDIR)
 	test -d $(OBJDIR_DEDUPECONSTANTRATIO) || mkdir -p $(OBJDIR_DEDUPECONSTANTRATIO)
 	test -d $(OBJDIR_DEDUPECONSTANTRATIO)/src || mkdir -p $(OBJDIR_DEDUPECONSTANTRATIO)/src
 
@@ -1196,10 +1200,10 @@ after_dedupeconstantratiotablegenerator:
 dedupeconstantratiotablegenerator: before_dedupeconstantratiotablegenerator out_dedupeconstantratiotablegenerator after_dedupeconstantratiotablegenerator
 
 out_dedupeconstantratiotablegenerator: before_dedupeconstantratiotablegenerator $(OBJFILES_DEDUPECONSTANTRATIO)
-	$(LD) $(LIBDIR_DEDUPECONSTANTRATIO) -o $(OUT_DEDUPECONSTANTRATIO) $(OBJFILES_DEDUPECONSTANTRATIO)  $(LDFLAGS_DEDUPECONSTANTRATIO) $(LIB_DEDUPECONSTANTRATIO)
+	$(LD) $(LIBDIR_DEDUPECONSTANTRATIO) -o $(OUTFILE_DEDUPECONSTANTRATIO) $(OBJFILES_DEDUPECONSTANTRATIO)  $(LDFLAGS_DEDUPECONSTANTRATIO) $(LIB_DEDUPECONSTANTRATIO)
 
 clean_dedupeconstantratiotablegenerator:
-	rm -f $(OUT_DEDUPECONSTANTRATIO)
+	rm -f $(OUTFILE_DEDUPECONSTANTRATIO)
 	rm -f $(OBJFILES_DEDUPECONSTANTRATIO)
 	rm -rf $(OBJDIR_DEDUPECONSTANTRATIO)
 
