@@ -737,17 +737,17 @@ void IvyDriver::set_command(const std::string& attribute, const std::string& val
         return;
     }
 
-    if (attribute == "generate_at_a_time"s)
+    if (attribute == "generate_at_a_time_multiplier"s)
     {
         try
         {
-            generate_at_a_time = unsigned_int(value);
+            generate_at_a_time_multiplier = unsigned_int(value);
             say("<OK>");
         }
         catch (std::exception& e)
         {
             std::ostringstream o;
-            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for generate_at_a_time.  Must be a positive value expressed as one or more digits 0-9 like \"56\" or \"2\"." << std::endl;
+            o << "<Error> set \"" << attribute << "\" to \"" << value << "\" - invalid value for generate_at_a_time_multiplier.  Must be a number greater than zero and less than or equal to 1.0 like \"1\" or \"0.5\"." << std::endl;
             say(o.str());
         }
         return;

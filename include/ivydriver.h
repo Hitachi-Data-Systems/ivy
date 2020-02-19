@@ -187,7 +187,7 @@ struct IvyDriver
 
     bool track_long_running_IOs {true}; // turn this off for pure speed but blind to long running I/Os.
 
-    unsigned int generate_at_a_time {4}; // the number of IOs pre-generated (and for writes with pattern generateion) before we check for I/O completions;
+    ivy_float generate_at_a_time_multiplier {1.0};
 
     bool display_buffer_contents {false}; // used by operator<<(,const Eyeo
 

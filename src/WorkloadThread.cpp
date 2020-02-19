@@ -1735,7 +1735,7 @@ void WorkloadThread::log_io_uring_engine_stats()
     o << ", max_sqes_submitted_at_once = "       << max_sqes_submitted_at_once;
     o << ", sqes_per_submit_limit = "            << ivydriver.sqes_per_submit_limit;
     o << ", cqes_with_one_peek_limit = "         << cqes_with_one_peek_limit;
-    o << ", generate_at_a_time = "               << ivydriver.generate_at_a_time;
+    o << ", generate_at_a_time_multiplier = "    << ivydriver.generate_at_a_time_multiplier;
 
     o << ", loop_passes_per_IO() = "             << loop_passes_per_IO();
     o << ", timer_pops_per_second() = "          << timer_pops_per_second();

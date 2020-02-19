@@ -65,7 +65,7 @@ std::string valid_get_parameters()
             << ", step_folder"
             << ", achieved_IOPS_tolerance"
             << ", track_long_running_IOs"
-            << ", generate_at_a_time"
+            << ", generate_at_a_time_multiplier"
                 << std::endl
             << "(Parameter names are not case sensitive and underscores are ignored in parameter names, and thus OutputFolderRoot is equivalent to output_folder_root.)"
                 << std::endl << std::endl;
@@ -254,7 +254,7 @@ ivy_engine::set(const std::string& thingee,
 
     if (0 == t.compare(normalize_identifier("fruitless_passes_before_wait"))) { return set_ivydriver_unsigned_parameter_value          ("fruitless_passes_before_wait"s, value); }
     if (0 == t.compare(normalize_identifier("sqes_per_submit_limit"s)))       { return set_ivydriver_positive_unsigned_parameter_value ("sqes_per_submit_limit"s       , value); }
-    if (0 == t.compare(normalize_identifier("generate_at_a_time"s)))          { return set_ivydriver_positive_unsigned_parameter_value ("generate_at_a_time"s          , value); }
+    if (0 == t.compare(normalize_identifier("generate_at_a_time_multiplier"s))){return set_ivydriver_positive_ivy_float_max_one_parameter_value ("generate_at_a_time_multiplier"s , value); }
     if (0 == t.compare(normalize_identifier("track_long_running_IOs")))       { return set_ivydriver_boolean_parameter_value           ("track_long_running_IOs"s      , value); }
     if (0 == t.compare(normalize_identifier("spinloop")))                     { return set_ivydriver_boolean_parameter_value           ("spinloop"s                    , value); }
     if (0 == t.compare(normalize_identifier("max_wait_seconds")))             { return set_ivydriver_positive_ivy_float_parameter_value("max_wait_seconds"s            , value); }
@@ -565,6 +565,49 @@ ivy_engine::set_ivydriver_positive_ivy_float_parameter_value(const std::string& 
 
     return std::make_pair(true,"");
 }
+
+
+
+
+std::pair<bool,std::string>
+ivy_engine::set_ivydriver_positive_ivy_float_max_one_parameter_value(const std::string& parameter_name, const std::string& value)
+{
+    ivy_float v;
+
+    try
+    {
+        v = number_optional_trailing_percent(value,parameter_name);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - value must be a positive number with optional trailing % that is less than or equal to one."
+            << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    if (v <= 0.0 || v > 1.0)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - value must be a positive number with optional trailing % that is less than or equal to one."
+            << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    try
+    {
+        issue_set_command_to_ivydriver(parameter_name,value);
+    }
+    catch (std::exception& e)
+    {
+        std::ostringstream o;
+        o << "<Error> ivy engine set(\"" << parameter_name << "\", \"" << value << "\") - failed sending set command to ivydriver(s) - " << e.what() << std::endl << std::endl;
+        return std::make_pair(false,o.str());
+    }
+
+    return std::make_pair(true,"");
+}
+
 
 
 
