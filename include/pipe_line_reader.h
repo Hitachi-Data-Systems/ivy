@@ -17,7 +17,6 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-
 #pragma once
 
 // It was a surprise to me that std::getline() considers a line
@@ -25,18 +24,7 @@
 // you never know if something you send in one piece will arrive in
 // multiple pieces.
 
-#include <string>
-#include <fcntl.h>
-#include <iostream>
-#include <sstream>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
-
-
 #include "ivydefines.h"
-#include "ivytime.h"
-#include "ivyhelpers.h"
 #include "ivydriver.h"
 
 class pipe_line_reader

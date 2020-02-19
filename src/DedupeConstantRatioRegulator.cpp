@@ -19,9 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #include <assert.h>
-#include <stdlib.h>
 
-#include "DedupeConstantRatioRegulator.h"
 #include "DedupeConstantRatioTable.h"
 #include "Eyeo.h"
 

@@ -20,7 +20,6 @@
 
 using namespace std;
 
-#include "RollupSet.h"
 #include "ivy_engine.h"
 
 void RollupSet::rebuild()

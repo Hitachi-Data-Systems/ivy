@@ -18,16 +18,7 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include <sys/prctl.h>
-#include <stdlib.h>
-
-#include "WorkloadThread.h"
-#include "IosequencerRandomSteady.h"
-#include "IosequencerRandomIndependent.h"
-#include "IosequencerSequential.h"
 #include "ivydriver.h"
-#include "linux/io_uring.h"
-#include "liburing.h"
 
 extern bool routine_logging;
 

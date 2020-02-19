@@ -20,8 +20,6 @@
 #pragma once
 
 #include <regex>
-#include <vector>
-#include <set>
 
 #include "SymbolTableEntry.h"
 #include "Frame.h"

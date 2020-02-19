@@ -21,7 +21,6 @@
 
 #include "IosequencerInput.h"
 #include "SubintervalOutput.h"
-#include "ivytime.h"
 
 // Each WorkloadThread has an array of two subinterval objects, each with a SubintervalInput
 // object and a SubintervalOutput object.

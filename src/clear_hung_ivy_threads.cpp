@@ -17,14 +17,10 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <regex>
-#include <iostream>
-#include <chrono>
 #include <thread>
 #include <unistd.h>
 #include <limits.h>
 
-#include "ivytime.h"
 #include "ivyhelpers.h"
 
 int main(int argc, char* argv[])

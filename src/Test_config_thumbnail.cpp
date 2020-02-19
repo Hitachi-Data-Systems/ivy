@@ -22,8 +22,6 @@ using namespace std::string_literals;
 
 #include "ivy_engine.h"
 
-#include "Test_config_thumbnail.h"
-
 void Test_config_thumbnail::clear()
 {
     drives_by_PG.clear();

@@ -19,11 +19,8 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <algorithm>  // for find_if
 #include <list>
-#include <string>
 #include <regex>
-#include <stdint.h>
 
 #include "ivytime.h"
 #include "ivydefines.h"

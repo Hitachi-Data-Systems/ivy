@@ -17,13 +17,6 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <iostream>
-#include <stdio.h>
-#include <regex>
-#include <sys/stat.h>
-#include <string.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <pwd.h>
 #include <sys/utsname.h>
 
@@ -33,9 +26,6 @@
 
 #include "Ivy_pgm.h"
 #include "ivy.parser.hh"
-#include "ivyhelpers.h"
-#include "ivy_engine.h"
-#include "MeasureCtlr.h"
 #include "ivybuilddate.h"
 #include "RestHandler.h"
 

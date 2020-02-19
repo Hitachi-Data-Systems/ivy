@@ -18,12 +18,7 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-
 #include "ivyhelpers.h"
-#include "dedupe_method.h"
 
 std::string valid_dedupe_methods() {return ("Valid dedupe_method values are \"serpentine\", \"target_spread\", \"constant_ratio\", \"static\", and \"round_robin\".");}
 

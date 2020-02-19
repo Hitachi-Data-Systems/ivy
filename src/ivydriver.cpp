@@ -20,23 +20,18 @@
 // ivydriver.cpp
 
 #include <sys/utsname.h>
-#include <linux/limits.h>
 
 // get REG_EIP from ucontext.h
 #ifndef __USE_GNU
 #define __USE_GNU
 #endif
-#include <sys/ucontext.h>
 
-#include <sys/types.h>
 
 #ifdef __GLIBC__
 #include <gnu/libc-version.h>
 #endif
 
-#include <signal.h>
 
-#include "ivydriver.h"
 #include "pipe_line_reader.h"
 
 IvyDriver ivydriver;

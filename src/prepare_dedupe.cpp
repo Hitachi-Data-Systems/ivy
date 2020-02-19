@@ -18,7 +18,6 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-
 //Gets called by go_statement()
 //
 //Mechanism to handle dedupe thread numbering.
@@ -46,8 +45,6 @@
 //If !have_dedupe, the thread establishes its own starting seed. (Something like hash of workload ID xored with timestamp)
 //
 
-#include <string>
-#include <map>
 
 #include <ivy_engine.h>
 

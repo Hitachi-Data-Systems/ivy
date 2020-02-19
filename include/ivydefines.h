@@ -19,7 +19,6 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <array>
 #include <string>
 
 const std::string ivy_version {"4.00.00"};

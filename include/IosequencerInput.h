@@ -20,8 +20,6 @@
 #pragma once
 
 #include "ivyhelpers.h"
-#include "pattern.h"
-#include "dedupe_method.h"
 #include "logger.h"
 
 enum class rangeType

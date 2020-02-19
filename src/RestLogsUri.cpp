@@ -19,9 +19,6 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #include "RestHandler.h"
-#include "ivy_engine.h"
-#include "rapidjson/document.h"
-#include "rapidjson/schema.h"
 
 extern ivy_engine m_s;
 

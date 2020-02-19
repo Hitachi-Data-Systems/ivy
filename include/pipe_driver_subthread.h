@@ -18,18 +18,10 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
-#include <sys/types.h>
-#include <mutex>
-#include <condition_variable>
-#include <signal.h>
 
-
-#include "ListOfWorkloadIDs.h"
 #include "Subsystem.h"
-#include "RunningStat.h"
 #include "Subinterval_CPU.h"
 #include "LUNpointerList.h"
-#include "logger.h"
 
 // pipe_driver_subthread commands from the master thread
 // - "die"

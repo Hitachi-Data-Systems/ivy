@@ -18,14 +18,7 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include <mutex>
-
-#include <assert.h>
-
-#include "ivyhelpers.h"
-#include "logger.h"
 #include "DedupeRoundRobinSingleton.h"
-#include "LUN.h"
 
 void DedupeRoundRobinSingleton::init(void)
 {

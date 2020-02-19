@@ -21,57 +21,16 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cctype>
-#include <chrono>
-#include <cstdlib>
-#include <ctime>
-#include <cstring>
-#include <errno.h>
-#include <fcntl.h>
-#include <fstream>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <malloc.h>
-#include <random>
-#include <scsi/sg.h>
-#include <sstream>
-#include <stdio.h>
-#include <string.h>
-#include <string>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <thread>
-#include <unistd.h>
-#include <vector>
-#include <mutex>
-#include <condition_variable>
-#include <unordered_map>
-#include <linux/aio_abi.h>
 #include <semaphore.h>
-#include <chrono>
-#include <vector>
 
 using namespace std;
 
-#include "ivytime.h"
-#include "WorkloadID.h"
 #include "ListOfWorkloadIDs.h"
-#include "LUN.h"
-#include "ivydefines.h"
 #include "discover_luns.h"
-#include "ivyhelpers.h"
 #include "ivybuilddate.h"
 #include "ivylinuxcpubusy.h"
-#include "IosequencerInput.h"
-#include "Eyeo.h"
 #include "Iosequencer.h"
-#include "RunningStat.h"
-#include "Accumulators_by_io_type.h"
-#include "SubintervalOutput.h"
-#include "Subinterval.h"
-#include "WorkloadThread.h"
 
 void initialize_io_time_clip_levels(); // see Accumulators_by_io_type.cpp
 

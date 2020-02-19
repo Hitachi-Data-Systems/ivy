@@ -1,8 +1,5 @@
 #include "RestHandler.h"
-#include "ivy_engine.h"
 #include "csvfile.h"
-#include "rapidjson/document.h"  
-#include "rapidjson/schema.h"  
 
 extern ivy_engine m_s;
 

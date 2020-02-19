@@ -19,13 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #define _LARGE_FILE_API
-#include <sys/eventfd.h>
 
-#include "TestLUN.h"
-#include "Workload.h"
-#include "WorkloadThread.h"
-#include "LUN.h"
-#include "Eyeo.h"
 #include "ivydriver.h"
 
 unsigned int TestLUN::sum_of_maxTags()

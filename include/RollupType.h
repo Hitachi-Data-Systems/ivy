@@ -19,14 +19,9 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <map>
-#include <string>
-#include <iostream>
-
 class RollupSet;
 
 #include "AttributeNameCombo.h"
-#include "SubintervalOutput.h"
 #include "RollupInstance.h"
 
 class RollupType  // serial_number+Port

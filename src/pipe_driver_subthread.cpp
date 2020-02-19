@@ -25,7 +25,6 @@ using namespace std;
 
 // invoked "ivy scriptname.ivyscript" or just "ivy scriptname"
 
-#include "pipe_driver_subthread.h"
 #include "ivy_engine.h"
 #include "Subinterval_detail_line.h"
 

@@ -19,15 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-
-#include "ivydefines.h"
 #include "Ivy_pgm.h"
-#include "Builtin.h"
-#include "SymbolTableEntry.h"
-#include "../parser/lexyacc/location.hh"
 
 class Xpr {
 public:

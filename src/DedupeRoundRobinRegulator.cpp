@@ -18,12 +18,6 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include <assert.h>
-#include <stdlib.h>
-
-#include <sstream>
-
-#include "DedupeRoundRobinRegulator.h"
 #include "DedupeRoundRobinSingleton.h"
 #include "Eyeo.h"
 

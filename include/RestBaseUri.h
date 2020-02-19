@@ -1,13 +1,5 @@
 #pragma once
 
-#include <iostream>
-#include <cpprest/http_listener.h>
-#include <cpprest/details/http_helpers.h>
-#include <rapidjson/filereadstream.h>
-#include <rapidjson/document.h>
-#include <rapidjson/schema.h>
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
 #include <ivy_engine.h>
 
 using namespace web;

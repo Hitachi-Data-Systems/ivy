@@ -19,7 +19,6 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-
 // "As for allocating memory with an alignment greater than alignof(std::max_align_t), C++11 provides no direct way to do this.
 // The only reliable way is to allocate at least size + alignment bytes and use std::align to get a correctly aligned location in this buffer.
 
@@ -34,11 +33,7 @@
 // rounding up blocksize to a page (4096) boundary, and adding 4095 so that std::align can give us the
 // aligned start of an array of I/O buffers.
 
-#include <liburing.h>
-
-#include "ivytime.h"
 #include "ivydefines.h"
-#include "pattern.h"
 #include "Workload.h"
 #include "WorkloadThread.h"
 

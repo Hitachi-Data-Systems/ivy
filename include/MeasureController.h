@@ -19,10 +19,6 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <climits>  // for UINT_MAX
-#include <string>
-#include <stdexcept>
-
 #include "ivydefines.h"
 
 //When a MeasureController sends out an update,

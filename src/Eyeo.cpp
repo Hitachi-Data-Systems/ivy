@@ -48,14 +48,11 @@ enum {
 
 using namespace std;
 
-#include "Eyeo.h"
-#include "LUN.h"
 #include "ivydriver.h"
 
 #include "../../LUN_discovery/include/printableAndHex.h"
     // display_memory_contents() is part of "printableAndHex" which is in the LUN_discovery project
     // https://github.com/Hitachi-Data-Systems/LUN_discovery
-#include "Iosequencer.h"
 
 extern std::string printable_ascii;
 extern std::default_random_engine deafrangen;
@@ -1010,7 +1007,6 @@ uint64_t Eyeo::duplicate_set_sub_block_starting_seed(uint64_t offset_within_this
 //#include <stdio.h>
 //#include <stdlib.h>
 //#include <string.h>
-#include <time.h>
 
 
 std::ostream& interpret_struct_timespec_as_localtime(std::ostream& o, const struct timespec& ts)

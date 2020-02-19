@@ -20,7 +20,6 @@
 #pragma once
 
 #include "Stmt.h"
-#include "Block.h"
 
 class Stmt_nested_Block: public Stmt {
 private:

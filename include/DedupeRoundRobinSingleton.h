@@ -20,13 +20,8 @@
 
 #pragma once
 
-#include <utility>
-#include <mutex>
-
 #include <assert.h>
 
-#include "logger.h"
-#include "ivydefines.h"
 #include "LUN.h"
 
 class DedupeRoundRobinSingleton

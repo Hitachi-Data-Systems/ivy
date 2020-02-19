@@ -19,29 +19,15 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <iostream>
 #include <fstream>
-#include <mutex>
-#include <condition_variable>
-#include <map>
-#include <unordered_map>
-#include <vector>
-#include <thread>
-#include <climits>  // for UINT_MAX
-#include <signal.h>
 
 #include "WorkloadTrackers.h"
-#include "Subinterval_CPU.h"
 #include "RollupSet.h"
-#include "LUNpointerList.h"
-#include "LDEVset.h"
 #include "pipe_driver_subthread.h"
 #include "IvyscriptLine.h"
 #include "ParameterValueLookupTable.h"
 #include "MeasureController.h"
 #include "MeasureCtlr.h"
-#include "Test_config_thumbnail.h"
-#include "logger.h"
 
 enum class source_enum { error, workload, RAID_subsystem } ;
 enum class category_enum { error, overall, read, write, random, sequential, random_read, random_write, sequential_read, sequential_write };

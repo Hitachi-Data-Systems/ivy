@@ -19,7 +19,6 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #include <iostream>
-#include <sstream>
 #include <iomanip>
 #include <string.h>
 

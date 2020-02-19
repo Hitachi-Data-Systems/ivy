@@ -18,14 +18,10 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-
-#include "Workload.h"
-#include "WorkloadThread.h"
 #include "ivydriver.h"
 #include "IosequencerRandomIndependent.h"
 #include "IosequencerRandomSteady.h"
 #include "IosequencerSequential.h"
-#include "ivyhelpers.h"
 
 Workload::Workload()
 {

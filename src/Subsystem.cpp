@@ -19,7 +19,6 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #include <sys/stat.h>
 
-#include "Subsystem.h"
 #include "ivy_engine.h"
 
 Subsystem::Subsystem(std::string sn) : serial_number(sn) {} // Note constructor leaves LUNpointers empty

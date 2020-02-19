@@ -10,7 +10,7 @@
 //   Unless required by applicable law or agreed to in writing, software
 //   distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 //   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-//   License for the sp#include <sys/eventfd.h>ecific language governing permissions and limitations
+//   License for the specific language governing permissions and limitations
 //   under the License.
 //
 //Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
@@ -20,17 +20,8 @@
 
 #pragma once
 
-#include <linux/aio_abi.h>
-#include <sys/eventfd.h>
-#include <sys/epoll.h>
-#include <map>
-#include <vector>
 #include <unistd.h>
 #include <syscall.h>
-
-#include "ivydefines.h"
-#include "ivytime.h"
-#include "logger.h"
 
 extern bool routine_logging;
 

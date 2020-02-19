@@ -19,12 +19,6 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #include "RestHandler.h"
-#include "ivy_engine.h"
-#include "rapidjson/filereadstream.h"
-#include "rapidjson/document.h"
-#include "rapidjson/schema.h"
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
 
 bool RestBaseUri::_schema_initialized = false;
 rapidjson::SchemaDocument* RestBaseUri::_schema = nullptr;

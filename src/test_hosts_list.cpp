@@ -1,6 +1,4 @@
-
 #include <vector>
-#include <string>
 #include "hosts_list.h"
 
 int main(int argc, char* argv[])

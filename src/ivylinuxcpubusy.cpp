@@ -19,7 +19,6 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #include <unistd.h> // for sysconf(_SC_CLK_TCK) which returns clock ticks per second
-#include <iostream>
 #include <fstream>
 
 #include "ivylinuxcpubusy.h"

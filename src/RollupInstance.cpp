@@ -20,7 +20,6 @@
 
 #include <sys/stat.h>
 
-#include "RollupInstance.h"
 #include "ivy_engine.h"
 #include "studentsTdistribution.h"
 #include "ivybuilddate.h"

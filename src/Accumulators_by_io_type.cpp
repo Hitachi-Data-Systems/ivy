@@ -18,8 +18,6 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include <algorithm>
-#include "Accumulators_by_io_type.h"
 #include "Eyeo.h"
 
 /*static*/ std::string Accumulators_by_io_type::getCategories()

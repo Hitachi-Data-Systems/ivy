@@ -25,7 +25,6 @@ class SingleSubintervalRollup;
 class ivytime;
 
 #include "RollupType.h"
-#include "subsystem_summary_data.h"
 
 class RollupSet   // one of these for each test run
 {

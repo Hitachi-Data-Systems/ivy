@@ -20,7 +20,6 @@
 
 using namespace std;
 
-#include "subsystem_summary_data.h"
 #include "ivy_engine.h"
 
 void subsystem_summary_data::addIn(const subsystem_summary_data& other)

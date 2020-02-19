@@ -20,7 +20,6 @@
 #pragma once
 
 #include "Accumulators_by_io_type.h"
-#include "RunningStat.h"
 
 class SubintervalRollup;
 

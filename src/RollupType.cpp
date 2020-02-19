@@ -20,7 +20,6 @@
 
 #include <sys/stat.h>
 
-#include "RollupType.h"
 #include "ivy_engine.h"
 
 extern bool routine_logging, trace_evaluate;

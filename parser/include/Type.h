@@ -19,10 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <stddef.h>
 #include <iostream>
-#include <algorithm>
-
 
 constexpr size_t biggest_type = sizeof(int) > (((sizeof(double) > sizeof(std::string)) ? sizeof(double) : sizeof(std::string)))
 ? sizeof(int) : (((sizeof(double) > sizeof(std::string)) ? sizeof(double) : sizeof(std::string)));

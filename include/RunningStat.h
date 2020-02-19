@@ -26,10 +26,8 @@
 // 2016-03-24 - when asked if I could use it in ivy as open source John D. Cook gave permission by email to use this derived version of his original code in any way.
 
 #include <iostream>
-#include <sstream>
 #include <iomanip>
 #include <cmath> // for sqrt()
-#include <string>
 #include <cstring>
 
 using namespace std;

@@ -19,12 +19,8 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
 #include <sys/stat.h>
-#include <chrono>
-#include <ctime>
 
 #include "ivy_engine.h"
-#include "MeasureController.h"
-#include "RollupInstance.h"
 
 extern bool routine_logging;
 extern bool trace_lexer;
