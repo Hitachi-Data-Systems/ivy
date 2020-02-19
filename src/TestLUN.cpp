@@ -219,25 +219,6 @@ unsigned int /* number of I/Os started */ TestLUN::populate_sqes()
 
 unsigned int /* number of I/Os generated < ivydriver.  */  TestLUN::generate_IOs()
 {
-//    The default is ivy_engine_set("generate_at_a_time","4");
-//    This gets propagated to ivydriver with the corresponding
-//    ivydriver "set" command;
-//
-//    This means when we call WorkloadThread::generate_IOs(), we only
-//    generate one I/O and then return.
-//
-//    During generation of I/Os, we aren't responsive to I/O completion events.
-//
-//    There's not much work in generating a read I/O compared to generating
-//    a write I/O where we may be generating vast numbers of pseudo-random
-//    numbers to write a particular dedupe & compression data pattern.all_0x0F
-//
-//    TBD: for 100% random read workloads, where test host CPU is high to
-//    saturated, try setting generate_at_a_time to numbers like 2, 4, 8
-//    and analyze how measured response time, CPU % busy, and IOPS
-//    vary by batching I/O generation so as to reduce the overall
-//    number of system calls made.
-
     if (workloads.size() == 0) return 0;
 
     unsigned int generated_qty {0};
@@ -249,7 +230,6 @@ unsigned int /* number of I/Os generated < ivydriver.  */  TestLUN::generate_IOs
         Workload* pWorkload = &(wit->second);
 
         generated_qty += pWorkload->generate_IOs();
-        if (generated_qty >= ivydriver.generate_at_a_time) break;
 
         wit++; if (wit == workloads.end()) wit = workloads.begin();
 

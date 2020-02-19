@@ -132,6 +132,8 @@ void Workload::prepare_to_run()
     }
 
     p_my_iosequencer->setFrom_IosequencerInput(p_current_IosequencerInput);
+
+    generate_at_a_time = (unsigned) ceil(ivydriver.generate_at_a_time_multiplier * ((ivy_float) p_current_IosequencerInput->maxTags));
 }
 
 
@@ -439,7 +441,7 @@ unsigned int Workload::generate_IOs()
 
     const unsigned limit = precomputedepth();
 
-    while (generated_qty < ivydriver.generate_at_a_time)
+    while (generated_qty < generate_at_a_time)
     {
         if (precomputeQ.size() >= limit) { return generated_qty; }
 
@@ -571,9 +573,6 @@ unsigned int Workload::generate_IOs()
         precomputeQ.push_back(p_Eyeo);
         generated_qty++;
     }
-
-    if(trace){WorkloadThread& wt = *pWorkloadThread; if (wt.debug_c++ < wt.debug_m){std::ostringstream o; o << "Workload::generate_IOs() for " << workloadID << " reached generate_at_a_time returning " << generated_qty; log(wt.slavethreadlogfile, o.str());}}
-
 
     return generated_qty;
 }

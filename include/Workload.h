@@ -139,6 +139,9 @@ public:
     uint64_t workload_cumulative_completion_count {0};
     ivy_float workload_weighted_IOPS_max_skew_progress {0.0};
 
+    unsigned int generate_at_a_time {1}; // the number of IOs pre-generated (and for writes with pattern generateion) before we check for I/O completions;
+
+
 //methods
     Workload();
     ~Workload();

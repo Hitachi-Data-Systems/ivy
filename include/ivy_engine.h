@@ -514,7 +514,7 @@ public:
 
     bool track_long_running_IOs {true}; // turn this off for pure speed but blind to long running I/Os.
 
-    unsigned int generate_at_a_time {4}; // the number of IOs pre-generated (and for writes with pattern generateion) before we check for I/O completions;
+    ivy_float generate_at_a_time_multiplier {1.0}; // multiplied IosequencerInput::maxTags yields the number of IOs pre-generated (and for writes with pattern generateion) before we check for I/O completions;
 
     bool working_bit;
 
@@ -554,6 +554,7 @@ public:
     std::pair<bool,std::string> set_ivydriver_unsigned_parameter_value          (const std::string& parameter_name, const std::string& value );
     std::pair<bool,std::string> set_ivydriver_boolean_parameter_value           (const std::string& parameter_name, const std::string& value );
     std::pair<bool,std::string> set_ivydriver_positive_ivy_float_parameter_value(const std::string& parameter_name, const std::string& value );
+    std::pair<bool,std::string> set_ivydriver_positive_ivy_float_max_one_parameter_value(const std::string& parameter_name, const std::string& value );
 
     // ivy engine API methods
 
