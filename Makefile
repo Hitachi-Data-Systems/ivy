@@ -24,7 +24,7 @@ DEPFLAGS_CXX = -MMD -MP -MF $(@:.o=.cpp.d)
 main: \
 	ivymaster \
 	ivydriver \
-	clear_hung_ivy_threads
+	remove_empty_columns
 
 #
 # base definitions section
@@ -817,7 +817,7 @@ all: \
 clean_main: \
 	clean_ivymaster \
 	clean_ivydriver \
-	clean_clear_hung_ivy_threads
+	remove_empty_columns
 
 clean_csv_utilities: \
 	clean_csv_rows \
