@@ -859,6 +859,7 @@ clean: \
 distclean: \
 	clean
 	rm -rf $(OUTDIR)
+	rm -rf $(OBJDIR)
 
 before_ivymaster:
 	touch include/ivybuilddate.h
