@@ -19,7 +19,6 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
-
     std::pair<bool,std::string> // true=success, output or error message
 ivy_startup(                    // must be first call
     std::string,                // outputFolderRoot, e.g. "/ivy_output"

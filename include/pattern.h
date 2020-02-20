@@ -17,7 +17,6 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-
 #pragma once
 
 enum class pattern {invalid = 0, random, gobbledegook, ascii, trailing_blanks, zeros, all_0x0F, all_0xFF, whatever};
