@@ -20,6 +20,8 @@
 
 #define _LARGE_FILE_API
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
 #include "ivydriver.h"
 
 unsigned int TestLUN::sum_of_maxTags()

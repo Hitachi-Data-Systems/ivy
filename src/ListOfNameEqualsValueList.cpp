@@ -19,8 +19,8 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 //NameEqualsValueList.cpp
 
+#include "ivytypes.h"
 #include "ivyhelpers.h"
-
 #include "ListOfNameEqualsValueList.h"
 
 //#define IVY_PARSE_TRACE_ON

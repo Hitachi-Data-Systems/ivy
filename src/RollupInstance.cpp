@@ -20,6 +20,8 @@
 
 #include <sys/stat.h>
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
 #include "ivy_engine.h"
 #include "studentsTdistribution.h"
 #include "ivybuilddate.h"

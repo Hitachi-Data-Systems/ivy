@@ -19,7 +19,12 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 using namespace std;
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
+#include "ivytime.h"
 #include "Iosequencer.h"
+#include "TestLUN.h"
+#include "Workload.h"
 
 extern bool routine_logging;
 

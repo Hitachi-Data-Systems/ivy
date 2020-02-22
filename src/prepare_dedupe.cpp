@@ -45,7 +45,8 @@
 //If !have_dedupe, the thread establishes its own starting seed. (Something like hash of workload ID xored with timestamp)
 //
 
-
+#include "ivytypes.h"
+#include "ivytime.h"
 #include <ivy_engine.h>
 
 class dedupe_workload

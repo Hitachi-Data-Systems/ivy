@@ -19,10 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <string>
-#include <vector>
-#include <map>
-#include <list>
+#include "ivytypes.h"
 
 // a well-formed ivyscript line looks like "[section1] section 1 text [section2] section 2 text"
 // Where all the [section] tokens don't contain white space and where the section name is an identifier

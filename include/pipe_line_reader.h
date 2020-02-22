@@ -24,6 +24,8 @@
 // you never know if something you send in one piece will arrive in
 // multiple pieces.
 
+#include "ivytypes.h"
+#include "ivytime.h"
 #include "ivydefines.h"
 #include "ivydriver.h"
 

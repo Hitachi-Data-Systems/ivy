@@ -23,7 +23,8 @@
 
 #include <stdint.h>
 #include <time.h>
-#include <string>
+
+#include "ivytypes.h"
 
 //  You can change what clocks you use or what time functions you use by editing the ivytime class
 

@@ -20,7 +20,10 @@
 
 #include <assert.h>
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
 #include "DedupeConstantRatioTable.h"
+#include "DedupeConstantRatioRegulator.h"
 #include "Eyeo.h"
 
 // Simple linear lookup as table is short and lookup is done only once.

@@ -20,6 +20,8 @@
 
 #include <sys/stat.h>
 
+#include "ivytypes.h"
+#include "ivytime.h"
 #include "ivy_engine.h"
 
 extern bool routine_logging;
@@ -443,7 +445,7 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         }
 
         t0_gather_complete.setToNow();
-        ivytime t0_gather_time {t0_gather_complete - t0_gather_start};
+        ivytime t0_gather_time {t0_gather_complete - t0_gather_start}; // @suppress("Invalid arguments")
 
         {
             std::ostringstream o;

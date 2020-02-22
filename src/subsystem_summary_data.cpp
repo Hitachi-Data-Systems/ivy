@@ -20,6 +20,8 @@
 
 using namespace std;
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
 #include "ivy_engine.h"
 
 void subsystem_summary_data::addIn(const subsystem_summary_data& other)

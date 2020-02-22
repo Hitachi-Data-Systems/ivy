@@ -23,7 +23,6 @@
 #include <rapidjson/error/en.h>
 #include <rapidjson/schema.h>
 #include <rapidjson/writer.h>
-
 #include <RestBaseUri.h>
 #include <RestEngineUri.h>
 #include <RestLogsUri.h>
@@ -31,6 +30,8 @@
 #include <RestCsvqueryUri.h>
 #include <RestRollupsUri.h>
 #include <RestSessionsUri.h>
+
+#include "ivytypes.h"
 
 using namespace web;
 using namespace http;
@@ -53,14 +54,14 @@ private:
 
     std::string m_host {"0.0.0.0"};
     std::string m_port {"9000"};
-    std::string base_url {"http://" + m_host + ":" + m_port};
+    std::string base_url {"http://" + m_host + ":" + m_port}; // @suppress("Invalid arguments")
 
-    http_listener m_ivy_engine_listener {base_url + "/ivy_engine"};
-    http_listener m_rollups_listener {base_url + "/ivy_engine/rollups"};
-    http_listener m_workloads_listener {base_url + "/ivy_engine/workloads"};
-    http_listener m_csvquery_listener {base_url + "/ivy_engine/csvquery"};
-    http_listener m_logs_listener {base_url + "/ivy_engine/logs"};
-    http_listener m_sessions_listener {base_url + "/ivy_engine/sessions"};
+    http_listener m_ivy_engine_listener {base_url + "/ivy_engine"}; // @suppress("Invalid arguments")
+    http_listener m_rollups_listener {base_url + "/ivy_engine/rollups"}; // @suppress("Invalid arguments")
+    http_listener m_workloads_listener {base_url + "/ivy_engine/workloads"}; // @suppress("Invalid arguments")
+    http_listener m_csvquery_listener {base_url + "/ivy_engine/csvquery"}; // @suppress("Invalid arguments")
+    http_listener m_logs_listener {base_url + "/ivy_engine/logs"}; // @suppress("Invalid arguments")
+    http_listener m_sessions_listener {base_url + "/ivy_engine/sessions"}; // @suppress("Invalid arguments")
 
     // URI operations handlers
     RestEngineUri    *m_ivyengine;

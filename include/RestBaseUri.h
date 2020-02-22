@@ -19,7 +19,9 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
+#include "ivytypes.h"
 #include <ivy_engine.h>
+#include "cpprest/http_msg.h"
 
 using namespace web;
 using namespace http;
@@ -66,8 +68,8 @@ public:
         writer.Key("result"); writer.String(rslt.c_str());
         writer.EndObject();
 
-        response.headers().add(header_names::content_type, mime_types::application_json);
-        response.headers().add(header_names::content_type, charset_types::utf8);
+        response.headers().add(header_names::content_type, mime_types::application_json); // @suppress("Symbol is not resolved") // @suppress("Invalid arguments")
+        response.headers().add(header_names::content_type, charset_types::utf8); // @suppress("Symbol is not resolved") // @suppress("Invalid arguments")
         response.set_body(JSONStrBuffer.GetString());
     }
 

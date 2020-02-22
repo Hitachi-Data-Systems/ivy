@@ -21,6 +21,7 @@
 
 class RollupSet;
 
+#include "ivytypes.h"
 #include "AttributeNameCombo.h"
 #include "RollupInstance.h"
 

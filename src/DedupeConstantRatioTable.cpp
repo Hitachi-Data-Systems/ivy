@@ -17,17 +17,10 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-//#include "stdafx.h"
 
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <map>
-#include <chrono>
-//#include <unistd.h>
+#include "ivytypes.h"
 
 using namespace std;
-
 
 long double /* dedupe ratio */ brute_force(unsigned int sides, unsigned int throws)
 {

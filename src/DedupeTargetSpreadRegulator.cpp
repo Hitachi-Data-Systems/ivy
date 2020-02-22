@@ -20,6 +20,7 @@
 
 #include <assert.h>
 
+#include "ivytypes.h"
 #include "DedupeTargetSpreadRegulator.h"
 #include "ivyhelpers.h"
 

@@ -20,6 +20,8 @@
 
 using namespace std;
 
+#include "ivytypes.h"
+#include "ivytime.h"
 #include "IosequencerRandomIndependent.h"
 
 //

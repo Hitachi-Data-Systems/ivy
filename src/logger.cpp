@@ -18,9 +18,10 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include <fstream>
-
+#include "ivytypes.h"
+#include "ivytime.h"
 #include "logger.h"
+#include "RunningStat.h"
 
 void log(logger& bunyan, const std::string& s)
 {

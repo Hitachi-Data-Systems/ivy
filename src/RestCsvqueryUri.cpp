@@ -17,8 +17,14 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-//
+
+#include <cpprest/base_uri.h>
+#include <cpprest/http_listener.h>
+#include <cpprest/json.h>
+
+#include "ivytypes.h"
 #include "RestHandler.h"
+#include "RestEngineUri.h"
 #include "csvfile.h"
 
 extern ivy_engine m_s;
@@ -49,7 +55,7 @@ RestCsvqueryUri::handle_get(http_request request)
 
     uri req_uri = request.absolute_uri();
 
-    std::map<utility::string_t, utility::string_t>  qmap = req_uri.split_query(req_uri.query());
+    std::map<utility::string_t, utility::string_t>  qmap = req_uri.split_query(req_uri.query()); // @suppress("Method cannot be resolved") // @suppress("Invalid arguments")
 
     for (auto& pear : qmap)
     {

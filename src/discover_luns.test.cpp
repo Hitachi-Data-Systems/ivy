@@ -18,7 +18,8 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include "discover_luns.cpp"
+#include "ivytypes.h"
+#include "discover_luns.h"
 
 int main (){
 
@@ -35,15 +36,15 @@ int main (){
 		}
 	}
 
-	std::cout << "LDEV column=" << luns.get_column_by_header("LDEV") << std::endl;
+	std::cout << "LDEV column=" << luns.get_column_by_header("LDEV","") << std::endl;
 	std::string value;
 
-	if (luns.get_attribute_value_by_header("LDEV",0,value)) {
+	if (luns.get_attribute_value_by_header("LDEV",0,value,"")) {
 	 	std::cout << "LDEV attribute for LDEV #0 is \"" << value << "\"." << std::endl;
 	} else {
 		std::cout << "Failed to get LDEV attribute for LDEV #0" << std::endl;
 	}
-	if (luns.get_attribute_value_by_header("LDEV",1,value)) {
+	if (luns.get_attribute_value_by_header("LDEV",1,value,"")) {
 	 	std::cout << "LDEV attribute for LDEV #1 is \"" << value << "\"." << std::endl;
 	} else {
 		std::cout << "Failed to get LDEV attribute for LDEV #1" << std::endl;

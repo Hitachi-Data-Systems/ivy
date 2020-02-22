@@ -19,6 +19,8 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
+#include "ivytypes.h"
+#include "ivytime.h"
 #include "Subsystem.h"
 #include "Subinterval_CPU.h"
 #include "LUNpointerList.h"
@@ -195,7 +197,7 @@ public:
 	std::string hostcsvline{"untouched\n"};  // you get one of these from the remote end, and you leave it here for the master task to harvest after you've passed on
 	bool successful_completion{false};
 
-	ivytime last_message_time { ivytime_zero };
+	ivytime last_message_time { ivytime_zero }; // @suppress("Invalid arguments")
 
 // methods
 	pipe_driver_subthread(std::string Hostname, std::string OutputFolderRoot, std::string TestName, std::string lf)

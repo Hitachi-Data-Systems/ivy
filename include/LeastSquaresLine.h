@@ -20,13 +20,6 @@
 #pragma once
 
 #include <math.h> // for sqrt
-#include <queue>
-#include <iostream>
-#include <iomanip>
-#include <exception>
-#include <stdexcept>
-#include <string>
-#include <sstream>
 
 template <typename FloatType> class LeastSquaresLine;
 

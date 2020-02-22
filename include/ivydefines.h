@@ -19,15 +19,11 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <string>
-
-const std::string ivy_version {"4.00.00"};
-
-//using ivy_int = long long int; using ivy_float = long double;
-  using ivy_int =      long int; using ivy_float =      double;
-
+#include "ivytypes.h"
 #include "pattern.h"
 #include "dedupe_method.h"
+
+const std::string ivy_version {"4.00.00"};
 
 #define SHOWLUNS_CMD std::string("showluns.sh")
 #define IVYDRIVER_EXECUTABLE std::string("ivydriver")

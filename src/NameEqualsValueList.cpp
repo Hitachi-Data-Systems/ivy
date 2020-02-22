@@ -19,8 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 //NameEqualsValueList.cpp
 
-#include <sstream>
-
+#include "ivytypes.h"
 #include "NameEqualsValueList.h"
 
 std::string NameEqualsValueList::toString()

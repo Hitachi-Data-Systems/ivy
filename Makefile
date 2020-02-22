@@ -12,7 +12,7 @@ LD = g++
 BISON = /bin/bison
 FLEX = /bin/flex
 
-INC = -Isrc -Iinclude -I/usr/local/include
+INC = -Isrc -Iinclude -I/usr/local/include -I/usr/include
 CFLAGS = -Wall -std=c++14 -fPIC -O3
 LIBDIR =
 LIB =

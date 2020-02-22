@@ -20,6 +20,8 @@
 
 using namespace std;
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
 #include "LDEVset.h"
 
 std::string LDEVset::toString() const

@@ -19,9 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <set>
-#include <map>
-#include <iostream>
+#include "ivytypes.h"
 
 typedef std::map<std::string /* "sin(double)" */, std::string/* "double sin(double)" */> OverloadSet;
 

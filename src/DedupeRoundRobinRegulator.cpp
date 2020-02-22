@@ -18,7 +18,9 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include "ivytypes.h"
 #include "DedupeRoundRobinSingleton.h"
+#include "DedupeRoundRobinRegulator.h"
 #include "Eyeo.h"
 
 DedupeRoundRobinRegulator::DedupeRoundRobinRegulator(uint64_t my_coverage_blocks, uint64_t my_block_size,

@@ -18,6 +18,12 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include <cpprest/base_uri.h>
+#include <cpprest/http_listener.h>
+#include <cpprest/http_msg.h>
+#include <cpprest/json.h>
+
+#include "ivytypes.h"
 #include "RestHandler.h"
 
 extern ivy_engine m_s;
@@ -111,7 +117,7 @@ RestEngineUri::handle_get(http_request request)
 
     uri req_uri = request.absolute_uri();
 
-    std::map<utility::string_t, utility::string_t>  qmap = req_uri.split_query(req_uri.query());
+    std::map<utility::string_t, utility::string_t>  qmap = req_uri.split_query(req_uri.query()); // @suppress("Method cannot be resolved") // @suppress("Invalid arguments")
     for (auto& kv : qmap)
     {
         std::cout << "key: " << kv.first << ", value: " << kv.second << std::endl;
@@ -195,8 +201,8 @@ RestEngineUri::handle_get(http_request request)
     rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
     jsonDoc.Accept(writer);
 
-    response.headers().add(header_names::content_type, mime_types::application_json);
-    response.headers().add(header_names::content_type, charset_types::utf8);
+    response.headers().add(header_names::content_type, mime_types::application_json); // @suppress("Symbol is not resolved") // @suppress("Invalid arguments")
+    response.headers().add(header_names::content_type, charset_types::utf8); // @suppress("Symbol is not resolved") // @suppress("Invalid arguments")
     response.set_body(strbuf.GetString());
 
     request.reply(response);
@@ -211,7 +217,7 @@ RestEngineUri::handle_put(http_request request)
     std::pair<bool, std::string> result {true, std::string()};
 
     uri req_uri = request.absolute_uri();
-    std::map<utility::string_t, utility::string_t>  qmap = req_uri.split_query(req_uri.query());
+    std::map<utility::string_t, utility::string_t>  qmap = req_uri.split_query(req_uri.query()); // @suppress("Invalid arguments") // @suppress("Method cannot be resolved")
 
     for (auto& kv : qmap)
     {

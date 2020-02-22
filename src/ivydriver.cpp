@@ -21,6 +21,11 @@
 
 #include <sys/utsname.h>
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
+#include "logger.h"
+#include "pipe_line_reader.h"
+
 // get REG_EIP from ucontext.h
 #ifndef __USE_GNU
 #define __USE_GNU
@@ -31,7 +36,8 @@
 #include <gnu/libc-version.h>
 #endif
 
-
+#include "ivytime.h"
+#include "ivydriver.h"
 #include "pipe_line_reader.h"
 
 IvyDriver ivydriver;

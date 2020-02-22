@@ -16,8 +16,11 @@
 //Authors: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
-//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.#include <signal.h>
+//          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include <signal.h>
+
+#include "ivytypes.h"
 #include "ivy_engine.h"
 
 struct sigaction ivymaster_sigaction;

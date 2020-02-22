@@ -19,12 +19,14 @@
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 #pragma once
 
+#include "ivytypes.h"
+
     std::pair<bool,std::string> // true=success, output or error message
 ivy_startup(                    // must be first call
     std::string,                // outputFolderRoot, e.g. "/ivy_output"
     std::string,                // testname - used as subfolder name within outputFolderRoot
     std::string,                // host_spec - names or dotted quad IP addresses of test hosts, e.g. "sun159, cb24-31"
-    std::string;                // test LUN select clause - e.g.
+    std::string);               // test LUN select clause - e.g.
 		                        //                              { "LDEV_type" : "DP-Vol", "port" : [ "1A", "2A" ] }
 
 // The select clause in ivy_Hosts() specifies "available test LUNs" as a selection out of
@@ -59,8 +61,8 @@ ivy_SetIogeneratorTemplate(
 
     std::pair<bool,std::string> // true=success, output or error message
 ivy_CreateWorkload(
-    std::string                 // workload_name e.g. "cat"
-    std::string                 // iogenerator_name, e.g. "sequential"
+    std::string,                 // workload_name e.g. "cat"
+    std::string,                 // iogenerator_name, e.g. "sequential"
     std::string);               // parameters, e.g. "IOPS=max, maxTags=1";
 
     std::pair<bool,std::string> // true=success, output or error message

@@ -18,6 +18,7 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include "ivytypes.h"
 #include "ivy_engine.h"
 
 ivy_float current_IOPS_staircase_total_IOPS;

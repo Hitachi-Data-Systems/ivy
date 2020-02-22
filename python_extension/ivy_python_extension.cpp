@@ -21,8 +21,7 @@
 #include <boost/python/class.hpp>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
-#include <iostream>
-#include <string>
+#include "ivytypes.h"
 #include <ivy_engine.h>
 bool routine_logging {false};
 

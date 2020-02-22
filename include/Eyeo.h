@@ -33,6 +33,8 @@
 // rounding up blocksize to a page (4096) boundary, and adding 4095 so that std::align can give us the
 // aligned start of an array of I/O buffers.
 
+#include "ivytypes.h"
+#include "ivytime.h"
 #include "ivydefines.h"
 #include "Workload.h"
 #include "WorkloadThread.h"
@@ -66,9 +68,9 @@ public:
 
     char* p_buffer;
 
-	ivytime scheduled_time {ivytime_zero};  // if we have iorate=max, this is indicated by setting scheduled_time=ivytime(0).
-	ivytime start_time     {ivytime_zero};
-	ivytime end_time       {ivytime_zero};
+	ivytime scheduled_time {ivytime_zero};  // if we have iorate=max, this is indicated by setting scheduled_time=ivytime(0). // @suppress("Invalid arguments")
+	ivytime start_time     {ivytime_zero}; // @suppress("Invalid arguments")
+	ivytime end_time       {ivytime_zero}; // @suppress("Invalid arguments")
 	int return_value {-1};
 	uint32_t cqe_flags {0};
 	//int errno_value  {-1};

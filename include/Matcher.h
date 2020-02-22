@@ -19,13 +19,15 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <set>
+#include "ivytypes.h"
+#include "LDEVset.h"
 
 //prerequisites
 //SelectClause.h
 
 class LUN;
 class Select;
+class SelectClause;
 class Matcher
 {
 protected:

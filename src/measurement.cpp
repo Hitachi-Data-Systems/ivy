@@ -18,6 +18,8 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include "ivytypes.h"
+#include "ivytime.h"
 #include "ivy_engine.h"
 
 std::string measurement::step_times_line(unsigned int measurement_number) const

@@ -17,8 +17,8 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <cassert>
 
+#include "ivytypes.h"
 #include "Ivy_pgm.h"
 
 // A Frame is a template to manage how the stack is used

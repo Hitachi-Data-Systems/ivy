@@ -19,7 +19,10 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 using namespace std;
 
+#include "ivytypes.h"
+#include "ivytime.h"
 #include "IosequencerSequential.h"
+#include "Workload.h"
 
 extern std::string printable_ascii;
 extern bool ivydriver_wrapping;

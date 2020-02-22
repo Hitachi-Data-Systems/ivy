@@ -18,10 +18,14 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include "ivytypes.h"
+#include "logger.h"
+#include "LDEVset.h"
 #include "LDEVset.cpp"
 
 void tryadding(LDEVset* set, std::string s) {
-	if (!(*set).add(s)) std::cout << "added \"" << s << "\"." << std::endl;
+	logger logfile {""};
+	if (!(*set).add(s,logfile)) std::cout << "added \"" << s << "\"." << std::endl;
 	else std::cout << "failed on \"" << s << "\"." << std::endl;
 }
 

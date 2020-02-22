@@ -18,7 +18,10 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include "ivytypes.h"
+#include "ivytime.h"
 #include "ivy_engine.h"
+#include "RunningStat.h"
 
 extern bool routine_logging;
 
@@ -166,7 +169,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         }
 
         tn_sub_gather_end.setToNow();
-        getCLPRDetailTime.push(ivytime(tn_sub_gather_end - gatherStart));
+        getCLPRDetailTime.push((double)ivytime(tn_sub_gather_end - gatherStart));
 
         gatherStart.setToNow();
         try
@@ -217,7 +220,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         }
 
         tn_sub_gather_end.setToNow();
-        getMPbusyTime.push(ivytime(tn_sub_gather_end - gatherStart));
+        getMPbusyTime.push((double)ivytime(tn_sub_gather_end - gatherStart));
 
         gatherStart.setToNow();
         if (!m_s.skip_ldev_data)
@@ -271,7 +274,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         }
 
         tn_sub_gather_end.setToNow();
-        getLDEVIOTime.push(ivytime(tn_sub_gather_end - gatherStart));
+        getLDEVIOTime.push((double)ivytime(tn_sub_gather_end - gatherStart));
 
         // element port
             // instance 1a
@@ -347,7 +350,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         }
 
         tn_sub_gather_end.setToNow();
-        getPORTIOTime.push(ivytime(tn_sub_gather_end - gatherStart));
+        getPORTIOTime.push((double)ivytime(tn_sub_gather_end - gatherStart));
 
         gatherStart.setToNow();
         try
@@ -398,7 +401,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         }
 
         tn_sub_gather_end.setToNow();
-        getUR_JnlTime.push(ivytime(tn_sub_gather_end - gatherStart));
+        getUR_JnlTime.push((double)ivytime(tn_sub_gather_end - gatherStart));
 
         gatherStart.setToNow();
         try
@@ -449,7 +452,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
         }
 
         tn_sub_gather_end.setToNow();
-        getMP_busy_detail_Time.push(ivytime(tn_sub_gather_end - gatherStart));
+        getMP_busy_detail_Time.push((double)ivytime(tn_sub_gather_end - gatherStart));
     }
 
 
@@ -545,7 +548,7 @@ void pipe_driver_subthread::pipe_driver_gather(std::unique_lock<std::mutex>& s_l
     // record gather time completion
     tn_gather_complete.setToNow();
 
-    ivytime tn_gather_time {tn_gather_complete - tn_gather_start};
+    ivytime tn_gather_time {tn_gather_complete - tn_gather_start}; // @suppress("Invalid arguments")
 
     if (!fake_gather)
     {

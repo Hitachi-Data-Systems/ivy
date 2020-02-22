@@ -18,12 +18,14 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-
 #include <sys/stat.h>
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
 #include "ivybuilddate.h"
 #include "ivy_engine.h"
 #include "hosts_list.h"
+#include "JSON_select.h"
 
 extern bool routine_logging;
 void initialize_io_time_clip_levels();

@@ -18,13 +18,14 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include <iostream>
-#include <vector>
-
+#include "ivytypes.h"
 #include "LDEVset.h"
+#include "logger.h"
 
 int main(int argc, char* argv[])
 {
+	logger logfile {"/home/ivogelesang/Desktop/eraseme/test_LDEVset.log.txt"};
+
     std::vector<std::string> v
     {
         "00:00",
@@ -41,17 +42,11 @@ int main(int argc, char* argv[])
     for (auto s : v)
     {
         LDEVset lset;
-        lset.add(s,"/home/ivogelesang/Desktop/eraseme/test_LDEVset.log.txt");
+        lset.add(s, logfile);
         std::cout << "For input string \"" << s << "\"," << std::endl
         << "we got the LDEVset \"" << lset.toString() << "\"." << std::endl << std::endl;
 
     }
-
-
-
-
-
-
 
     return 0;
 }

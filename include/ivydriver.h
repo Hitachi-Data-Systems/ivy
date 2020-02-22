@@ -25,6 +25,7 @@
 
 using namespace std;
 
+#include "ivytypes.h"
 #include "ListOfWorkloadIDs.h"
 #include "discover_luns.h"
 #include "ivybuilddate.h"
@@ -124,9 +125,9 @@ struct IvyDriver
 		// We don't know what our ivyscript hostname is, as that gets glued on at the master end.
 		// But the WorkloadID for each workload is named ivyscript_hostname+/dev/sdxxx+workload_name, so you can see the ivyscript_hostname there if you need it.
 
-	std::string bracketedExit          {"[Exit]"s};
-	std::string bracketedCreateWorkload{"[CreateWorkload]"s};
-	std::string bracketedDeleteWorkload{"[DeleteWorkload]"s};
+	std::string bracketedExit          {"[Exit]"s}; // @suppress("Invalid arguments")
+	std::string bracketedCreateWorkload{"[CreateWorkload]"s}; // @suppress("Invalid arguments")
+	std::string bracketedDeleteWorkload{"[DeleteWorkload]"s}; // @suppress("Invalid arguments")
 	std::string remainder;
 	std::string subinterval_duration_as_string;
 

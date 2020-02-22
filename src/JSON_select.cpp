@@ -18,8 +18,11 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
 #include "ivy_engine.h"
 #include "select/select.parser.hh"
+#include "JSON_select.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 
@@ -360,16 +363,16 @@ std::regex regex_asterisk (asterisk);
 std::string colon {"(:)"};
 std::regex regex_colon(colon);
 
-std::string to_range {digits+colon};
+std::string to_range {digits+colon}; // @suppress("Invalid arguments")
 std::regex regex_to_range (to_range);
 
-std::string from_range {colon+digits};
+std::string from_range {colon+digits}; // @suppress("Invalid arguments")
 std::regex regex_from_range (from_range);
 
-std::string range {digits+colon+digits};
+std::string range {digits+colon+digits}; // @suppress("Invalid arguments")
 std::regex regex_range (range);
 
-std::string each_side
+std::string each_side // @suppress("Invalid arguments")
 {
     std::string("(")
         + digits + std::string("|")

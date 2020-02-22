@@ -18,6 +18,8 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
 #include "Subinterval_CPU.h"
 
 /*static*/ std::string Subinterval_CPU::csvTitles()

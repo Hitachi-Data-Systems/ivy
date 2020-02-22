@@ -20,7 +20,11 @@
 
 using namespace std;
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
+#include "ivytime.h"
 #include "IosequencerRandom.h"
+#include "TestLUN.h"
 
 void IosequencerRandom::setFrom_IosequencerInput(IosequencerInput* p_i_i)
 {

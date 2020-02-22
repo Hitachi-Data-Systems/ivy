@@ -24,6 +24,7 @@
 #include <gnu/libc-version.h>
 #endif
 
+#include "ivytypes.h"
 #include "Ivy_pgm.h"
 #include "ivy.parser.hh"
 #include "ivybuilddate.h"

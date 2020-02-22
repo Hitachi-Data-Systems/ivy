@@ -22,6 +22,11 @@
 #include <sys/syscall.h>
 #include <assert.h>
 
+#include "ivytypes.h"
+#include "Eyeo.h"
+#include "ivytime.h"
+#include "ivyhelpers.h"
+
 inline int ioprio_set(int which, int who, int ioprio)
 {
 	return syscall(SYS_ioprio_set, which, who, ioprio);

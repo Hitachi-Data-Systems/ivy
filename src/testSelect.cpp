@@ -18,18 +18,17 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
-#include <iostream>
-
+#include "ivytypes.h"
 #include "LUN.h"
-#include "Select.h"
-#include "SelectClause.h"
 #include "LUNpointerList.h"
 #include "LDEVset.h"
 #include "Matcher.h"
+#include "logger.h"
 
 int main(int argc, char* argv[])
 {
 	std::string logfilename="testSelect.log.txt";
+	logger logfile {logfilename};
 
 	std::string headerline("ivyscript_hostname"  ",slash dev name"  ",port"  ",LDEV"   ",LDEV Type"  ",CLPR"   ",Parity Group" ",DP Pool ID");
 	std::string dataline1 ("bork0"               ",/dev/sd02"       ",1A"    ",00:00"  ",Internal"   ",CLPR0"  ",1-1"          ",");
@@ -46,10 +45,10 @@ int main(int argc, char* argv[])
 	std::string dataline16 ("bork0"               ",/dev/sd16"       ",1A"    ",02:03"  ",Internal"   ",CLPR0"  ",02-03"        ",");
 
 	LUNpointerList psLUN;
-	LUN* p_LUN1 = new LUN; p_LUN1->loadcsvline(headerline,dataline1, logfilename);
-	LUN* p_LUN2 = new LUN; p_LUN2->loadcsvline(headerline,dataline2, logfilename);
-	LUN* p_LUN3 = new LUN; p_LUN3->loadcsvline(headerline,dataline3, logfilename);
-	LUN* p_LUN4 = new LUN; p_LUN4->loadcsvline(headerline,dataline4, logfilename);
+	LUN* p_LUN1 = new LUN; p_LUN1->loadcsvline(headerline,dataline1, logfile);
+	LUN* p_LUN2 = new LUN; p_LUN2->loadcsvline(headerline,dataline2, logfile);
+	LUN* p_LUN3 = new LUN; p_LUN3->loadcsvline(headerline,dataline3, logfile);
+	LUN* p_LUN4 = new LUN; p_LUN4->loadcsvline(headerline,dataline4, logfile);
 
 	std::cout << "p_LUN1->toString() = \"" << p_LUN1->toString() << "\"." << std::endl;
 	std::cout << "p_LUN2->toString() = \"" << p_LUN2->toString() << "\"." << std::endl;
@@ -61,13 +60,13 @@ int main(int argc, char* argv[])
 	psLUN.LUNpointers.push_back(p_LUN3);
 	psLUN.LUNpointers.push_back(p_LUN4);
 
-	LUN* pdl10 = new LUN; pdl10->loadcsvline(headerline,dataline10,logfilename); psLUN.LUNpointers.push_back(pdl10);
-	LUN* pdl11 = new LUN; pdl11->loadcsvline(headerline,dataline11,logfilename); psLUN.LUNpointers.push_back(pdl11);
-	LUN* pdl12 = new LUN; pdl12->loadcsvline(headerline,dataline12,logfilename); psLUN.LUNpointers.push_back(pdl12);
-	LUN* pdl13 = new LUN; pdl13->loadcsvline(headerline,dataline13,logfilename); psLUN.LUNpointers.push_back(pdl13);
-	LUN* pdl14 = new LUN; pdl14->loadcsvline(headerline,dataline14,logfilename); psLUN.LUNpointers.push_back(pdl14);
-	LUN* pdl15 = new LUN; pdl15->loadcsvline(headerline,dataline15,logfilename); psLUN.LUNpointers.push_back(pdl15);
-	LUN* pdl16 = new LUN; pdl16->loadcsvline(headerline,dataline16,logfilename); psLUN.LUNpointers.push_back(pdl16);
+	LUN* pdl10 = new LUN; pdl10->loadcsvline(headerline,dataline10,logfile); psLUN.LUNpointers.push_back(pdl10);
+	LUN* pdl11 = new LUN; pdl11->loadcsvline(headerline,dataline11,logfile); psLUN.LUNpointers.push_back(pdl11);
+	LUN* pdl12 = new LUN; pdl12->loadcsvline(headerline,dataline12,logfile); psLUN.LUNpointers.push_back(pdl12);
+	LUN* pdl13 = new LUN; pdl13->loadcsvline(headerline,dataline13,logfile); psLUN.LUNpointers.push_back(pdl13);
+	LUN* pdl14 = new LUN; pdl14->loadcsvline(headerline,dataline14,logfile); psLUN.LUNpointers.push_back(pdl14);
+	LUN* pdl15 = new LUN; pdl15->loadcsvline(headerline,dataline15,logfile); psLUN.LUNpointers.push_back(pdl15);
+	LUN* pdl16 = new LUN; pdl16->loadcsvline(headerline,dataline16,logfile); psLUN.LUNpointers.push_back(pdl16);
 
 	LUN* TheSampleLUN = p_LUN1;
 
@@ -92,19 +91,19 @@ int main(int argc, char* argv[])
 	
 	LUNpointerList filteredBySelect1,filteredBySelect2,filteredBySelect3,filteredBySelect4,filteredBySelect5;
 	
-	filteredBySelect1.clear_and_set_filtered_version_of(psLUN, p_Select1, logfilename);
+	filteredBySelect1.clear_and_set_filtered_version_of(psLUN, p_Select1, logfile);
 	std::cout << "filteredBySelect1 contains:" << std::endl << filteredBySelect1.toString() << std::endl;
 
-	filteredBySelect2.clear_and_set_filtered_version_of(psLUN, p_Select2, logfilename);
+	filteredBySelect2.clear_and_set_filtered_version_of(psLUN, p_Select2, logfile);
 	std::cout << "filteredBySelect2 contains:" << std::endl << filteredBySelect2.toString() << std::endl;
 
-	filteredBySelect3.clear_and_set_filtered_version_of(psLUN, p_Select3, logfilename);
+	filteredBySelect3.clear_and_set_filtered_version_of(psLUN, p_Select3, logfile);
 	std::cout << "filteredBySelect3 contains:" << std::endl << filteredBySelect3.toString() << std::endl;
 
-	filteredBySelect4.clear_and_set_filtered_version_of(psLUN, p_Select4, logfilename);
+	filteredBySelect4.clear_and_set_filtered_version_of(psLUN, p_Select4, logfile);
 	std::cout << "filteredBySelect4 contains:" << std::endl << filteredBySelect4.toString() << std::endl;
 
-	filteredBySelect5.clear_and_set_filtered_version_of(psLUN, p_Select5, logfilename);
+	filteredBySelect5.clear_and_set_filtered_version_of(psLUN, p_Select5, logfile);
 	std::cout << "filteredBySelect5 contains:" << std::endl << filteredBySelect5.toString() << std::endl;
 
 	std::cout << "before making new Select." << std::endl;
@@ -117,7 +116,7 @@ int main(int argc, char* argv[])
 
 	std::cout << "made filteredOnLDEVs" << std::endl;
 
-	filteredOnLDEVs.clear_and_set_filtered_version_of(psLUN, pS, logfilename);
+	filteredOnLDEVs.clear_and_set_filtered_version_of(psLUN, pS, logfile);
 	std::cout << "filteredOnLDEVs contains:" << std::endl << filteredOnLDEVs.toString() << std::endl;
 
 
@@ -125,7 +124,7 @@ int main(int argc, char* argv[])
 
 	LUNpointerList filteredOnHost;
 
-	filteredOnHost.clear_and_set_filtered_version_of(psLUN, pShn, logfilename);
+	filteredOnHost.clear_and_set_filtered_version_of(psLUN, pShn, logfile);
 	std::cout << "filteredOnHost contains:" << std::endl << filteredOnHost.toString() << std::endl;
 
 	Select* pPGSelect = new Select("pg = {002-*, 1-2:4}",TheSampleLUN,"testSelect.log.txt"); 
@@ -139,7 +138,7 @@ int main(int argc, char* argv[])
 
 	std::cout << "made filteredOnPGs" << std::endl;
 
-	filteredOnPGs.clear_and_set_filtered_version_of(psLUN, pPGSelect, logfilename);
+	filteredOnPGs.clear_and_set_filtered_version_of(psLUN, pPGSelect, logfile);
 
 	std::cout << "filteredOnPGs contains:" << std::endl << filteredOnPGs.toString() << std::endl;
 

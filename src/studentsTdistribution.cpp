@@ -18,6 +18,7 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include "ivytypes.h"
 #include "ivyhelpers.h"
 
 const std::vector<ivy_float> single_sided_fraction_confidence { 0.7500, 0.8000, 0.8500, 0.9000, 0.9500, 0.9750, 0.9900, 0.9950, 0.9975, 0.9990, 0.9995 };

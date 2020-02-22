@@ -19,22 +19,32 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include "ivytypes.h"
-#include "WorkloadTracker.h"
+#include <algorithm>
+#include <cassert>
+#include <cctype>
+#include <chrono>
+#include <cmath>
+#include <condition_variable>
+#include <cstring>
+#include <cstdint>
+#include <exception>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <list>
+#include <map>
+#include <mutex>
+#include <queue>
+#include <random>
+#include <regex>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-class WorkloadTrackerPointerList
-{
-private:
-	std::string logfilename;
-public:
-// variables
-	std::list<WorkloadTracker*> workloadTrackerPointers;
-
-// methods
-
-	WorkloadTrackerPointerList() {}
-
-	std::string toString();
-
-};
-
+//using ivy_int = long long int; using ivy_float = long double;
+  using ivy_int =      long int; using ivy_float =      double;

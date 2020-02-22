@@ -20,6 +20,7 @@
 
 #include <unistd.h>
 
+#include "ivytypes.h"
 #include "ivyhelpers.h"
 #include "discover_luns.h"
 

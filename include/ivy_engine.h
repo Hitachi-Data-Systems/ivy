@@ -19,8 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <fstream>
-
+#include "ivytypes.h"
 #include "WorkloadTrackers.h"
 #include "RollupSet.h"
 #include "pipe_driver_subthread.h"
@@ -28,6 +27,7 @@
 #include "ParameterValueLookupTable.h"
 #include "MeasureController.h"
 #include "MeasureCtlr.h"
+#include "RunningStat.h"
 
 enum class source_enum { error, workload, RAID_subsystem } ;
 enum class category_enum { error, overall, read, write, random, sequential, random_read, random_write, sequential_read, sequential_write };

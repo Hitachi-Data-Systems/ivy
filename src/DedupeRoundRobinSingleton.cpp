@@ -18,6 +18,9 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include "ivytypes.h"
+#include "ivydefines.h"
+#include "ivyhelpers.h"
 #include "DedupeRoundRobinSingleton.h"
 
 void DedupeRoundRobinSingleton::init(void)
@@ -61,7 +64,7 @@ void DedupeRoundRobinSingleton::compute_factors(void)
     // Compute a rational approximation to the part of the corrected dedupe_ratio after the decimal point.
     // This call limits the error to 0.000001 and the number of duplicates to 1,000.
 
-    pair<uint64_t, uint64_t> pp = farey(rational_float, 0.000001, 1000);
+    std::pair<uint64_t, uint64_t> pp = farey(rational_float, 0.000001, 1000);
 
     // Determine the number of uniques and duplicates in each group.
 
@@ -100,8 +103,8 @@ void DedupeRoundRobinSingleton::compute_factors(void)
 			std::ostringstream oss;
 			oss << __func__ << "(" << __LINE__ << "): "
 				<< "LUN[" << i << "] = " << LUN_to_LUN_index[i]
-				<< " (0x" << hex << setw(8) << setfill('0') << LUN_to_LDEV[i] << dec << setfill(' ') << ")"
-				<< "." << endl;
+				<< " (0x" << std::hex << std::setw(8) << std::setfill('0') << LUN_to_LDEV[i] << std::dec << std::setfill(' ') << ")"
+				<< "." << std::endl;
 			logger logfile {"/tmp/spm.txt"};
 			log(logfile, oss.str());
 		}
@@ -149,7 +152,7 @@ uint64_t DedupeRoundRobinSingleton::add_LUN(uint64_t my_blocks, uint64_t my_bloc
 
 	// Find the LDEV (if any) associated with this LUN. Note: There will only be an LDEV if there is a command device connector.
 
-	string ldev = pLUN->attribute_value(std::string("ldev"));
+	std::string ldev = pLUN->attribute_value(std::string("ldev"));
 	trim(ldev);
 	toUpper(ldev);
 

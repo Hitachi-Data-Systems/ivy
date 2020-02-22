@@ -19,8 +19,9 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
+#include "ivytypes.h"
+#include "ivyhelpers.h"
 #include "subsystem_summary_data.h"
-
 #include "SubintervalRollup.h"
 #include "SequenceOfSubintervalRollup.h"
 #include "ListOfWorkloadIDs.h"
@@ -29,7 +30,6 @@
 class ivy_engine;
 class RollupSet;
 class RollupType;
-
 
 enum class SuccessFailAbort { success, fail, abort };
 

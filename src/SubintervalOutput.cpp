@@ -18,6 +18,9 @@
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 
+#include "ivytypes.h"
+#include "RunningStat.h"
+#include "SubintervalOutput.h"
 #include "SubintervalRollup.h"
 
 void SubintervalOutput::clear() {
@@ -380,13 +383,13 @@ std::string SubintervalOutput::thumbnail(ivy_float seconds)
 		return o.str();
 	}
 
-	RunningStat<ivy_float, ivy_int>	bytes_transferred       {u.a.bytes_transferred.getRunningStatByCategory(0)};
-	RunningStat<ivy_float, ivy_int>	service_time            {u.a.service_time.getRunningStatByCategory(0)};
-	RunningStat<ivy_float, ivy_int>	read_service_time       {u.a.service_time.getRunningStatByCategory(3)};
-	RunningStat<ivy_float, ivy_int>	write_service_time      {u.a.service_time.getRunningStatByCategory(4)};
+	RunningStat<ivy_float, ivy_int>	bytes_transferred       {u.a.bytes_transferred.getRunningStatByCategory(0)}; // @suppress("Invalid arguments")
+	RunningStat<ivy_float, ivy_int>	service_time            {u.a.service_time.getRunningStatByCategory(0)}; // @suppress("Invalid arguments")
+	RunningStat<ivy_float, ivy_int>	read_service_time       {u.a.service_time.getRunningStatByCategory(3)}; // @suppress("Invalid arguments")
+	RunningStat<ivy_float, ivy_int>	write_service_time      {u.a.service_time.getRunningStatByCategory(4)}; // @suppress("Invalid arguments")
 
-	RunningStat<ivy_float, ivy_int>	read_bytes_transferred  {u.a.bytes_transferred.getRunningStatByCategory(3)};
-	RunningStat<ivy_float, ivy_int>	write_bytes_transferred {u.a.bytes_transferred.getRunningStatByCategory(4)};
+	RunningStat<ivy_float, ivy_int>	read_bytes_transferred  {u.a.bytes_transferred.getRunningStatByCategory(3)}; // @suppress("Invalid arguments")
+	RunningStat<ivy_float, ivy_int>	write_bytes_transferred {u.a.bytes_transferred.getRunningStatByCategory(4)}; // @suppress("Invalid arguments")
 
 
 	if (0 == bytes_transferred.count())

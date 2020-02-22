@@ -21,6 +21,7 @@
 
 #include <assert.h>
 
+#include "ivytypes.h"
 #include "LUN.h"
 
 class DedupeRoundRobinSingleton
@@ -98,8 +99,8 @@ class DedupeRoundRobinSingleton
         // The first map maps from assigned LUN number to LDEV number. The second map maps from assigned LUN number
         // to index number. The secnd map is built from the first.
 
-        map<uint64_t, unsigned> LUN_to_LDEV;
-        map<uint64_t, uint64_t> LUN_to_LUN_index;
+        std::map<uint64_t, unsigned> LUN_to_LDEV;
+        std::map<uint64_t, uint64_t> LUN_to_LUN_index;
 
 		//
 		// Farey algorithm for computing a good rational approximation.

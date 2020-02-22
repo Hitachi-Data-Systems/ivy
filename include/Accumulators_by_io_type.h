@@ -19,8 +19,8 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <vector>
-
+#include "ivytypes.h"
+#include "ivydefines.h"
 #include "RunningStat.h"
 
 extern std::vector<std::tuple<std::string,ivy_float, ivy_float>> io_time_clip_levels;

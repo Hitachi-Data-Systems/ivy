@@ -18,8 +18,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <vector>
-#include <unordered_map>
+#include "ivytypes.h"
 
 // If your csv file doesn't have a header row, just load as normal
 // but when you are accessing the data, be aware that your first row is number -1.

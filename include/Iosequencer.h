@@ -19,8 +19,12 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
+#include "ivytypes.h"
+#include "ivytime.h"
 #include "Eyeo.h"
 #include "LUN.h"
+#include "WorkloadID.h"
+#include "IosequencerInput.h"
 
 class TestLUN;
 class WorkloadThread;

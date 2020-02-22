@@ -17,9 +17,8 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <iostream>
-#include <list>
 
+#include "ivytypes.h"
 #include "ivyhelpers.h"
 
 int main (int arc, char* argv[])
@@ -41,6 +40,6 @@ int main (int arc, char* argv[])
     {
         std::cout
             << "for input string   \"" << s << "\" - " << countCSVlineUnquotedCommas(s) << std::endl
-            << "wrapped up you get \"" << quote_wrap_csvline_LDEV_PG_leading_zero_number(s) << "\" - " << countCSVlineUnquotedCommas(quote_wrap_csvline_LDEV_PG_leading_zero_number(s))  << std::endl << std::endl;
+            << "wrapped up you get \"" << quote_wrap_csvline_LDEV_PG_leading_zero_number(s, true) << "\" - " << countCSVlineUnquotedCommas(quote_wrap_csvline_LDEV_PG_leading_zero_number(s, true))  << std::endl << std::endl;
     }
 }

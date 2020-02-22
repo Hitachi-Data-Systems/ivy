@@ -19,8 +19,7 @@
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
 #pragma once
 
-#include <mutex>
-
+#include "ivytypes.h"
 #include "ivyhelpers.h"
 
 struct logger

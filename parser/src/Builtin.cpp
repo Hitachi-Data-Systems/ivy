@@ -17,9 +17,8 @@
 //
 //Support:  "ivy" is not officially supported by Hitachi Vantara.
 //          Contact one of the authors by email and as time permits, we'll help on a best efforts basis.
-#include <iomanip>
-#include <cmath>
 
+#include "ivytypes.h"
 #include "Ivy_pgm.h"
 
 // Note "shell_command" alias "system" is a built-in function.
