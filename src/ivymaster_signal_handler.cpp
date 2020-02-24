@@ -27,7 +27,7 @@ struct sigaction ivymaster_sigaction;
 
 void ivymaster_signal_handler(int sig, siginfo_t *p_siginfo, void *context)
 {
-    execl (m_s.copy_back_ivy_logs_sh_filename.c_str(),(char*)0);
+    execl (m_s.copy_back_ivy_logs_sh_filename.c_str(), m_s.copy_back_ivy_logs_sh_filename.c_str(),(char*)0);
 
 //    std::ostringstream o;
 //
