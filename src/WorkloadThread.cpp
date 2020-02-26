@@ -1356,7 +1356,7 @@ void WorkloadThread::build_uring_and_allocate_and_mmap_Eyeo_buffers_and_build_Ey
 
     requested_uring_entries = 1;
 
-    while (requested_uring_entries < 4096 && (2*requested_uring_entries) < (total_maxTags+3)) // This formulation OK for unsigned - no subtracting
+    while (requested_uring_entries < 4096 && (2*requested_uring_entries) < (total_maxTags+4)) // This formulation OK for unsigned - no subtracting
     {
         requested_uring_entries *= 2;
     }
