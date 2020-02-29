@@ -20,20 +20,42 @@
 #pragma once
 
 #include "ivytypes.h"
+#include "Workload.h"
 
 class Eyeo;
 
 class DedupeRoundRobinRegulator
 {
+	private:
+
+		static const bool debugging {false};
+		static const bool logging {false};
+
+		string host_part;
+		string lun_part;
+		string work_part;
+
+		hash<string> myHash;
+
+		uint64_t host_hash;
+		uint64_t lun_hash;
+		uint64_t work_hash;
+
     public:
     
-		DedupeRoundRobinRegulator(uint64_t my_coverage_blocks, uint64_t my_block_size, ivy_float my_dedupe_ratio, uint64_t my_dedupe_unit_bytes, LUN *pLUN);
+		DedupeRoundRobinRegulator(
+				Workload &workload,
+				uint64_t my_coverage_blocks,
+				uint64_t my_block_size,
+				ivy_float my_dedupe_ratio,
+				uint64_t my_dedupe_unit_bytes,
+				LUN *pLUN
+				);
+
 		virtual ~DedupeRoundRobinRegulator();
+
 		uint64_t get_seed(Eyeo *p_eyeo, uint64_t offset);
 
     protected:
 
-    private:
-    
-		uint64_t LUN_number;
 };

@@ -22,22 +22,71 @@
 #include "DedupeRoundRobinSingleton.h"
 #include "DedupeRoundRobinRegulator.h"
 #include "Eyeo.h"
+#include "Workload.h"
+#include "WorkloadID.h"
 
-DedupeRoundRobinRegulator::DedupeRoundRobinRegulator(uint64_t my_coverage_blocks, uint64_t my_block_size,
-													 ivy_float my_dedupe_ratio, uint64_t my_dedupe_unit_bytes,
-													 LUN *pLUN)
+DedupeRoundRobinRegulator::DedupeRoundRobinRegulator(
+		Workload &workload,
+		uint64_t my_blocks,
+		uint64_t my_block_size,
+		ivy_float my_dedupe_ratio,
+		uint64_t my_dedupe_unit_bytes,
+		LUN *pLUN
+		)
 {
-	assert(my_coverage_blocks > 0);
-	assert(my_block_size > 0);
-	assert(my_dedupe_ratio >= 1.0);
-	assert((my_dedupe_unit_bytes > 0) && (my_dedupe_unit_bytes % dedupe_unit_bytes_default == 0));
-	assert(pLUN != nullptr);
+	if (debugging) {
+		assert(my_blocks > 0);
+		assert(my_block_size > 0);
+		assert(my_dedupe_ratio >= 1.0);
+		assert((my_dedupe_unit_bytes > 0) && (my_dedupe_unit_bytes % dedupe_unit_bytes_default == 0));
+		assert(pLUN != nullptr);
+	}
+
+    string workloadID = workload.workloadID.workloadID;
+
+    host_part = WorkloadID(workloadID).getHostPart();
+    lun_part = WorkloadID(workloadID).getLunPart();
+    work_part = WorkloadID(workloadID).getWorkloadPart();
+
+    host_hash = myHash(host_part);
+    lun_hash = myHash(lun_part);
+    work_hash = myHash(work_part);
+
+    if (logging) {
+   		ostringstream oss;
+   		oss << __func__ << "(" << __LINE__ << "): "
+   			<< "workloadID = \"" << workloadID << "\""
+			<< ", host_part = \"" << host_part << "\""
+			<< ", lun_part = \"" << lun_part << "\""
+			<< ", work_part = \"" << work_part << "\""
+		    << ", host_hash = 0x" << hex << showbase << internal << setfill('0') << setw(18) << host_hash << setfill(' ') << dec
+		    << ", lun_hash = 0x" << hex << showbase << internal << setfill('0') << setw(18) << lun_hash << setfill(' ') << dec
+		    << ", work_hash = 0x" << hex << showbase << internal << setfill('0') << setw(18) << work_hash << setfill(' ') << dec
+			<< ", my_blocks = " << my_blocks
+			<< ", my_block_size = " << my_block_size
+			<< ", my_dedupe_ratio = " << my_dedupe_ratio
+			<< ", my_dedupe_unit_bytes = " << my_dedupe_unit_bytes
+			<< "." << endl;
+   		logger logfile {"/tmp/spm.txt"};
+   		log(logfile, oss.str());
+    }
 
     DedupeRoundRobinSingleton& DRRS = DedupeRoundRobinSingleton::get_instance();
 
     // Add this LUN to the workload along with parameters.
 
-    LUN_number = DRRS.add_LUN(my_coverage_blocks, my_block_size, my_dedupe_ratio, my_dedupe_unit_bytes, pLUN);
+    DRRS.add_LUN(host_part, lun_part, work_part, host_hash, lun_hash, work_hash,
+    			 my_blocks, my_block_size, my_dedupe_ratio, my_dedupe_unit_bytes, pLUN);
+
+    if (logging) {
+   		ostringstream oss;
+   		oss << __func__ << "(" << __LINE__ << "): "
+   			<< "done"
+			<< ", workloadID = \"" << workloadID << "\""
+			<< "." << endl;
+   		logger logfile {"/tmp/spm.txt"};
+   		log(logfile, oss.str());
+    }
 }
 
 DedupeRoundRobinRegulator::~DedupeRoundRobinRegulator()
@@ -46,7 +95,18 @@ DedupeRoundRobinRegulator::~DedupeRoundRobinRegulator()
 
     // Delete this LUN. If it's the last LUN in the workload, re-initialize the workload.
 
-    DRRS.del_LUN(LUN_number);
+    if (logging) {
+   		ostringstream oss;
+   		oss << __func__ << "(" << __LINE__ << "): "
+			<< "host_part = \"" << host_part << "\""
+			<< ", lun_part = \"" << lun_part << "\""
+			<< ", work_part = \"" << work_part << "\""
+			<< "." << endl;
+   		logger logfile {"/tmp/spm.txt"};
+   		log(logfile, oss.str());
+    }
+
+    DRRS.del_LUN(host_part, lun_part, work_part, host_hash, lun_hash, work_hash);
 }
 
 uint64_t DedupeRoundRobinRegulator::get_seed(Eyeo *p_eyeo, uint64_t offset)
@@ -65,5 +125,5 @@ uint64_t DedupeRoundRobinRegulator::get_seed(Eyeo *p_eyeo, uint64_t offset)
 
     // Not zero-filled, so use round-robin generator.
 
-    return DRRS.get_seed(LUN_number, modblock);
+    return DRRS.get_seed(host_part, lun_part, work_part, host_hash, lun_hash, work_hash, modblock);
 }
