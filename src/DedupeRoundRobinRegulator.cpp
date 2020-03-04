@@ -25,6 +25,8 @@
 #include "Workload.h"
 #include "WorkloadID.h"
 
+// Constructor for the round_robin deduplication class.
+
 DedupeRoundRobinRegulator::DedupeRoundRobinRegulator(
 		Workload &workload,
 		uint64_t my_blocks,
@@ -32,15 +34,18 @@ DedupeRoundRobinRegulator::DedupeRoundRobinRegulator(
 		ivy_float my_dedupe_ratio,
 		uint64_t my_dedupe_unit_bytes,
 		LUN *pLUN
-		)
+)
 {
 	if (debugging) {
 		assert(my_blocks > 0);
 		assert(my_block_size > 0);
 		assert(my_dedupe_ratio >= 1.0);
-		assert((my_dedupe_unit_bytes > 0) && (my_dedupe_unit_bytes % dedupe_unit_bytes_default == 0));
+		assert(my_dedupe_unit_bytes > 0);
+		assert(my_dedupe_unit_bytes % dedupe_unit_bytes_default == 0);
 		assert(pLUN != nullptr);
 	}
+
+	// Extract the various parts of the workloadID.
 
     string workloadID = workload.workloadID.workloadID;
 
@@ -48,76 +53,46 @@ DedupeRoundRobinRegulator::DedupeRoundRobinRegulator(
     lun_part = WorkloadID(workloadID).getLunPart();
     work_part = WorkloadID(workloadID).getWorkloadPart();
 
+    // Compute hash values from the various parts of workloadID, for fast lookups.
+
     host_hash = myHash(host_part);
     lun_hash = myHash(lun_part);
     work_hash = myHash(work_part);
 
-    if (logging) {
-   		ostringstream oss;
-   		oss << __func__ << "(" << __LINE__ << "): "
-   			<< "workloadID = \"" << workloadID << "\""
-			<< ", host_part = \"" << host_part << "\""
-			<< ", lun_part = \"" << lun_part << "\""
-			<< ", work_part = \"" << work_part << "\""
-		    << ", host_hash = 0x" << hex << showbase << internal << setfill('0') << setw(18) << host_hash << setfill(' ') << dec
-		    << ", lun_hash = 0x" << hex << showbase << internal << setfill('0') << setw(18) << lun_hash << setfill(' ') << dec
-		    << ", work_hash = 0x" << hex << showbase << internal << setfill('0') << setw(18) << work_hash << setfill(' ') << dec
-			<< ", my_blocks = " << my_blocks
-			<< ", my_block_size = " << my_block_size
-			<< ", my_dedupe_ratio = " << my_dedupe_ratio
-			<< ", my_dedupe_unit_bytes = " << my_dedupe_unit_bytes
-			<< "." << endl;
-   		logger logfile {"/tmp/spm.txt"};
-   		log(logfile, oss.str());
-    }
+    // Get a reference to the singleton for the round_robin deduplication method.
 
     DedupeRoundRobinSingleton& DRRS = DedupeRoundRobinSingleton::get_instance();
 
     // Add this LUN to the workload along with parameters.
 
-    DRRS.add_LUN(host_part, lun_part, work_part, host_hash, lun_hash, work_hash,
+    DRRS.add_lun(host_part, lun_part, work_part, host_hash, lun_hash, work_hash,
     			 my_blocks, my_block_size, my_dedupe_ratio, my_dedupe_unit_bytes, pLUN);
-
-    if (logging) {
-   		ostringstream oss;
-   		oss << __func__ << "(" << __LINE__ << "): "
-   			<< "done"
-			<< ", workloadID = \"" << workloadID << "\""
-			<< "." << endl;
-   		logger logfile {"/tmp/spm.txt"};
-   		log(logfile, oss.str());
-    }
 }
+
+// Destructor for the round_robin deduplication class.
 
 DedupeRoundRobinRegulator::~DedupeRoundRobinRegulator()
 {
+    // Get a reference to the singleton for the round_robin deduplication method.
+
     DedupeRoundRobinSingleton& DRRS = DedupeRoundRobinSingleton::get_instance();
 
-    // Delete this LUN. If it's the last LUN in the workload, re-initialize the workload.
+    // Delete this LUN.
 
-    if (logging) {
-   		ostringstream oss;
-   		oss << __func__ << "(" << __LINE__ << "): "
-			<< "host_part = \"" << host_part << "\""
-			<< ", lun_part = \"" << lun_part << "\""
-			<< ", work_part = \"" << work_part << "\""
-			<< "." << endl;
-   		logger logfile {"/tmp/spm.txt"};
-   		log(logfile, oss.str());
-    }
-
-    DRRS.del_LUN(host_part, lun_part, work_part, host_hash, lun_hash, work_hash);
+    DRRS.del_lun(host_part, lun_part, work_part, host_hash, lun_hash, work_hash);
 }
+
+// Generate an appropriate seed for a given write request.
 
 uint64_t DedupeRoundRobinRegulator::get_seed(Eyeo *p_eyeo, uint64_t offset)
 {
-    uint64_t modblock;
+    // Get a reference to the singleton for the round_robin deduplication method.
 
     DedupeRoundRobinSingleton& DRRS = DedupeRoundRobinSingleton::get_instance();
 
     // Should this be a zero-filled block?
 
-    modblock = p_eyeo->zero_pattern_filtered_sub_block_number(offset - (uint64_t) (p_eyeo->sqe.off));
+    uint64_t modblock = p_eyeo->zero_pattern_filtered_sub_block_number(offset - (uint64_t) (p_eyeo->sqe.off));
     if (modblock == 0)
     {
         return 0; // Generate a zero-filled block.

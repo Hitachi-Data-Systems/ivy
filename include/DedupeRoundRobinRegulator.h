@@ -28,14 +28,20 @@ class DedupeRoundRobinRegulator
 {
 	private:
 
-		static const bool debugging {false};
+		static const bool debugging {true};
 		static const bool logging {false};
+
+		// Private fields to identify the workload, LUN, and host.
 
 		string host_part;
 		string lun_part;
 		string work_part;
 
+		// A hashing method used by this class.
+
 		hash<string> myHash;
+
+		// Private fields associated with the workload, LUN, and host strings, for fast access.
 
 		uint64_t host_hash;
 		uint64_t lun_hash;
@@ -43,6 +49,8 @@ class DedupeRoundRobinRegulator
 
     public:
     
+		// Constructor for the round_robin deduplication class.
+
 		DedupeRoundRobinRegulator(
 				Workload &workload,
 				uint64_t my_coverage_blocks,
@@ -52,7 +60,11 @@ class DedupeRoundRobinRegulator
 				LUN *pLUN
 				);
 
+		// Destructor for the round_robin deduplication class.
+
 		virtual ~DedupeRoundRobinRegulator();
+
+		// Generate a seed to construct a block for a particular write.
 
 		uint64_t get_seed(Eyeo *p_eyeo, uint64_t offset);
 
