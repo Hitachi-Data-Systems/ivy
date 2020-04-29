@@ -487,7 +487,7 @@ public:
     ivy_float   min_sequential_fill_progress { 1.0 };
     bool        keep_filling {false};
 
-    bool check_failed_component {true}, check_failed_component_default {true};
+    bool check_failed_component {false}, check_failed_component_default {false}; // NOTE: Narita-san advised that the "check failed component" feature is no longer available on current subsystem types, but they didn't update the documentation.
         // With command device and check_failed_component,
         // will refuse to start running with a failed component,
         // and if a component fails during a test step, will mark the result "invalid".
