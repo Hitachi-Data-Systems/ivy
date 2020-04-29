@@ -371,6 +371,7 @@ wait_for_command:  // the "stop" command finishes by "goto wait_for_command". Th
                         pear.second.p_current_IosequencerInput->dedupe_type == dedupe_method::round_robin)
                     {
                         pear.second.dedupe_round_robin_regulator = new DedupeRoundRobinRegulator(
+								pear.second, // Workload
                         		pear.second.p_my_iosequencer->numberOfCoverageBlocks,
                                 pear.second.p_current_IosequencerInput->blocksize_bytes,
                         		pear.second.p_current_IosequencerInput->dedupe,

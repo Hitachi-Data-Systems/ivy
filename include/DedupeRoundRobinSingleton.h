@@ -20,87 +20,66 @@
 #pragma once
 
 #include <assert.h>
+#include <time.h>
 
 #include "ivytypes.h"
+#include "ivyhelpers.h"
+#include "ivydriver.h"
 #include "LUN.h"
+#include "Workload.h"
 
 class DedupeRoundRobinSingleton
 {
     private:
 
-		// Note that these are *private*. This class a *singleton*, so its objects cannot be constructed or destructed!
+		static const bool debugging {true};
+		static const bool logging {false};
+
+		// Note that these are *private*. This class is a *singleton*, so its objects
+		// cannot be constructed or destructed!
 
         DedupeRoundRobinSingleton() {}
         ~DedupeRoundRobinSingleton() {}
 
-        // Multiple threads will call this class's entry points simultaneously, so we need to protect with a mutex.
+        // Multiple threads will call this class's entry points simultaneously,
+        // so we need to protect with a mutex.
 
-        std::mutex mut;
+        mutex mut;
 
         // This is a magic constant that was determined by experiment. Don't change it!
         
-        const ivy_float duplicate_set_size_ratio {0.050};
+        static constexpr ivy_float duplicate_set_size_ratio {0.050};
+
+        // There is one workload_state structure created for each workload.
         
-        // The initialized field indicates whether the other fields have valid values.
+        struct workload_state {
+            bool initialized;				// The initialized field indicates whether the other fields have valid values.
+            int	 LUN_count;					// How many LUNs participate in this workload. Can be sparse.
+            int	 LUN_max_plus_one;			// One more than the maximum LUN number used in the workload.
+            int  duplicate_set_size;    	// The size of the duplicate set. Typically 0.005 * dedupe_blocks, but can be smaller.
+            int  uniques;        			// The computed number of uniques in a "group."
+            int  duplicates;        		// The computed number of duplicates in a "group."
+            uint64_t iosize;        		// The size, in bytes, of an I/O (a write) for this workload.
+            uint64_t dedupe_blocks;     	// The number of deduplication-size blocks for all LUNs in this workload.
+            uint64_t dedupe_unit_bytes;     // The size, in bytes, of a deduplication unit. Typically 8,192.
+            uint64_t init_duplic_seed;      // The initial seed for duplicates (not modified).
+            uint64_t init_unique_seed;      // The initial seed for uniques (modified).
+            uint64_t curr_unique_seed;		// The current seed for unique blocks.
+            uint64_t *duplicate_set;        // A pointer to the duplicate set, which comprises a set of 64-bit seeds used to generate duplicate blocks.
+            ivy_float dedupe_ratio;        	// The deduplication ratio used for this workload.
+            ivy_float correction_factor;	// A correction factor applied to dedupe_ratio, based on the duplicate set size and the number of covered blocks.
+            string work_part;				// The workload identifier part of the workloadID string.
+            map<int, bool> LUN_assigned;	// Map from assigned LUN number to whether LUN is assigned.
+            map<int, unsigned> LUN_to_LDEV;	// Map from assigned LUN number to its LDEV number.
+            map<int, int> LUN_to_index;		// Map from assigned LUN number to its index number.
+            map<uint64_t, int> hash_to_LUN;	// Map from LUN hash to assigned LUN number.
+        };
 
-        bool initialized {false};
+        using MyWorkloadMap = map<uint64_t, struct workload_state *>;
 
-        // How many LUNs participate in this workload.
+        // workload_map is the map of workloads, indexed by a hash of the workload string.
 
-        uint64_t LUN_count;
-
-        // The size, in bytes, of an I/O (a write) for this workload.
-
-        uint64_t iosize;
-
-        // The number of deduplication-size blocks for all LUNs in this workload.
-
-        uint64_t dedupe_blocks;
-
-        // The size, in bytes, of a deduplication unit. Typically 8,192.
-
-        uint64_t dedupe_unit_bytes;
-
-        // The size of the duplicate set. Typically 0.005 * dedupe_blocks, but can be smaller.
-
-        uint64_t duplicate_set_size;
-
-        // The computed number of duplicates in a "group."
-
-        uint64_t duplicates;
-
-        // The computed number of uniques in a "group."
-
-        uint64_t uniques;
-
-        // The initial seed for duplicates (not modified).
-
-        uint64_t init_duplic_seed;
-
-        // The initial seed for uniques (modified).
-
-        uint64_t init_unique_seed;
-        uint64_t curr_unique_seed;
-
-        // A pointer to the duplicate set, which comprises a set of 64-bit seeds used to generate
-        // duplicate blocks.
-
-        uint64_t *duplicate_set {nullptr};
-
-        // The deduplication ratio used for this workload.
-
-        ivy_float dedupe_ratio;
-
-        // A correction factor applied to dedupe_ratio, based on the duplicate set size and the
-        // number of blocks to be covered by the deduplication code (dedupe_blocks).
-
-        ivy_float dedupe_correction_factor;
-
-        // The first map maps from assigned LUN number to LDEV number. The second map maps from assigned LUN number
-        // to index number. The secnd map is built from the first.
-
-        std::map<uint64_t, unsigned> LUN_to_LDEV;
-        std::map<uint64_t, uint64_t> LUN_to_LUN_index;
+        MyWorkloadMap workload_map;
 
 		//
 		// Farey algorithm for computing a good rational approximation.
@@ -109,11 +88,13 @@ class DedupeRoundRobinSingleton
 		// @param err The required precision such that abs(val-a/b) < err. (err > 0.0).
 		// @param num The maximum size of the numerator allowed. (num > 0)
 		// 
-		static std::pair<uint64_t, uint64_t> farey(ivy_float val, ivy_float err, uint64_t num)
+		static pair<uint64_t, uint64_t> farey(ivy_float val, ivy_float err, uint64_t num)
 		{
-		    assert((val >= 0.0) && (val <= 1.0));
-		    assert(err > 0.0);
-		    assert(num > 0);
+			if (debugging) {
+				assert((val >= 0.0) && (val <= 1.0));
+				assert(err > 0.0);
+				assert(num > 0);
+			}
 
 		    uint64_t a(0), b(1), c(1), d(1);
 		    ivy_float mediant(0.0F);
@@ -123,11 +104,11 @@ class DedupeRoundRobinSingleton
 
 		        if (abs(val - mediant) < err) {
 		            if (b + d <= num) {
-		                return std::pair<uint64_t, uint64_t> (a + c, b + d);
+		                return pair<uint64_t, uint64_t> (a + c, b + d);
 		            } else if (d > b) {
-		                return std::pair<uint64_t, uint64_t> (c, d);
+		                return pair<uint64_t, uint64_t> (c, d);
 		            } else {
-		                return std::pair<uint64_t, uint64_t> (a, b);
+		                return pair<uint64_t, uint64_t> (a, b);
 		            }
 		        } else if (val > mediant) {
 		            a = a + c;
@@ -139,102 +120,113 @@ class DedupeRoundRobinSingleton
 		    }
 
 		    if (b > num) {
-		        return std::pair<uint64_t, uint64_t> (c, d);
+		        return pair<uint64_t, uint64_t> (c, d);
 		    } else {
-		        return std::pair<uint64_t, uint64_t> (a, b);
+		        return pair<uint64_t, uint64_t> (a, b);
 		    }
 		}
 
 		// Convert a string LDEV to an LDEV value, e.g., "01:0A" to 0x0001000A.
 
-		static unsigned get_LDEV(std::string LDEV)
+		static unsigned get_ldev(string ldev)
 		{
-			if (LDEV.length() != 5) {
-				return 0;
+			// Format of ldev string should be "[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]", e.g., "01:2B".
+
+			const int max_ldev_length = 5;
+			unsigned ldev_value = 0;
+
+			if (ldev.length() == max_ldev_length) {
+				for (int i = 0; i < max_ldev_length; i++) {
+					switch (i) {
+					case 2:
+						// Don't know what to do if LDEV contains invalid character--so skip this character.
+						if (debugging) {
+							assert(ldev.at(2) == ':'); // For debugging, only!
+						}
+						break;
+					default:
+						// Get character, convert to value, and add result to LDEV_value.
+						char ldev_char = ldev.at(i);
+						ldev_value <<= 8;
+						if ((ldev_char >= '0') && (ldev_char <= '9')) {
+							ldev_value += (ldev_char - '0');
+						} else if ((ldev_char >= 'A') && (ldev_char <= 'F')) {
+							ldev_value += (ldev_char - 'A' + 10);
+						} else {
+							// Don't know what to do if LDEV contains invalid character--so skip this character.
+							if (debugging) {
+								assert(false); // For debugging, only!
+							}
+						}
+						break;
+					}
+				}
 			}
 
-			unsigned LDEV_value = 0;
-
-			char LDEV_char = LDEV.at(0);
-
-			if ((LDEV_char >= '0') && (LDEV_char <= '9')) {
-				LDEV_value += (LDEV_char - '0') << 24;
-			} else if ((LDEV_char >= 'A') && (LDEV_char <= 'F')) {
-				LDEV_value += (LDEV_char - 'A' + 10) << 24;
-			} else {
-				assert(false);
-			}
-
-			LDEV_char = LDEV.at(1);
-
-			if ((LDEV_char >= '0') && (LDEV_char <= '9')) {
-				LDEV_value += (LDEV_char - '0') << 16;
-			} else if ((LDEV_char >= 'A') && (LDEV_char <= 'F')) {
-				LDEV_value += (LDEV_char - 'A' + 10) << 16;
-			} else {
-				assert(false);
-			}
-
-			LDEV_char = LDEV.at(3);
-
-			if ((LDEV_char >= '0') && (LDEV_char <= '9')) {
-				LDEV_value += (LDEV_char - '0') << 8;
-			} else if ((LDEV_char >= 'A') && (LDEV_char <= 'F')) {
-				LDEV_value += (LDEV_char - 'A' + 10) << 8;
-			} else {
-				assert(false);
-			}
-
-			LDEV_char = LDEV.at(4);
-
-			if ((LDEV_char >= '0') && (LDEV_char <= '9')) {
-				LDEV_value += (LDEV_char - '0') << 0;
-			} else if ((LDEV_char >= 'A') && (LDEV_char <= 'F')) {
-				LDEV_value += (LDEV_char - 'A' + 10) << 0;
-			} else {
-				assert(false);
-			}
-
-			return LDEV_value;
+			return ldev_value;
 		}
 
-		// Called to compute the deduplication factors from the dedupe_ratio, etc.
+		// Compute the deduplication factors from the dedupe_ratio, etc.
 
-		void compute_factors(void);
+		void compute_factors(MyWorkloadMap::iterator itr);
+
+		// Initialize the fields of the workload structure.
+
+		void init(MyWorkloadMap::iterator itr);
+
+		// Return the number of nanoseconds elapsed since the previous call to this method.
+
+//		static inline uint64_t get_nsecs(void) {
+//			static uint64_t nsecs = 0;
+//			uint64_t tmp, diff;
+//			struct timespec ts;
+//
+//			if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0) {
+//				return 0;
+//			}
+//
+//			tmp = (ts.tv_sec * 1000000000ULL + ts.tv_nsec);
+//			diff = tmp - nsecs;
+//			nsecs = tmp;
+//
+//			return diff;
+//		}
 
     public:
 
-		// Returns a reference to this singleton.
+		// Return a reference to the DedupeRoundRobinSingleton.
 
 		static DedupeRoundRobinSingleton& get_instance(void)
 		{
 			static DedupeRoundRobinSingleton instance;
-			
 		    return instance;
 		}
 
-		// Initializes the fields of this singleton.
-
-		void init(void);
-
 		// Add a LUN to this workload.
 
-		uint64_t add_LUN(uint64_t my_blocks, uint64_t my_blocksize, ivy_float my_dedupe_ratio, uint64_t my_dedupe_unit_bytes, LUN *pLUN);
+		void add_lun(string &host_part, string &lun_part, string &work_part,
+					 uint64_t host_hash, uint64_t lun_hash, uint64_t work_hash,
+					 uint64_t my_blocks, uint64_t my_blocksize, ivy_float my_dedupe_ratio,
+					 uint64_t my_dedupe_unit_bytes, LUN *pLUN);
 
 		// Delete a LUN from this workload.
 
-		void del_LUN(uint64_t LUN_number);
+		void del_lun(string &host_part, string &lun_part, string &work_part,
+					 uint64_t host_hash, uint64_t lun_hash, uint64_t work_hash);
 
-		// Retrieve the number of dedupe blocks covered by this workload.
+		// Given a LUN and an LBA within the LUN, generate a seed. Takes into account the zero ratio,
+		// the dedupe ratio, etc. Note: If zero is returned, a zero-filled block should be generated.
 
-		uint64_t get_dedupe_blocks(void);
-
-		// Given a LUN and an LBA within the LUN, generate a seed. Takes into account the zero ratio, the dedupe ratio, etc.
-
-		uint64_t get_seed(uint64_t LUN, uint64_t LBA);
+		uint64_t get_seed(string &host_part, string &lun_part, string &work_part,
+						  uint64_t host_hash, uint64_t lun_hash, uint64_t work_hash,
+						  uint64_t LBA);
 		
 		// Don't instantiate these!
 
         DedupeRoundRobinSingleton(DedupeRoundRobinSingleton const&) = delete;
+
         void operator=(DedupeRoundRobinSingleton const&) = delete;
+
+    protected:
+
 };
