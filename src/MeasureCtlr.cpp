@@ -461,7 +461,14 @@ std::string wurst_of_the_best()
 
     std::ostringstream o;
 
-    o << "The best subsequence plus/minus variation of the worst instance \"" << s << "\" of the focus rollup is " << wurst << " % above the target +/- "<< std::fixed << std::setprecision (2) << (100. * m_s.accuracy_plus_minus_fraction) << "% accuracy." << std::endl;
+    o << "The best subsequence plus/minus variation";
+
+    if (m_s.p_focus_rollup->instances.size() > 1)
+    {
+        o << " of the worst instance \"" << s << "\" of the focus rollup";
+    }
+
+    o << " is " << wurst << " % above the target +/- "<< std::fixed << std::setprecision (2) << (100. * m_s.accuracy_plus_minus_fraction) << "% accuracy." << std::endl;
 
     if (wurst < 0)
     {
