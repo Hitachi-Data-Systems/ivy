@@ -1229,7 +1229,7 @@ void WorkloadThread::check_for_long_running_IOs()
                 std::ostringstream o;
                 o << "LUN " << pTestLUN->host_plus_lun << " has " << long_running_IOs.count()
                     << " I/Os that have been running for more than one second, the longest of which for "
-                    <<  long_running_IOs.max() << " seconds." << std::endl;
+                    << std::fixed << std::setprecision(0) <<  long_running_IOs.max() << ".x seconds." << std::endl;
                 post_warning(o.str());
             }
         }

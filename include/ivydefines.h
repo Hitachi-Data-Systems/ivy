@@ -111,7 +111,7 @@ const ivy_float	rangeStart_default {0.0};  // default is start at sector 1.  Sec
 const ivy_float	rangeEnd_default {1.0};    // default is 1.0 maps to the last aligned block of that blocksize that fits.
 const ivy_float	seqStartPoint_default{0.0}; // This defines where a sequential thread will start mapped from 0.0
                                                          // at the rangeStart point up to 1.0 at the rangeEnd point.
-const pattern pattern_default {pattern::random};
+const pattern pattern_default {pattern::whatever};
 const dedupe_method dedupe_method_default {dedupe_method::round_robin};
 const ivy_float dedupe_default {1.0};
 const ivy_float compressibility_default {0.0};

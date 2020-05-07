@@ -212,6 +212,44 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     m_s.measurement_by_subinterval.clear();
 
+    for (auto& pear : m_s.host_subthread_pointers)
+    {
+        pear.second->have_a_workload = false;
+    }
+
+    unsigned int workload_count = 0;
+    for (auto& pear : m_s.workloadTrackers.workloadTrackerPointers)
+    {
+        {
+            WorkloadID& wid = pear.second->workloadID;
+            auto peach = m_s.host_subthread_pointers.find(wid.getHostPart());
+            if (peach == m_s.host_subthread_pointers.end())
+            {
+                std::ostringstream o;
+                o << "internal programming error - in run_subinterval_sequence - did not find host subthread pointer for " << wid << " at line " << __LINE__ << " of " << __FILE__ << "." <<  std::endl;
+                std::cout << o.str();
+                log(m_s.masterlogfile,o.str());
+                m_s.kill_subthreads_and_exit();
+                exit ( -1);
+            }
+
+            pipe_driver_subthread* p_host_subthread = peach->second;
+            p_host_subthread->have_a_workload = true;
+            workload_count++;
+        }
+    }
+
+    if (workload_count == 0)
+    {
+        std::ostringstream o;
+        o << "[Go!] but there are no workloads to run." <<  std::endl;
+        std::cout << o.str();
+        log(m_s.masterlogfile,o.str());
+        m_s.kill_subthreads_and_exit();
+        exit ( -1);
+    }
+
+
     // Check for failed subsystem components
     if (m_s.haveCmdDev & m_s.check_failed_component)
     {
@@ -495,6 +533,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     for (auto& pear : m_s.host_subthread_pointers)
     {
+        if (!pear.second->have_a_workload) { continue; }
+
         {
             std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
 
@@ -535,6 +575,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     for (auto& pear : m_s.host_subthread_pointers)
     {
+        if (!pear.second->have_a_workload) { continue; }
+
         {
             std::unique_lock<std::mutex> s_lk(pear.second->master_slave_lk);
 
@@ -581,6 +623,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
     // Send "continue" command
     for (auto& pear : m_s.host_subthread_pointers)
     {
+        if (!pear.second->have_a_workload) { continue; }
+
         {
             std::unique_lock<std::mutex> s_lk(pear.second->master_slave_lk);
 
@@ -643,6 +687,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
     for (auto& pear : m_s.host_subthread_pointers)
     {
+        if (!pear.second->have_a_workload) { continue; }
+
         {
             std::unique_lock<std::mutex> s_lk(pear.second->master_slave_lk);
 
@@ -706,6 +752,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         // send out "get subinterval result"
         for (auto& pear : m_s.host_subthread_pointers)
         {
+            if (!pear.second->have_a_workload) { continue; }
+
             {
                 if (pear.second->dead)
                 {
@@ -766,6 +814,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
 
         for (auto& pear : m_s.host_subthread_pointers)
         {
+            if (!pear.second->have_a_workload) { continue; }
+
             {
                 std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
 
@@ -1212,6 +1262,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         // Iterate over all hosts, posting command to run another subinterval, or to stop at the end of the current subinterval.
         for (auto& pear : m_s.host_subthread_pointers)
         {
+            if (!pear.second->have_a_workload) { continue; }
+
             {
                 std::unique_lock<std::mutex> u_lk(pear.second->master_slave_lk);
                 if (EVALUATE_SUBINTERVAL_CONTINUE == m_s.lastEvaluateSubintervalReturnCode)
@@ -1235,6 +1287,8 @@ void run_subinterval_sequence(MeasureController* p_MeasureController)
         // Wait for all ivydrivers to confirm receipt of continue or stop.
         for (auto& pear : m_s.host_subthread_pointers)
         {
+            if (!pear.second->have_a_workload) { continue; }
+
             {
                 std::unique_lock<std::mutex> s_lk(pear.second->master_slave_lk);
 

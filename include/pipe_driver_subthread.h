@@ -199,6 +199,8 @@ public:
 
 	ivytime last_message_time { ivytime_zero }; // @suppress("Invalid arguments")
 
+	bool have_a_workload {false};
+
 // methods
 	pipe_driver_subthread(std::string Hostname, std::string OutputFolderRoot, std::string TestName, std::string lf)
 		: ivyscript_hostname(Hostname), outputfolderroot(OutputFolderRoot), outputfolderleaf(TestName), logfolder(lf) {}

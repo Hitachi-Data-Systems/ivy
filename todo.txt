@@ -1,3 +1,11 @@
+Fix error where ivy sends "go" to an ivydriver with no TestLUNs.  "but there are no TestLUNs" <ivydriver>
+
+Parse many Go statement errors at initial ivyscript parse time by having each expression have a "constant" attribute
+and then as a Go statement is parsed in the main lex/yacc, if the go parameter expression is constant, evaluate it and parse
+right then.  Go statement might need a new parameter that indicates "parse only".
+
+Remove <<of the worst instance>> if there is only one instance of the focus rollup.
+
 Don't write 2nd "detail" csv for a rollup with only one instance such as all=all - maybe put by-instance csvs in a subfolder, maybe "by_instance".
 
 Edit rollup - allow complete omission of rollup name-instance string.  (and confirm null string works as all=all).
